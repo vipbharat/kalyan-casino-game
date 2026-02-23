@@ -3,47 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DRAGON TIGER ELITE</title>
+    <title>DRAGON TIGER ELITE MASTER</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         :root { --dragon: #ff3333; --tiger: #33aaff; --gold: #ffd700; --tie: #2ecc71; }
         body { margin: 0; background: #050505; font-family: 'Arial Black', sans-serif; overflow: hidden; color: white; user-select: none; }
         
-        /* Top Bar & History */
+        /* UI Components */
         .top-bar { display: flex; justify-content: space-between; padding: 10px; background: #111; border-bottom: 2px solid var(--gold); }
         .bal-box { background: #222; border: 1.5px solid var(--gold); padding: 5px 15px; border-radius: 20px; color: var(--gold); font-weight: bold; }
         .history { display: flex; gap: 4px; padding: 8px; justify-content: center; background: rgba(0,0,0,0.8); height: 25px; overflow-x: auto; }
         .hist-item { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 1px solid #fff; flex-shrink: 0; }
-        .h-d { background: var(--dragon); } .h-t { background: var(--tiger); } .h-ti { background: var(--tie); }
+        
+        /* History Colors Fixed */
+        .h-d { background: var(--dragon); } 
+        .h-t { background: var(--tiger); } 
+        .h-ti { background: var(--tie); }
 
-        /* Game Table */
         .timer-sec { text-align: center; font-size: 45px; color: var(--gold); margin: 5px 0; }
         .table { display: flex; justify-content: center; gap: 20px; align-items: center; height: 110px; }
         .card { width: 70px; height: 100px; background: #fff !important; border-radius: 8px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 28px; color: #000; border: 2px solid #999; }
         .card-back { background: linear-gradient(45deg, #800, #f00); position: absolute; width: 100%; height: 100%; z-index: 5; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: gold; font-size: 30px; }
-        .suit-icon { font-size: 18px; margin-top: -5px; }
 
-        /* Betting Area */
+        /* Betting Boxes */
         .bet-grid { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
         .box { width: 115px; height: 180px; border: 3px solid rgba(255,255,255,0.1); border-radius: 15px; position: relative; background: rgba(0,0,0,0.3); overflow: hidden; }
         .dragon-box { border-color: var(--dragon); } .tiger-box { border-color: var(--tiger); } .tie-box { width: 85px; height: 140px; border-color: var(--tie); }
         .pool-amt { display: block; background: rgba(0,0,0,0.8); color: #0f0; text-align: center; font-size: 13px; padding: 4px; font-weight: bold; }
-        
+
+        /* Chips Style */
         .chip { width: 22px; height: 22px; border-radius: 50%; border: 1.2px solid #fff; position: absolute; z-index: 10; font-size: 8px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px #000; pointer-events: none; }
 
-        /* Players & Animations */
+        /* Player Stats */
         .live-players { display: flex; justify-content: space-around; padding: 15px 0; background: rgba(0,0,0,0.9); position: fixed; bottom: 85px; width: 100%; border-top: 2px solid #333; }
         .player { text-align: center; position: relative; width: 65px; }
-        .p-avatar { width: 38px; height: 38px; background: #222; border-radius: 50%; border: 2px solid var(--gold); margin: 0 auto; line-height: 38px; font-size: 9px; overflow: hidden; }
         .p-status { position: absolute; top: -22px; left: 0; width: 100%; font-size: 14px; font-weight: bold; opacity: 0; transition: 0.5s; z-index: 50; }
 
-        /* Chips Footer */
+        /* Footer Chips Matched */
         .chip-footer { position: fixed; bottom: 0; width: 100%; background: #111; display: flex; justify-content: center; gap: 6px; padding: 12px 0; border-top: 2px solid var(--gold); }
         .c-btn { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 11px; cursor: pointer; border: 2px dashed #fff; }
         .selected { transform: scale(1.15) translateY(-5px); border: 2px solid var(--gold) !important; box-shadow: 0 0 10px var(--gold); }
-
-        #win-overlay { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; display: none; font-size: 35px; font-weight: 900; text-shadow: 0 0 15px #000; }
+        
+        #win-overlay { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; display: none; font-size: 30px; font-weight: 900; text-shadow: 0 0 15px #000; text-align: center; background: rgba(0,0,0,0.9); padding: 15px; border-radius: 15px; border: 2px solid var(--gold); }
     </style>
 </head>
 <body>
@@ -52,48 +54,36 @@
     <div id="live-date" style="font-size:10px; color:var(--gold)">--/--/--</div>
     <div class="bal-box">₹ <span id="balance">0.00</span></div>
 </div>
-
 <div class="history" id="hist-bar"></div>
 <div class="timer-sec" id="timer">15</div>
 
 <div class="table">
-    <div id="card-d-box" class="card"><div class="card-back">D</div><div id="d-card-val">?</div><div class="suit-icon" id="d-card-suit"></div></div>
+    <div id="card-d-box" class="card"><div class="card-back">D</div><div id="d-card-val">?</div><div id="d-card-suit" style="font-size:15px"></div></div>
     <div style="color:var(--gold); font-size:20px;">VS</div>
-    <div id="card-t-box" class="card"><div class="card-back">T</div><div id="t-card-val">?</div><div class="suit-icon" id="t-card-suit"></div></div>
+    <div id="card-t-box" class="card"><div class="card-back">T</div><div id="t-card-val">?</div><div id="t-card-suit" style="font-size:15px"></div></div>
 </div>
 
 <div class="bet-grid">
-    <div class="box dragon-box" onclick="placeBet('dragon')">
-        <span class="pool-amt">₹<span id="p-dragon">0</span></span>
-        <div id="chips-dragon"></div>
-        <div style="position:absolute;bottom:5px;width:100%;text-align:center;color:var(--dragon);font-size:12px;font-weight:900;">DRAGON</div>
-    </div>
-    <div class="box tie-box" onclick="placeBet('tie')">
-        <span class="pool-amt">₹<span id="p-tie">0</span></span>
-        <div id="chips-tie"></div>
-        <div style="position:absolute;bottom:5px;width:100%;text-align:center;color:var(--tie);font-size:9px;font-weight:900;">TIE 9X</div>
-    </div>
-    <div class="box tiger-box" onclick="placeBet('tiger')">
-        <span class="pool-amt">₹<span id="p-tiger">0</span></span>
-        <div id="chips-tiger"></div>
-        <div style="position:absolute;bottom:5px;width:100%;text-align:center;color:var(--tiger);font-size:12px;font-weight:900;">TIGER</div>
-    </div>
+    <div class="box dragon-box" onclick="placeBet('dragon')"><span class="pool-amt">₹<span id="p-dragon">0</span></span><div id="chips-dragon"></div><div style="position:absolute;bottom:5px;width:100%;text-align:center;color:var(--dragon);font-size:12px;font-weight:900;">DRAGON</div></div>
+    <div class="box tie-box" onclick="placeBet('tie')"><span class="pool-amt">₹<span id="p-tie">0</span></span><div id="chips-tie"></div><div style="position:absolute;bottom:5px;width:100%;text-align:center;color:var(--tie);font-size:9px;font-weight:900;">TIE 9X</div></div>
+    <div class="box tiger-box" onclick="placeBet('tiger')"><span class="pool-amt">₹<span id="p-tiger">0</span></span><div id="chips-tiger"></div><div style="position:absolute;bottom:5px;width:100%;text-align:center;color:var(--tiger);font-size:12px;font-weight:900;">TIGER</div></div>
 </div>
 
 <div class="live-players" id="player-row"></div>
 
 <div class="chip-footer">
-    <div class="c-btn" style="background:#fff;color:#000" onclick="setChip(10, this)">10</div>
-    <div class="c-btn" style="background:#f0f" onclick="setChip(50, this)">50</div>
-    <div class="c-btn" style="background:#00f" onclick="setChip(100, this)">100</div>
-    <div class="c-btn" style="background:#0f0" onclick="setChip(500, this)">500</div>
-    <div class="c-btn" style="background:#f00" onclick="setChip(1000, this)">1K</div>
-    <div class="c-btn" style="background:linear-gradient(gold, orange);color:#000" onclick="setChip(5000, this)">5K</div>
+    <div class="c-btn" style="background:#ffffff; color:#000" onclick="setChip(10, this)">10</div>
+    <div class="c-btn" style="background:#ff00ff; color:#fff" onclick="setChip(50, this)">50</div>
+    <div class="c-btn" style="background:#0000ff; color:#fff" onclick="setChip(100, this)">100</div>
+    <div class="c-btn" style="background:#00ff00; color:#000" onclick="setChip(500, this)">500</div>
+    <div class="c-btn" style="background:#ff0000; color:#fff" onclick="setChip(1000, this)">1K</div>
+    <div class="c-btn" style="background:#ffd700; color:#000" onclick="setChip(5000, this)">5K</div>
 </div>
 
 <div id="win-overlay">WINNER</div>
 
 <script>
+    // Firebase Setup
     const firebaseConfig = { 
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
@@ -103,18 +93,18 @@
     const db = firebase.database();
     const phone = localStorage.getItem('userPhone');
 
-    // Game Config
+    // Game Constants
     const deck = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
     const suits = ["♠️", "♥️", "♣️", "♦️"];
+    const chipColors = { 10:'#ffffff', 50:'#ff00ff', 100:'#0000ff', 500:'#00ff00', 1000:'#ff0000', 5000:'#ffd700' };
+
     let bal = 0, currentChip = 10, time = 15;
     let pool = {dragon:0, tiger:0, tie:0};
     let myBets = {dragon:0, tiger:0, tie:0};
     let bots = [];
-    const botNames = ["KING_77", "PB_Jatt", "Don_001", "Sonia_Pro", "Tiger_X", "Lucky_88", "Aman_VIP"];
-    const chipColors = {10:'#fff', 50:'#f0f', 100:'#00f', 500:'#0f0', 1000:'#f00', 5000:'gold'};
+    const botNames = ["VIP_Player", "Jatt_Sahab", "Pro_Gamer", "Lucky_Don", "Sonia_88"];
 
-    // Live Date
-    document.getElementById('live-date').innerText = new Date().toLocaleDateString('hi-IN');
+    document.getElementById('live-date').innerText = new Date().toLocaleDateString();
 
     if(phone) {
         db.ref('users/'+phone+'/wallet').on('value', s => {
@@ -124,103 +114,82 @@
     }
 
     function createBot(i) {
-        bots[i] = { 
-            name: botNames[Math.floor(Math.random()*botNames.length)], 
-            bal: Math.floor(Math.random()*40000)+5000, 
-            startBal: 0 
-        };
+        bots[i] = { name: botNames[i], bal: Math.floor(Math.random()*40000)+5000, startBal: 0 };
         bots[i].startBal = bots[i].bal;
         renderBots();
     }
 
     function renderBots() {
-        const row = document.getElementById('player-row');
-        row.innerHTML = "";
+        const row = document.getElementById('player-row'); row.innerHTML = "";
         bots.forEach((b, i) => {
             row.innerHTML += `<div class="player">
                 <div class="p-status" id="stat-${i}"></div>
-                <div class="p-avatar">${b.name}</div>
+                <div style="width:38px;height:38px;background:#222;border:2px solid gold;border-radius:50%;margin:0 auto;line-height:38px;font-size:9px;">${b.name}</div>
                 <div style="font-size:9px;color:#0f0">₹${Math.floor(b.bal)}</div>
             </div>`;
         });
     }
-
     for(let i=0; i<5; i++) createBot(i);
 
-    function setChip(v, el) {
-        currentChip = v;
-        document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected'));
-        el.classList.add('selected');
+    function setChip(v, el) { 
+        currentChip = v; 
+        document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected')); 
+        el.classList.add('selected'); 
     }
 
     function spawnChip(side, amt) {
-        const div = document.getElementById('chips-'+side);
-        if(!div) return;
-        const c = document.createElement('div');
-        c.className = 'chip';
-        c.style.background = chipColors[amt] || 'gold';
-        c.style.color = (amt==10 || amt==5000) ? '#000' : '#fff';
+        const div = document.getElementById('chips-'+side); if(!div) return;
+        const c = document.createElement('div'); c.className = 'chip';
+        c.style.background = chipColors[amt] || '#fff';
+        c.style.color = (amt == 10 || amt == 5000 || amt == 500) ? '#000' : '#fff';
         c.innerText = amt >= 1000 ? (amt/1000)+'K' : amt;
-        c.style.left = Math.random()*75+"%";
-        c.style.top = (25 + Math.random()*50)+"%";
-        div.appendChild(c);
-        if(div.children.length > 30) div.firstChild.remove();
+        c.style.left = Math.random()*70+"%"; c.style.top = (25 + Math.random()*50)+"%";
+        div.appendChild(c); if(div.children.length > 35) div.firstChild.remove();
     }
 
     function placeBet(side) {
         if(time <= 2 || bal < currentChip) return;
-        bal -= currentChip;
-        db.ref('users/'+phone+'/wallet').set(bal);
-        myBets[side] += currentChip;
-        spawnChip(side, currentChip);
+        bal -= currentChip; db.ref('users/'+phone+'/wallet').set(bal);
+        myBets[side] += currentChip; spawnChip(side, currentChip);
     }
 
-    // Engine
+    // Timer Logic
     setInterval(() => {
         if(time > 0) {
-            time--;
-            document.getElementById('timer').innerText = time;
-            // Bot Betting Loop
-            for(let i=0; i<6; i++) {
+            time--; document.getElementById('timer').innerText = time;
+            for(let i=0; i<6; i++){
                 let s = Math.random() < 0.45 ? 'dragon' : (Math.random() < 0.9 ? 'tiger' : 'tie');
-                let a = [100, 500, 1000, 5000][Math.floor(Math.random()*4)];
-                if(pool[s] < 100000) {
-                    pool[s] += a;
-                    document.getElementById('p-'+s).innerText = pool[s].toLocaleString();
-                    spawnChip(s, a);
+                let a = [10, 100, 500, 1000, 5000][Math.floor(Math.random()*5)];
+                if(pool[s] < 100000) { 
+                    pool[s] += a; 
+                    document.getElementById('p-'+s).innerText = pool[s].toLocaleString(); 
+                    spawnChip(s, a); 
                 }
             }
-        } else if(time === 0) {
-            reveal();
-            time = -5;
-        } else {
-            time++;
-            if(time === 0) reset();
-        }
+        } else if(time === 0) { reveal(); time = -5; }
+        else { time++; if(time === 0) reset(); }
     }, 1000);
 
     function reveal() {
         db.ref('game_settings/dvt').once('value', snap => {
             const set = snap.val() || {mode:'auto'};
-            let d_idx = Math.floor(Math.random()*13);
-            let t_idx = Math.floor(Math.random()*13);
             let win = "";
-
-            if(set.mode === 'manual') {
-                win = set.next;
-                if(win==='dragon') { d_idx=12; t_idx=0; }
-                else if(win==='tiger') { t_idx=12; d_idx=0; }
-                else { d_idx=5; t_idx=5; }
-            } else {
-                win = pool.dragon <= pool.tiger ? 'dragon' : 'tiger';
-                if(win==='dragon' && d_idx<=t_idx) { [d_idx, t_idx]=[t_idx, d_idx]; if(d_idx==t_idx) d_idx++; }
-                if(win==='tiger' && t_idx<=d_idx) { [t_idx, d_idx]=[d_idx, t_idx]; if(t_idx==d_idx) t_idx++; }
+            
+            // Profit Logic 10% Margin
+            if(set.mode === 'manual') { win = set.next; }
+            else {
+                let d_pay = pool.dragon * 1.95;
+                let t_pay = pool.tiger * 1.95;
+                win = (d_pay <= t_pay) ? 'dragon' : 'tiger';
+                if(Math.random() < 0.05) win = 'tie'; // 5% chance Tie
             }
 
-            // UI Cards
-            const d_suit = suits[Math.floor(Math.random()*4)];
-            const t_suit = suits[Math.floor(Math.random()*4)];
-            
+            let d_idx = Math.floor(Math.random()*13), t_idx = Math.floor(Math.random()*13);
+            if(win === 'dragon' && d_idx <= t_idx) [d_idx, t_idx] = [t_idx, d_idx];
+            if(win === 'tiger' && t_idx <= d_idx) [t_idx, d_idx] = [d_idx, t_idx];
+            if(win === 'tie') d_idx = t_idx;
+
+            const d_suit = suits[Math.floor(Math.random()*4)], t_suit = suits[Math.floor(Math.random()*4)];
             document.getElementById('d-card-val').innerText = deck[d_idx];
             document.getElementById('d-card-suit').innerText = d_suit;
             document.getElementById('t-card-val').innerText = deck[t_idx];
@@ -230,29 +199,32 @@
             document.getElementById('card-t-box').style.color = (t_suit==='♥️'||t_suit==='♦️')?'red':'black';
             document.querySelectorAll('.card-back').forEach(b => b.style.display = 'none');
 
-            // Payout
-            if(myBets[win] > 0) {
-                let mult = (win==='tie')?9:1.95;
-                db.ref('users/'+phone+'/wallet').set(bal + (myBets[win]*mult));
+            // Payouts + 50% Tie Rule
+            if(win === 'tie') {
+                let refund = (myBets.dragon * 0.5) + (myBets.tiger * 0.5) + (myBets.tie * 9);
+                if(refund > 0) db.ref('users/'+phone+'/wallet').set(bal + refund);
+            } else if(myBets[win] > 0) {
+                db.ref('users/'+phone+'/wallet').set(bal + (myBets[win] * 1.95));
             }
 
-            // Bot Anims
+            // Bot Win/Loss Animation
             bots.forEach((b, i) => {
                 const el = document.getElementById(`stat-${i}`);
-                let winRound = Math.random() > 0.5;
-                let amt = Math.floor(Math.random()*5000);
-                if(winRound) { b.bal += amt; el.innerText = "+"+amt; el.style.color="#0f0"; }
+                let isWin = Math.random() > 0.5; let amt = Math.floor(Math.random()*5000);
+                if(isWin) { b.bal += amt; el.innerText = "+"+amt; el.style.color="#0f0"; }
                 else { b.bal -= amt; el.innerText = "-"+amt; el.style.color="#f00"; }
-                el.style.opacity = "1";
-                setTimeout(() => { if(el) el.style.opacity="0"; }, 2500);
+                el.style.opacity = "1"; setTimeout(() => { if(el) el.style.opacity="0"; }, 2500);
                 if(b.bal <= 0 || (b.bal - b.startBal) >= 50000) createBot(i);
             });
 
-            document.getElementById('win-overlay').innerText = win.toUpperCase() + " WINS";
-            document.getElementById('win-overlay').style.display = 'block';
-            
+            // History Update (Fixed Ti vs T)
             const h = document.getElementById('hist-bar');
-            h.innerHTML = `<div class="hist-item h-${win[0]}${win[1]||''}">${win[0].toUpperCase()}</div>` + h.innerHTML;
+            let resChar = (win==='dragon') ? 'D' : (win==='tiger' ? 'T' : 'Ti');
+            let resClass = (win==='dragon') ? 'h-d' : (win==='tiger' ? 'h-t' : 'h-ti');
+            h.innerHTML = `<div class="hist-item ${resClass}">${resChar}</div>` + h.innerHTML;
+
+            document.getElementById('win-overlay').innerText = win.toUpperCase() + " WINS" + (win==='tie' ? "\n(50% REFUND)" : "");
+            document.getElementById('win-overlay').style.display = 'block';
             renderBots();
         });
     }
