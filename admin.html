@@ -3,58 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan Pro - Full Control</title>
+    <title>Kalyan Pro - All-In-One Admin</title>
     <style>
         :root { --gold: #ffd700; --bg: #121212; --card: #1e1e1e; }
-        body { font-family: sans-serif; background: var(--bg); color: white; padding: 15px; margin: 0; }
+        body { font-family: sans-serif; background: var(--bg); color: white; margin: 0; padding: 10px; }
         .card { background: var(--card); border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        h2 { color: var(--gold); font-size: 16px; margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 8px; }
-        input { width: 100%; padding: 10px; margin: 8px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box; }
+        h2 { color: var(--gold); font-size: 16px; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        input, select { width: 100%; padding: 10px; margin: 5px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background: var(--gold); color: black; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; margin-top: 5px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .status { font-size: 12px; color: #aaa; margin-bottom: 10px; }
         .hidden { display: none; }
-        .stats-box { background: #252525; padding: 10px; border-radius: 5px; border-left: 4px solid var(--gold); display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
 
     <div id="login-box" class="card" style="max-width:350px; margin: 50px auto;">
-        <h2 style="text-align:center;">Admin Access</h2>
+        <h2 style="text-align:center;">Master Login</h2>
         <input type="text" id="u" placeholder="Admin ID">
         <input type="password" id="p" placeholder="Password">
-        <button onclick="login()">LOGIN</button>
+        <button onclick="login()">ENTER SYSTEM</button>
     </div>
 
-    <div id="panel" class="hidden" style="max-width: 500px; margin: auto;">
+    <div id="panel" class="hidden">
         
         <div class="card">
-            <h2>💰 Business Stats</h2>
-            <div class="stats-box">
-                <span>Today's Profit:</span>
-                <strong id="profit-val">₹0.00</strong>
+            <h2>💰 Player Wallet Control</h2>
+            <input type="text" id="user-mob" placeholder="Player Mobile No.">
+            <input type="number" id="amt" placeholder="Amount (e.g. 500)">
+            <div class="grid">
+                <button onclick="updateWallet('add')" style="background:#28a745; color:white;">+ ADD MONEY</button>
+                <button onclick="updateWallet('cut')" style="background:#dc3545; color:white;">- CUT MONEY</button>
             </div>
         </div>
 
         <div class="card">
-            <h2>💳 Payment Settings (UPI/QR)</h2>
-            <input type="text" id="upi-id" placeholder="UPI ID (e.g. name@ybl)">
-            <input type="text" id="qr-url" placeholder="QR Image URL">
-            <button onclick="updatePayment()">SAVE PAYMENT INFO</button>
+            <h2>🎮 Game Rules (Auto/Manual)</h2>
+            <p class="status">Current Mode: <span id="game-mode" style="color:cyan;">AUTO</span></p>
+            <div class="grid">
+                <button onclick="setGameRule('manual', 'dragon')" style="background:red; color:white;">FORCE DRAGON</button>
+                <button onclick="setGameRule('manual', 'tiger')" style="background:blue; color:white;">FORCE TIGER</button>
+            </div>
+            <button onclick="setGameRule('auto', '')" style="background:gray; margin-top:10px;">RESET TO AUTO-PROFIT</button>
         </div>
 
         <div class="card">
-            <h2>📞 Support Control</h2>
-            <input type="text" id="wa-num" placeholder="WhatsApp (91XXXXXXXXXX)">
-            <input type="text" id="tg-link" placeholder="Telegram Link">
-            <button onclick="updateSupport()" style="background:#25d366; color:white;">UPDATE SUPPORT</button>
+            <h2>📥 Pending Requests</h2>
+            <div id="req-list" style="font-size:13px; max-height:200px; overflow-y:auto;">
+                No pending requests...
+            </div>
         </div>
 
         <div class="card">
-            <h2>📢 App Notice Board</h2>
-            <input type="text" id="notice-msg" placeholder="Write scrolling message...">
-            <button onclick="updateNotice()" style="background:#444; color:gold;">PUBLISH NOTICE</button>
+            <h2>⚙️ App Settings</h2>
+            <input type="text" id="upi" placeholder="UPI ID">
+            <input type="text" id="wa" placeholder="WhatsApp Number">
+            <input type="text" id="tg" placeholder="Telegram Link">
+            <button onclick="saveSettings()">SAVE ALL SETTINGS</button>
         </div>
 
-        <button onclick="location.reload()" style="background:red; color:white; margin-bottom:30px;">LOGOUT ADMIN</button>
+        <button onclick="location.reload()" style="background:white; color:black; margin-bottom:40px;">LOGOUT</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -70,57 +78,72 @@
         const db = firebase.database();
 
         function login() {
-            const user = document.getElementById('u').value.trim();
-            const pass = document.getElementById('p').value.trim();
-            if(user === "08320832" && pass === "J1a2y3a4") {
+            if(document.getElementById('u').value === "08320832" && document.getElementById('p').value === "J1a2y3a4") {
                 document.getElementById('login-box').classList.add('hidden');
                 document.getElementById('panel').classList.remove('hidden');
-                loadData();
-            } else { alert("Galat Details!"); }
+                syncData();
+            } else { alert("Wrong Details!"); }
         }
 
-        // Database se purana data load karne ke liye
-        function loadData() {
-            db.ref('admin_settings').on('value', (snap) => {
-                const data = snap.val();
-                if(data) {
-                    if(data.payment_info) {
-                        document.getElementById('upi-id').value = data.payment_info.upi_id || "";
-                        document.getElementById('qr-url').value = data.payment_info.qr_url || "";
-                    }
-                    if(data.support_info) {
-                        document.getElementById('wa-num').value = data.support_info.whatsapp || "";
-                        document.getElementById('tg-link').value = data.support_info.telegram || "";
-                    }
-                    if(data.notice) {
-                        document.getElementById('notice-msg').value = data.notice.text || "";
-                    }
+        // Wallet Update (Add or Cut)
+        function updateWallet(type) {
+            const mob = document.getElementById('user-mob').value;
+            let val = parseFloat(document.getElementById('amt').value);
+            if(!mob || !val) return alert("Fill all details");
+            if(type === 'cut') val = -val;
+
+            db.ref('users/' + mob + '/wallet').transaction(b => (b || 0) + val)
+            .then(() => alert("Wallet Updated!"));
+        }
+
+        // Game Rule Change
+        function setGameRule(mode, res) {
+            db.ref('game_settings/dvt').set({ mode: mode, next: res });
+            document.getElementById('game-mode').innerText = mode.toUpperCase() + (res ? " ("+res+")" : "");
+            alert("Rule Updated!");
+        }
+
+        // Settings Save
+        function saveSettings() {
+            db.ref('admin_settings').update({
+                upi: document.getElementById('upi').value,
+                whatsapp: document.getElementById('wa').value,
+                telegram: document.getElementById('tg').value
+            }).then(() => alert("Settings Saved!"));
+        }
+
+        // Realtime Data Sync
+        function syncData() {
+            // Load Settings
+            db.ref('admin_settings').once('value', snap => {
+                const d = snap.val();
+                if(d) {
+                    document.getElementById('upi').value = d.upi || "";
+                    document.getElementById('wa').value = d.whatsapp || "";
+                    document.getElementById('tg').value = d.telegram || "";
                 }
             });
-            // Profit load
-            db.ref('stats/profit').on('value', (snap) => {
-                document.getElementById('profit-val').innerText = "₹" + (snap.val() || 0);
+
+            // Load Requests
+            db.ref('requests').on('value', snap => {
+                const list = document.getElementById('req-list');
+                list.innerHTML = "";
+                snap.forEach(child => {
+                    const r = child.val();
+                    list.innerHTML += `<div style="border-bottom:1px solid #444; padding:5px;">
+                        ${r.type}: ${r.mob} - ₹${r.amt} 
+                        <button onclick="approve('${child.key}', '${r.mob}', ${r.amt}, '${r.type}')" style="width:60px; padding:2px; background:green;">OK</button>
+                    </div>`;
+                });
             });
         }
 
-        function updatePayment() {
-            db.ref('admin_settings/payment_info').update({
-                upi_id: document.getElementById('upi-id').value,
-                qr_url: document.getElementById('qr-url').value
-            }).then(() => alert("Payment Updated!"));
-        }
-
-        function updateSupport() {
-            db.ref('admin_settings/support_info').update({
-                whatsapp: document.getElementById('wa-num').value,
-                telegram: document.getElementById('tg-link').value
-            }).then(() => alert("Support Links Updated!"));
-        }
-
-        function updateNotice() {
-            db.ref('admin_settings/notice').update({
-                text: document.getElementById('notice-msg').value
-            }).then(() => alert("Notice Published!"));
+        function approve(id, mob, amt, type) {
+            if(type === 'Deposit') {
+                db.ref('users/' + mob + '/wallet').transaction(b => (b || 0) + amt);
+            }
+            db.ref('requests/' + id).remove();
+            alert("Request Completed!");
         }
     </script>
 </body>
