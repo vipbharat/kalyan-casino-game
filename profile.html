@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Kalyan Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; }
+        .profile-header { background: linear-gradient(180deg, #1a1a1a, #000); padding: 40px 20px; text-align: center; border-bottom: 1px solid #333; }
+        .avatar { width: 80px; height: 80px; background: gold; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #000; box-shadow: 0 0 20px rgba(255,215,0,0.3); }
+        .user-id { font-size: 18px; font-weight: bold; color: gold; }
+        
+        .stats-container { display: flex; justify-content: space-around; background: #111; padding: 15px; margin: -25px 20px 20px; border-radius: 15px; border: 1px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .stat-box { text-align: center; }
+        .stat-box span { display: block; font-size: 12px; color: #888; }
+        .stat-box b { font-size: 16px; color: #fff; }
+
+        .menu-section { padding: 10px 20px; }
+        .menu-item { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; text-decoration: none; color: #fff; border: 1px solid #222; }
+        .menu-item i { width: 35px; height: 35px; background: #222; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: gold; margin-right: 15px; }
+        .menu-text { flex: 1; font-size: 14px; }
+        .arrow { color: #444; font-size: 12px; }
+
+        .logout-btn { margin: 30px 20px; background: rgba(255, 0, 0, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d; padding: 15px; text-align: center; border-radius: 12px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="profile-header">
+        <a href="dashboard.html" style="position: absolute; left: 20px; top: 20px; color: gold; font-size: 20px;"><i class="fa-solid fa-arrow-left"></i></a>
+        <div class="avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="user-id" id="u-phone">99XXXXXXXX</div>
+        <div style="font-size: 12px; color: #aaa; margin-top: 5px;">VIP Level: <span style="color: gold;">GOLD</span></div>
+    </div>
+
+    <div class="stats-container">
+        <div class="stat-box">
+            <span>Total Refer</span>
+            <b id="u-ref-count">0</b>
+        </div>
+        <div class="stat-box" style="border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 20px;">
+            <span>Wallet</span>
+            <b id="u-balance">₹0.00</b>
+        </div>
+        <div class="stat-box">
+            <span>Earnings</span>
+            <b id="u-earn" style="color: #0f0;">₹0</b>
+        </div>
+    </div>
+
+    <div class="menu-section">
+        <a href="history.html" class="menu-item">
+            <i class="fa-solid fa-receipt"></i>
+            <span class="menu-text">Transaction History</span>
+            <span class="arrow"><i class="fa-solid fa-chevron-right"></i></span>
+        </a>
+        <a href="refer.html" class="menu-item">
+            <i class="fa-solid fa-gift"></i>
+            <span class="menu-text">Refer & Earn Program</span>
+            <span class="arrow"><i class="fa-solid fa-chevron-right"></i></span>
+        </a>
+        <a href="support.html" class="menu-item">
+            <i class="fa-solid fa-headset"></i>
+            <span class="menu-text">24/7 Customer Support</span>
+            <span class="arrow"><i class="fa-solid fa-chevron-right"></i></span>
+        </a>
+        <div class="menu-item" onclick="alert('App Version: 1.0.5')">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span class="menu-text">Security & Privacy</span>
+            <span style="font-size: 10px; color: #555;">v1.0.5</span>
+        </div>
+    </div>
+
+    <div class="logout-btn" onclick="logoutUser()">LOGOUT ACCOUNT</div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
+            authDomain: "kalyan-casino.firebaseapp.com",
+            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
+            projectId: "kalyan-casino",
+            storageBucket: "kalyan-casino.firebasestorage.app",
+            messagingSenderId: "805675620545",
+            appId: "1:805675620545:web:6b49c99f325432a8249c40"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const phone = localStorage.getItem('userPhone');
+
+        if(!phone) {
+            window.location.href = "index.html";
+        } else {
+            document.getElementById('u-phone').innerText = phone;
+            
+            // Real-time Data Sync
+            db.ref('users/' + phone).on('value', (snap) => {
+                const data = snap.val();
+                if(data) {
+                    document.getElementById('u-balance').innerText = "₹" + (data.balance || 0).toFixed(2);
+                    document.getElementById('u-ref-count').innerText = data.referral_count || 0;
+                    document.getElementById('u-earn').innerText = "₹" + (data.referral_earnings || 0).toFixed(2);
+                }
+            });
+        }
+
+        function logoutUser() {
+            if(confirm("Logout karna chahte hain?")) {
+                localStorage.removeItem('userPhone');
+                window.location.href = "index.html";
+            }
+        }
+    </script>
+</body>
+</html>
