@@ -3,148 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan Pro - All-In-One Admin</title>
+    <title>Master Admin - All Buttons Fixed</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        :root { --gold: #ffd700; --bg: #121212; --card: #1e1e1e; }
-        body { font-family: sans-serif; background: var(--bg); color: white; margin: 0; padding: 10px; }
-        .card { background: var(--card); border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        h2 { color: var(--gold); font-size: 16px; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        input, select { width: 100%; padding: 10px; margin: 5px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: var(--gold); color: black; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; margin-top: 5px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .status { font-size: 12px; color: #aaa; margin-bottom: 10px; }
-        .hidden { display: none; }
+        body { background: #0a0a0a; color: white; font-family: sans-serif; margin: 0; padding-bottom: 30px; }
+        .header { background: #111; padding: 15px; text-align: center; border-bottom: 2px solid #ffd700; }
+        
+        /* Navigation Tabs */
+        .nav-tabs { display: flex; background: #1a1a1a; overflow-x: auto; padding: 10px; gap: 8px; position: sticky; top: 0; z-index: 100; }
+        .tab-btn { background: #333; color: white; border: none; padding: 10px 15px; border-radius: 5px; white-space: nowrap; cursor: pointer; font-size: 12px; }
+        .tab-btn.active { background: #ffd700; color: black; font-weight: bold; }
+
+        .content-section { display: none; padding: 15px; }
+        .active-section { display: block; }
+
+        .card { background: #151515; padding: 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; }
+        h3 { margin: 0 0 15px 0; color: #ffd700; font-size: 16px; border-left: 4px solid #ffd700; padding-left: 10px; }
+        
+        input, select { width: 92%; padding: 12px; margin: 8px 0; background: #222; color: white; border: 1px solid #444; border-radius: 6px; }
+        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-green { background: #2ecc71; color: white; width: 100%; }
+        .btn-red { background: #e74c3c; color: white; width: 100%; }
+        
+        /* Game Control Buttons */
+        .game-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .g-btn { padding: 15px 5px; border-radius: 8px; border: 1px solid #444; background: #222; color: white; font-size: 12px; font-weight: bold; }
+        .g-active { border-color: #ffd700; background: #332b00; color: #ffd700; }
+
+        .req-box { background: #222; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #ffd700; font-size: 13px; }
     </style>
 </head>
 <body>
 
-    <div id="login-box" class="card" style="max-width:350px; margin: 50px auto;">
-        <h2 style="text-align:center;">Master Login</h2>
-        <input type="text" id="u" placeholder="Admin ID">
-        <input type="password" id="p" placeholder="Password">
-        <button onclick="login()">ENTER SYSTEM</button>
+<div class="header"><h3>💎 MASTER ADMIN PANEL</h3></div>
+
+<div class="nav-tabs">
+    <button class="tab-btn active" onclick="openTab(event, 'game-ctrl')">🎮 Game Control</button>
+    <button class="tab-btn" onclick="openTab(event, 'money-ctrl')">💰 Wallet/UPI</button>
+    <button class="tab-btn" onclick="openTab(event, 'req-ctrl')">📩 Requests</button>
+</div>
+
+<div id="game-ctrl" class="content-section active-section">
+    <div class="card">
+        <h3>🐯 Dragon Tiger Control</h3>
+        <div class="game-btn-grid">
+            <button class="g-btn" id="dt-auto" onclick="fixGame('dvt', 'auto')">AUTO (Profit Mode)</button>
+            <button class="g-btn" id="dt-dragon" onclick="fixGame('dvt', 'dragon')">DRAGON WIN</button>
+            <button class="g-btn" id="dt-tiger" onclick="fixGame('dvt', 'tiger')">TIGER WIN</button>
+            <button class="g-btn" id="dt-tie" onclick="fixGame('dvt', 'tie')">TIE WIN</button>
+        </div>
     </div>
 
-    <div id="panel" class="hidden">
-        
-        <div class="card">
-            <h2>💰 Player Wallet Control</h2>
-            <input type="text" id="user-mob" placeholder="Player Mobile No.">
-            <input type="number" id="amt" placeholder="Amount (e.g. 500)">
-            <div class="grid">
-                <button onclick="updateWallet('add')" style="background:#28a745; color:white;">+ ADD MONEY</button>
-                <button onclick="updateWallet('cut')" style="background:#dc3545; color:white;">- CUT MONEY</button>
-            </div>
+    <div class="card">
+        <h3>🃏 Andar Bahar Control</h3>
+        <div class="game-btn-grid">
+            <button class="g-btn" id="ab-auto" onclick="fixGame('andar_bahar', 'auto')">AUTO (Profit Mode)</button>
+            <button class="g-btn" id="ab-andar" onclick="fixGame('andar_bahar', 'andar')">ANDAR WIN</button>
+            <button class="g-btn" id="ab-bahar" onclick="fixGame('andar_bahar', 'bahar')">BAHAR WIN</button>
         </div>
-
-        <div class="card">
-            <h2>🎮 Game Rules (Auto/Manual)</h2>
-            <p class="status">Current Mode: <span id="game-mode" style="color:cyan;">AUTO</span></p>
-            <div class="grid">
-                <button onclick="setGameRule('manual', 'dragon')" style="background:red; color:white;">FORCE DRAGON</button>
-                <button onclick="setGameRule('manual', 'tiger')" style="background:blue; color:white;">FORCE TIGER</button>
-            </div>
-            <button onclick="setGameRule('auto', '')" style="background:gray; margin-top:10px;">RESET TO AUTO-PROFIT</button>
-        </div>
-
-        <div class="card">
-            <h2>📥 Pending Requests</h2>
-            <div id="req-list" style="font-size:13px; max-height:200px; overflow-y:auto;">
-                No pending requests...
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>⚙️ App Settings</h2>
-            <input type="text" id="upi" placeholder="UPI ID">
-            <input type="text" id="wa" placeholder="WhatsApp Number">
-            <input type="text" id="tg" placeholder="Telegram Link">
-            <button onclick="saveSettings()">SAVE ALL SETTINGS</button>
-        </div>
-
-        <button onclick="location.reload()" style="background:white; color:black; margin-bottom:40px;">LOGOUT</button>
     </div>
+    
+    <div class="card">
+        <h3>🔗 Support Links</h3>
+        <input type="text" id="waLink" placeholder="WhatsApp Link">
+        <input type="text" id="tgLink" placeholder="Telegram Link">
+        <button class="btn btn-green" onclick="updateSupport()">Save Links</button>
+    </div>
+</div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+<div id="money-ctrl" class="content-section">
+    <div class="card">
+        <h3>💵 Quick Balance (Add/Cut)</h3>
+        <input type="text" id="userPhone" placeholder="Player ID (Phone)">
+        <input type="number" id="newAmt" placeholder="Amount">
+        <div style="display: flex; gap:10px;">
+            <button class="btn btn-green" onclick="modifyWallet('add')">➕ ADD</button>
+            <button class="btn btn-red" onclick="modifyWallet('cut')">➖ CUT</button>
+        </div>
+    </div>
+    <div class="card">
+        <h3>🏦 Payment QR/UPI</h3>
+        <input type="text" id="adminUpi" placeholder="Your UPI ID">
+        <input type="text" id="qrUrl" placeholder="QR Image Link">
+        <button class="btn btn-green" onclick="updatePayment()">Save Payment Info</button>
+    </div>
+</div>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
-            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
-            projectId: "kalyan-casino"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+<div id="req-ctrl" class="content-section">
+    <div class="card">
+        <h3>📥 Deposit & Withdraw Requests</h3>
+        <div id="request-list">No pending requests.</div>
+    </div>
+</div>
 
-        function login() {
-            if(document.getElementById('u').value === "08320832" && document.getElementById('p').value === "J1a2y3a4") {
-                document.getElementById('login-box').classList.add('hidden');
-                document.getElementById('panel').classList.remove('hidden');
-                syncData();
-            } else { alert("Wrong Details!"); }
-        }
+<script>
+    const firebaseConfig = { 
+        apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
+        databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
+        projectId: "kalyan-casino" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-        // Wallet Update (Add or Cut)
-        function updateWallet(type) {
-            const mob = document.getElementById('user-mob').value;
-            let val = parseFloat(document.getElementById('amt').value);
-            if(!mob || !val) return alert("Fill all details");
-            if(type === 'cut') val = -val;
+    function openTab(evt, name) {
+        let i, content, tabs;
+        content = document.getElementsByClassName("content-section");
+        for (i = 0; i < content.length; i++) content[i].classList.remove("active-section");
+        tabs = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tabs.length; i++) tabs[i].classList.remove("active");
+        document.getElementById(name).classList.add("active-section");
+        evt.currentTarget.classList.add("active");
+    }
 
-            db.ref('users/' + mob + '/wallet').transaction(b => (b || 0) + val)
-            .then(() => alert("Wallet Updated!"));
-        }
+    // Winner Fix Logic
+    function fixGame(path, val) {
+        db.ref('game_settings/' + path).update({ mode: val === 'auto' ? 'auto' : 'manual', next: val });
+        alert(path.toUpperCase() + " Updated to: " + val);
+    }
 
-        // Game Rule Change
-        function setGameRule(mode, res) {
-            db.ref('game_settings/dvt').set({ mode: mode, next: res });
-            document.getElementById('game-mode').innerText = mode.toUpperCase() + (res ? " ("+res+")" : "");
-            alert("Rule Updated!");
-        }
+    // Wallet Quick Add/Cut
+    function modifyWallet(action) {
+        const phone = document.getElementById('userPhone').value;
+        const amt = parseFloat(document.getElementById('newAmt').value);
+        if(!phone || isNaN(amt)) return alert("Data sahi bharo!");
 
-        // Settings Save
-        function saveSettings() {
-            db.ref('admin_settings').update({
-                upi: document.getElementById('upi').value,
-                whatsapp: document.getElementById('wa').value,
-                telegram: document.getElementById('tg').value
-            }).then(() => alert("Settings Saved!"));
-        }
+        db.ref('users/' + phone + '/wallet').once('value', s => {
+            let current = s.val() || 0;
+            let final = action === 'add' ? current + amt : current - amt;
+            db.ref('users/' + phone + '/wallet').set(final);
+            alert("Balance Updated!");
+        });
+    }
 
-        // Realtime Data Sync
-        function syncData() {
-            // Load Settings
-            db.ref('admin_settings').once('value', snap => {
-                const d = snap.val();
-                if(d) {
-                    document.getElementById('upi').value = d.upi || "";
-                    document.getElementById('wa').value = d.whatsapp || "";
-                    document.getElementById('tg').value = d.telegram || "";
-                }
+    // Request Loader
+    db.ref('requests').on('value', snap => {
+        const list = document.getElementById('request-list');
+        list.innerHTML = "";
+        const data = snap.val();
+        if(!data) { list.innerHTML = "No requests."; return; }
+
+        Object.keys(data).forEach(id => {
+            const r = data[id];
+            list.innerHTML += `<div class="req-box">
+                <b>${r.type.toUpperCase()}</b> | ID: ${r.phone} | Amt: ₹${r.amount} <br>
+                <div style="display:flex; gap:5px; margin-top:5px;">
+                    <button class="btn btn-green" onclick="approveReq('${id}','${r.phone}',${r.amount},'${r.type}')">OK</button>
+                    <button class="btn btn-red" onclick="db.ref('requests/${id}').remove()">X</button>
+                </div>
+            </div>`;
+        });
+    });
+
+    function approveReq(id, phone, amt, type) {
+        if(type === 'deposit') {
+            db.ref('users/'+phone+'/wallet').once('value', s => {
+                db.ref('users/'+phone+'/wallet').set((s.val()||0) + amt);
             });
-
-            // Load Requests
-            db.ref('requests').on('value', snap => {
-                const list = document.getElementById('req-list');
-                list.innerHTML = "";
-                snap.forEach(child => {
-                    const r = child.val();
-                    list.innerHTML += `<div style="border-bottom:1px solid #444; padding:5px;">
-                        ${r.type}: ${r.mob} - ₹${r.amt} 
-                        <button onclick="approve('${child.key}', '${r.mob}', ${r.amt}, '${r.type}')" style="width:60px; padding:2px; background:green;">OK</button>
-                    </div>`;
-                });
-            });
         }
+        db.ref('requests/'+id).remove(); alert("Success!");
+    }
 
-        function approve(id, mob, amt, type) {
-            if(type === 'Deposit') {
-                db.ref('users/' + mob + '/wallet').transaction(b => (b || 0) + amt);
-            }
-            db.ref('requests/' + id).remove();
-            alert("Request Completed!");
-        }
-    </script>
+    function updatePayment() {
+        db.ref('admin_settings/payment').set({ 
+            upi: document.getElementById('adminUpi').value, 
+            qr: document.getElementById('qrUrl').value 
+        }); alert("Saved!");
+    }
+
+    function updateSupport() {
+        db.ref('admin_settings/support').set({ 
+            whatsapp: document.getElementById('waLink').value, 
+            telegram: document.getElementById('tgLink').value 
+        }); alert("Links Saved!");
+    }
+</script>
 </body>
 </html>
