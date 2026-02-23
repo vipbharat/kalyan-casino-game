@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Player ko notice ekdum premium dikhega */
+        body { margin: 0; padding: 0; background: transparent; font-family: 'Segoe UI', Roboto, sans-serif; overflow: hidden; }
+        
+        .notice-wrapper {
+            background: rgba(0, 0, 0, 0.85);
+            height: 35px;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #ffd700;
+            border-bottom: 1px solid #ffd700;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .notice-title {
+            background: linear-gradient(180deg, #ffd700, #b8860b);
+            color: #000;
+            font-weight: bold;
+            font-size: 11px;
+            padding: 0 12px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            z-index: 10;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 3px 0 8px rgba(0,0,0,0.4);
+        }
+
+        marquee {
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 500;
+            padding-left: 10px;
+        }
+
+        .highlight { color: #ffd700; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="notice-wrapper" id="notice-container" style="display: none;">
+        <div class="notice-title">📢 Notice</div>
+        <marquee id="notice-display" scrollamount="4" scrolldelay="60">
+            Kalyan Pro Casino mein aapka swagat hai... Loading updates...
+        </marquee>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
+    <script>
+        // Aapka Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
+            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
+            projectId: "kalyan-casino"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Admin Panel se Notice uthane ka logic
+        const noticeRef = db.ref('admin_settings/notice');
+        
+        noticeRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            const container = document.getElementById('notice-container');
+            const display = document.getElementById('notice-display');
+
+            if (data && data.text) {
+                // Agar message badla hai tabhi update karein (No Vibration logic)
+                if (display.innerText !== data.text) {
+                    display.innerText = data.text;
+                }
+                container.style.display = 'flex';
+            } else {
+                container.style.display = 'none';
+            }
+        }, (error) => {
+            console.error("Notice Error:", error);
+        });
+    </script>
+</body>
+</html>
