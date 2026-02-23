@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalyan Pro - Full Control</title>
+    <style>
+        :root { --gold: #ffd700; --bg: #121212; --card: #1e1e1e; }
+        body { font-family: sans-serif; background: var(--bg); color: white; padding: 15px; margin: 0; }
+        .card { background: var(--card); border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        h2 { color: var(--gold); font-size: 16px; margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        input { width: 100%; padding: 10px; margin: 8px 0; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: var(--gold); color: black; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; margin-top: 5px; }
+        .hidden { display: none; }
+        .stats-box { background: #252525; padding: 10px; border-radius: 5px; border-left: 4px solid var(--gold); display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+    <div id="login-box" class="card" style="max-width:350px; margin: 50px auto;">
+        <h2 style="text-align:center;">Admin Access</h2>
+        <input type="text" id="u" placeholder="Admin ID">
+        <input type="password" id="p" placeholder="Password">
+        <button onclick="login()">LOGIN</button>
+    </div>
+
+    <div id="panel" class="hidden" style="max-width: 500px; margin: auto;">
+        
+        <div class="card">
+            <h2>💰 Business Stats</h2>
+            <div class="stats-box">
+                <span>Today's Profit:</span>
+                <strong id="profit-val">₹0.00</strong>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>💳 Payment Settings (UPI/QR)</h2>
+            <input type="text" id="upi-id" placeholder="UPI ID (e.g. name@ybl)">
+            <input type="text" id="qr-url" placeholder="QR Image URL">
+            <button onclick="updatePayment()">SAVE PAYMENT INFO</button>
+        </div>
+
+        <div class="card">
+            <h2>📞 Support Control</h2>
+            <input type="text" id="wa-num" placeholder="WhatsApp (91XXXXXXXXXX)">
+            <input type="text" id="tg-link" placeholder="Telegram Link">
+            <button onclick="updateSupport()" style="background:#25d366; color:white;">UPDATE SUPPORT</button>
+        </div>
+
+        <div class="card">
+            <h2>📢 App Notice Board</h2>
+            <input type="text" id="notice-msg" placeholder="Write scrolling message...">
+            <button onclick="updateNotice()" style="background:#444; color:gold;">PUBLISH NOTICE</button>
+        </div>
+
+        <button onclick="location.reload()" style="background:red; color:white; margin-bottom:30px;">LOGOUT ADMIN</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
+            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
+            projectId: "kalyan-casino"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function login() {
+            const user = document.getElementById('u').value.trim();
+            const pass = document.getElementById('p').value.trim();
+            if(user === "08320832" && pass === "J1a2y3a4") {
+                document.getElementById('login-box').classList.add('hidden');
+                document.getElementById('panel').classList.remove('hidden');
+                loadData();
+            } else { alert("Galat Details!"); }
+        }
+
+        // Database se purana data load karne ke liye
+        function loadData() {
+            db.ref('admin_settings').on('value', (snap) => {
+                const data = snap.val();
+                if(data) {
+                    if(data.payment_info) {
+                        document.getElementById('upi-id').value = data.payment_info.upi_id || "";
+                        document.getElementById('qr-url').value = data.payment_info.qr_url || "";
+                    }
+                    if(data.support_info) {
+                        document.getElementById('wa-num').value = data.support_info.whatsapp || "";
+                        document.getElementById('tg-link').value = data.support_info.telegram || "";
+                    }
+                    if(data.notice) {
+                        document.getElementById('notice-msg').value = data.notice.text || "";
+                    }
+                }
+            });
+            // Profit load
+            db.ref('stats/profit').on('value', (snap) => {
+                document.getElementById('profit-val').innerText = "₹" + (snap.val() || 0);
+            });
+        }
+
+        function updatePayment() {
+            db.ref('admin_settings/payment_info').update({
+                upi_id: document.getElementById('upi-id').value,
+                qr_url: document.getElementById('qr-url').value
+            }).then(() => alert("Payment Updated!"));
+        }
+
+        function updateSupport() {
+            db.ref('admin_settings/support_info').update({
+                whatsapp: document.getElementById('wa-num').value,
+                telegram: document.getElementById('tg-link').value
+            }).then(() => alert("Support Links Updated!"));
+        }
+
+        function updateNotice() {
+            db.ref('admin_settings/notice').update({
+                text: document.getElementById('notice-msg').value
+            }).then(() => alert("Notice Published!"));
+        }
+    </script>
+</body>
+</html>
