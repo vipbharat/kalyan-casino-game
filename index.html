@@ -3,50 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan Casino - Pro Login</title>
+    <title>Kalyan Pro - Login/Signup</title>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .container { background: #1a1a1a; padding: 25px; border-radius: 15px; border: 2px solid #ffd700; width: 85%; max-width: 400px; }
-        h2 { color: #ffd700; margin-bottom: 20px; }
-        input { width: 90%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; background: #222; color: #fff; font-size: 16px; text-align: center; }
-        .btn { width: 95%; padding: 12px; background: gold; border: none; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; color: #000; margin-top: 10px; }
-        .btn-alt { background: transparent; color: gold; border: 1px solid gold; margin-top: 15px; font-size: 14px; padding: 5px; }
-        .hidden { display: none; }
-        #msg { color: #ff4d4d; margin-top: 10px; font-size: 13px; }
+        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 30px 15px; }
+        .logo { font-size: 32px; font-weight: bold; color: gold; margin-bottom: 20px; }
+        .form-box { background: #1a1a1a; padding: 25px; border-radius: 15px; border: 1px solid #333; }
+        input { width: 90%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; font-size: 16px; }
+        .btn { background: gold; color: #000; padding: 15px; width: 100%; border: none; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; margin-top: 15px; }
+        .bonus-tag { color: #0f0; font-size: 14px; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2 id="form-title">KALYAN LOGIN</h2>
-
-        <div id="login-section">
-            <input type="tel" id="loginPhone" placeholder="Mobile Number (+91)" value="+91">
-            <input type="password" id="loginPass" placeholder="Password">
-            <button class="btn" onclick="loginWithPass()">LOGIN</button>
-            <button class="btn-alt" onclick="toggleView('signup')">Naya Account Banayein</button>
-            <p style="font-size:12px; color:cyan; cursor:pointer;" onclick="toggleView('forgot')">Password Bhul Gaye?</p>
-        </div>
-
-        <div id="otp-section" class="hidden">
-            <p id="otp-instruction">Number Verify Karein</p>
-            <input type="tel" id="otpPhone" placeholder="+91 Number" value="+91">
-            <div id="recaptcha-container"></div>
-            <button id="send-otp-btn" class="btn" onclick="sendOTP()">OTP BHEJEIN</button>
-            
-            <div id="otp-inputs" class="hidden">
-                <input type="number" id="otpCode" placeholder="Enter OTP">
-                <input type="password" id="newPass" placeholder="Naya Password Chunein">
-                <button class="btn" onclick="verifyAndFinish()">DONE</button>
-            </div>
-            <button class="btn-alt" onclick="toggleView('login')">Wapas Login</button>
-        </div>
-
-        <div id="msg"></div>
+    <div class="logo">KALYAN <span style="color:white;">PRO</span></div>
+    
+    <div class="form-box">
+        <div class="bonus-tag">🎁 SIGNUP BONUS: ₹51 FREE</div>
+        
+        <input type="tel" id="phone" placeholder="Mobile Number" maxlength="10">
+        <input type="password" id="pass" placeholder="Create Password">
+        <input type="text" id="refCode" placeholder="Referral Code (Optional)">
+        
+        <button class="btn" onclick="handleSignup()">REGISTER & PLAY</button>
+        <p style="font-size: 12px; color: #888; margin-top: 15px;">Already have an account? <a href="#" style="color: gold;">Login</a></p>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
     <script>
@@ -60,89 +42,40 @@
             appId: "1:805675620545:web:6b49c99f325432a8249c40"
         };
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const db = firebase.database();
 
-        let currentMode = 'login'; // 'login', 'signup', or 'forgot'
-        let confirmationResult;
+        function handleSignup() {
+            const phone = document.getElementById('phone').value.trim();
+            const pass = document.getElementById('pass').value.trim();
+            const refCode = document.getElementById('refCode').value.trim() || "NONE";
 
-        function toggleView(mode) {
-            currentMode = mode;
-            document.getElementById('msg').innerText = "";
-            document.getElementById('login-section').classList.add('hidden');
-            document.getElementById('otp-section').classList.add('hidden');
-            document.getElementById('otp-inputs').classList.add('hidden');
-
-            if(mode === 'login') {
-                document.getElementById('login-section').classList.remove('hidden');
-                document.getElementById('form-title').innerText = "KALYAN LOGIN";
-            } else {
-                document.getElementById('otp-section').classList.remove('hidden');
-                document.getElementById('form-title').innerText = (mode === 'signup' ? "REGISTER" : "RESET PASS");
+            if(phone.length < 10 || pass.length < 4) {
+                alert("Sahi details bharein!");
+                return;
             }
-        }
 
-        // --- LOGIN LOGIC ---
-        function loginWithPass() {
-            const phone = document.getElementById('loginPhone').value.trim();
-            const pass = document.getElementById('loginPass').value.trim();
-
+            // Check if user already exists
             db.ref('users/' + phone).once('value', (snap) => {
-                if(snap.exists() && snap.val().password === pass) {
-                    window.location.href = "game.html";
+                if(snap.exists()) {
+                    alert("Aap pehle se registered hain! Seedha login karein.");
                 } else {
-                    document.getElementById('msg').innerText = "Galti: Number ya Password galat hai!";
+                    // Create New User with ₹51 Bonus
+                    db.ref('users/' + phone).set({
+                        password: pass,
+                        balance: 51,
+                        referredBy: refCode,
+                        referral_count: 0,
+                        referral_earnings: 0,
+                        isFirstRechargeDone: false,
+                        joinedAt: Date.now()
+                    }).then(() => {
+                        localStorage.setItem('userPhone', phone);
+                        alert("Signup Success! ₹51 Bonus Credit ho gaya.");
+                        window.location.href = "dashboard.html";
+                    });
                 }
             });
-        }
-
-        // --- OTP LOGIC ---
-        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {'size': 'invisible'});
-
-        async function sendOTP() {
-            const phone = document.getElementById('otpPhone').value.trim();
-            if(phone.length < 13) return alert("Pura number dalein");
-
-            // Signup Mode: Check if number already exists
-            const userCheck = await db.ref('users/' + phone).once('value');
-            
-            if(currentMode === 'signup' && userCheck.exists()) {
-                document.getElementById('msg').innerText = "Error: Ye number pehle se registered hai!";
-                return;
-            }
-            if(currentMode === 'forgot' && !userCheck.exists()) {
-                document.getElementById('msg').innerText = "Error: Ye number registered nahi hai!";
-                return;
-            }
-
-            auth.signInWithPhoneNumber(phone, window.recaptchaVerifier).then(res => {
-                confirmationResult = res;
-                document.getElementById('otp-inputs').classList.remove('hidden');
-                document.getElementById('send-otp-btn').classList.add('hidden');
-                document.getElementById('msg').innerText = "OTP Bheja Gaya!";
-            }).catch(err => { document.getElementById('msg').innerText = err.message; });
-        }
-
-        function verifyAndFinish() {
-            const code = document.getElementById('otpCode').value;
-            const pass = document.getElementById('newPass').value;
-            const phone = document.getElementById('otpPhone').value;
-
-            if(pass.length < 4) return alert("Password kam se kam 4 digit rakhein");
-
-            confirmationResult.confirm(code).then(() => {
-                if(currentMode === 'signup') {
-                    // Create New User
-                    db.ref('users/' + phone).set({ password: pass, balance: 500 });
-                } else {
-                    // Update existing password
-                    db.ref('users/' + phone + '/password').set(pass);
-                }
-                alert("Success! Ab login karein.");
-                toggleView('login');
-            }).catch(() => { document.getElementById('msg').innerText = "Galti: OTP galat hai!"; });
         }
     </script>
 </body>
 </html>
-
