@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refer & Earn Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background: #0b0b0b; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; }
+        .reward-card { background: linear-gradient(135deg, #b8860b, #ffd700); color: #000; padding: 25px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(255,215,0,0.3); }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .stat-item { background: #1a1a1a; padding: 15px; border-radius: 12px; border-bottom: 3px solid gold; }
+        .stat-item span { font-size: 12px; color: #888; display: block; margin-bottom: 5px; }
+        .stat-item b { font-size: 20px; color: gold; }
+        
+        .rules-container { background: #151515; border-radius: 15px; padding: 20px; text-align: left; border: 1px solid #333; }
+        .rule { margin-bottom: 15px; display: flex; align-items: flex-start; gap: 12px; }
+        .rule-num { background: gold; color: #000; width: 22px; height: 22px; border-radius: 50%; display: flex; items-center; justify-content: center; font-weight: bold; flex-shrink: 0; font-size: 14px; }
+        .rule-text b { color: gold; }
+
+        .code-section { margin: 30px 0; }
+        .code-box { background: #000; border: 2px dashed gold; padding: 15px; font-size: 22px; color: gold; font-weight: bold; letter-spacing: 2px; border-radius: 12px; margin-top: 10px; }
+        .share-btn { background: #25D366; color: white; border: none; padding: 18px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .back-btn { position: absolute; top: 15px; left: 15px; color: gold; text-decoration: none; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+    <a href="dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
+    <h2 style="margin-top: 40px;">REFER & <span style="color: gold;">EARN</span></h2>
+
+    <div class="reward-card">
+        <p style="margin:0; font-size: 14px; font-weight: bold;">LIFETIME COMMISSION</p>
+        <h1 style="margin:10px 0; font-size: 45px;">1.0%</h1>
+        <p style="margin:0; font-size: 13px;">Dost ke har Deposit aur Withdrawal par!</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-item"><span>Dost Bulaye</span><b id="ref-count">0</b></div>
+        <div class="stat-item"><span>Total Kamai</span><b id="ref-earn">₹0.00</b></div>
+    </div>
+
+    <div class="rules-container">
+        <h4 style="margin-top:0; color: gold; text-transform: uppercase;">Bonus Rules:</h4>
+        <div class="rule">
+            <div class="rule-num">1</div>
+            <div class="rule-text">Dost ko bulaiye aur unse <b>₹200</b> ka pehla recharge karwaiye.</div>
+        </div>
+        <div class="rule">
+            <div class="rule-num">2</div>
+            <div class="rule-text">Pehle dost par <b>₹100</b>, doosre par <b>₹200</b>, teesre se <b>₹300</b> fixed bonus.</div>
+        </div>
+        <div class="rule">
+            <div class="rule-num">3</div>
+            <div class="rule-text">Dost ke har transaction par <b>1% Auto Bonus</b> lifetime milta rahega.</div>
+        </div>
+    </div>
+
+    <div class="code-section">
+        <p style="margin:0; color: #888;">Aapka Referral Code:</p>
+        <div class="code-box" id="myCode">...</div>
+    </div>
+
+    <button class="share-btn" onclick="shareNow()">
+        <i class="fa-brands fa-whatsapp"></i> WHATSAPP PAR SHARE KAREIN
+    </button>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
+            authDomain: "kalyan-casino.firebaseapp.com",
+            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
+            projectId: "kalyan-casino",
+            storageBucket: "kalyan-casino.firebasestorage.app",
+            messagingSenderId: "805675620545",
+            appId: "1:805675620545:web:6b49c99f325432a8249c40"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const phone = localStorage.getItem('userPhone') || "LOGIN";
+        document.getElementById('myCode').innerText = phone;
+
+        // Fetch Live Referral Stats
+        db.ref('users/' + phone).on('value', (snap) => {
+            const data = snap.val();
+            if(data) {
+                document.getElementById('ref-count').innerText = data.referral_count || 0;
+                document.getElementById('ref-earn').innerText = "₹" + (data.referral_earnings || 0).toFixed(2);
+            }
+        });
+
+        function shareNow() {
+            const msg = `🔥 *KALYAN PRO GAME* 🔥\n\nAbhi join karein aur paayein *₹51 Sign-up Bonus!* \n\n💰 Har refer par ₹300 tak ka bonus!\n📈 Lifetime 1% Commission dost ke har khel par!\n\nमेरा कोड इस्तेमाल करें: *${phone}*\nलिंक यहाँ है: ${window.location.origin}`;
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`);
+        }
+    </script>
+</body>
+</html>
+
