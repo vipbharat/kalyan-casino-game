@@ -84,35 +84,55 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const userPhone = localStorage.getItem('userPhone');
-        let userBalance = 0;
+        
+        // Alag-alag wallets ke liye variables
+        let mainBalance = 0;
+        let winningBalance = 0;
+        let bonusBalance = 0;
+        let totalDisplayBalance = 0;
 
-        // Auto-fill Game ID and Fetch Balance
+        // Auto-fill Game ID and Fetch ALL Wallets Balance
         if(userPhone) {
             document.getElementById('w-game-id').value = userPhone;
-            db.ref('users/' + userPhone + '/balance').on('value', (snap) => {
-                userBalance = snap.val() || 0;
-                document.getElementById('current-bal').innerText = userBalance.toFixed(2);
+            db.ref('users/' + userPhone).on('value', (snap) => {
+                const data = snap.val() || {};
+                mainBalance = parseFloat(data.balance || 0);
+                winningBalance = parseFloat(data.winning_balance || 0);
+                bonusBalance = parseFloat(data.bonus_balance || 0);
+                
+                // Teeno ko jod kar dikhana
+                totalDisplayBalance = mainBalance + winningBalance + bonusBalance;
+                document.getElementById('current-bal').innerText = totalDisplayBalance.toFixed(2);
             });
         }
 
         function updateQRName() {
             const input = document.getElementById('w-qr');
-            document.getElementById('qr-name').innerText = input.files[0].name;
+            if(input.files.length > 0) {
+                document.getElementById('qr-name').innerText = input.files[0].name;
+            }
         }
 
         function submitWithdraw() {
-            const amt = parseInt(document.getElementById('w-amount').value);
+            const amt = parseFloat(document.getElementById('w-amount').value);
             const upi = document.getElementById('w-upi').value.trim();
 
             if(!userPhone) return alert("Please Login First!");
-            if(amt < 500) return alert("Minimum withdrawal ₹500 hai!");
-            if(amt > userBalance) return alert("Aapke paas itna balance nahi hai!");
+            if(isNaN(amt) || amt < 500) return alert("Minimum withdrawal ₹500 hai!");
+            if(amt > totalDisplayBalance) return alert("Aapke paas itna balance nahi hai!");
             if(upi === "") return alert("Please enter UPI ID!");
 
-            // Deduct balance immediately (Optional, but safer for Admin)
-            const newBal = userBalance - amt;
+            // Naya balance calculation (Pehle winning se kaatega, fir main se)
+            // Yahan hum simplified logic use kar rahe hain: main balance se hi deduct kar rahe hain
+            const newMainBal = totalDisplayBalance - amt;
             
-            db.ref('users/' + userPhone + '/balance').set(newBal).then(() => {
+            // Database update: winning aur bonus ko 0 karke bacha hua sab main balance mein daal dena
+            // Isse user ka wallet "Clean" ho jayega.
+            db.ref('users/' + userPhone).update({
+                balance: newMainBal,
+                winning_balance: 0,
+                bonus_balance: 0
+            }).then(() => {
                 db.ref('withdraw_requests').push({
                     user: userPhone,
                     amount: amt,
