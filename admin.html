@@ -10,10 +10,12 @@
         body { background: #0a0a0a; color: white; font-family: sans-serif; margin: 0; padding-bottom: 30px; }
         .header { background: #111; padding: 15px; text-align: center; border-bottom: 2px solid #ffd700; }
         
-        /* Navigation Tabs */
-        .nav-tabs { display: flex; background: #1a1a1a; overflow-x: auto; padding: 10px; gap: 8px; position: sticky; top: 0; z-index: 100; }
-        .tab-btn { background: #333; color: white; border: none; padding: 10px 15px; border-radius: 5px; white-space: nowrap; cursor: pointer; font-size: 12px; }
+        /* Navigation Tabs Fixed */
+        .nav-tabs { display: flex; background: #1a1a1a; overflow-x: auto; padding: 10px; gap: 8px; position: sticky; top: 0; z-index: 100; scrollbar-width: none; }
+        .nav-tabs::-webkit-scrollbar { display: none; }
+        .tab-btn { flex-shrink: 0; background: #333; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 12px; }
         .tab-btn.active { background: #ffd700; color: black; font-weight: bold; }
+        .tab-users { background: #ffd700 !important; color: black !important; font-weight: bold; }
 
         .content-section { display: none; padding: 15px; }
         .active-section { display: block; }
@@ -25,6 +27,11 @@
         .btn { padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-green { background: #2ecc71; color: white; width: 100%; }
         .btn-red { background: #e74c3c; color: white; width: 100%; }
+        
+        /* User Table Style */
+        .user-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+        .user-table th { background: #333; color: #ffd700; padding: 10px; text-align: left; border-bottom: 2px solid #444; }
+        .user-table td { padding: 10px; border-bottom: 1px solid #222; }
         
         /* Game Control Buttons */
         .game-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
@@ -39,9 +46,10 @@
 <div class="header"><h3>💎 MASTER ADMIN PANEL</h3></div>
 
 <div class="nav-tabs">
-    <button class="tab-btn active" onclick="openTab(event, 'game-ctrl')">🎮 Game Control</button>
-    <button class="tab-btn" onclick="openTab(event, 'money-ctrl')">💰 Wallet/UPI</button>
-    <button class="tab-btn" onclick="openTab(event, 'req-ctrl')">📩 Requests</button>
+    <button class="tab-btn active" onclick="openTab(event, 'game-ctrl')">🎮 GAME</button>
+    <button class="tab-btn" onclick="openTab(event, 'money-ctrl')">💰 WALLET</button>
+    <button class="tab-btn" onclick="openTab(event, 'req-ctrl')">📩 REQ</button>
+    <button class="tab-btn tab-users" onclick="openTab(event, 'users-list')">👥 USERS</button>
 </div>
 
 <div id="game-ctrl" class="content-section active-section">
@@ -97,6 +105,26 @@
     </div>
 </div>
 
+<div id="users-list" class="content-section">
+    <div class="card">
+        <h3>👥 Registered Players (Live)</h3>
+        <div style="overflow-x: auto;">
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>Phone</th>
+                        <th>Pass</th>
+                        <th>Wallet</th>
+                        <th>ID</th>
+                    </tr>
+                </thead>
+                <tbody id="all-users-data">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <script>
     const firebaseConfig = { 
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
@@ -116,13 +144,30 @@
         evt.currentTarget.classList.add("active");
     }
 
-    // Winner Fix Logic
+    // Live User Fetching Logic
+    db.ref('users').on('value', snap => {
+        const userBody = document.getElementById('all-users-data');
+        userBody.innerHTML = "";
+        const data = snap.val();
+        if(!data) { userBody.innerHTML = "<tr><td colspan='4'>No players.</td></tr>"; return; }
+
+        Object.keys(data).forEach(ph => {
+            const u = data[ph];
+            userBody.innerHTML += `
+                <tr>
+                    <td>${ph}</td>
+                    <td style="color:#ffd700">${u.pass || u.password || '---'}</td>
+                    <td style="color:#2ecc71">₹${u.wallet || 0}</td>
+                    <td>${u.id || '---'}</td>
+                </tr>`;
+        });
+    });
+
     function fixGame(path, val) {
         db.ref('game_settings/' + path).update({ mode: val === 'auto' ? 'auto' : 'manual', next: val });
-        alert(path.toUpperCase() + " Updated to: " + val);
+        alert("Success: " + val);
     }
 
-    // Wallet Quick Add/Cut
     function modifyWallet(action) {
         const phone = document.getElementById('userPhone').value;
         const amt = parseFloat(document.getElementById('newAmt').value);
@@ -132,11 +177,10 @@
             let current = s.val() || 0;
             let final = action === 'add' ? current + amt : current - amt;
             db.ref('users/' + phone + '/wallet').set(final);
-            alert("Balance Updated!");
+            alert("Done!");
         });
     }
 
-    // Request Loader
     db.ref('requests').on('value', snap => {
         const list = document.getElementById('request-list');
         list.innerHTML = "";
