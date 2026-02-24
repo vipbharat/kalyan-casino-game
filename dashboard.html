@@ -110,9 +110,21 @@
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || "+91";
 
-        // Balance Sync
-        db.ref('users/' + phone + '/balance').on('value', (s) => {
-            document.getElementById('balance').innerText = (s.val() || 0).toFixed(2);
+        /** * BALANCE SYNC - MODIFIED FOR ALL WALLETS
+         * Ab ye Deposit + Winning + Bonus sabko jod kar dashboard pe dikhayega.
+         **/
+        db.ref('users/' + phone).on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            
+            // Teeno wallet se data uthana (agar koi null hai toh 0 lega)
+            const dep = parseFloat(data.balance || 0);
+            const win = parseFloat(data.winning_balance || 0);
+            const bon = parseFloat(data.bonus_balance || 0);
+            
+            // Sabko ek wallet banane ke liye JOD (Total) karein
+            const total = dep + win + bon;
+            
+            document.getElementById('balance').innerText = total.toFixed(2);
         });
 
         function nav(page) {
@@ -131,4 +143,3 @@
     </script>
 </body>
 </html>
-
