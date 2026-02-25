@@ -9,19 +9,13 @@
         body { background: #0b0b0b; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
         .header { display: flex; align-items: center; margin-bottom: 20px; }
         .back-btn { color: gold; text-decoration: none; font-size: 20px; margin-right: 15px; }
-        
         .withdraw-card { background: #1a1a1a; padding: 20px; border-radius: 15px; border: 1px solid #333; }
         .balance-info { background: rgba(255, 215, 0, 0.1); padding: 15px; border-radius: 10px; border: 1px solid gold; margin-bottom: 20px; }
         .balance-info span { color: gold; font-size: 24px; font-weight: bold; }
-
         .input-group { text-align: left; margin-bottom: 15px; }
         label { font-size: 13px; color: gold; margin-left: 5px; }
         input { width: 100%; padding: 12px; margin-top: 5px; background: #000; border: 1px solid #444; color: #fff; border-radius: 8px; box-sizing: border-box; }
-        
-        .file-label { display: block; background: #333; padding: 12px; border-radius: 8px; border: 1px solid #555; cursor: pointer; margin-top: 5px; color: #ccc; text-align: center; }
-        
         .btn-withdraw { background: linear-gradient(180deg, #ff4d4d, #b30000); color: #fff; padding: 16px; width: 100%; border: none; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 10px rgba(255,0,0,0.2); }
-        .note { font-size: 12px; color: #888; margin-top: 15px; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -51,98 +45,81 @@
             <label>Your UPI ID (For Payment)</label>
             <input type="text" id="w-upi" placeholder="example@upi">
         </div>
-
-        <div class="input-group">
-            <label>Upload Your Payment QR (Optional)</label>
-            <label class="file-label" for="w-qr">
-                <i class="fa-solid fa-qrcode"></i> <span id="qr-name">Select QR Image</span>
-            </label>
-            <input type="file" id="w-qr" accept="image/*" style="display: none;" onchange="updateQRName()">
-        </div>
         
-        <button class="btn-withdraw" onclick="submitWithdraw()">REQUEST WITHDRAWAL</button>
-
-        <p class="note">
-            <b>Note:</b> Withdrawal request 2-12 ghante mein poori hoti hai. <br>
-            Galat UPI ID dene par payment atak sakti hai.
-        </p>
+        <button id="sub-btn" class="btn-withdraw" onclick="submitWithdraw()">REQUEST WITHDRAWAL</button>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
-            authDomain: "kalyan-casino.firebaseapp.com",
             databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
-            projectId: "kalyan-casino",
-            storageBucket: "kalyan-casino.firebasestorage.app",
-            messagingSenderId: "805675620545",
-            appId: "1:805675620545:web:6b49c99f325432a8249c40"
+            projectId: "kalyan-casino"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const userPhone = localStorage.getItem('userPhone');
         
-        // Alag-alag wallets ke liye variables
-        let mainBalance = 0;
-        let winningBalance = 0;
-        let bonusBalance = 0;
         let totalDisplayBalance = 0;
+        let pName = "User"; 
 
-        // Auto-fill Game ID and Fetch ALL Wallets Balance
         if(userPhone) {
             document.getElementById('w-game-id').value = userPhone;
             db.ref('users/' + userPhone).on('value', (snap) => {
                 const data = snap.val() || {};
-                mainBalance = parseFloat(data.balance || 0);
-                winningBalance = parseFloat(data.winning_balance || 0);
-                bonusBalance = parseFloat(data.bonus_balance || 0);
+                pName = data.name || "Player"; 
+                const b = parseFloat(data.balance || 0);
+                const w = parseFloat(data.winning_balance || 0);
+                const bo = parseFloat(data.bonus_balance || 0);
                 
-                // Teeno ko jod kar dikhana
-                totalDisplayBalance = mainBalance + winningBalance + bonusBalance;
+                totalDisplayBalance = b + w + bo;
                 document.getElementById('current-bal').innerText = totalDisplayBalance.toFixed(2);
             });
         }
 
-        function updateQRName() {
-            const input = document.getElementById('w-qr');
-            if(input.files.length > 0) {
-                document.getElementById('qr-name').innerText = input.files[0].name;
-            }
-        }
-
         function submitWithdraw() {
-            const amt = parseFloat(document.getElementById('w-amount').value);
+            const amtVal = document.getElementById('w-amount').value;
             const upi = document.getElementById('w-upi').value.trim();
+            const amt = parseFloat(amtVal);
 
             if(!userPhone) return alert("Please Login First!");
             if(isNaN(amt) || amt < 500) return alert("Minimum withdrawal ₹500 hai!");
             if(amt > totalDisplayBalance) return alert("Aapke paas itna balance nahi hai!");
             if(upi === "") return alert("Please enter UPI ID!");
 
-            // Naya balance calculation (Pehle winning se kaatega, fir main se)
-            // Yahan hum simplified logic use kar rahe hain: main balance se hi deduct kar rahe hain
+            document.getElementById('sub-btn').disabled = true;
+            document.getElementById('sub-btn').innerText = "Processing...";
+
+            const requestData = {
+                name: pName,          
+                phone: userPhone,
+                amount: amt,
+                detail: upi,           
+                type: "WITHDRAW",      
+                status: "pending",     
+                time: new Date().toLocaleString(),
+                timestamp: Date.now()
+            };
+
             const newMainBal = totalDisplayBalance - amt;
             
-            // Database update: winning aur bonus ko 0 karke bacha hua sab main balance mein daal dena
-            // Isse user ka wallet "Clean" ho jayega.
+            // Step 1: Balance Update
             db.ref('users/' + userPhone).update({
                 balance: newMainBal,
                 winning_balance: 0,
                 bonus_balance: 0
             }).then(() => {
-                db.ref('withdraw_requests').push({
-                    user: userPhone,
-                    amount: amt,
-                    upi: upi,
-                    status: "Pending",
-                    timestamp: Date.now()
-                }).then(() => {
-                    alert("Withdrawal Request Bhej di gayi! Admin approve karte hi paise mil jayenge.");
+                // Step 2: Push to All Requests
+                db.ref('all_requests').push(requestData).then(() => {
+                    alert("Success! Request Admin Panel mein bhej di gayi.");
                     window.location.href = "dashboard.html";
                 });
+            }).catch(e => {
+                alert("Error: " + e.message);
+                document.getElementById('sub-btn').disabled = false;
+                document.getElementById('sub-btn').innerText = "REQUEST WITHDRAWAL";
             });
         }
     </script>
