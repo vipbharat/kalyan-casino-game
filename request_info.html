@@ -2,79 +2,80 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Request Information</title>
+    <title>Admin - All Request Information</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <style>
-        body { background: #111; color: white; font-family: sans-serif; padding: 20px; }
-        h2 { color: gold; text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #222; font-size: 14px; }
-        th, td { border: 1px solid #444; padding: 12px; text-align: center; }
-        th { background: #333; color: gold; text-transform: uppercase; }
-        .btn-approve { background: #2ecc71; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-reject { background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-left: 5px; font-weight: bold; }
-        .type-w { color: #ff4757; font-weight: bold; } /* Withdraw */
-        .type-d { color: #1e90ff; font-weight: bold; } /* Deposit */
+        body { background: #000; color: #fff; font-family: sans-serif; padding: 15px; }
+        h2 { color: gold; text-align: center; font-size: 18px; margin-bottom: 20px; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; background: #111; border: 1px solid #333; }
+        th { background: #222; color: gold; padding: 10px; font-size: 12px; border: 1px solid #333; }
+        td { padding: 10px; border: 1px solid #333; text-align: center; font-size: 12px; }
+        .btn-approve { background: green; color: #fff; border: none; padding: 5px 8px; border-radius: 3px; cursor: pointer; }
+        .btn-reject { background: red; color: #fff; border: none; padding: 5px 8px; border-radius: 3px; cursor: pointer; }
+        .type-tag { font-weight: bold; padding: 2px 5px; border-radius: 3px; font-size: 10px; }
+        .w-type { background: #ff4d4d; color: white; }
+        .d-type { background: #008cff; color: white; }
     </style>
 </head>
 <body>
 
-    <h2>📩 REQUEST INFORMATION</h2>
+    <h2>📩 Request Information</h2>
 
     <table>
         <thead>
             <tr>
                 <th>Type</th>
-                <th>Name (Info)</th>
+                <th>Information</th>
                 <th>Phone</th>
                 <th>Amount</th>
-                <th>Details (UPI/UTR)</th>
-                <th>Time</th>
+                <th>Details</th>
                 <th>Action</th>
             </tr>
         </thead>
-        <tbody id="request-table">
-            <tr><td colspan="7">Loading requests...</td></tr>
+        <tbody id="master-table">
+            <tr><td colspan="6">Checking for new requests...</td></tr>
         </tbody>
     </table>
 
 <script>
-    const firebaseConfig = { 
-        apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
-        databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
-        projectId: "kalyan-casino" 
+    // --- APKA FIREBASE CONFIG ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
+        databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
+        projectId: "kalyan-casino"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Data Load karne ka logic
-    db.ref('all_requests').on('value', snapshot => {
-        const table = document.getElementById('request-table');
-        table.innerHTML = "";
-        const data = snapshot.val();
+    // Data Load Logic
+    db.ref('all_requests').on('value', snap => {
+        const tableBody = document.getElementById('master-table');
+        tableBody.innerHTML = "";
+        const data = snap.val();
 
         if(!data) {
-            table.innerHTML = "<tr><td colspan='7'>Abhi koi nayi request nahi hai.</td></tr>";
+            tableBody.innerHTML = "<tr><td colspan='6'>Koi request nahi mili.</td></tr>";
             return;
         }
 
         Object.keys(data).forEach(key => {
             const req = data[key];
+            // Sirf pending requests dikhayega
             if(req.status === "pending") {
-                const isW = req.type.toUpperCase().includes('WITHDRAW');
-                const typeClass = isW ? 'type-w' : 'type-d';
-                
-                table.innerHTML += `
+                const typeLabel = req.type === 'WITHDRAW' ? 'W' : 'D';
+                const typeClass = req.type === 'WITHDRAW' ? 'w-type' : 'd-type';
+
+                tableBody.innerHTML += `
                     <tr>
-                        <td class="${typeClass}">${req.type}</td>
+                        <td><span class="type-tag ${typeClass}">${typeLabel}</span></td>
                         <td><b>${req.name || 'User'}</b></td>
                         <td>${req.phone}</td>
                         <td style="color:gold;">₹${req.amount}</td>
-                        <td style="font-size:12px;">${req.detail || 'N/A'}</td>
-                        <td style="font-size:11px;">${req.time}</td>
+                        <td style="font-size:10px;">${req.detail || 'No Detail'}</td>
                         <td>
-                            <button class="btn-approve" onclick="action('${key}', 'approved', '${req.type}', '${req.phone}', ${req.amount})">✔ Approve</button>
-                            <button class="btn-reject" onclick="action('${key}', 'rejected', '${req.type}', '${req.phone}', ${req.amount})">✖ Reject</button>
+                            <button class="btn-approve" onclick="updateReq('${key}', 'approved')">✔</button>
+                            <button class="btn-reject" onclick="updateReq('${key}', 'rejected')">✖</button>
                         </td>
                     </tr>
                 `;
@@ -82,21 +83,10 @@
         });
     });
 
-    function action(key, status, type, phone, amt) {
-        if(confirm(`Kya aap is request ko ${status} karna chahte hain?`)) {
-            db.ref('all_requests/' + key).update({ status: status })
-            .then(() => {
-                const amount = parseFloat(amt);
-                // Deposit Approve hone par balance badhao
-                if(status === 'approved' && type.toUpperCase().includes('DEPOSIT')) {
-                    db.ref('users/' + phone + '/balance').transaction(b => (b || 0) + amount);
-                }
-                // Withdraw Reject hone par paisa wapas winning mein
-                if(status === 'rejected' && type.toUpperCase().includes('WITHDRAW')) {
-                    db.ref('users/' + phone + '/winning_balance').transaction(b => (b || 0) + amount);
-                }
-                alert("Request " + status + " successfully!");
-            });
+    function updateReq(key, newStatus) {
+        if(confirm("Confirm " + newStatus + "?")) {
+            db.ref('all_requests/' + key).update({ status: newStatus })
+            .then(() => alert("Request " + newStatus));
         }
     }
 </script>
