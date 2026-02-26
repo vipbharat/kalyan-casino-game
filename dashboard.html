@@ -8,7 +8,7 @@
     <style>
         body { background: #0b0b0b; color: #fff; font-family: sans-serif; margin: 0; padding-bottom: 80px; }
         
-        /* SECRET ADMIN BUTTON (Invisible) */
+        /* SECRET ADMIN BUTTON */
         .secret-trigger { 
             position: fixed; top: 0; left: 0; width: 50px; height: 50px; 
             z-index: 9999; background: transparent; 
@@ -17,22 +17,21 @@
         .header { background: #1a1a1a; padding: 15px; border-bottom: 2px solid gold; display: flex; justify-content: space-between; align-items: center; }
         .balance-card { background: rgba(255, 215, 0, 0.1); padding: 5px 15px; border-radius: 20px; border: 1px solid gold; color: gold; font-weight: bold; }
         
-        /* Button Grid */
         .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; background: #151515; }
         .action-btn { text-align: center; font-size: 11px; cursor: pointer; color: #ccc; }
         .action-btn i { display: block; font-size: 22px; margin-bottom: 5px; color: gold; }
 
-        /* Game Section */
         .section-title { padding: 10px 15px; color: gold; font-weight: bold; text-align: left; }
         .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 15px; }
         .game-card { background: #1a1a1a; border-radius: 12px; border: 1px solid #333; padding: 10px; text-align: center; position: relative; }
-        .game-card img { width: 100%; border-radius: 8px; height: 90px; object-fit: cover; filter: grayscale(0.5); }
-        .game-card.active img { filter: grayscale(0); }
-        .status-badge { position: absolute; top: 5px; right: 5px; font-size: 9px; background: red; padding: 2px 5px; border-radius: 4px; }
+        .game-card img { width: 100%; border-radius: 8px; height: 90px; object-fit: cover; filter: grayscale(0.7); }
+        .game-card.active img { filter: grayscale(0); border: 1px solid rgba(255,215,0,0.3); }
         
-        .play-now { background: gold; color: #000; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; margin-top: 5px; width: 100%; }
+        .status-badge { position: absolute; top: 5px; right: 5px; font-size: 9px; background: red; padding: 2px 5px; border-radius: 4px; z-index: 5; }
+        .status-badge.live { background: #00c853; } /* Green for Live Games */
+        
+        .play-now { background: gold; color: #000; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; margin-top: 5px; width: 100%; cursor: pointer; }
 
-        /* Refer Banner */
         .refer-banner { margin: 15px; padding: 15px; background: linear-gradient(90deg, #b8860b, #ffd700); border-radius: 10px; color: #000; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
@@ -60,15 +59,17 @@
     
     <div class="game-grid">
         <div class="game-card active" onclick="window.location.href='game.html'">
+            <div class="status-badge live">LIVE</div>
             <img src="https://images.unsplash.com/photo-1511193311914-0346f16efe90?w=400" alt="DT">
             <h4 style="margin:5px 0;">Dragon Tiger</h4>
             <button class="play-now">PLAY NOW</button>
         </div>
 
-        <div class="game-card">
-            <div class="status-badge">COMING SOON</div>
-            <img src="https://images.unsplash.com/photo-1513519245088-0e12902e35ca?w=400" alt="AB">
+        <div class="game-card active" onclick="window.location.href='andarbahar.html'">
+            <div class="status-badge live">LIVE</div>
+            <img src="https://plus.unsplash.com/premium_photo-1705353155716-64626156177b?w=400" alt="AB">
             <h4 style="margin:5px 0;">Andar Bahar</h4>
+            <button class="play-now">PLAY NOW</button>
         </div>
 
         <script>
@@ -110,20 +111,12 @@
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || "+91";
 
-        /** * BALANCE SYNC - MODIFIED FOR ALL WALLETS
-         * Ab ye Deposit + Winning + Bonus sabko jod kar dashboard pe dikhayega.
-         **/
         db.ref('users/' + phone).on('value', (snapshot) => {
             const data = snapshot.val() || {};
-            
-            // Teeno wallet se data uthana (agar koi null hai toh 0 lega)
             const dep = parseFloat(data.balance || 0);
             const win = parseFloat(data.winning_balance || 0);
             const bon = parseFloat(data.bonus_balance || 0);
-            
-            // Sabko ek wallet banane ke liye JOD (Total) karein
             const total = dep + win + bon;
-            
             document.getElementById('balance').innerText = total.toFixed(2);
         });
 
@@ -131,10 +124,9 @@
             window.location.href = page + ".html";
         }
 
-        // SECRET ADMIN AUTH
         function adminAuth() {
             let pass = prompt("Enter Master Key:");
-            if(pass === "9999") { // Aapka Secret Password
+            if(pass === "9999") {
                 window.location.href = "admin.html";
             } else {
                 alert("Unauthorized Access!");
