@@ -9,18 +9,19 @@
         body { background: #0b0b0b; color: #fff; font-family: sans-serif; margin: 0; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
         .header { background: #1a1a1a; padding: 15px; border-bottom: 2px solid gold; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .balance-card { background: rgba(255, 215, 0, 0.1); padding: 5px 15px; border-radius: 20px; border: 1px solid gold; color: gold; font-weight: bold; }
+        
         .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; background: #151515; }
         .action-btn { text-align: center; font-size: 11px; cursor: pointer; color: #ccc; }
         .action-btn i { display: block; font-size: 22px; margin-bottom: 5px; color: gold; }
         
-        /* History (Len Den) Box CSS */
+        /* History Overlay */
         #history-box { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0b0b; z-index: 1001; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         .trans-item { background: #1a1a1a; padding: 15px; margin-bottom: 12px; border-radius: 10px; border-left: 5px solid gold; }
         
         .section-title { padding: 15px 15px 5px; color: gold; font-weight: bold; text-transform: uppercase; font-size: 13px; }
         .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 15px; }
-        .game-card { background: #1a1a1a; border-radius: 12px; border: 1px solid #333; padding: 10px; text-align: center; }
-        .play-now { background: gold; color: #000; border: none; padding: 7px; border-radius: 4px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; }
+        .game-card { background: #1a1a1a; border-radius: 12px; border: 1px solid #333; padding: 10px; text-align: center; cursor: pointer; }
+        .play-now { background: gold; color: #000; border: none; padding: 7px; border-radius: 4px; font-weight: bold; width: 100%; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -62,12 +63,12 @@
     <div class="section-title">Premium Games</div>
     <div class="game-grid">
         <div class="game-card" onclick="nav('game')">
-            <img src="https://images.unsplash.com/photo-1511193311914-0346f16efe90?w=400" style="width:100%; border-radius:8px;">
+            <img src="https://images.unsplash.com/photo-1511193311914-0346f16efe90?w=400" style="width:100%; border-radius:8px; height:90px; object-fit:cover;">
             <h4>Dragon Tiger</h4>
             <button class="play-now">PLAY</button>
         </div>
         <div class="game-card" onclick="nav('andarbahar')">
-            <img src="https://plus.unsplash.com/premium_photo-1705353155716-64626156177b?w=400" style="width:100%; border-radius:8px;">
+            <img src="https://plus.unsplash.com/premium_photo-1705353155716-64626156177b?w=400" style="width:100%; border-radius:8px; height:90px; object-fit:cover;">
             <h4>Andar Bahar</h4>
             <button class="play-now">PLAY</button>
         </div>
@@ -99,20 +100,20 @@
             const box = document.getElementById('history-box');
             if(box.style.display === "block") {
                 box.style.display = "none";
-                db.ref('users/' + phone + '/transactions').off();
+                db.ref('users/' + phone + '/history').off(); // Path change: history node ko off karega
             } else {
                 box.style.display = "block";
                 loadHistory();
             }
         }
 
-        // Load History (Jo Admin Panel se linked hai)
+        // Load History (Restored to 'history' path)
         function loadHistory() {
             const list = document.getElementById('trans-list');
-            // Path wahi hai jo admin panel use karta hai
-            db.ref('users/' + phone + '/transactions').on('value', (snap) => {
+            // Path restored to 'history' folder as per your request
+            db.ref('users/' + phone + '/history').on('value', (snap) => {
                 const data = snap.val();
-                if(!data) { list.innerHTML = "<center style='margin-top:50px;'>No history found.</center>"; return; }
+                if(!data) { list.innerHTML = "<center style='margin-top:50px;'>No history found in 'history' folder.</center>"; return; }
                 
                 list.innerHTML = "";
                 Object.values(data).reverse().forEach(t => {
@@ -123,7 +124,7 @@
                     list.innerHTML += `
                         <div class="trans-item" style="border-left-color:${sCol}">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <b style="color:gold;">${(t.type || 'Withdraw').toUpperCase()}</b>
+                                <b style="color:gold;">${(t.type || 'Transaction').toUpperCase()}</b>
                                 <b style="font-size:18px;">₹${t.amount}</b>
                             </div>
                             <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:12px;">
