@@ -9,53 +9,35 @@
         body { background: #0b0b0b; color: #fff; font-family: sans-serif; margin: 0; padding: 20px; }
         .header { display: flex; align-items: center; margin-bottom: 25px; }
         .back-btn { color: gold; text-decoration: none; font-size: 20px; margin-right: 15px; }
-        
-        /* Tab System */
         .tabs { display: flex; background: #1a1a1a; border-radius: 12px; padding: 5px; margin-bottom: 20px; border: 1px solid #333; }
-        .tab { flex: 1; padding: 12px; font-size: 14px; font-weight: bold; cursor: pointer; border-radius: 10px; text-align: center; color: #888; transition: 0.3s; }
+        .tab { flex: 1; padding: 12px; font-size: 14px; font-weight: bold; cursor: pointer; border-radius: 10px; text-align: center; color: #888; }
         .tab.active { background: gold; color: #000; }
-
-        /* Content List */
         .history-list { display: none; }
         .history-list.active { display: block; }
-        
-        .card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 5px solid #444; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        
-        /* Status Colors */
-        .card.pending { border-left-color: #ffc107; } /* Yellow */
-        .card.approved { border-left-color: #28a745; } /* Green */
-        .card.rejected { border-left-color: #dc3545; } /* Red */
-        
-        .info b { display: block; font-size: 15px; margin-bottom: 4px; color: #fff; }
-        .info small { color: #888; font-size: 11px; display: block; }
+        .card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 5px solid #444; display: flex; justify-content: space-between; align-items: center; }
+        .card.pending { border-left-color: #ffc107; }
+        .card.approved, .card.success { border-left-color: #28a745; }
+        .card.rejected, .card.failed { border-left-color: #dc3545; }
         .amt { font-weight: bold; font-size: 18px; }
         .plus { color: #28a745; }
         .minus { color: #dc3545; }
-        
-        .status-text { font-size: 10px; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; margin-top: 5px; display: inline-block; background: #333; }
-        
-        .no-data { text-align: center; margin-top: 50px; color: #555; font-size: 14px; }
+        .status-text { font-size: 10px; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: #333; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <a href="dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
-        <h2 style="margin:0;">TRANSACTION <span style="color: gold;">LOGS</span></h2>
+        <h2 style="margin:0;">HISTORY <span style="color: gold;">LOGS</span></h2>
     </div>
 
     <div class="tabs">
         <div class="tab active" onclick="openTab(event, 'deposits')">DEPOSITS</div>
-        <div class="tab" onclick="openTab(event, 'withdraws')">WITHDRAWALS</div>
+        <div class="tab" onclick="event, openTab(event, 'withdraws')">WITHDRAWALS</div>
     </div>
 
-    <div id="deposits" class="history-list active">
-        <div id="deposits-content"></div>
-    </div>
-
-    <div id="withdraws" class="history-list">
-        <div id="withdraws-content"></div>
-    </div>
+    <div id="deposits" class="history-list active"><div id="deposits-content">Loading...</div></div>
+    <div id="withdraws" class="history-list"><div id="withdraws-content">Loading...</div></div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -63,16 +45,14 @@
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
-            authDomain: "kalyan-casino.firebaseapp.com",
             databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
-            projectId: "kalyan-casino",
-            storageBucket: "kalyan-casino.firebasestorage.app",
-            messagingSenderId: "805675620545",
-            appId: "1:805675620545:web:6b49c99f325432a8249c40"
+            projectId: "kalyan-casino"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const userPhone = localStorage.getItem('userPhone');
+        
+        // LOGIN FIX: Dono tariko se check karega
+        let userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
         function openTab(evt, tabName) {
             let i, list, tabs;
@@ -85,41 +65,29 @@
         }
 
         if(userPhone) {
-            // 1. Fetch Deposits
+            // Deposits Load
             db.ref('deposit_requests').orderByChild('user').equalTo(userPhone).on('value', (snap) => {
                 let html = "";
                 snap.forEach((child) => {
                     let d = child.val();
-                    let s = d.status.toLowerCase();
-                    html += `<div class="card ${s}">
-                        <div class="info">
-                            <b>Recharge</b>
-                            <small>UTR: ${d.utr}</small>
-                            <span class="status-text">${d.status}</span>
-                        </div>
-                        <div class="amt plus">+ ₹${d.amount}</div>
-                    </div>`;
+                    let s = (d.status || "pending").toLowerCase();
+                    html = `<div class="card ${s}"><div class="info"><b>Recharge</b><small>UTR: ${d.utr || 'N/A'}</small><br><span class="status-text">${d.status}</span></div><div class="amt plus">+ ₹${d.amount}</div></div>` + html;
                 });
-                document.getElementById('deposits-content').innerHTML = html || '<p class="no-data">No Deposit History Found</p>';
+                document.getElementById('deposits-content').innerHTML = html || '<p style="text-align:center;color:#555;">No Deposit History</p>';
             });
 
-            // 2. Fetch Withdrawals
+            // Withdrawals Load
             db.ref('withdraw_requests').orderByChild('user').equalTo(userPhone).on('value', (snap) => {
                 let html = "";
                 snap.forEach((child) => {
                     let d = child.val();
-                    let s = d.status.toLowerCase();
-                    html += `<div class="card ${s}">
-                        <div class="info">
-                            <b>Withdrawal</b>
-                            <small>To: ${d.upi}</small>
-                            <span class="status-text">${d.status}</span>
-                        </div>
-                        <div class="amt minus">- ₹${d.amount}</div>
-                    </div>`;
+                    let s = (d.status || "pending").toLowerCase();
+                    html = `<div class="card ${s}"><div class="info"><b>Withdrawal</b><small>UPI: ${d.upi || 'N/A'}</small><br><span class="status-text">${d.status}</span></div><div class="amt minus">- ₹${d.amount}</div></div>` + html;
                 });
-                document.getElementById('withdraws-content').innerHTML = html || '<p class="no-data">No Withdrawal History Found</p>';
+                document.getElementById('withdraws-content').innerHTML = html || '<p style="text-align:center;color:#555;">No Withdrawal History</p>';
             });
+        } else {
+            document.body.innerHTML = "<center style='margin-top:100px;'><h2>Session Expired. Please Login Again.</h2><br><button onclick=\"window.location.href='login.html'\" style='background:gold;padding:10px 20px;border-radius:5px;'>GO TO LOGIN</button></center>";
         }
     </script>
 </body>
