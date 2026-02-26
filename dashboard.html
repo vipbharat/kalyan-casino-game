@@ -7,31 +7,37 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { background: #0b0b0b; color: #fff; font-family: sans-serif; margin: 0; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
+        .secret-trigger { position: fixed; top: 0; left: 0; width: 50px; height: 50px; z-index: 9999; background: transparent; }
         .header { background: #1a1a1a; padding: 15px; border-bottom: 2px solid gold; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .balance-card { background: rgba(255, 215, 0, 0.1); padding: 5px 15px; border-radius: 20px; border: 1px solid gold; color: gold; font-weight: bold; }
         
+        /* Action Buttons Grid */
         .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; background: #151515; }
         .action-btn { text-align: center; font-size: 11px; cursor: pointer; color: #ccc; }
         .action-btn i { display: block; font-size: 22px; margin-bottom: 5px; color: gold; }
         
-        /* History Overlay */
+        /* History Overlay (Mera History Box) */
         #history-box { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0b0b; z-index: 1001; padding: 20px; box-sizing: border-box; overflow-y: auto; }
-        .trans-item { background: #1a1a1a; padding: 15px; margin-bottom: 12px; border-radius: 10px; border-left: 5px solid gold; }
+        .trans-item { background: #1a1a1a; padding: 15px; margin-bottom: 12px; border-radius: 10px; border-left: 5px solid gold; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
         
         .section-title { padding: 15px 15px 5px; color: gold; font-weight: bold; text-transform: uppercase; font-size: 13px; }
         .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 15px; }
-        .game-card { background: #1a1a1a; border-radius: 12px; border: 1px solid #333; padding: 10px; text-align: center; cursor: pointer; }
-        .play-now { background: gold; color: #000; border: none; padding: 7px; border-radius: 4px; font-weight: bold; width: 100%; margin-top: 8px; }
+        .game-card { background: #1a1a1a; border-radius: 12px; border: 1px solid #333; padding: 10px; text-align: center; cursor: pointer; position: relative; }
+        .game-card img { width: 100%; border-radius: 8px; height: 95px; object-fit: cover; }
+        .play-now { background: gold; color: #000; border: none; padding: 7px; border-radius: 4px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; }
+        .status-badge { position: absolute; top: 5px; right: 5px; font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #00c853; font-weight: bold; }
     </style>
 </head>
 <body>
 
+    <div class="secret-trigger" onclick="adminAuth()"></div>
+
     <div id="history-box">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:10px;">
-            <h2 style="color:gold; margin:0;">Mera Len Den</h2>
+            <h2 style="color:gold; margin:0;">History</h2>
             <i class="fa-solid fa-circle-xmark" onclick="toggleHistory()" style="font-size:32px; color:gold; cursor:pointer;"></i>
         </div>
-        <div id="trans-list">History load ho rahi hai...</div>
+        <div id="trans-list">Data load ho raha hai...</div>
     </div>
 
     <div class="header">
@@ -45,7 +51,7 @@
     <div class="action-grid">
         <div class="action-btn" onclick="nav('deposit')"><i class="fa-solid fa-plus-circle"></i>Deposit</div>
         <div class="action-btn" onclick="nav('withdraw')"><i class="fa-solid fa-wallet"></i>Withdraw</div>
-        <div class="action-btn" onclick="toggleHistory()"><i class="fa-solid fa-clock-rotate-left"></i>Len Den</div>
+        <div class="action-btn" onclick="toggleHistory()"><i class="fa-solid fa-clock-rotate-left"></i>History</div>
         <div class="action-btn" onclick="nav('support')"><i class="fa-solid fa-headset"></i>Support</div>
         <div class="action-btn" onclick="nav('refer')"><i class="fa-solid fa-users"></i>Refer</div>
         <div class="action-btn" onclick="nav('notice')"><i class="fa-solid fa-bell"></i>Notice</div>
@@ -63,12 +69,14 @@
     <div class="section-title">Premium Games</div>
     <div class="game-grid">
         <div class="game-card" onclick="nav('game')">
-            <img src="https://images.unsplash.com/photo-1511193311914-0346f16efe90?w=400" style="width:100%; border-radius:8px; height:90px; object-fit:cover;">
+            <div class="status-badge">LIVE</div>
+            <img src="https://images.unsplash.com/photo-1511193311914-0346f16efe90?w=400">
             <h4>Dragon Tiger</h4>
             <button class="play-now">PLAY</button>
         </div>
         <div class="game-card" onclick="nav('andarbahar')">
-            <img src="https://plus.unsplash.com/premium_photo-1705353155716-64626156177b?w=400" style="width:100%; border-radius:8px; height:90px; object-fit:cover;">
+            <div class="status-badge">LIVE</div>
+            <img src="https://plus.unsplash.com/premium_photo-1705353155716-64626156177b?w=400">
             <h4>Andar Bahar</h4>
             <button class="play-now">PLAY</button>
         </div>
@@ -95,41 +103,40 @@
             document.getElementById('balance').innerText = total.toFixed(2);
         });
 
-        // Toggle History Box
+        // History Logic (Live from 'history' path)
         function toggleHistory() {
             const box = document.getElementById('history-box');
             if(box.style.display === "block") {
                 box.style.display = "none";
-                db.ref('users/' + phone + '/history').off(); // Path change: history node ko off karega
+                db.ref('users/' + phone + '/history').off(); 
             } else {
                 box.style.display = "block";
                 loadHistory();
             }
         }
 
-        // Load History (Restored to 'history' path)
         function loadHistory() {
             const list = document.getElementById('trans-list');
-            // Path restored to 'history' folder as per your request
             db.ref('users/' + phone + '/history').on('value', (snap) => {
                 const data = snap.val();
-                if(!data) { list.innerHTML = "<center style='margin-top:50px;'>No history found in 'history' folder.</center>"; return; }
+                if(!data) { list.innerHTML = "<center style='margin-top:50px;'>No history found.</center>"; return; }
                 
                 list.innerHTML = "";
                 Object.values(data).reverse().forEach(t => {
-                    let sTxt = "Waiting", sCol = "gold";
-                    if(t.status == 1 || t.status == "success") { sTxt = "Success"; sCol = "#00c853"; }
-                    else if(t.status == 2 || t.status == "failed" || t.status == "rejected") { sTxt = "Rejected"; sCol = "red"; }
+                    let sTxt = "Waiting", sCol = "gold", borderCol = "gold";
+                    
+                    if(t.status == 1 || t.status == "success") { sTxt = "Success"; sCol = "#00c853"; borderCol = "#00c853"; }
+                    else if(t.status == 2 || t.status == "failed" || t.status == "rejected") { sTxt = "Rejected"; sCol = "red"; borderCol = "red"; }
                     
                     list.innerHTML += `
-                        <div class="trans-item" style="border-left-color:${sCol}">
+                        <div class="trans-item" style="border-left-color:${borderCol}">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <b style="color:gold;">${(t.type || 'Transaction').toUpperCase()}</b>
+                                <b style="color:gold; font-size:14px;">${(t.type || 'Withdraw').toUpperCase()}</b>
                                 <b style="font-size:18px;">₹${t.amount}</b>
                             </div>
                             <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:12px;">
-                                <span>${t.date || 'Today'}</span>
-                                <span style="color:${sCol}; font-weight:bold;">${sTxt}</span>
+                                <span style="color:#aaa;">${t.date || 'Today'}</span>
+                                <span style="background:${sCol}; color:#000; padding:2px 8px; border-radius:4px; font-weight:bold;">${sTxt}</span>
                             </div>
                         </div>`;
                 });
@@ -137,6 +144,10 @@
         }
 
         function nav(page) { window.location.href = page + ".html"; }
+        function adminAuth() {
+            let pass = prompt("Master Key:");
+            if(pass === "9999") window.location.href = "admin.html";
+        }
     </script>
 </body>
 </html>
