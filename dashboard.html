@@ -6,32 +6,46 @@
     <title>Kalyan Pro - Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #0b0b0b; color: #fff; font-family: sans-serif; margin: 0; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
-        .header { background: #1a1a1a; padding: 15px; border-bottom: 2px solid gold; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        body { background: #0b0b0b; color: #fff; font-family: sans-serif; margin: 0; padding-bottom: 80px; }
+        .secret-trigger { position: fixed; top: 0; left: 0; width: 50px; height: 50px; z-index: 9999; background: transparent; }
+        .header { background: #1a1a1a; padding: 15px; border-bottom: 2px solid gold; display: flex; justify-content: space-between; align-items: center; }
         .balance-card { background: rgba(255, 215, 0, 0.1); padding: 5px 15px; border-radius: 20px; border: 1px solid gold; color: gold; font-weight: bold; }
         .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; background: #151515; }
         .action-btn { text-align: center; font-size: 11px; cursor: pointer; color: #ccc; }
         .action-btn i { display: block; font-size: 22px; margin-bottom: 5px; color: gold; }
-        .section-title { padding: 15px 15px 5px; color: gold; font-weight: bold; display: flex; justify-content: space-between; }
-        .matka-card { margin: 15px; background: linear-gradient(145deg, #1a1a1a, #222); border-radius: 12px; border: 1px solid gold; padding: 15px; }
-        .matka-result { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: 3px; }
-        .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 15px 15px; }
-        .game-card { background: #1a1a1a; border-radius: 12px; border: 1px solid #333; padding: 10px; text-align: center; position: relative; overflow: hidden; }
-        .game-card img { width: 100%; border-radius: 8px; height: 95px; object-fit: cover; }
-        .status-badge { position: absolute; top: 15px; right: 15px; background: red; color: white; font-size: 8px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
-        .status-live { background: #00c853; }
-        .play-now { background: gold; color: #000; border: none; padding: 8px; border-radius: 4px; font-weight: bold; width: 100%; margin-top: 8px; cursor:pointer; font-size: 11px; }
-        .refer-banner { margin: 15px; padding: 15px; background: gold; border-radius: 10px; color: #000; display: flex; justify-content: space-between; align-items: center; }
-        #history-section { display: none; padding: 15px; }
-        .trans-item { background: #1a1a1a; padding: 12px; margin-bottom: 8px; border-radius: 8px; border-left: 4px solid gold; }
+        .section-title { padding: 10px 15px; color: gold; font-weight: bold; text-align: left; }
+        
+        /* Matka Card Style */
+        .matka-card { margin: 15px; background: linear-gradient(145deg, #1a1a1a, #252525); border-radius: 12px; border: 1px solid gold; padding: 15px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.1); }
+        .matka-play { background: gold; color: #000; border: none; padding: 10px; border-radius: 6px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; font-size: 14px; }
+
+        .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 15px; }
+        .game-card { background: #1a1a1a; border-radius: 12px; border: 1px solid #333; padding: 10px; text-align: center; position: relative; }
+        .game-card img { width: 100%; border-radius: 8px; height: 90px; object-fit: cover; }
+        .status-badge { position: absolute; top: 5px; right: 5px; font-size: 9px; background: red; padding: 2px 5px; border-radius: 4px; z-index: 5; }
+        .play-now { background: gold; color: #000; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; width: 100%; margin-top: 5px; cursor: pointer; }
+        
+        #history-box { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0b0b; z-index: 1000; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .trans-item { background: #1a1a1a; padding: 12px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid gold; }
+        .refer-banner { margin: 15px; padding: 15px; background: linear-gradient(90deg, #b8860b, #ffd700); border-radius: 10px; color: #000; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
 
+    <div class="secret-trigger" onclick="adminAuth()"></div>
+
+    <div id="history-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="color:gold; margin:0;">Len Den History</h2>
+            <button onclick="toggleHistory()" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px;">CLOSE</button>
+        </div>
+        <div id="trans-list">Data load ho raha hai...</div>
+    </div>
+
     <div class="header">
         <div>
-            <div style="font-weight: bold; font-size: 18px;">KALYAN <span style="color: gold;">PRO</span></div>
-            <div id="player-id-display" style="font-size: 11px; color: #aaa; margin-top: 2px;">ID: Loading...</div>
+            <div style="font-weight: bold;">KALYAN <span style="color: gold;">PRO</span></div>
+            <div id="player-id-display" style="font-size: 10px; color: #aaa; margin-top: 2px;">ID: Loading...</div>
         </div>
         <div class="balance-card">₹ <span id="balance">0.00</span></div>
     </div>
@@ -39,42 +53,57 @@
     <div class="action-grid">
         <div class="action-btn" onclick="nav('deposit')"><i class="fa-solid fa-plus-circle"></i>Deposit</div>
         <div class="action-btn" onclick="nav('withdraw')"><i class="fa-solid fa-wallet"></i>Withdraw</div>
-        <div class="action-btn" onclick="toggleHistory()"><i class="fa-solid fa-clock-rotate-left"></i>History</div>
+        <div class="action-btn" onclick="toggleHistory()"><i class="fa-solid fa-clock-rotate-left"></i>Len Den</div>
         <div class="action-btn" onclick="nav('support')"><i class="fa-solid fa-headset"></i>Support</div>
-        <div class="action-btn" onclick="shareReferral()"><i class="fa-solid fa-users"></i>Refer</div>
+        <div class="action-btn" onclick="nav('refer')"><i class="fa-solid fa-users"></i>Refer</div>
         <div class="action-btn" onclick="nav('notice')"><i class="fa-solid fa-bell"></i>Notice</div>
         <div class="action-btn" onclick="nav('profile')"><i class="fa-solid fa-user-gear"></i>Profile</div>
         <div class="action-btn" onclick="location.reload()"><i class="fa-solid fa-sync"></i>Refresh</div>
     </div>
 
-    <div id="main-content">
-        <div class="section-title">TODAY'S MARKET <span style="font-size: 10px; color: #0f0;">● LIVE</span></div>
-        <div class="matka-card">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><b>KALYAN MATKA</b> <span style="font-size:11px;color:#aaa;">04:00-06:00</span></div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="matka-result">123-45-678</div>
-                <button class="play-now" style="width: 85px; margin: 0;" onclick="nav('kalyan')">BID NOW</button>
-            </div>
+    <div class="section-title">TODAY'S MARKET</div>
+    <div class="matka-card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <b>KALYAN MATKA</b>
+            <span style="color:#00c853; font-size:12px;">● LIVE</span>
         </div>
-
-        <div class="section-title">ALL GAMES</div>
-        <div class="game-grid">
-            <div class="game-card"><div class="status-badge status-live">LIVE</div><img src="https://images.unsplash.com/photo-1511193311914-0346f16efe90?w=400"><h4>Dragon Tiger</h4><button class="play-now" onclick="nav('game')">PLAY</button></div>
-            <div class="game-card"><div class="status-badge status-live">LIVE</div><img src="https://plus.unsplash.com/premium_photo-1705353155716-64626156177b?w=400"><h4>Andar Bahar</h4><button class="play-now" onclick="nav('andarbahar')">PLAY</button></div>
-            <div class="game-card"><div class="status-badge">SOON</div><img src="https://images.unsplash.com/photo-1601933512596-3c05f0132b3f?w=400"><h4>Ludo</h4><button class="play-now" style="background:#333;color:#777;">SOON</button></div>
-            <div class="game-card"><div class="status-badge">SOON</div><img src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=400"><h4>Red vs Blue</h4><button class="play-now" style="background:#333;color:#777;">SOON</button></div>
-        </div>
-
-        <div class="refer-banner">
-            <div><b>Refer & Earn ₹100</b><br><span style="font-size: 12px;">Doston ko invite karein!</span></div>
-            <button onclick="shareReferral()" style="background:#000; color:#fff; border:none; padding:10px; border-radius:5px; font-weight:bold;">INVITE</button>
-        </div>
+        <div style="font-size:24px; font-weight:bold; letter-spacing:3px; margin:10px 0; text-align:center;">123-45-678</div>
+        <button class="matka-play" onclick="nav('kalyan')">PLAY NOW</button>
     </div>
 
-    <div id="history-section">
-        <div class="section-title">TRANSACTION HISTORY</div>
-        <div id="trans-list">Loading...</div>
-        <button onclick="toggleHistory()" style="background:gold; width:100%; padding:12px; margin-top:15px; border:none; border-radius:8px; font-weight:bold;">BACK TO HOME</button>
+    <div class="section-title">ALL GAMES (7)</div>
+    <div class="game-grid">
+        <div class="game-card" onclick="window.location.href='game.html'">
+            <img src="https://images.unsplash.com/photo-1511193311914-0346f16efe90?w=400">
+            <h4 style="margin:5px 0;">Dragon Tiger</h4>
+            <button class="play-now">PLAY NOW</button>
+        </div>
+
+        <div class="game-card">
+            <div class="status-badge">SOON</div>
+            <img src="https://plus.unsplash.com/premium_photo-1705353155716-64626156177b?w=400">
+            <h4 style="margin:5px 0;">Andar Bahar</h4>
+            <button class="play-now" style="background:#444;">LOCKED</button>
+        </div>
+
+        <script>
+            const games = ["7 Up Down", "Teen Patti", "Red vs Blue", "Jhandi Munda", "Aviator"];
+            games.forEach(g => {
+                document.write(`
+                    <div class="game-card">
+                        <div class="status-badge">SOON</div>
+                        <div style="height:90px; background:#222; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#555; font-size:10px;">SLOT</div>
+                        <h4 style="margin:5px 0;">${g}</h4>
+                        <button class="play-now" style="background:#444;">LOCKED</button>
+                    </div>
+                `);
+            });
+        </script>
+    </div>
+
+    <div class="refer-banner">
+        <div><b style="font-size:16px;">Refer & Earn ₹100</b><br><span style="font-size:12px;">Doston ko invite karein!</span></div>
+        <button onclick="shareReferral()" style="background:#000; color:#fff; border:none; padding:8px 12px; border-radius:5px;">INVITE</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -90,47 +119,46 @@
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || "Guest";
 
-        // Balance & ID logic
         db.ref('users/' + phone).on('value', (snapshot) => {
             const data = snapshot.val() || {};
-            document.getElementById('player-id-display').innerText = data.playerId ? "ID: " + data.playerId : "ID: KP" + phone.slice(-4);
-            const total = (parseFloat(data.balance)||0) + (parseFloat(data.winning_balance)||0) + (parseFloat(data.bonus_balance)||0);
+            document.getElementById('player-id-display').innerText = "ID: " + (data.playerId || "KP" + phone.slice(-4));
+            const total = (parseFloat(data.balance||0) + parseFloat(data.winning_balance||0) + parseFloat(data.bonus_balance||0));
             document.getElementById('balance').innerText = total.toFixed(2);
         });
+
+        function toggleHistory() {
+            const box = document.getElementById('history-box');
+            box.style.display = (box.style.display === "block") ? "none" : "block";
+            if(box.style.display === "block") fetchHistory();
+        }
+
+        function fetchHistory() {
+            const list = document.getElementById('trans-list');
+            db.ref('users/' + phone + '/transactions').once('value', (s) => {
+                const data = s.val();
+                if(!data) { list.innerHTML = "No transactions."; return; }
+                list.innerHTML = "";
+                Object.values(data).reverse().forEach(t => {
+                    let col = (t.status == 1 || t.status == "success") ? "#00c853" : (t.status == 2 ? "red" : "gold");
+                    list.innerHTML += `<div class="trans-item" style="border-left-color:${col}">
+                        <div style="display:flex; justify-content:space-between;"><b>${(t.type||'Withdraw').toUpperCase()}</b><b>₹${t.amount}</b></div>
+                        <div style="font-size:11px; margin-top:5px; color:#aaa;">Status: <b style="color:${col}">${t.status==1?'Success':(t.status==2?'Failed':'Pending')}</b></div>
+                    </div>`;
+                });
+            });
+        }
 
         function shareReferral() {
             const msg = `🔥 *KALYAN PRO* 🔥\nJoin karein aur paayein ₹100 Bonus! 💰\nLink: ${window.location.origin}/register.html?ref=${phone}`;
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
-        function toggleHistory() {
-            const main = document.getElementById('main-content'), hist = document.getElementById('history-section');
-            if(hist.style.display === "block") { hist.style.display = "none"; main.style.display = "block"; }
-            else { hist.style.display = "block"; main.style.display = "none"; fetchHistory(); }
-        }
+        function nav(page) { window.location.href = page + ".html"; }
 
-        // HISTORY FIX: Pending/Success logic
-        function fetchHistory() {
-            const list = document.getElementById('trans-list');
-            // Hum users path aur main transactions path dono check karenge
-            db.ref('users/' + phone + '/transactions').on('value', (s) => {
-                let data = s.val();
-                list.innerHTML = "";
-                if(!data) { list.innerHTML = "No transactions found."; return; }
-                
-                Object.values(data).reverse().forEach(t => {
-                    let sTxt = "Pending", sCol = "gold";
-                    if(t.status == 1 || t.status == "success") { sTxt = "Success"; sCol = "#00c853"; }
-                    if(t.status == 2 || t.status == "failed") { sTxt = "Failed"; sCol = "red"; }
-
-                    list.innerHTML += `<div class="trans-item" style="border-left-color:${sCol}">
-                        <div style="display:flex;justify-content:space-between;"><b>${(t.type||'Withdraw').toUpperCase()}</b><b>₹${t.amount}</b></div>
-                        <div style="font-size:11px;margin-top:5px;color:#aaa;">Status: <b style="color:${sCol}">${sTxt}</b></div>
-                    </div>`;
-                });
-            });
+        function adminAuth() {
+            let pass = prompt("Master Key:");
+            if(pass === "9999") window.location.href = "admin.html";
         }
-        function nav(p) { window.location.href = p + ".html"; }
     </script>
 </body>
 </html>
