@@ -24,9 +24,10 @@
         .soon { background: red; color: white; }
         .play-now { background: gold; color: #000; border: none; padding: 6px; border-radius: 4px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; font-size: 12px; }
 
-        /* FIXED HISTORY OVERLAY */
+        /* LEN DEN (HISTORY) OVERLAY FIXED */
         #history-box { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0b0b0b; z-index: 1001; padding: 20px; box-sizing: border-box; overflow-y: auto; }
-        .trans-item { background: #1a1a1a; padding: 12px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid gold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .trans-item { background: #1a1a1a; padding: 15px; margin-bottom: 12px; border-radius: 10px; border-left: 5px solid gold; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+        .status-badge-mini { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
         .refer-banner { margin: 15px; padding: 15px; background: linear-gradient(90deg, #b8860b, #ffd700); border-radius: 10px; color: #000; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
@@ -37,7 +38,7 @@
     <div id="history-box">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:10px;">
             <h2 style="color:gold; margin:0;">Mera Len Den</h2>
-            <i class="fa-solid fa-circle-xmark" onclick="toggleHistory()" style="font-size:30px; color:gold; cursor:pointer;"></i>
+            <i class="fa-solid fa-circle-xmark" onclick="toggleHistory()" style="font-size:32px; color:gold; cursor:pointer;"></i>
         </div>
         <div id="trans-list">Transactions load ho rahi hain...</div>
     </div>
@@ -120,39 +121,51 @@
             document.getElementById('balance').innerText = total.toFixed(2);
         });
 
-        // LIVE HISTORY LISTENER
+        // HISTORY TOGGLE
         function toggleHistory() {
             const box = document.getElementById('history-box');
             if(box.style.display === "block") {
                 box.style.display = "none";
-                db.ref('users/' + phone + '/transactions').off(); // Band karein jab box band ho
+                db.ref('users/' + phone + '/transactions').off(); 
             } else {
                 box.style.display = "block";
                 fetchHistoryLive();
             }
         }
 
+        // IMPROVED LIVE HISTORY
         function fetchHistoryLive() {
             const list = document.getElementById('trans-list');
-            // '.on' lagane se admin panel ke change turant yahan dikhenge
             db.ref('users/' + phone + '/transactions').on('value', (s) => {
                 const data = s.val();
-                if(!data) { list.innerHTML = "<center>Koi history nahi hai.</center>"; return; }
+                if(!data) { 
+                    list.innerHTML = "<center style='margin-top:50px; color:#666;'>No transactions found.</center>"; 
+                    return; 
+                }
+                
                 list.innerHTML = "";
-                Object.values(data).reverse().forEach(t => {
-                    let statusTxt = "Pending", statusCol = "gold";
-                    if(t.status == 1 || t.status == "success") { statusTxt = "Success"; statusCol = "#00c853"; }
-                    else if(t.status == 2 || t.status == "failed") { statusTxt = "Rejected"; statusCol = "red"; }
+                // Sabse naya transaction upar dikhane ke liye reverse kiya
+                const items = Object.values(data).reverse();
+                
+                items.forEach(t => {
+                    let sTxt = "Waiting", sCol = "gold", borderCol = "gold";
+                    
+                    // Logic based on status from Admin Panel
+                    if(t.status == 1 || t.status == "success") { 
+                        sTxt = "Success"; sCol = "#00c853"; borderCol = "#00c853"; 
+                    } else if(t.status == 2 || t.status == "failed" || t.status == "rejected") { 
+                        sTxt = "Rejected"; sCol = "red"; borderCol = "red"; 
+                    }
 
                     list.innerHTML += `
-                        <div class="trans-item" style="border-left-color:${statusCol}">
+                        <div class="trans-item" style="border-left-color:${borderCol}">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <b style="color:gold;">${(t.type || 'Transaction').toUpperCase()}</b>
-                                <b style="font-size:16px;">₹${t.amount}</b>
+                                <b style="color:gold; font-size:14px;">${(t.type || 'Withdraw').toUpperCase()}</b>
+                                <b style="font-size:18px;">₹${t.amount}</b>
                             </div>
-                            <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12px;">
+                            <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:12px;">
                                 <span style="color:#aaa;">${t.date || 'Today'}</span>
-                                <span style="color:${statusCol}; font-weight:bold;">${statusTxt}</span>
+                                <span class="status-badge-mini" style="background:${sCol}; color:#000;">${sTxt}</span>
                             </div>
                         </div>`;
                 });
