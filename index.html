@@ -1,103 +1,130 @@
 <!DOCTYPE html>
-<html>
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP Casino</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VIP Bharat - Casino</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding-top: 50px; }
-        .box { background: #111; padding: 20px; border-radius: 15px; width: 300px; margin: auto; border: 1px solid #333; }
-        input { width: 90%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; }
-        button { width: 90%; padding: 12px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #000; }
-        button:disabled { background: #555; }
+        body { background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .auth-card { background: #111; padding: 25px; border-radius: 15px; width: 310px; border: 1.5px solid #333; text-align: center; box-shadow: 0 0 20px rgba(255,215,0,0.1); }
+        .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid #222; }
+        .tab { flex: 1; padding: 10px; cursor: pointer; color: #666; font-weight: bold; }
+        .tab.active { color: #ffd700; border-bottom: 2px solid #ffd700; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; outline: none; }
+        button { width: 100%; padding: 14px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #000; margin-top: 10px; }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; }
         .hidden { display: none; }
-        #otp-box { border: 2px dashed #ffd700; padding: 10px; margin: 10px 0; color: #ffd700; font-size: 20px; }
+        #timer-msg { color: #0f0; font-size: 13px; margin: 10px 0; font-weight: bold; }
+        #otp-box { background: rgba(255,215,0,0.1); border: 1px dashed #ffd700; color: #ffd700; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 18px; }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h2 id="title">REGISTER</h2>
-    
-    <div id="reg-form">
-        <input type="number" id="phone" placeholder="Mobile Number">
-        
-        <div id="extra" class="hidden">
-            <div id="otp-box">OTP: <span id="val">000000</span></div>
-            <input type="number" id="otp-in" placeholder="Enter OTP">
-            <input type="password" id="p1" placeholder="Create Password">
-            <input type="password" id="p2" placeholder="Confirm Password">
-        </div>
-
-        <div id="msg" style="color: #0f0; margin: 10px 0;"></div>
-        <button id="btn" onclick="startProcess()">SEND OTP</button>
+<div class="auth-card">
+    <div class="tabs">
+        <div id="tl" class="tab active" onclick="sw('l')">LOGIN</div>
+        <div id="tr" class="tab" onclick="sw('r')">REGISTER</div>
     </div>
-    
-    <p onclick="location.reload()" style="font-size: 12px; color: #888; margin-top: 15px; cursor: pointer;">Puraane Account ke liye Refresh karein</p>
+
+    <div id="gl">
+        <input type="number" id="lph" placeholder="Mobile Number">
+        <input type="password" id="lps" placeholder="Password">
+        <button onclick="doL()">LOGIN NOW</button>
+    </div>
+
+    <div id="gr" class="hidden">
+        <input type="number" id="rph" placeholder="Enter Mobile Number">
+        <div id="rext" class="hidden">
+            <div id="otp-box">📩 OTP: <span id="ov">000000</span></div>
+            <input type="number" id="rotp" placeholder="Enter OTP">
+            <input type="password" id="rp1" placeholder="Create Password">
+            <input type="password" id="rp2" placeholder="Confirm Password">
+        </div>
+        <div id="timer-msg"></div>
+        <button id="mb" onclick="sendO()">SEND OTP</button>
+    </div>
 </div>
 
 <script>
-    // Firebase simple connection
+    // ✅ Firebase Initialize
     var config = { 
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" 
     };
     if (!firebase.apps.length) { firebase.initializeApp(config); }
     var db = firebase.database();
+    var gOTP = "";
 
-    var otpCode = "";
-
-    function startProcess() {
-        var ph = document.getElementById('phone').value;
-        if(ph.length < 10) return alert("10 anko ka number dalo!");
-
-        var btn = document.getElementById('btn');
-        var msg = document.getElementById('msg');
-        
-        btn.disabled = true;
-        var sec = 10;
-
-        // Timer shuru
-        var timer = setInterval(function() {
-            msg.innerText = "⏳ OTP generating in: " + sec + "s";
-            sec--;
-            if(sec < 0) {
-                clearInterval(timer);
-                msg.innerText = "✅ OTP Ready!";
-                
-                // OTP generate karo
-                otpCode = Math.floor(100000 + Math.random() * 899999).toString();
-                document.getElementById('val').innerText = otpCode;
-                document.getElementById('extra').classList.remove('hidden');
-                
-                btn.disabled = false;
-                btn.innerText = "VERIFY & REGISTER";
-                btn.onclick = finalRegister;
-            }
-        }, 1000);
+    function sw(s) {
+        document.getElementById('gl').classList.toggle('hidden', s === 'r');
+        document.getElementById('gr').classList.toggle('hidden', s === 'l');
+        document.getElementById('tl').classList.toggle('active', s === 'l');
+        document.getElementById('tr').classList.toggle('active', s === 'r');
     }
 
-    function finalRegister() {
-        var ph = document.getElementById('phone').value;
-        var oIn = document.getElementById('otp-in').value;
-        var pass = document.getElementById('p1').value;
-        var pass2 = document.getElementById('p2').value;
+    // 1. Send OTP (10s Delay)
+    function sendO() {
+        var ph = document.getElementById('rph').value;
+        if(ph.length !== 10) return alert("10 anko ka number!");
 
-        if(oIn !== otpCode) return alert("Galat OTP!");
-        if(pass !== pass2 || pass === "") return alert("Password match nahi hua!");
+        db.ref('users/' + ph).once('value').then(snap => {
+            if(snap.exists()) return alert("Mobile already registered!");
 
-        var vipID = "VIP" + Math.floor(100000 + Math.random() * 899999);
+            var btn = document.getElementById('mb');
+            var msg = document.getElementById('timer-msg');
+            btn.disabled = true;
+            var count = 10;
 
-        // Database mein save
+            var timer = setInterval(function() {
+                msg.innerText = "⏳ System Generating OTP: " + count + "s";
+                count--;
+                if(count < 0) {
+                    clearInterval(timer);
+                    msg.innerText = "✅ OTP SUCCESS!";
+                    gOTP = Math.floor(100000 + Math.random() * 899999).toString();
+                    document.getElementById('ov').innerText = gOTP;
+                    document.getElementById('rext').classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerText = "VERIFY & REGISTER";
+                    btn.onclick = doR;
+                }
+            }, 1000);
+        });
+    }
+
+    // 2. Final Register (₹51 Bonus + VIP ID)
+    function doR() {
+        var ph = document.getElementById('rph').value;
+        var otp = document.getElementById('rotp').value;
+        var p1 = document.getElementById('rp1').value;
+        var p2 = document.getElementById('rp2').value;
+
+        if(otp !== gOTP) return alert("Galat OTP!");
+        if(p1 === "" || p1 !== p2) return alert("Password mismatch!");
+
+        var vID = "VIP" + Math.floor(100000 + Math.random() * 899999);
         db.ref('users/' + ph).set({
-            phone: ph, password: pass, balance: 51, uid: vipID
-        }).then(function() {
+            phone: ph, password: p1, pass: p1, balance: 51, uid: vID, joined: new Date().toLocaleDateString()
+        }).then(() => {
             localStorage.setItem('userPhone', ph);
             window.location.href = "dashboard.html";
-        }).catch(function(e) {
-            alert("Database Error: Rules check karein!");
+        });
+    }
+
+    // 3. Login (Auto-detect pass/password)
+    function doL() {
+        var ph = document.getElementById('lph').value;
+        var ps = document.getElementById('lps').value;
+        db.ref('users/' + ph).once('value').then(snap => {
+            if(snap.exists()) {
+                var u = snap.val();
+                if(u.password == ps || u.pass == ps) {
+                    localStorage.setItem('userPhone', ph);
+                    window.location.href = "dashboard.html";
+                } else { alert("Galat Password!"); }
+            } else { alert("Account nahi mila!"); }
         });
     }
 </script>
