@@ -1,99 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VIP Casino - Login & Register</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <style>
+        :root { --gold: #ffd700; --bg: #000; --card: #111; }
+        body { background: var(--bg); color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .auth-box { background: var(--card); padding: 25px; border-radius: 20px; width: 320px; border: 1.5px solid #333; position: relative; box-shadow: 0 0 20px rgba(255,215,0,0.1); }
+        .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid #333; }
+        .tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; color: #777; }
+        .tab.active { color: var(--gold); border-bottom: 3px solid var(--gold); font-weight: bold; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #444; background: #222; color: white; box-sizing: border-box; outline: none; }
+        button { width: 100%; padding: 14px; background: linear-gradient(45deg, #ffd700, #ffae00); border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 15px; color: black; }
+        button:disabled { background: #555; opacity: 0.6; }
+        .hidden { display: none; }
+        #timer-box { font-size: 14px; color: #0f0; margin-top: 10px; text-align: center; font-weight: bold; min-height: 20px; }
+        #otp-status { color: var(--gold); font-size: 13px; text-align: center; border: 1px dashed var(--gold); padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+<div class="auth-box">
+    <div class="tabs">
+        <div class="tab active" id="l-tab" onclick="toggleTab('login')">LOGIN</div>
+        <div class="tab" id="r-tab" onclick="toggleTab('reg')">REGISTER</div>
+    </div>
+
+    <div id="login-form">
+        <input type="number" id="l-ph" placeholder="Mobile Number">
+        <input type="password" id="l-ps" placeholder="Password">
+        <button onclick="login()">LOGIN NOW</button>
+    </div>
+
+    <div id="reg-form" class="hidden">
+        <input type="number" id="r-ph" placeholder="Mobile Number">
+        
+        <div id="otp-sec" class="hidden">
+            <div id="otp-status">📩 OTP CODE: <span id="v-otp" style="font-size:18px;"></span></div>
+            <input type="number" id="r-otp" placeholder="Enter 6-Digit OTP">
+            <input type="password" id="r-p1" placeholder="Create Password">
+            <input type="password" id="r-p2" placeholder="Confirm Password">
+        </div>
+
+        <button id="main-btn" onclick="sendOTP()">SEND OTP</button>
+        <div id="timer-box"></div>
+    </div>
+</div>
+
 <script>
-    const firebaseConfig = { 
-        apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
-        databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
-        projectId: "kalyan-casino" 
-    };
+    // ✅ Firebase Connection
+    const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let generatedOTP = "";
+    let myOTP = "";
 
-    function showTab(type) {
+    function toggleTab(type) {
         document.getElementById('login-form').classList.toggle('hidden', type === 'reg');
         document.getElementById('reg-form').classList.toggle('hidden', type === 'login');
-        document.getElementById('login-tab').classList.toggle('active', type === 'login');
-        document.getElementById('reg-tab').classList.toggle('active', type === 'reg');
-        document.getElementById('timer-box').innerText = "";
+        document.getElementById('l-tab').classList.toggle('active', type === 'login');
+        document.getElementById('r-tab').classList.toggle('active', type === 'reg');
     }
 
-    // --- 🟢 STEP 1: SEND OTP (10 SECOND DELAY) ---
-    function checkUserAndSend() {
-        const ph = document.getElementById('r-phone').value.trim();
-        const btn = document.getElementById('auth-btn');
-        const timerTxt = document.getElementById('timer-box');
-
-        if(ph.length !== 10) return alert("10-digit number daalein!");
+    // --- 🟢 STEP 1: OTP AANE MEIN 10 SEC DELAY ---
+    function sendOTP() {
+        const ph = document.getElementById('r-ph').value;
+        if(ph.length !== 10) return alert("10-digit number!");
 
         db.ref('users/' + ph).once('value', s => {
-            if(s.exists()) {
-                alert("Number pehle se registered hai!");
-            } else {
-                // Timer Shuru: OTP aane se pehle 10 second wait
-                btn.disabled = true;
-                let waitTime = 10;
-                
-                let otpTimer = setInterval(() => {
-                    timerTxt.innerText = "📩 Sending Secure OTP: " + waitTime + "s";
-                    waitTime--;
+            if(s.exists()) return alert("Already registered!");
 
-                    if(waitTime < 0) {
-                        clearInterval(otpTimer);
-                        timerTxt.innerText = "✅ OTP Sent Successfully!";
-                        
-                        // Ab OTP dikhao
-                        generatedOTP = Math.floor(100000 + Math.random() * 899999);
-                        document.getElementById('visual-otp').innerText = generatedOTP;
-                        document.getElementById('otp-section').classList.remove('hidden');
-                        
-                        // Button ko Verify ke liye ready karo
-                        btn.disabled = false;
-                        btn.innerText = "VERIFY & LOGIN";
-                        btn.onclick = verifyAndRedirect; 
-                    }
-                }, 1000);
-            }
+            const btn = document.getElementById('main-btn');
+            const tBox = document.getElementById('timer-box');
+            btn.disabled = true;
+            let wait = 10;
+
+            let t = setInterval(() => {
+                tBox.innerText = "📩 Sending OTP: " + wait + "s";
+                wait--;
+                if(wait < 0) {
+                    clearInterval(t);
+                    tBox.innerText = "✅ OTP Sent!";
+                    myOTP = Math.floor(100000 + Math.random() * 899999);
+                    document.getElementById('v-otp').innerText = myOTP;
+                    document.getElementById('otp-sec').classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerText = "VERIFY & START";
+                    btn.onclick = verify;
+                }
+            }, 1000);
         });
     }
 
-    // --- 🟢 STEP 2: VERIFY AND DIRECT TO DASHBOARD ---
-    function verifyAndRedirect() {
-        const ph = document.getElementById('r-phone').value.trim();
-        const otp = document.getElementById('r-otp').value.trim();
-        const p1 = document.getElementById('r-pass1').value.trim();
-        const p2 = document.getElementById('r-pass2').value.trim();
+    // --- 🟢 STEP 2: VERIFY & GO TO DASHBOARD ---
+    function verify() {
+        const ph = document.getElementById('r-ph').value;
+        const otp = document.getElementById('r-otp').value;
+        const p1 = document.getElementById('r-p1').value;
+        const p2 = document.getElementById('r-p2').value;
 
-        if(otp != generatedOTP) return alert("❌ Galat OTP!");
-        if(p1 === "" || p1 !== p2) return alert("❌ Passwords match nahi kar rahe!");
+        if(otp != myOTP) return alert("Wrong OTP!");
+        if(p1 === "" || p1 !== p2) return alert("Password mismatch!");
 
-        // 6-Digit VIP ID
-        const newVIP = "VIP" + Math.floor(100000 + Math.random() * 899999);
+        const newID = "VIP" + Math.floor(100000 + Math.random() * 899999);
 
-        // Database mein save karo aur Dashboard pe bhejo
         db.ref('users/' + ph).set({
-            phone: ph,
-            password: p1,
-            balance: 51.00,
-            uid: newVIP,
-            joined: new Date().toLocaleDateString()
+            phone: ph, password: p1, balance: 51.00, uid: newID
         }).then(() => {
             localStorage.setItem('userPhone', ph);
-            alert("Success! Your ID: " + newVIP);
-            window.location.href = "dashboard.html"; // Seedha Dashboard
+            window.location.href = "dashboard.html"; // ✅ Sidhe Dashboard
         });
     }
 
-    // --- 🟢 LOGIN LOGIC ---
-    function loginUser() {
-        const ph = document.getElementById('l-ph').value.trim();
-        const ps = document.getElementById('l-ps').value.trim();
+    // --- 🟢 LOGIN ---
+    function login() {
+        const ph = document.getElementById('l-ph').value;
+        const ps = document.getElementById('l-ps').value;
         db.ref('users/' + ph).once('value', s => {
             if(s.exists() && s.val().password === ps) {
                 localStorage.setItem('userPhone', ph);
                 window.location.href = "dashboard.html";
-            } else {
-                alert("Invalid Details!");
-            }
+            } else { alert("Error!"); }
         });
     }
 </script>
+</body>
+</html>
