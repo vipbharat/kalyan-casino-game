@@ -8,7 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .auth-card { background: #111; padding: 25px; border-radius: 15px; width: 310px; border: 1px solid #333; box-shadow: 0 0 15px rgba(255,215,0,0.2); text-align: center; }
+        .auth-card { background: #111; padding: 25px; border-radius: 15px; width: 310px; border: 1.5px solid #333; text-align: center; }
         .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid #222; }
         .tab { flex: 1; padding: 10px; cursor: pointer; color: #666; font-weight: bold; }
         .tab.active { color: #ffd700; border-bottom: 2px solid #ffd700; }
@@ -16,8 +16,8 @@
         button { width: 100%; padding: 14px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #000; margin-top: 10px; font-size: 15px; }
         button:disabled { background: #444; color: #888; cursor: not-allowed; }
         .hidden { display: none; }
-        #timer-msg { color: #0f0; font-size: 13px; margin: 10px 0; font-weight: bold; min-height: 18px; }
-        #otp-box { background: rgba(255,215,0,0.1); border: 1px dashed #ffd700; color: #ffd700; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        #timer-msg { color: #0f0; font-size: 14px; margin: 10px 0; font-weight: bold; height: 20px; }
+        #otp-box { background: rgba(255,215,0,0.1); border: 2px dashed #ffd700; color: #ffd700; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 18px; }
     </style>
 </head>
 <body>
@@ -36,14 +36,12 @@
 
     <div id="form-reg" class="hidden">
         <input type="number" id="r-ph" placeholder="Enter Mobile Number">
-        
         <div id="reg-fields" class="hidden">
-            <div id="otp-box">📩 YOUR OTP: <span id="otp-val" style="font-size: 20px; font-weight: bold;">000000</span></div>
-            <input type="number" id="r-otp" placeholder="Enter 6-Digit OTP">
+            <div id="otp-box">📩 OTP: <span id="otp-val">000000</span></div>
+            <input type="number" id="r-otp" placeholder="Enter OTP">
             <input type="password" id="r-ps1" placeholder="Create Password">
             <input type="password" id="r-ps2" placeholder="Confirm Password">
         </div>
-
         <div id="timer-msg"></div>
         <button id="main-btn" onclick="sendOTPRequest()">SEND OTP</button>
     </div>
@@ -51,11 +49,11 @@
 
 <script>
     const firebaseConfig = { 
-        apiKey: "AIzaSySy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
+        apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
         projectId: "kalyan-casino" 
     };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
 
     let correctOTP = "";
@@ -67,13 +65,16 @@
         document.getElementById('t-reg').classList.toggle('active', s === 'reg');
     }
 
-    // 🟢 1. OTP AANE KA 10 SEC TIMER (Registration)
     function sendOTPRequest() {
         const ph = document.getElementById('r-ph').value.trim();
-        if(ph.length !== 10) return alert("Sahi 10-digit number daalein!");
+        if(ph.length !== 10) return alert("Sahi number daalein!");
 
         db.ref('users/' + ph).once('value').then((snap) => {
-            if(snap.exists()) return alert("Mobile already registered!");
+            if(snap.exists()) {
+                alert("Mobile number registered hai!");
+                toggle('login');
+                return;
+            }
 
             const btn = document.getElementById('main-btn');
             const msg = document.getElementById('timer-msg');
@@ -81,73 +82,54 @@
             let time = 10;
 
             let timer = setInterval(() => {
-                msg.innerText = "⏳ Generating Secure OTP: " + time + "s";
+                msg.innerText = "⏳ Verification: " + time + "s";
                 time--;
-
                 if(time < 0) {
                     clearInterval(timer);
-                    msg.innerText = "✅ OTP Generated!";
-                    correctOTP = Math.floor(100000 + Math.random() * 899999);
+                    msg.innerText = "✅ Done!";
+                    correctOTP = Math.floor(100000 + Math.random() * 899999).toString();
                     document.getElementById('otp-val').innerText = correctOTP;
                     document.getElementById('reg-fields').classList.remove('hidden');
                     btn.disabled = false;
-                    btn.innerText = "VERIFY & REGISTER";
+                    btn.innerText = "REGISTER";
                     btn.onclick = verifyAndRegister;
                 }
             }, 1000);
         });
     }
 
-    // 🟢 2. REGISTER & DIRECT TO DASHBOARD
     function verifyAndRegister() {
         const ph = document.getElementById('r-ph').value.trim();
         const otpInp = document.getElementById('r-otp').value.trim();
         const p1 = document.getElementById('r-ps1').value.trim();
         const p2 = document.getElementById('r-ps2').value.trim();
 
-        if(otpInp != correctOTP) return alert("Galat OTP!");
-        if(p1 === "" || p1 !== p2) return alert("Passwords match nahi kar rahe!");
+        if(otpInp !== correctOTP) return alert("Galat OTP!");
+        if(p1 === "" || p1 !== p2) return alert("Password match nahi hua!");
 
         const vID = "VIP" + Math.floor(100000 + Math.random() * 899999);
-
         db.ref('users/' + ph).set({
-            phone: ph,
-            password: p1,
-            pass: p1, // Safety ke liye dono format mein save
-            balance: 51,
-            uid: vID,
-            joined: new Date().toLocaleDateString()
+            phone: ph, password: p1, pass: p1, balance: 51, uid: vID
         }).then(() => {
             localStorage.setItem('userPhone', ph);
             window.location.href = "dashboard.html"; 
         });
     }
 
-    // 🟢 3. LOGIN FIX (Naye aur Purane Dono Password Check)
     function doLogin() {
         const ph = document.getElementById('l-ph').value.trim();
         const ps = document.getElementById('l-ps').value.trim();
-        const btn = document.getElementById('login-btn');
-
-        if(!ph || !ps) return alert("Details bhariye!");
-        btn.disabled = true;
+        if(!ph || !ps) return alert("Bhariye!");
 
         db.ref('users/' + ph).once('value').then((snap) => {
             if(snap.exists()) {
                 const u = snap.val();
-                // ✅ Check: password (naya) ya pass (purana) dono mein se koi bhi match ho jaye
                 if(u.password == ps || u.pass == ps) {
                     localStorage.setItem('userPhone', ph);
                     window.location.href = "dashboard.html";
-                } else {
-                    alert("Galat Password!");
-                    btn.disabled = false;
-                }
-            } else {
-                alert("Account nahi mila!");
-                btn.disabled = false;
-            }
-        }).catch(() => { btn.disabled = false; });
+                } else { alert("Galat Password!"); }
+            } else { alert("Account nahi mila!"); }
+        });
     }
 </script>
 </body>
