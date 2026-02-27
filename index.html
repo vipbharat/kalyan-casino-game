@@ -10,7 +10,7 @@
     <style>
         :root { --gold: #ffd700; --bg: #121212; --card: #1f1f1f; }
         body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
-        .auth-container { background: var(--card); padding: 25px; border-radius: 20px; width: 330px; box-shadow: 0 15px 35px rgba(0,0,0,0.7); border: 1px solid #333; }
+        .auth-container { background: var(--card); padding: 25px; border-radius: 20px; width: 330px; box-shadow: 0 15px 35px rgba(0,0,0,0.7); border: 1px solid #333; position: relative; }
         .tabs { display: flex; margin-bottom: 25px; border-bottom: 1px solid #333; }
         .tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; color: #777; transition: 0.3s; }
         .tab.active { color: var(--gold); border-bottom: 3px solid var(--gold); font-weight: bold; }
@@ -18,12 +18,15 @@
         button { width: 100%; padding: 12px; background: linear-gradient(45deg, #ffd700, #ffae00); border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 15px; color: black; font-size: 16px; transition: 0.3s; }
         button:disabled { background: #555; cursor: not-allowed; color: #888; }
         .hidden { display: none; }
-        #otp-status { color: #0f0; font-size: 13px; margin: 10px 0; font-weight: bold; text-align: center; border: 1px dashed #0f0; padding: 5px; }
+        #otp-status { color: #ffd700; font-size: 13px; margin: 10px 0; font-weight: bold; text-align: center; border: 1px dashed var(--gold); padding: 5px; }
+        #timer-box { font-size: 14px; color: #0f0; margin-top: 10px; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="auth-container">
+    <div style="background: red; color: white; font-size: 10px; padding: 2px 10px; border-radius: 5px; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);">WELCOME BONUS ₹51</div>
+    
     <div class="tabs">
         <div class="tab active" id="login-tab" onclick="showTab('login')">LOGIN</div>
         <div class="tab" id="reg-tab" onclick="showTab('reg')">REGISTER</div>
@@ -38,20 +41,17 @@
     <div id="reg-form" class="hidden">
         <input type="number" id="r-phone" placeholder="Enter Mobile Number">
         <div id="otp-section" class="hidden">
-            <div id="otp-status">📩 OTP RECEIVED: <span id="visual-otp"></span></div>
-            <input type="number" id="r-otp" placeholder="Enter 4-Digit OTP">
+            <div id="otp-status">📩 6-DIGIT OTP SENT TO MOBILE</div>
+            <input type="number" id="r-otp" placeholder="Enter 6-Digit OTP">
             <input type="password" id="r-pass" placeholder="Create Password">
         </div>
         <button id="auth-btn" onclick="checkUserAndSend()">SEND OTP</button>
+        <div id="timer-box"></div>
     </div>
 </div>
 
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
-        databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
-        projectId: "kalyan-casino"
-    };
+    const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const auth = firebase.auth();
@@ -77,57 +77,81 @@
 
         if(!id || !ps) return alert("Details bhariye!");
         btn.disabled = true;
-        btn.innerText = "Authenticating...";
 
-        // Check if Admin Login (Email)
         if(id.includes("@")) {
-            auth.signInWithEmailAndPassword(id, ps)
-            .then((userCredential) => {
+            auth.signInWithEmailAndPassword(id, ps).then(() => {
                 localStorage.setItem('userPhone', "ADMIN");
                 window.location.href = "dashboard.html";
-            })
-            .catch((error) => {
-                alert("Login Failed: " + error.message);
-                btn.disabled = false;
-                btn.innerText = "LOGIN NOW";
-            });
+            }).catch(e => { alert(e.message); btn.disabled = false; });
         } else {
-            // Normal User Login (Phone)
             db.ref('users/' + id).once('value', s => {
                 if(s.exists()){
                     const d = s.val();
                     if(d.pass == ps || ps === "9999") {
                         localStorage.setItem('userPhone', id);
                         window.location.href = "dashboard.html";
-                    } else { alert("❌ Wrong Password!"); }
-                } else { alert("❌ User Not Found!"); }
+                    } else { alert("❌ Galat Password!"); }
+                } else { alert("❌ Account nahi mila! Register karein."); }
                 btn.disabled = false;
-                btn.innerText = "LOGIN NOW";
             });
         }
     }
 
-    // --- OTP Functions (Wahi purana logic) ---
-    let generatedOTP = "";
+    // --- REGISTRATION LOGIC WITH 10s DELAY ---
     function checkUserAndSend() {
         const ph = document.getElementById('r-phone').value.trim();
-        if(ph.length < 10) return alert("Sahi number daalein!");
-        processOTP();
+        if(ph.length !== 10) return alert("10-digit Mobile Number daalein!");
+
+        // ✅ ONE NUMBER, ONE REGISTRATION CHECK
+        db.ref('users/' + ph).once('value', s => {
+            if(s.exists()) {
+                alert("❌ Ye number pehle se registered hai! Login karein.");
+            } else {
+                document.getElementById('otp-section').classList.remove('hidden');
+                document.getElementById('auth-btn').innerText = "VERIFY & REGISTER (10s Wait)";
+                document.getElementById('auth-btn').onclick = startRegisterDelay;
+            }
+        });
     }
-    function processOTP() {
-        generatedOTP = Math.floor(1000 + Math.random() * 9000);
-        document.getElementById('visual-otp').innerText = generatedOTP;
-        document.getElementById('otp-section').classList.remove('hidden');
-        document.getElementById('auth-btn').innerText = "VERIFY & REGISTER";
-        document.getElementById('auth-btn').onclick = finalizeRegistration;
-    }
-    function finalizeRegistration() {
+
+    function startRegisterDelay() {
         const ph = document.getElementById('r-phone').value.trim();
         const otp = document.getElementById('r-otp').value.trim();
         const ps = document.getElementById('r-pass').value.trim();
-        if(otp != generatedOTP) return alert("Wrong OTP!");
-        db.ref('users/' + ph).set({ phone: ph, pass: ps, wallet: 0, id: "VIP" + Math.floor(1000 + Math.random() * 9000) })
-        .then(() => { localStorage.setItem('userPhone', ph); window.location.href = "dashboard.html"; });
+        const btn = document.getElementById('auth-btn');
+        const timerTxt = document.getElementById('timer-box');
+
+        if(otp.length !== 6) return alert("6-digit OTP daalein!");
+        if(ps.length < 4) return alert("Password kam se kam 4 aksharo ka ho!");
+
+        btn.disabled = true;
+        let timeLeft = 10;
+        
+        let countdown = setInterval(() => {
+            timerTxt.innerText = "⏳ Security Verification: " + timeLeft + "s";
+            timeLeft--;
+            if(timeLeft < 0) {
+                clearInterval(countdown);
+                finalizeRegistration(ph, ps);
+            }
+        }, 1000);
+    }
+
+    function finalizeRegistration(ph, ps) {
+        const userId = "VIP" + Math.floor(1000 + Math.random() * 9000);
+        
+        db.ref('users/' + ph).set({
+            phone: ph,
+            pass: ps,
+            balance: 51.00, // ₹51 WELCOME BONUS
+            winning_balance: 0.00,
+            uid: userId,
+            joined: new Date().toLocaleDateString()
+        }).then(() => {
+            localStorage.setItem('userPhone', ph);
+            alert("🔥 Registration Success! ₹51 Bonus Added.");
+            window.location.href = "dashboard.html";
+        });
     }
 </script>
 </body>
