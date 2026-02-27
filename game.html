@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DRAGON TIGER MASTER - NO MISTAKE</title>
+    <title>DRAGON TIGER - PRO EDITION</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
@@ -12,6 +12,11 @@
         .top-bar { display: flex; justify-content: space-between; padding: 10px; background: #111; border-bottom: 2px solid var(--gold); }
         .bal-box { background: #222; border: 1.5px solid var(--gold); padding: 5px 15px; border-radius: 20px; color: var(--gold); font-weight: bold; }
         .online-count { font-size: 11px; color: #0f0; font-weight: bold; margin-top: 2px; }
+        
+        /* ✅ ADMIN NOTIFICATION LINE (Marquee) */
+        .admin-msg-bar { background: #800; color: #fff; font-size: 12px; height: 20px; overflow: hidden; white-space: nowrap; border-bottom: 1px solid var(--gold); }
+        .admin-msg-bar marquee { line-height: 20px; font-weight: bold; }
+
         .history { display: flex; gap: 4px; padding: 8px; justify-content: flex-start; background: rgba(0,0,0,0.8); height: 25px; overflow-x: auto; border-bottom: 1px solid #333; }
         .hist-item { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 1px solid #fff; flex-shrink: 0; }
         .h-d { background: var(--dragon); } .h-t { background: var(--tiger); } .h-ti { background: var(--tie); }
@@ -38,9 +43,13 @@
 <div class="top-bar">
     <div>
         <div id="live-date" style="font-size:10px; color:var(--gold)">--/--/--</div>
-        <div class="online-count"><span id="user-online">543</span> Players Online</div>
+        <div class="online-count"><span id="user-online">854</span> Players Online</div>
     </div>
     <div class="bal-box">₹ <span id="balance">0.00</span></div>
+</div>
+
+<div class="admin-msg-bar">
+    <marquee id="admin-note">Welcome to Dragon Tiger Master! Minimum Withdrawal ₹200.</marquee>
 </div>
 
 <div class="history" id="hist-bar"></div>
@@ -61,8 +70,7 @@
 <div class="live-players" id="player-row"></div>
 
 <div class="chip-footer">
-    <div class="c-btn" id="chip10" style="background:#ffffff; color:#000" onclick="setChip(10, this)">10</div>
-    <div class="c-btn" id="chip50" style="background:#e91e63;" onclick="setChip(50, this)">50</div>
+    <div class="c-btn" id="chip10" style="background:#fff; color:#000" onclick="setChip(10, this)">10</div>
     <div class="c-btn" id="chip100" style="background:#2196f3;" onclick="setChip(100, this)">100</div>
     <div class="c-btn" id="chip500" style="background:#4caf50; color:#000" onclick="setChip(500, this)">500</div>
     <div class="c-btn" id="chip1000" style="background:#f44336;" onclick="setChip(1000, this)">1K</div>
@@ -72,114 +80,105 @@
 <div id="win-overlay">WINNER</div>
 
 <script>
-    // Config and Firebase Init
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const phone = localStorage.getItem('userPhone');
 
-    const chipConfig = { 10:{color:"#fff",text:"10",font:"#000"}, 50:{color:"#e91e63",text:"50",font:"#fff"}, 100:{color:"#2196f3",text:"100",font:"#fff"}, 500:{color:"#4caf50",text:"500",font:"#000"}, 1000:{color:"#f44336",text:"1K",font:"#fff"}, 5000:{color:"#ffd700",text:"5K",font:"#000"} };
-    let totalBal=0, currentChip=10, time=15, isBetting=false, pool={dragon:0, tiger:0, tie:0}, myBets={dragon:0, tiger:0, tie:0};
-    const deck = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+    const chipConfig = { 10:{color:"#fff",text:"10",font:"#000"}, 100:{color:"#2196f3",text:"100",font:"#fff"}, 500:{color:"#4caf50",text:"500",font:"#000"}, 1000:{color:"#f44336",text:"1K",font:"#fff"}, 5000:{color:"#ffd700",text:"5K",font:"#000"} };
+    let totalBal=0, currentChip=10, time=15, isBetting=false;
+    let realPool={dragon:0, tiger:0, tie:0}, botPool={dragon:0, tiger:0, tie:0}, myBets={dragon:0, tiger:0, tie:0};
+    const deck=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+    let lastStableHTML = "";
 
-    // ✅ FIXED GLOBAL HISTORY: 10-Round Freeze & Reset Sync
-    db.ref('games/dragon_tiger/history').limitToLast(10).on('value', snap => {
-        const h = document.getElementById('hist-bar');
-        const data = snap.val() || {};
-        const records = Object.values(data);
-        
-        // FREEZE LOGIC: Agar reset ho gaya toh purane circles mat hatao (jab tak naya na aaye)
-        if (records.length === 0) return;
-
-        let html = "";
-        records.forEach(v => {
-            let cls = (v==='dragon')?'h-d':(v==='tiger'?'h-t':'h-ti');
-            let char = (v==='dragon'?'D':v==='tiger'?'T':'t');
-            html += `<div class="hist-item ${cls}">${char}</div>`;
-        });
-        h.innerHTML = html;
-        h.scrollLeft = h.scrollWidth;
-
-        // Background Reset: Jab 10 poore hon, tab delete command bhej do
-        if (records.length >= 10) {
-            setTimeout(() => { db.ref('games/dragon_tiger/history').remove(); }, 8000);
-        }
+    // ✅ NOTIFICATION SYNC WITH ADMIN PANEL
+    db.ref('admin_settings/notification').on('value', s => {
+        if(s.val()) document.getElementById('admin-note').innerText = s.val();
     });
 
-    // 🟢 ALL PLAYER BOTS (NO CODE REMOVED)
-    let bots = [];
-    const names = ["VIP_1", "Raja", "Lucky", "Don", "Pro", "Jatt", "King", "Mega", "Smart", "Ace"];
-    function initBots() {
-        for(let i=0; i<10; i++) bots[i] = { name: names[i]+"_"+Math.floor(Math.random()*9), bal: Math.floor(Math.random()*80000)+50000 };
-        renderBots();
-    }
-    function renderBots() {
-        const row = document.getElementById('player-row'); row.innerHTML = "";
-        bots.forEach(b => row.innerHTML += `<div class="player"><div class="p-avatar">${b.name}</div><div style="font-size:8px;color:#0f0">₹${b.bal.toLocaleString()}</div></div>`);
-    }
+    // ✅ 10-ROUND HISTORY
+    db.ref('game_history').limitToLast(10).on('value', snap => {
+        const h = document.getElementById('hist-bar');
+        const records = Object.values(snap.val() || {});
+        if (records.length === 0) { if(lastStableHTML!=="") h.innerHTML = lastStableHTML; return; }
+        let html = "";
+        records.slice().reverse().forEach(v => {
+            let cls = (v==='dragon')?'h-d':(v==='tiger'?'h-t':'h-ti');
+            html += `<div class="hist-item ${cls}">${(v==='dragon'?'D':v==='tiger'?'T':'Ti')}</div>`;
+        });
+        h.innerHTML = html; lastStableHTML = html;
+        if (records.length >= 10) setTimeout(() => db.ref('game_history').remove(), 6000);
+    });
 
-    // 🟢 CONTINUOUS ENGINE
     function startEngine() {
-        resetUI(); time = 15; isBetting = true;
-        document.getElementById('timer').innerText = time;
+        resetUI(); time=15; isBetting=true;
         let loop = setInterval(() => {
             if(time > 0) {
-                time--; document.getElementById('timer').innerText = time;
+                document.getElementById('timer').innerText = time;
                 if(time > 2) botBetting();
+                time--;
             } else {
-                clearInterval(loop); isBetting = false; processResult();
+                clearInterval(loop); isBetting=false; processResult();
             }
         }, 1000);
     }
 
+    // 🟢 DYNAMIC BOTS WITH ROTATION LOGIC
+    let botNames = ["VIP_Don", "Raja_G", "Lucky77", "Pro_JS", "King_Khan", "Jatt_Boy", "Mega_Win", "Ace_High", "Richie", "Master", "Star_007", "Rahul_Vip", "Amit_01", "Simran_Ji", "Don_Bhai"];
+    
     function botBetting() {
-        bots.forEach(b => {
-            if(Math.random() > 0.3) {
+        bots.forEach((b, index) => {
+            if(Math.random() > 0.15) { 
                 let s = ['dragon','tiger','tie'][Math.floor(Math.random()*3)];
-                let a = [50, 100, 500, 1000, 5000][Math.floor(Math.random()*5)];
-                if(b.bal >= a) { b.bal -= a; pool[s] += a; updatePoolUI(); spawnChip(s, a); }
+                let a = [100, 500, 1000, 5000][Math.floor(Math.random()*4)];
+                if (s === 'tie' && (botPool.tie + a) > 5000) s = Math.random() > 0.5 ? 'dragon' : 'tiger';
+
+                if(b.bal >= a) { 
+                    b.bal -= a; 
+                    b.roundLoss += a; // Bot ki total betting track ho rahi hai
+                    botPool[s] += a; 
+                    updatePoolUI(); 
+                    spawnChip(s, a); 
+                }
             }
         });
+        if((botPool.dragon + realPool.dragon) < 45000) {
+            botPool.dragon += Math.floor(Math.random()*2500);
+            botPool.tiger += Math.floor(Math.random()*2500);
+            updatePoolUI();
+        }
         renderBots();
     }
 
-    function spawnChip(side, amt) {
-        const div = document.getElementById('chips-' + side);
-        const config = chipConfig[amt] || chipConfig[10];
-        const c = document.createElement('div');
-        c.className = 'chip'; c.style.background = config.color; c.style.color = config.font;
-        c.innerText = config.text;
-        c.style.left = Math.random() > 0.5 ? '-100px' : '200%';
-        c.style.top = '100%'; div.appendChild(c);
-        setTimeout(() => { c.style.left = (Math.random()*75+5)+"%"; c.style.top = (Math.random()*60+20)+"%"; }, 10);
-    }
-
-    function updatePoolUI() {
-        document.getElementById('p-dragon').innerText = pool.dragon.toLocaleString();
-        document.getElementById('p-tiger').innerText = pool.tiger.toLocaleString();
-        document.getElementById('p-tie').innerText = pool.tie.toLocaleString();
-    }
-
     function processResult() {
-        db.ref('games/dragon_tiger/settings').once('value', snap => {
-            const set = snap.val() || {mode:'auto'};
-            let win = (pool.dragon <= pool.tiger) ? 'dragon' : 'tiger';
-            if(set.mode === 'manual' && set.next) win = set.next;
-            
-            let d_i = Math.floor(Math.random()*13), t_i = Math.floor(Math.random()*13);
-            if(win==='dragon' && d_i <= t_i) [d_i, t_i] = [t_i, d_i];
-            if(win==='tiger' && t_i <= d_i) [t_i, d_i] = [d_i, t_i];
-            if(win==='tie') d_i = t_i;
+        let win = (realPool.dragon <= realPool.tiger) ? 'dragon' : 'tiger';
+        if(Math.random() < 0.04) win = 'tie';
 
-            document.getElementById('d-v').innerText = deck[d_i];
-            document.getElementById('t-v').innerText = deck[t_i];
-            document.querySelectorAll('.card-back').forEach(b => b.style.display = 'none');
-            document.getElementById('win-overlay').innerText = win.toUpperCase() + " WINS";
-            document.getElementById('win-overlay').style.display = 'block';
-            
-            db.ref('games/dragon_tiger/history').push(win);
-            setTimeout(() => { startEngine(); }, 7000);
-        });
+        let d_i = Math.floor(Math.random()*13), t_i = Math.floor(Math.random()*13);
+        if(win==='dragon' && d_i <= t_i) [d_i, t_i] = [t_i, d_i];
+        if(win==='tiger' && t_i <= d_i) [t_i, d_i] = [d_i, t_i];
+        if(win==='tie') d_i = t_i;
+
+        document.getElementById('d-v').innerText = deck[d_i];
+        document.getElementById('t-v').innerText = deck[t_i];
+        document.querySelectorAll('.card-back').forEach(b => b.style.display = 'none');
+        document.getElementById('win-overlay').innerText = win.toUpperCase() + " WINS";
+        document.getElementById('win-overlay').style.display = 'block';
+
+        db.ref('game_history').push(win);
+
+        setTimeout(() => { 
+            // ✅ BOT ROTATION: 10k-20k profit/loss ke baad Bot Change
+            bots.forEach((b, i) => {
+                b.bal += Math.floor(Math.random()*15000); // Winning simulation
+                if(b.roundLoss > 15000 || b.bal > 150000) { 
+                    // Naya Bot ID rotate karo
+                    let newName = botNames[Math.floor(Math.random() * botNames.length)] + "_" + Math.floor(Math.random()*99);
+                    bots[i] = { name: newName, bal: Math.floor(Math.random()*80000)+30000, roundLoss: 0 };
+                }
+            });
+            startEngine(); 
+        }, 7000);
     }
 
     function placeBet(side) {
@@ -188,37 +187,52 @@
             const d = s.val() || {}; let b = parseFloat(d.balance||0), w = parseFloat(d.winning_balance||0);
             if(b >= currentChip) b -= currentChip; else if(w >= currentChip) w -= currentChip; else return;
             db.ref('users/'+phone).update({balance:b, winning_balance:w});
-            myBets[side] += currentChip; pool[side] += currentChip;
+            myBets[side]+=currentChip; realPool[side]+=currentChip;
             updatePoolUI(); spawnChip(side, currentChip);
         });
+    }
+
+    function updatePoolUI() {
+        document.getElementById('p-dragon').innerText = (realPool.dragon + botPool.dragon).toLocaleString();
+        document.getElementById('p-tiger').innerText = (realPool.tiger + botPool.tiger).toLocaleString();
+        document.getElementById('p-tie').innerText = (realPool.tie + botPool.tie).toLocaleString();
+    }
+
+    function spawnChip(side, amt) {
+        const div = document.getElementById('chips-' + side);
+        const config = chipConfig[amt] || chipConfig[10];
+        const c = document.createElement('div');
+        c.className = 'chip'; c.style.background = config.color; c.innerText = config.text;
+        c.style.left = Math.random() > 0.5 ? '-50px' : '150%';
+        c.style.top = '100%'; div.appendChild(c);
+        setTimeout(() => { c.style.left = (Math.random()*70+15)+"%"; c.style.top = (Math.random()*60+20)+"%"; }, 10);
+        if(div.children.length > 35) div.firstChild.remove();
     }
 
     function resetUI() {
         document.getElementById('win-overlay').style.display = 'none';
         document.querySelectorAll('.card-back').forEach(b => b.style.display = 'flex');
         document.querySelectorAll('.chip').forEach(c => c.remove());
-        pool = {dragon:0, tiger:0, tie:0}; myBets = {dragon:0, tiger:0, tie:0};
-        updatePoolUI();
-        document.getElementById('live-date').innerText = new Date().toLocaleDateString();
+        realPool={dragon:0, tiger:0, tie:0}; botPool={dragon:0, tiger:0, tie:0}; myBets={dragon:0, tiger:0, tie:0};
+        updatePoolUI(); document.getElementById('live-date').innerText = new Date().toLocaleDateString();
     }
 
-    function setChip(v, el) {
-        currentChip = v;
-        document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected'));
-        el.classList.add('selected');
+    let bots = [];
+    function initBots() {
+        for(let i=0; i<10; i++) {
+            let n = botNames[Math.floor(Math.random() * botNames.length)] + "_" + Math.floor(Math.random()*99);
+            bots[i] = { name: n, bal: Math.floor(Math.random()*100000)+50000, roundLoss: 0 };
+        }
+        renderBots();
+    }
+    function renderBots() {
+        const row = document.getElementById('player-row'); row.innerHTML = "";
+        bots.forEach(b => row.innerHTML += `<div class="player"><div class="p-avatar">${b.name}</div><div style="font-size:8px;color:#0f0">₹${b.bal.toLocaleString()}</div></div>`);
     }
 
-    if(phone) {
-        db.ref('users/'+phone).on('value', s => {
-            const d = s.val() || {};
-            totalBal = (parseFloat(d.balance)||0) + (parseFloat(d.winning_balance)||0);
-            document.getElementById('balance').innerText = totalBal.toFixed(2);
-        });
-    }
-
-    initBots();
-    document.getElementById('chip10').classList.add('selected');
-    startEngine();
+    function setChip(v, el) { currentChip = v; document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); }
+    if(phone) { db.ref('users/'+phone).on('value', s => { const d = s.val() || {}; totalBal = (parseFloat(d.balance)||0) + (parseFloat(d.winning_balance)||0); document.getElementById('balance').innerText = totalBal.toFixed(2); }); }
+    initBots(); document.getElementById('chip10').classList.add('selected'); startEngine();
 </script>
 </body>
 </html>
