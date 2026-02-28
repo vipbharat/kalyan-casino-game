@@ -10,7 +10,7 @@
         body { background: #050505; color: #fff; font-family: sans-serif; margin: 0; padding-bottom: 50px; }
         .header { background: #1a1a1a; padding: 20px; text-align: center; border-bottom: 2px solid gold; color: gold; font-weight: bold; font-size: 22px; }
         .card { background: #111; border-radius: 12px; border: 1px solid #333; padding: 15px; margin: 15px; border-left: 5px solid gold; }
-        h3 { color: gold; margin: 0 0 15px 0; font-size: 15px; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 8px; }
+        h3 { color: gold; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 8px; }
         input, select { width: 94%; padding: 12px; margin: 10px 0; background: #222; color: #fff; border: 1px solid #444; border-radius: 8px; font-size: 14px; }
         .btn-group { display: flex; gap: 10px; margin-top: 10px; }
         .btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
@@ -24,11 +24,11 @@
 </head>
 <body>
 
-<div class="header">💎 KALYAN PRO MASTER ADMIN</div>
+<div class="header">💎 MASTER CONTROL PANEL</div>
 
 <div class="section">
     <div class="card">
-        <h3>💰 WALLET MANAGER (3 BALANCES)</h3>
+        <h3>💰 WALLET CONTROL (3 BALANCES)</h3>
         <input type="text" id="mPh" placeholder="Player Phone Number">
         <select id="balType">
             <option value="balance">Main Balance</option>
@@ -37,23 +37,24 @@
         </select>
         <input type="number" id="mAmt" placeholder="Amount (₹)">
         <div class="btn-group">
-            <button class="btn btn-green" onclick="updateWallet('add')">ADD MONEY</button>
-            <button class="btn btn-red" onclick="updateWallet('cut')">CUT MONEY</button>
+            <button class="btn btn-green" onclick="upWallet('add')">ADD MONEY</button>
+            <button class="btn btn-red" onclick="upWallet('cut')">CUT MONEY</button>
         </div>
     </div>
 
     <div class="card">
-        <h3>⚙️ PAYMENT & DASHBOARD SETUP</h3>
-        <input type="text" id="upiId" placeholder="UPI ID (e.g. name@ybl)">
-        <input type="text" id="qrUrl" placeholder="QR Image Link (ImgBB Link)">
-        <input type="text" id="waNo" placeholder="WhatsApp Number (91...)">
-        <input type="text" id="tgLink" placeholder="Telegram Link">
-        <button class="btn btn-blue" onclick="saveSettings()">SAVE ALL SETTINGS</button>
+        <h3>⚙️ DASHBOARD & PAYMENT SETUP</h3>
+        <input type="text" id="upiId" placeholder="Enter UPI ID (e.g. name@ybl)">
+        <input type="text" id="qrUrl" placeholder="Enter QR Image Link (ImgBB Link)">
+        <input type="text" id="waNo" placeholder="WhatsApp Number (e.g. 918888888888)">
+        <input type="text" id="tgLink" placeholder="Telegram Full Link">
+        <input type="text" id="notifMsg" placeholder="Dashboard Notice (Marquee Text)">
+        <button class="btn btn-blue" onclick="saveAll()">SAVE ALL SETTINGS</button>
     </div>
 
     <div class="card">
-        <h3>📩 LIVE PLAYER REQUESTS</h3>
-        <div id="req-list">Loading Requests...</div>
+        <h3>📩 LIVE DEPOSIT REQUESTS</h3>
+        <div id="req-list">Loading...</div>
     </div>
 </div>
 
@@ -63,6 +64,7 @@
 </div>
 
 <script>
+    // Aapka Firebase Config
     const firebaseConfig = { 
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
@@ -71,33 +73,38 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // WALLET UPDATE
-    function updateWallet(type) {
+    // 1. WALLET SYNC: Dashboard History ke saath
+    function upWallet(type) {
         const ph = document.getElementById('mPh').value;
         const amt = parseFloat(document.getElementById('mAmt').value);
         const bType = document.getElementById('balType').value;
-        if(!ph || !amt) return alert("Details bhariye!");
+        if(!ph || !amt) return alert("Details dalo!");
 
-        db.ref('users/' + ph + '/' + bType).transaction(bal => {
-            let current = parseFloat(bal) || 0;
-            return type === 'add' ? current + amt : current - amt;
-        }).then(() => {
-            db.ref('users/' + ph + '/history').push({
-                type: (type === 'add' ? "Deposit" : "Admin Cut"),
-                amount: amt, status: "success", date: new Date().toLocaleString()
+        db.ref('users/' + ph + '/' + bType).transaction(bal => (parseFloat(bal)||0) + (type==='add'?amt:-amt))
+        .then(() => {
+            db.ref('users/'+ph+'/history').push({
+                type: type==='add'?"Deposit":"Admin Cut",
+                amount: amt, status: "success", date: new Date().toLocaleDateString()
             });
-            alert("✅ Done! Player Balance Updated.");
+            alert("✅ Wallet & History Updated!");
         });
     }
 
-    // SAVE SETTINGS
-    function saveSettings() {
-        db.ref('admin_settings/payment').update({ upi_id: document.getElementById('upiId').value, qr_url: document.getElementById('qrUrl').value });
-        db.ref('admin_settings/support').update({ whatsapp: document.getElementById('waNo').value, telegram: document.getElementById('tgLink').value });
-        alert("✅ Dashboard Setup Updated!");
+    // 2. SAVE ALL: QR, UPI, WA, TG & Notice
+    function saveAll() {
+        db.ref('admin_settings/payment').update({ 
+            upi_id: document.getElementById('upiId').value, 
+            qr_url: document.getElementById('qrUrl').value 
+        });
+        db.ref('admin_settings/support').update({ 
+            whatsapp: document.getElementById('waNo').value, 
+            telegram: document.getElementById('tgLink').value 
+        });
+        db.ref('admin_settings/notification').set(document.getElementById('notifMsg').value);
+        alert("✅ All Dashboard Settings Saved!");
     }
 
-    // REQUEST MONITOR
+    // 3. REQUEST MONITOR: Live Player Info
     db.ref('requests').on('value', snap => {
         let h = "";
         snap.forEach(c => {
@@ -105,15 +112,19 @@
             h += `<div class="req-box">
                 <b>Phone: ${r.phone}</b> | ₹${r.amount}
                 <br><br>
-                <button class="btn" style="background:gold; color:#000; padding:5px 10px; width:auto; font-size:12px;" onclick="viewImg('${r.image}')">👁 VIEW INFO</button>
-                <button class="btn" style="background:#e74c3c; color:#fff; padding:5px 10px; width:auto; font-size:12px; float:right;" onclick="delReq('${c.key}')">DELETE</button>
+                <button class="btn btn-blue" style="width:auto; padding:8px; font-size:12px; margin:0;" onclick="viewSS('${r.image}')">👁 VIEW INFO (SS)</button>
+                <button class="btn btn-red" style="width:auto; padding:8px; font-size:12px; margin:0; float:right;" onclick="delReq('${c.key}')">DELETE</button>
             </div>`;
         });
         document.getElementById('req-list').innerHTML = h || "No Requests Found.";
     });
 
-    function viewImg(url) { document.getElementById('popImg').src = url; document.getElementById('imgModal').style.display = "block"; }
-    function delReq(id) { if(confirm("Delete?")) db.ref('requests/'+id).remove(); }
+    function viewSS(url) { 
+        if(!url || url === "undefined") return alert("No Screenshot!");
+        document.getElementById('popImg').src = url; 
+        document.getElementById('imgModal').style.display = "block"; 
+    }
+    function delReq(id) { if(confirm("Request Delete Karein?")) db.ref('requests/'+id).remove(); }
 </script>
 </body>
 </html>
