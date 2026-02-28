@@ -114,41 +114,41 @@
         evt.currentTarget.classList.add("active");
     }
 
-    // ✅ MULTI-PATH MASTER CONTROL (No Mistakes)
+    // ✅ CONNECTED TO NEW SCRIPTS
     function masterControl(game, res) {
         const mode = (res === 'auto') ? 'auto' : 'manual';
         
-        // Dragon Tiger Paths
         if(game === 'dvt') {
-            db.ref('game_settings/dvt').update({ mode: mode, result: res, next: res });
-            db.ref('games/dragon_tiger').update({ mode: mode, result: res, winning: res });
-            db.ref('game_live_bets_dvt').set({ dragon: 0, tiger: 0, tie: 0 });
-        } 
-        // Andar Bahar Paths
-        else {
-            db.ref('game_settings/ab').update({ mode: mode, result: res, next: res });
-            db.ref('games/andar_bahar').update({ mode: mode, result: res, winning: res });
-            db.ref('game_live_bets_ab').set({ andar: 0, bahar: 0 });
+            // Updated Path for Dragon Tiger
+            db.ref('game_settings/dvt').update({ mode: mode, result: res });
+        } else {
+            // Updated Path for Andar Bahar
+            db.ref('manual_result_ab').set(res); // Jo humne script mein 'adminCommand' ke liye rakha tha
         }
         alert("✅ " + res.toUpperCase() + " SENT!");
     }
 
-    // ✅ LIVE MONITORING
+    // ✅ LIVE POOL MONITORING (Sync with Real/Bot Money)
+    // Note: Ismein real time betting dikhegi
     db.ref('game_live_bets_dvt').on('value', s => {
         const d = s.val() || {dragon:0, tiger:0, tie:0};
         document.getElementById('dvt-monitor').innerText = `D: ₹${d.dragon} | T: ₹${d.tiger} | Ti: ₹${d.tie}`;
     });
+    
+    // Note: Ismein Andar Bahar ki live betting dikhegi
     db.ref('game_live_bets_ab').on('value', s => {
         const d = s.val() || {andar:0, bahar:0};
         document.getElementById('ab-monitor').innerText = `Andar: ₹${d.andar} | Bahar: ₹${d.bahar}`;
     });
 
-    // ✅ WALLET & SETTINGS (Restored)
     function modifyWallet(action) {
         const ph = document.getElementById('userPhone').value;
         const amt = parseFloat(document.getElementById('newAmt').value);
-        db.ref('users/' + ph + '/balance').transaction(b => action==='add'?(parseFloat(b)||0)+amt:(parseFloat(b)||0)-amt)
-        .then(() => alert("Done!"));
+        if(!ph || !amt) return alert("Pehle Phone aur Amount daalein!");
+        
+        db.ref('users/' + ph + '/balance').transaction(b => {
+            return action === 'add' ? (parseFloat(b) || 0) + amt : (parseFloat(b) || 0) - amt;
+        }).then(() => alert("Balance Updated!"));
     }
 
     function updateSettings() {
@@ -157,17 +157,21 @@
             qr: document.getElementById('qrUrl').value,
             whatsapp: document.getElementById('waLink').value,
             telegram: document.getElementById('tgLink').value
-        }).then(() => alert("Saved!"));
+        }).then(() => alert("Settings Saved!"));
     }
 
-    // Load Data
     db.ref('users').on('value', s => {
-        let h = ""; s.forEach(c => { h += `<tr><td>${c.key}</td><td>₹${c.val().balance}</td><td>${c.val().uid}</td></tr>`; });
+        let h = ""; 
+        s.forEach(c => { 
+            let data = c.val();
+            h += `<tr><td>${c.key}</td><td>₹${(data.balance || 0).toFixed(2)}</td><td>${data.uid || 'N/A'}</td></tr>`; 
+        });
         document.getElementById('all-users-data').innerHTML = h;
     });
 
     function updateNotif() {
-        db.ref('admin_settings/notification').set(document.getElementById('notifMsg').value).then(()=>alert("Notice Saved!"));
+        const msg = document.getElementById('notifMsg').value;
+        db.ref('admin_settings/notification').set(msg).then(() => alert("Notice Updated!"));
     }
 </script>
 </body>
