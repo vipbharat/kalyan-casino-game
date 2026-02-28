@@ -10,20 +10,18 @@
         .header { background: #1a1a1a; padding: 15px; border-bottom: 2px solid gold; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .balance-card { background: rgba(255, 215, 0, 0.1); padding: 5px 15px; border-radius: 20px; border: 1px solid gold; color: gold; font-weight: bold; }
         
-        /* Notification Bar */
         #admin-notice { background: #111; color: gold; font-size: 12px; padding: 8px; border-bottom: 1px solid #333; display: block; }
 
+        /* Action Grid */
         .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; background: #151515; }
         .action-btn { text-align: center; font-size: 11px; cursor: pointer; color: #ccc; }
         .action-btn i { display: block; font-size: 22px; margin-bottom: 5px; color: gold; }
         
-        /* Support Buttons */
         .sup-grid { display: flex; gap: 10px; padding: 10px 15px; background: #151515; }
         .sup-link { flex: 1; padding: 10px; border-radius: 8px; text-decoration: none; color: #fff; text-align: center; font-weight: bold; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 5px; }
 
         .section-title { padding: 15px 15px 5px; color: gold; font-weight: bold; text-transform: uppercase; font-size: 13px; }
         
-        /* Game Grid Fix */
         .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 15px; }
         .game-card { background: #1a1a1a; border-radius: 12px; border: 1px solid #333; padding: 10px; text-align: center; cursor: pointer; }
         .game-card img { width: 100%; border-radius: 8px; height: 90px; object-fit: cover; }
@@ -45,6 +43,8 @@
     <div class="action-grid">
         <div class="action-btn" onclick="nav('deposit')"><i class="fa-solid fa-plus-circle"></i>Deposit</div>
         <div class="action-btn" onclick="nav('withdraw')"><i class="fa-solid fa-wallet"></i>Withdraw</div>
+        <div class="action-btn" onclick="nav('history')"><i class="fa-solid fa-clock-rotate-left"></i>History</div>
+        <div class="action-btn" onclick="shareReferral()"><i class="fa-solid fa-share-nodes"></i>Refer</div>
         <div class="action-btn" onclick="nav('support')"><i class="fa-solid fa-headset"></i>Support</div>
         <div class="action-btn" onclick="location.reload()"><i class="fa-solid fa-sync"></i>Refresh</div>
     </div>
@@ -88,7 +88,9 @@
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || "Guest";
 
-        // Admin Settings Sync
+        // Yahan aapka Link Fix Kar Diya Gaya Hai
+        const downloadLink = "https://vipbharat.github.io/kalyan-casino-game/download.html";
+
         db.ref('admin_settings').on('value', (snap) => {
             const data = snap.val();
             if(data) {
@@ -100,13 +102,27 @@
             }
         });
 
-        // Balance Sync
         db.ref('users/' + phone).on('value', (snapshot) => {
             const data = snapshot.val() || {};
             document.getElementById('player-id-display').innerText = "ID: " + (data.playerId || "KP" + phone.slice(-4));
             const total = (parseFloat(data.balance||0) + parseFloat(data.winning_balance||0) + parseFloat(data.bonus_balance||0));
             document.getElementById('balance').innerText = total.toFixed(2);
         });
+
+        // Referral Share Logic
+        function shareReferral() {
+            const shareText = "Kalyan Pro Game Download Karein aur Lakhon Jeetein! Click Here: " + downloadLink;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Kalyan Pro',
+                    text: shareText,
+                    url: downloadLink
+                }).catch(console.error);
+            } else {
+                // Agar phone support na kare toh WhatsApp par direct bhej do
+                window.open("https://wa.me/?text=" + encodeURIComponent(shareText), '_blank');
+            }
+        }
 
         function nav(page) { window.location.href = page + ".html"; }
     </script>
