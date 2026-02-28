@@ -3,54 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Withdraw - Kalyan Pro</title>
+    <title>Kalyan Pro - Withdraw</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #0b0b0b; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
-        .header { display: flex; align-items: center; margin-bottom: 20px; }
-        .back-btn { color: gold; text-decoration: none; font-size: 20px; margin-right: 15px; }
-        .withdraw-card { background: #1a1a1a; padding: 20px; border-radius: 15px; border: 1px solid #333; }
-        .balance-info { background: rgba(255, 215, 0, 0.1); padding: 15px; border-radius: 10px; border: 1px solid gold; margin-bottom: 20px; }
-        .balance-info span { color: gold; font-size: 24px; font-weight: bold; }
+        body { background: #0b0b0b; color: #fff; font-family: sans-serif; margin: 0; padding: 20px; text-align: center; }
+        .header { display: flex; align-items: center; margin-bottom: 25px; }
+        .header i { font-size: 20px; color: gold; cursor: pointer; }
+        .header h2 { flex: 1; margin: 0; font-size: 18px; color: gold; text-transform: uppercase; }
+
+        .balance-info { background: #1a1a1a; padding: 15px; border-radius: 12px; border-bottom: 3px solid gold; margin-bottom: 25px; }
+        .balance-info span { color: gold; font-size: 22px; font-weight: bold; display: block; margin-top: 5px; }
+
+        /* Form Styling */
         .input-group { text-align: left; margin-bottom: 15px; }
-        label { font-size: 13px; color: gold; margin-left: 5px; }
-        input { width: 100%; padding: 12px; margin-top: 5px; background: #000; border: 1px solid #444; color: #fff; border-radius: 8px; box-sizing: border-box; }
-        .btn-withdraw { background: linear-gradient(180deg, #ff4d4d, #b30000); color: #fff; padding: 16px; width: 100%; border: none; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 10px rgba(255,0,0,0.2); }
+        label { font-size: 12px; color: gold; display: block; margin-bottom: 5px; margin-left: 5px; }
+        input { width: 100%; padding: 15px; background: #151515; border: 1px solid #333; border-radius: 8px; color: #fff; box-sizing: border-box; font-size: 14px; }
+        
+        /* QR Upload Box */
+        .upload-card { background: #1a1a1a; border: 2px dashed #444; padding: 20px; border-radius: 12px; cursor: pointer; transition: 0.3s; margin-bottom: 20px; }
+        .upload-card:active { border-color: gold; background: #222; }
+        .upload-card i { font-size: 30px; color: gold; margin-bottom: 10px; display: block; }
+        .upload-card p { font-size: 12px; color: #888; margin: 0; }
+
+        .btn-withdraw { width: 100%; padding: 16px; background: gold; color: #000; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2); }
+        .note { font-size: 11px; color: #666; margin-top: 15px; line-height: 1.5; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <a href="dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
-        <h2 style="margin:0;">WITHDRAW <span style="color: gold;">MONEY</span></h2>
+        <i class="fa fa-arrow-left" onclick="window.history.back()"></i>
+        <h2>Withdraw Money</h2>
     </div>
 
-    <div class="withdraw-card">
-        <div class="balance-info">
-            <p style="margin:0; font-size: 14px;">Available Balance</p>
-            ₹ <span id="current-bal">0.00</span>
-        </div>
-
-        <div class="input-group">
-            <label>Game ID (Phone Number)</label>
-            <input type="tel" id="w-game-id" readonly title="Aapka login number">
-        </div>
-
-        <div class="input-group">
-            <label>Withdraw Amount (Min ₹500)</label>
-            <input type="number" id="w-amount" placeholder="Min 500">
-        </div>
-
-        <div class="input-group">
-            <label>Your UPI ID (For Payment)</label>
-            <input type="text" id="w-upi" placeholder="example@upi">
-        </div>
-        
-        <button id="sub-btn" class="btn-withdraw" onclick="submitWithdraw()">REQUEST WITHDRAWAL</button>
+    <div class="balance-info">
+        Available Balance
+        <span id="p-bal">₹ 0.00</span>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <div class="input-group">
+        <label>Mobile Number (Paytm/GPay)</label>
+        <input type="number" id="w-phone" placeholder="Enter Mobile Number">
+    </div>
+
+    <div class="input-group">
+        <label>UPI ID (example@ybl)</label>
+        <input type="text" id="w-upi" placeholder="Enter UPI ID">
+    </div>
+
+    <div class="input-group">
+        <label>Withdrawal Amount (₹)</label>
+        <input type="number" id="w-amount" placeholder="Min ₹500 - Max ₹50000">
+    </div>
+
+    <div class="upload-card" onclick="document.getElementById('qr-file').click()">
+        <i class="fa fa-qrcode"></i>
+        <p id="qr-status">Upload your Receiving QR Code (Optional)</p>
+        <input type="file" id="qr-file" style="display: none;" onchange="updateStatus(this)">
+    </div>
+
+    <button class="btn-withdraw" onclick="submitWithdraw()">REQUEST WITHDRAWAL</button>
+
+    <div class="note">
+        * Note: Withdrawal requests are processed within 1-2 hours. <br>
+        Make sure your UPI ID and QR are correct.
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -60,68 +80,49 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const userPhone = localStorage.getItem('userPhone');
-        
-        let totalDisplayBalance = 0;
+        const userPhone = localStorage.getItem('userPhone') || "Guest";
 
-        if(userPhone) {
-            document.getElementById('w-game-id').value = userPhone;
-            db.ref('users/' + userPhone).on('value', (snap) => {
-                const data = snap.val() || {};
-                const b = parseFloat(data.balance || 0);
-                const w = parseFloat(data.winning_balance || 0);
-                const bo = parseFloat(data.bonus_balance || 0);
-                totalDisplayBalance = b + w + bo;
-                document.getElementById('current-bal').innerText = totalDisplayBalance.toFixed(2);
-            });
+        // Balance Sync
+        db.ref('users/' + userPhone).on('value', (snap) => {
+            const data = snap.val() || {};
+            const total = (parseFloat(data.balance||0) + parseFloat(data.winning_balance||0));
+            document.getElementById('p-bal').innerText = "₹ " + total.toFixed(2);
+        });
+
+        function updateStatus(input) {
+            if(input.files.length > 0) {
+                document.getElementById('qr-status').innerText = "✅ QR Code Selected";
+                document.getElementById('qr-status').style.color = "#2ecc71";
+            }
         }
 
         function submitWithdraw() {
-            const amtVal = document.getElementById('w-amount').value;
-            const upi = document.getElementById('w-upi').value.trim();
-            const amt = parseFloat(amtVal);
+            const phone = document.getElementById('w-phone').value;
+            const upi = document.getElementById('w-upi').value;
+            const amt = document.getElementById('w-amount').value;
 
-            if(!userPhone || userPhone === "Guest") return alert("Kripya pehle Login karein!");
-            if(isNaN(amt) || amt < 500) return alert("Kam se kam ₹500 withdrawal karein!");
-            if(amt > totalDisplayBalance) return alert("Aapke paas itna balance nahi hai!");
-            if(upi === "") return alert("Apni UPI ID dalein!");
+            if(!phone || !upi || !amt) {
+                alert("Bhai, saari details bhariye!");
+                return;
+            }
 
-            document.getElementById('sub-btn').disabled = true;
-            document.getElementById('sub-btn').innerText = "Processing...";
+            if(amt < 500) {
+                alert("Minimum withdrawal ₹500 hai!");
+                return;
+            }
 
-            // 1. Request Data for Admin Panel
-            const withdrawRequest = {
+            // Submit to Admin
+            db.ref('requests').push({
                 phone: userPhone,
-                amount: amt,
+                w_phone: phone,
                 upi: upi,
-                type: "WITHDRAWAL",
-                image: "none", // Withdraw mein image nahi hoti
-                date: new Date().toLocaleString()
-            };
-
-            // 2. Update Database: Minus from Main Balance & Clear others
-            db.ref('users/' + userPhone).update({
-                balance: totalDisplayBalance - amt,
-                winning_balance: 0,
-                bonus_balance: 0
+                amount: amt,
+                type: 'WITHDRAWAL',
+                status: 'PENDING',
+                time: new Date().toLocaleString()
             }).then(() => {
-                // 3. Send to Admin 'requests' folder
-                db.ref('requests').push(withdrawRequest).then(() => {
-                    // 4. Add to Player History
-                    db.ref('users/' + userPhone + '/history').push({
-                        type: "Withdrawal",
-                        amount: amt,
-                        status: "pending",
-                        date: new Date().toLocaleString()
-                    });
-                    
-                    alert("✅ Success! Withdrawal Request bhej di gayi hai.");
-                    window.location.href = "dashboard.html";
-                });
-            }).catch(e => {
-                alert("Error: " + e.message);
-                document.getElementById('sub-btn').disabled = false;
-                document.getElementById('sub-btn').innerText = "REQUEST WITHDRAWAL";
+                alert("Withdrawal Request Bhej Di Gayi Hai!");
+                window.location.href = "dashboard.html";
             });
         }
     </script>
