@@ -12,11 +12,10 @@
         .card { background: #111; border-radius: 12px; border: 1px solid #333; padding: 15px; margin: 15px; border-left: 5px solid gold; }
         h3 { color: gold; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 8px; }
         input, select { width: 94%; padding: 12px; margin: 10px 0; background: #222; color: #fff; border: 1px solid #444; border-radius: 8px; font-size: 14px; }
-        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        .btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; margin-top: 10px; }
         .btn-green { background: #2ecc71; color: #000; }
         .btn-red { background: #e74c3c; color: #fff; }
-        .btn-blue { width: 100%; background: #3498db; color: #fff; margin-top: 10px; }
+        .btn-blue { background: #3498db; color: #fff; }
         .req-box { background: #1a1a1a; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #333; border-left: 4px solid #3498db; }
         #imgModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; text-align:center; }
         #imgModal img { max-width:90%; max-height:80%; margin-top:60px; border:2px solid gold; border-radius:10px; }
@@ -24,7 +23,7 @@
 </head>
 <body>
 
-<div class="header">💎 MASTER CONTROL PANEL</div>
+<div class="header">💎 MASTER ADMIN PANEL</div>
 
 <div class="section">
     <div class="card">
@@ -36,25 +35,33 @@
             <option value="bonus_balance">Bonus Balance</option>
         </select>
         <input type="number" id="mAmt" placeholder="Amount (₹)">
-        <div class="btn-group">
-            <button class="btn btn-green" onclick="upWallet('add')">ADD MONEY</button>
-            <button class="btn btn-red" onclick="upWallet('cut')">CUT MONEY</button>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-green" onclick="updateWallet('add')">ADD MONEY</button>
+            <button class="btn btn-red" onclick="updateWallet('cut')">CUT MONEY</button>
         </div>
     </div>
 
     <div class="card">
         <h3>⚙️ DASHBOARD & PAYMENT SETUP</h3>
-        <input type="text" id="upiId" placeholder="Enter UPI ID (e.g. name@ybl)">
-        <input type="text" id="qrUrl" placeholder="Enter QR Image Link (ImgBB Link)">
-        <input type="text" id="waNo" placeholder="WhatsApp Number (e.g. 918888888888)">
+        <p style="font-size: 11px; color: gold;">Deposit UPI ID:</p>
+        <input type="text" id="upiId" placeholder="Example: name@ybl">
+        
+        <p style="font-size: 11px; color: gold;">QR Image Link (ImgBB Link):</p>
+        <input type="text" id="qrUrl" placeholder="https://i.ibb.co/your-qr.jpg">
+        
+        <p style="font-size: 11px; color: gold;">WhatsApp & Telegram Links:</p>
+        <input type="text" id="waNo" placeholder="WhatsApp Number (91...)">
         <input type="text" id="tgLink" placeholder="Telegram Full Link">
-        <input type="text" id="notifMsg" placeholder="Dashboard Notice (Marquee Text)">
-        <button class="btn btn-blue" onclick="saveAll()">SAVE ALL SETTINGS</button>
+        
+        <p style="font-size: 11px; color: gold;">Dashboard Notice (Marquee):</p>
+        <input type="text" id="notifMsg" placeholder="Sabse Tez Result - Kalyan Pro!">
+        
+        <button class="btn btn-blue" onclick="saveAllSettings()">SAVE ALL SETTINGS</button>
     </div>
 
     <div class="card">
-        <h3>📩 LIVE DEPOSIT REQUESTS</h3>
-        <div id="req-list">Loading...</div>
+        <h3>📩 LIVE PLAYER REQUESTS (DEPOSIT/WITHDRAW)</h3>
+        <div id="req-list">Loading Requests...</div>
     </div>
 </div>
 
@@ -64,7 +71,7 @@
 </div>
 
 <script>
-    // Aapka Firebase Config
+    // Firebase Configuration
     const firebaseConfig = { 
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
@@ -73,58 +80,62 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. WALLET SYNC: Dashboard History ke saath
-    function upWallet(type) {
+    // 1. WALLET LOGIC
+    function updateWallet(type) {
         const ph = document.getElementById('mPh').value;
         const amt = parseFloat(document.getElementById('mAmt').value);
         const bType = document.getElementById('balType').value;
-        if(!ph || !amt) return alert("Details dalo!");
+        if(!ph || !amt) return alert("Pehle Phone aur Amount bhariye!");
 
         db.ref('users/' + ph + '/' + bType).transaction(bal => (parseFloat(bal)||0) + (type==='add'?amt:-amt))
         .then(() => {
             db.ref('users/'+ph+'/history').push({
-                type: type==='add'?"Deposit":"Admin Cut",
+                type: (type === 'add' ? "Deposit" : "Admin Cut"),
                 amount: amt, status: "success", date: new Date().toLocaleDateString()
             });
-            alert("✅ Wallet & History Updated!");
+            alert("✅ Wallet Updated Successfully!");
         });
     }
 
-    // 2. SAVE ALL: QR, UPI, WA, TG & Notice
-    function saveAll() {
-        db.ref('admin_settings/payment').update({ 
-            upi_id: document.getElementById('upiId').value, 
-            qr_url: document.getElementById('qrUrl').value 
-        });
-        db.ref('admin_settings/support').update({ 
-            whatsapp: document.getElementById('waNo').value, 
-            telegram: document.getElementById('tgLink').value 
-        });
-        db.ref('admin_settings/notification').set(document.getElementById('notifMsg').value);
-        alert("✅ All Dashboard Settings Saved!");
+    // 2. SAVE SETTINGS (This Connects Dashboard & Deposit)
+    function saveAllSettings() {
+        const upi = document.getElementById('upiId').value;
+        const qr = document.getElementById('qrUrl').value;
+        const wa = document.getElementById('waNo').value;
+        const tg = document.getElementById('tgLink').value;
+        const notice = document.getElementById('notifMsg').value;
+
+        // Save Payment Data
+        db.ref('admin_settings/payment').update({ upi_id: upi, qr_url: qr });
+        // Save Support Data
+        db.ref('admin_settings/support').update({ whatsapp: wa, telegram: tg });
+        // Save Notice
+        db.ref('admin_settings/notification').set(notice);
+
+        alert("✅ All Settings Saved! Check Dashboard & Deposit Page.");
     }
 
-    // 3. REQUEST MONITOR: Live Player Info
+    // 3. REQUEST MONITOR (Deposit/Withdraw)
     db.ref('requests').on('value', snap => {
         let h = "";
         snap.forEach(c => {
             let r = c.val();
             h += `<div class="req-box">
-                <b>Phone: ${r.phone}</b> | ₹${r.amount}
+                <b>Phone: ${r.phone}</b> | ₹${r.amount} (${r.type || 'Deposit'})
                 <br><br>
-                <button class="btn btn-blue" style="width:auto; padding:8px; font-size:12px; margin:0;" onclick="viewSS('${r.image}')">👁 VIEW INFO (SS)</button>
-                <button class="btn btn-red" style="width:auto; padding:8px; font-size:12px; margin:0; float:right;" onclick="delReq('${c.key}')">DELETE</button>
+                <button class="btn" style="background:gold; color:#000; padding:6px; width:auto; font-size:11px;" onclick="viewSS('${r.image}')">👁 VIEW SS</button>
+                <button class="btn" style="background:red; color:#fff; padding:6px; width:auto; font-size:11px; float:right;" onclick="delReq('${c.key}')">DELETE</button>
             </div>`;
         });
-        document.getElementById('req-list').innerHTML = h || "No Requests Found.";
+        document.getElementById('req-list').innerHTML = h || "No Requests.";
     });
 
     function viewSS(url) { 
-        if(!url || url === "undefined") return alert("No Screenshot!");
+        if(!url || url === "undefined") return alert("Screenshot nahi bheja gaya!");
         document.getElementById('popImg').src = url; 
         document.getElementById('imgModal').style.display = "block"; 
     }
-    function delReq(id) { if(confirm("Request Delete Karein?")) db.ref('requests/'+id).remove(); }
+    function delReq(id) { if(confirm("Delete request?")) db.ref('requests/'+id).remove(); }
 </script>
 </body>
 </html>
