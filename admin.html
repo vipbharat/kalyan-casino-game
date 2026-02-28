@@ -3,55 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MASTER CONTROL - KALYAN PRO</title>
+    <title>KALYAN PRO - MASTER ADMIN</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         body { background: #050505; color: #fff; font-family: sans-serif; padding: 10px; margin: 0; }
+        .header { background: #1a1a1a; padding: 15px; text-align: center; border-bottom: 2px solid gold; color: gold; font-weight: bold; font-size: 20px; }
         .card { background: #111; border-radius: 12px; border: 1px solid #333; padding: 15px; margin-bottom: 15px; border-left: 5px solid gold; }
-        h3 { color: gold; font-size: 14px; text-transform: uppercase; margin: 0; border-bottom: 1px solid #222; padding-bottom: 5px; }
-        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; transition: 0.3s; width: 100%; }
-        .btn-win { background: #2ecc71; color: #000; }
-        .btn-lose { background: #e74c3c; color: #fff; }
-        .btn-tie { background: #9b59b6; color: #fff; } /* Purple for Tie */
-        .btn-auto { background: #3498db; color: #fff; }
-        input { width: 92%; padding: 10px; margin: 5px 0; background: #222; color: #fff; border: 1px solid #444; border-radius: 5px; }
-        .status { font-size: 10px; color: gold; font-weight: bold; margin-top: 5px; display: block; }
+        h3 { color: gold; font-size: 14px; text-transform: uppercase; margin: 0 0 10px 0; border-bottom: 1px solid #222; padding-bottom: 5px; }
+        input { width: 94%; padding: 10px; margin: 8px 0; background: #222; color: #fff; border: 1px solid #444; border-radius: 8px; font-size: 13px; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        .btn-blue { background: #3498db; color: #fff; }
+        .btn-green { background: #2ecc71; color: #000; }
+        .btn-red { background: #e74c3c; color: #fff; }
+        
+        /* Players Table Style */
+        .player-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        .player-table th { color: gold; text-align: left; border-bottom: 1px solid #333; padding: 8px; }
+        .player-table td { border-bottom: 1px solid #222; padding: 8px; color: #ccc; }
+        .count-badge { background: gold; color: #000; padding: 2px 8px; border-radius: 10px; font-size: 12px; float: right; }
     </style>
 </head>
 <body>
 
-<h2 style="text-align:center; color:gold; font-size:18px; margin: 10px 0;">💎 KALYAN PRO MASTER PANEL</h2>
+<div class="header">💎 KALYAN PRO MASTER PANEL</div>
 
 <div class="card">
-    <h3>🐉 DRAGON TIGER</h3>
-    <div class="control-grid">
-        <button class="btn btn-win" onclick="setRes('dragon_tiger', 'Dragon')">WIN DRAGON</button>
-        <button class="btn btn-lose" onclick="setRes('dragon_tiger', 'Tiger')">WIN TIGER</button>
-        <button class="btn btn-tie" onclick="setRes('dragon_tiger', 'Tie')">SET TIE (Barabari)</button>
-        <button class="btn btn-auto" onclick="setRes('dragon_tiger', 'Auto')">AUTO MODE</button>
+    <h3>👥 REGISTERED PLAYERS <span class="count-badge" id="p-count">0</span></h3>
+    <div style="max-height: 250px; overflow-y: auto;">
+        <table class="player-table">
+            <thead>
+                <tr>
+                    <th>Phone Number</th>
+                    <th>Balance (₹)</th>
+                </tr>
+            </thead>
+            <tbody id="player-list-body">
+                <tr><td colspan="2">Loading players...</td></tr>
+            </tbody>
+        </table>
     </div>
-    <span class="status" id="dt-mode">CURRENT: AUTO</span>
 </div>
 
 <div class="card">
-    <h3>🃏 ANDAR BAHAR</h3>
-    <div class="control-grid">
-        <button class="btn btn-win" onclick="setRes('andar_bahar', 'Andar')">WIN ANDAR</button>
-        <button class="btn btn-lose" onclick="setRes('andar_bahar', 'Bahar')">WIN BAHAR</button>
-        <button class="btn btn-auto" onclick="setRes('andar_bahar', 'Auto')">AUTO MODE</button>
-    </div>
-    <span class="status" id="ab-mode">CURRENT: AUTO</span>
+    <h3>📢 APP SETUP & LINKS</h3>
+    <input type="text" id="waNo" placeholder="WhatsApp Number">
+    <input type="text" id="tgLink" placeholder="Telegram Link">
+    <input type="text" id="upiId" placeholder="UPI ID">
+    <input type="text" id="qrUrl" placeholder="QR Link">
+    <input type="text" id="notifMsg" placeholder="Dashboard Notice">
+    <button class="btn btn-blue" onclick="saveAll()">SAVE ALL SETTINGS</button>
 </div>
 
 <div class="card">
-    <h3>💰 WALLET (ADD/CUT)</h3>
+    <h3>💰 ADD/CUT MONEY</h3>
     <input type="text" id="mPh" placeholder="Player Phone Number">
-    <input type="number" id="mAmt" placeholder="Amount (e.g. 500)">
-    <div style="display:flex; gap:10px; margin-top:10px;">
-        <button class="btn btn-win" onclick="updateBal('add')">ADD</button>
-        <button class="btn btn-lose" onclick="updateBal('cut')">CUT</button>
+    <input type="number" id="mAmt" placeholder="Amount (₹)">
+    <div style="display:flex; gap:10px;">
+        <button class="btn btn-green" onclick="updateMoney('add')">ADD</button>
+        <button class="btn btn-red" onclick="updateMoney('cut')">CUT</button>
     </div>
 </div>
 
@@ -64,28 +74,51 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Result Control Function
-    function setRes(game, result) {
-        db.ref('game_controls/' + game).set({
-            next_result: result,
-            mode: (result === 'Auto' ? 'AUTO' : 'MANUAL'),
-            time: new Date().getTime()
-        }).then(() => {
-            alert(game.toUpperCase() + " set to " + result);
-            document.getElementById(game === 'dragon_tiger' ? 'dt-mode' : 'ab-mode').innerText = "CURRENT: " + result;
+    // --- 1. LOAD TOTAL PLAYERS ---
+    db.ref('users').on('value', snap => {
+        const body = document.getElementById('player-list-body');
+        const countBox = document.getElementById('p-count');
+        body.innerHTML = "";
+        let count = 0;
+
+        snap.forEach(player => {
+            count++;
+            const data = player.val();
+            const phone = player.key;
+            const balance = (parseFloat(data.balance || 0) + parseFloat(data.winning_balance || 0)).toFixed(2);
+            
+            body.innerHTML += `
+                <tr>
+                    <td><b>${phone}</b></td>
+                    <td style="color: #2ecc71;">₹${balance}</td>
+                </tr>
+            `;
         });
+        countBox.innerText = count;
+        if(count === 0) body.innerHTML = "<tr><td colspan='2'>No players found.</td></tr>";
+    });
+
+    // --- 2. SAVE SETTINGS ---
+    function saveAll() {
+        const wa = document.getElementById('waNo').value;
+        const tg = document.getElementById('tgLink').value;
+        const upi = document.getElementById('upiId').value;
+        const qr = document.getElementById('qrUrl').value;
+        const note = document.getElementById('notifMsg').value;
+
+        db.ref('admin_settings/support').update({ whatsapp: wa, telegram: tg });
+        db.ref('admin_settings/payment').update({ upi_id: upi, qr_url: qr });
+        db.ref('admin_settings/notification').set(note);
+        alert("✅ All Settings Saved!");
     }
 
-    // Money Control Function
-    function updateBal(type) {
+    // --- 3. MONEY CONTROL ---
+    function updateMoney(type) {
         const ph = document.getElementById('mPh').value;
         const amt = parseFloat(document.getElementById('mAmt').value);
         if(!ph || !amt) return alert("Phone aur Amount bhariye!");
-        
-        db.ref('users/' + ph + '/balance').transaction(b => {
-            return (parseFloat(b) || 0) + (type === 'add' ? amt : -amt);
-        });
-        alert("Balance Update Ho Gaya!");
+        db.ref('users/' + ph + '/balance').transaction(b => (parseFloat(b)||0) + (type==='add'?amt:-amt));
+        alert("Wallet Updated!");
     }
 </script>
 </body>
