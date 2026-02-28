@@ -30,13 +30,13 @@
 </head>
 <body>
 
-<div class="header"><h3>💎 VIP BHARAT ADMIN</h3></div>
+<div class="header"><h3>💎 VIP BHARAT MASTER ADMIN</h3></div>
 
 <div class="nav-tabs">
     <button class="tab-btn active" onclick="openTab(event, 'game-ctrl')">🎮 GAMES</button>
+    <button class="tab-btn" onclick="openTab(event, 'req-ctrl')">📩 REQUESTS</button>
     <button class="tab-btn" onclick="openTab(event, 'money-ctrl')">💰 WALLET</button>
     <button class="tab-btn" onclick="openTab(event, 'settings-ctrl')">⚙️ SETTINGS</button>
-    <button class="tab-btn" onclick="openTab(event, 'req-ctrl')">📩 REQ</button>
     <button class="tab-btn" style="background:#ffd700;color:black" onclick="openTab(event, 'users-list')">👥 USERS</button>
 </div>
 
@@ -51,7 +51,6 @@
             <button class="g-btn" style="border: 1px solid green;" onclick="masterControl('dvt', 'tie')">TIE WIN</button>
         </div>
     </div>
-    
     <div class="card">
         <h3>🃏 Andar Bahar Control</h3>
         <div id="ab-monitor" class="monitor">Andar: ₹0 | Bahar: ₹0</div>
@@ -60,6 +59,16 @@
             <button class="g-btn" style="border: 1px solid red;" onclick="masterControl('ab', 'andar')">ANDAR WIN</button>
             <button class="g-btn" style="border: 1px solid blue;" onclick="masterControl('ab', 'bahar')">BAHAR WIN</button>
         </div>
+    </div>
+</div>
+
+<div id="req-ctrl" class="content-section">
+    <div class="card">
+        <h3>📩 Player Requests</h3>
+        <table class="user-table">
+            <thead><tr><th>User/Date</th><th>Type</th><th>Amt</th><th>Action</th></tr></thead>
+            <tbody id="master-request-body"></tbody>
+        </table>
     </div>
 </div>
 
@@ -75,29 +84,32 @@
 
 <div id="settings-ctrl" class="content-section">
     <div class="card">
-        <h3>🏦 Links & UPI</h3>
+        <h3>🏦 Links, UPI & QR</h3>
         <input type="text" id="adminUpi" placeholder="UPI ID">
         <input type="text" id="qrUrl" placeholder="QR Image URL">
         <input type="text" id="waLink" placeholder="WhatsApp Number">
         <input type="text" id="tgLink" placeholder="Telegram Link">
-        <button class="btn btn-green" onclick="updateSettings()">SAVE ALL</button>
+        <button class="btn btn-green" onclick="updateSettings()">SAVE SETTINGS</button>
     </div>
     <div class="card">
-        <h3>📢 Notice</h3>
-        <input type="text" id="notifMsg" placeholder="Marquee text">
-        <button class="btn btn-green" onclick="updateNotif()">SAVE NOTICE</button>
+        <h3>📢 Notice Board</h3>
+        <input type="text" id="notifMsg" placeholder="Enter marquee text">
+        <button class="btn btn-green" onclick="updateNotif()">UPDATE NOTICE</button>
     </div>
-</div>
-
-<div id="req-ctrl" class="content-section">
-    <div class="card"><h3>📩 Requests</h3><table class="user-table"><thead><tr><th>User</th><th>Type</th><th>Amt</th><th>Action</th></tr></thead><tbody id="master-request-body"></tbody></table></div>
 </div>
 
 <div id="users-list" class="content-section">
-    <div class="card"><h3>👥 Players</h3><table class="user-table"><thead><tr><th>Phone</th><th>Balance</th><th>UID</th></tr></thead><tbody id="all-users-data"></tbody></table></div>
+    <div class="card">
+        <h3>👥 Registered Players</h3>
+        <table class="user-table">
+            <thead><tr><th>Phone</th><th>Balance</th><th>UID</th></tr></thead>
+            <tbody id="all-users-data"></tbody>
+        </table>
+    </div>
 </div>
 
 <script>
+    // Firebase Config
     const firebaseConfig = { 
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
@@ -106,6 +118,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // Tab Navigation
     function openTab(evt, name) {
         let content = document.getElementsByClassName("content-section");
         for (let i = 0; i < content.length; i++) content[i].classList.remove("active-section");
@@ -115,6 +128,7 @@
         evt.currentTarget.classList.add("active");
     }
 
+    // ✅ GAME CONTROL
     function masterControl(game, res) {
         const mode = (res === 'auto') ? 'auto' : 'manual';
         if(game === 'dvt') {
@@ -123,42 +137,75 @@
             db.ref('game_settings/ab').update({ mode: mode, result: res });
             db.ref('manual_result_ab').set(res);
         }
-        alert("Sent: " + res);
+        alert("✅ " + res.toUpperCase() + " SET!");
     }
 
+    // ✅ LIVE MONITORING
     db.ref('game_live_bets_dvt').on('value', s => {
         const d = s.val() || {dragon:0, tiger:0, tie:0};
         document.getElementById('dvt-monitor').innerText = `D: ₹${(d.dragon||0)} | T: ₹${(d.tiger||0)} | Ti: ₹${(d.tie||0)}`;
     });
-
     db.ref('game_live_bets_ab').on('value', s => {
         const d = s.val() || {andar:0, bahar:0};
         document.getElementById('ab-monitor').innerText = `Andar: ₹${(d.andar||0)} | Bahar: ₹${(d.bahar||0)}`;
     });
 
-    function modifyWallet(action) {
-        const ph = document.getElementById('userPhone').value;
-        const amt = parseFloat(document.getElementById('newAmt').value);
-        if(!ph || !amt) return alert("Phone/Amt missing");
-        db.ref('users/' + ph + '/balance').transaction(b => action==='add'?(parseFloat(b)||0)+amt:(parseFloat(b)||0)-amt)
-        .then(() => alert("Done!"));
+    // ✅ REQUESTS LOGIC (Deposit/Withdrawal)
+    db.ref('requests').on('value', s => {
+        let h = "";
+        s.forEach(child => {
+            let req = child.val();
+            let id = child.key;
+            h += `<tr>
+                <td>${req.phone}<br><small>${req.date}</small></td>
+                <td style="color:${req.type === 'Deposit' ? '#2ecc71' : '#e74c3c'}">${req.type}</td>
+                <td>₹${req.amount}</td>
+                <td>
+                    <button class="btn-green" style="padding:4px; font-size:9px;" onclick="manageRequest('${id}','${req.phone}',${req.amount},'${req.type}','approve')">Approve</button>
+                    <button class="btn-red" style="padding:4px; font-size:9px; margin-top:2px;" onclick="manageRequest('${id}','${req.phone}',${req.amount},'${req.type}','reject')">Reject</button>
+                </td></tr>`;
+        });
+        document.getElementById('master-request-body').innerHTML = h;
+    });
+
+    function manageRequest(id, phone, amt, type, action) {
+        if (action === 'approve' && type === 'Deposit') {
+            db.ref('users/' + phone + '/balance').transaction(b => (parseFloat(b) || 0) + amt);
+        } else if (action === 'reject' && type === 'Withdrawal') {
+            db.ref('users/' + phone + '/balance').transaction(b => (parseFloat(b) || 0) + amt);
+        }
+        db.ref('requests/' + id).remove();
+        alert("✅ Request " + action.toUpperCase());
     }
 
+    // ✅ SETTINGS & NOTICE
     function updateSettings() {
         db.ref('admin_settings').update({
             upi: document.getElementById('adminUpi').value,
             qr: document.getElementById('qrUrl').value,
             whatsapp: document.getElementById('waLink').value,
             telegram: document.getElementById('tgLink').value
-        }).then(() => alert("Saved!"));
+        }).then(() => alert("✅ Settings Saved!"));
     }
 
     function updateNotif() {
-        db.ref('admin_settings/notification').set(document.getElementById('notifMsg').value).then(()=>alert("Notice Saved!"));
+        db.ref('admin_settings/notification').set(document.getElementById('notifMsg').value).then(()=>alert("✅ Notice Updated!"));
+    }
+
+    // ✅ WALLET & USERS
+    function modifyWallet(action) {
+        const ph = document.getElementById('userPhone').value;
+        const amt = parseFloat(document.getElementById('newAmt').value);
+        if(!ph || !amt) return alert("Phone/Amt missing");
+        db.ref('users/' + ph + '/balance').transaction(b => action==='add'?(parseFloat(b)||0)+amt:(parseFloat(b)||0)-amt)
+        .then(() => alert("✅ Wallet Updated!"));
     }
 
     db.ref('users').on('value', s => {
-        let h = ""; s.forEach(c => { h += `<tr><td>${c.key}</td><td>₹${(c.val().balance||0)}</td><td>${c.val().uid||'NA'}</td></tr>`; });
+        let h = ""; s.forEach(c => { 
+            let d = c.val();
+            h += `<tr><td>${c.key}</td><td>₹${(d.balance||0).toFixed(2)}</td><td>${d.uid||'NA'}</td></tr>`; 
+        });
         document.getElementById('all-users-data').innerHTML = h;
     });
 </script>
