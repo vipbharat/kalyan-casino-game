@@ -3,77 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KALYAN PRO - MASTER ADMIN</title>
+    <title>KALYAN PRO - PRO ADMIN</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #050505; color: #fff; font-family: sans-serif; padding: 10px; margin: 0; }
-        .header { background: #1a1a1a; padding: 15px; text-align: center; border-bottom: 2px solid gold; color: gold; font-weight: bold; font-size: 18px; }
-        .card { background: #111; border-radius: 12px; border: 1px solid #333; padding: 12px; margin-bottom: 12px; border-left: 4px solid gold; }
-        h3 { color: gold; font-size: 12px; text-transform: uppercase; margin: 0 0 10px 0; border-bottom: 1px solid #222; padding-bottom: 5px; }
-        
-        /* Game Buttons */
-        .game-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-        .btn { padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 10px; transition: 0.3s; width: 100%; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; overflow: hidden; }
+        .tab-bar { display: flex; background: #1a1a1a; border-bottom: 2px solid gold; position: sticky; top: 0; z-index: 100; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; font-size: 11px; text-align: center; }
+        .tab-btn.active { color: gold; border-bottom: 3px solid gold; background: rgba(255,215,0,0.1); }
+        .main-container { display: flex; width: 300vw; height: calc(100vh - 65px); transition: transform 0.4s ease; }
+        .page { width: 100vw; height: 100%; overflow-y: auto; padding: 15px; box-sizing: border-box; }
+        .card { background: #111; border-radius: 12px; border: 1px solid #333; padding: 15px; margin-bottom: 15px; border-left: 4px solid gold; }
+        h3 { color: gold; font-size: 13px; text-transform: uppercase; margin: 0 0 10px 0; border-bottom: 1px solid #222; padding-bottom: 5px; }
+        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 11px; margin-top: 5px; }
         .btn-win { background: #2ecc71; color: #000; }
-        .btn-lose { background: #e74c3c; color: #fff; }
-        .btn-tie { background: #9b59b6; color: #fff; }
         .btn-blue { background: #3498db; color: #fff; }
-
-        /* Request Box */
-        .req-box { background: #1a1a1a; border: 1px solid #444; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 12px; position: relative; }
-        .req-type { font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-bottom: 5px; display: inline-block; }
-        .d-tag { background: #2ecc71; color: #000; }
-        .w-tag { background: #e74c3c; color: #fff; }
-        .btn-view { background: gold; color: #000; padding: 5px; border: none; border-radius: 4px; cursor: pointer; margin-top: 5px; font-size: 11px; font-weight: bold; }
-        .btn-del { background: #555; color: #fff; padding: 5px; border: none; border-radius: 4px; float: right; cursor: pointer; }
-
-        input { width: 92%; padding: 8px; margin: 5px 0; background: #222; color: #fff; border: 1px solid #444; border-radius: 6px; font-size: 12px; }
-        .player-list { max-height: 120px; overflow-y: auto; font-size: 11px; }
+        input { width: 92%; padding: 10px; margin: 5px 0; background: #222; color: #fff; border: 1px solid #444; border-radius: 6px; font-size: 13px; }
+        label { font-size: 11px; color: #888; margin-left: 5px; display: block; margin-top: 10px; }
+        .qr-preview { width: 100px; height: 100px; border: 1px dashed gold; margin-top: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .qr-preview img { width: 100%; height: 100%; object-fit: contain; }
     </style>
 </head>
 <body>
 
-<div class="header">💎 MASTER CONTROL CENTER</div>
-
-<div class="card" style="border-left-color: #3498db;">
-    <h3>📩 LIVE PLAYER REQUESTS</h3>
-    <div id="request-container">Checking for new requests...</div>
-</div>
-
-<div class="card">
-    <h3>🐉 DRAGON TIGER & TIE</h3>
-    <div class="game-grid">
-        <button class="btn btn-win" onclick="setRes('dragon_tiger', 'Dragon')">DRAGON</button>
-        <button class="btn btn-lose" onclick="setRes('dragon_tiger', 'Tiger')">TIGER</button>
-        <button class="btn btn-tie" onclick="setRes('dragon_tiger', 'Tie')">TIE</button>
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="showPage(0, this)"><i class="fa fa-dice"></i><br>GAMES</button>
+        <button class="tab-btn" onclick="showPage(1, this)"><i class="fa fa-bell"></i><br>REQUESTS</button>
+        <button class="tab-btn" onclick="showPage(2, this)"><i class="fa fa-cog"></i><br>SETUP</button>
     </div>
-    <button class="btn btn-blue" style="margin-top:8px;" onclick="setRes('dragon_tiger', 'Auto')">AUTO MODE</button>
-</div>
 
-<div class="card">
-    <h3>💰 WALLET (ADD/CUT)</h3>
-    <input type="text" id="mPh" placeholder="Phone Number">
-    <input type="number" id="mAmt" placeholder="Amount (₹)">
-    <div style="display:flex; gap:10px; margin-top:5px;">
-        <button class="btn btn-win" onclick="updateMoney('add')">ADD MONEY</button>
-        <button class="btn btn-lose" onclick="updateMoney('cut')">CUT MONEY</button>
+    <div class="main-container" id="container">
+        
+        <div class="page">
+            <div class="card">
+                <h3>🐉 DRAGON TIGER CONTROL</h3>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+                    <button class="btn btn-win" onclick="setRes('dragon_tiger', 'Dragon')">DRAGON</button>
+                    <button class="btn btn-win" style="background:#e74c3c; color:#fff;" onclick="setRes('dragon_tiger', 'Tiger')">TIGER</button>
+                    <button class="btn" style="background:#9b59b6; color:#fff;" onclick="setRes('dragon_tiger', 'Tie')">TIE</button>
+                </div>
+                <button class="btn btn-blue" onclick="setRes('dragon_tiger', 'Auto')">AUTO MODE</button>
+            </div>
+        </div>
+
+        <div class="page">
+            <div class="card">
+                <h3>📩 LIVE PLAYER REQUESTS</h3>
+                <div id="req-list" style="max-height: 80vh; overflow-y:auto;">Loading...</div>
+            </div>
+        </div>
+
+        <div class="page">
+            <div class="card">
+                <h3>🛠️ APP GLOBAL SETUP</h3>
+                
+                <label>WhatsApp Number (91XXXXXXXXXX)</label>
+                <input type="text" id="waNo" placeholder="918888888888">
+
+                <label>Telegram Link</label>
+                <input type="text" id="tgLink" placeholder="https://t.me/yourchannel">
+
+                <label>Notice Board (Scrolling Text)</label>
+                <input type="text" id="notifMsg" placeholder="Welcome to Kalyan Pro!">
+
+                <label>UPI ID (For Deposits)</label>
+                <input type="text" id="upiId" placeholder="example@ybl">
+
+                <label>QR Code Image (ImgBB Link)</label>
+                <input type="text" id="qrUrl" placeholder="https://i.ibb.co/photo.jpg">
+                <div class="qr-preview" id="qr-prev"><span style="font-size:10px;">No Image</span></div>
+
+                <button class="btn btn-win" onclick="saveAllSettings()">SAVE ALL SETTINGS</button>
+            </div>
+
+            <div class="card">
+                <h3>💰 QUICK WALLET</h3>
+                <input type="text" id="mPh" placeholder="Phone">
+                <input type="number" id="mAmt" placeholder="Amount">
+                <button class="btn btn-blue" onclick="updateMoney('add')">ADD MONEY</button>
+            </div>
+        </div>
+
     </div>
-</div>
-
-<div class="card">
-    <h3>⚙️ SETUP (QR/UPI/LINKS)</h3>
-    <input type="text" id="waNo" placeholder="WhatsApp Number">
-    <input type="text" id="upiId" placeholder="UPI ID">
-    <input type="text" id="qrUrl" placeholder="QR Link">
-    <input type="text" id="notifMsg" placeholder="Dashboard Notice">
-    <button class="btn btn-blue" onclick="saveSettings()">SAVE ALL SETTINGS</button>
-</div>
-
-<div class="card">
-    <h3>👥 PLAYERS LIST (<span id="p-count">0</span>)</h3>
-    <div class="player-list" id="p-list-body"></div>
-</div>
 
 <script>
     const firebaseConfig = { 
@@ -84,61 +96,56 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. MONITOR REQUESTS (Deposit/Withdraw)
-    db.ref('requests').on('value', snap => {
-        const container = document.getElementById('request-container');
-        container.innerHTML = "";
-        if(!snap.exists()) { container.innerHTML = "No pending requests."; return; }
-
-        snap.forEach(child => {
-            const r = child.val();
-            const key = child.key;
-            const isWithdraw = r.type === 'WITHDRAWAL';
-            
-            container.innerHTML += `
-                <div class="req-box">
-                    <span class="req-type ${isWithdraw ? 'w-tag' : 'd-tag'}">${isWithdraw ? 'WITHDRAW' : 'DEPOSIT'}</span>
-                    <button class="btn-del" onclick="deleteReq('${key}')">✖</button><br>
-                    <b>Phone:</b> ${r.phone} <br>
-                    <b>Amount:</b> ₹${r.amount} <br>
-                    ${isWithdraw ? '<b>UPI:</b> '+r.upi : '<b>UTR/Info:</b> See Screenshot'} <br>
-                    <button class="btn-view" onclick="window.open('${r.image}')">👁 VIEW INFO (SS)</button>
-                </div>`;
-        });
-    });
-
-    function deleteReq(key) { if(confirm("Bhai, kaam ho gaya? Request delete karein?")) db.ref('requests/'+key).remove(); }
-
-    // 2. GAME CONTROL
-    function setRes(game, result) {
-        db.ref('game_controls/' + game).set({ next_result: result, mode: (result === 'Auto' ? 'AUTO' : 'MANUAL') })
-        .then(() => alert(game + " set to " + result));
+    function showPage(i, btn) {
+        document.getElementById('container').style.transform = `translateX(-${i * 100}vw)`;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
     }
 
-    // 3. MONEY CONTROL
-    function updateMoney(type) {
+    // --- SAVE ALL SETTINGS (WhatsApp, Telegram, Notice, QR, UPI) ---
+    function saveAllSettings() {
+        const wa = document.getElementById('waNo').value;
+        const tg = document.getElementById('tgLink').value;
+        const note = document.getElementById('notifMsg').value;
+        const upi = document.getElementById('upiId').value;
+        const qr = document.getElementById('qrUrl').value;
+
+        // Dashboard/Support Paths
+        db.ref('admin_settings/support').update({ whatsapp: wa, telegram: tg, whatsapp_no: wa, telegram_link: tg });
+        
+        // Deposit Paths
+        db.ref('admin_settings/payment').update({ upi_id: upi, qr_url: qr });
+        db.ref('admin_settings/payment_info').update({ upi_id: upi, qr_url: qr });
+
+        // Notice Path
+        db.ref('admin_settings/notification').set(note);
+
+        if(qr) document.getElementById('qr-prev').innerHTML = `<img src="${qr}">`;
+        alert("✅ Sab kuch update ho gaya! Player ko turant dikhega.");
+    }
+
+    // --- GAME & MONEY LOGIC ---
+    function setRes(g, r) { db.ref('game_controls/'+g).set({next_result: r, mode: (r==='Auto'?'AUTO':'MANUAL')}); alert("Set: "+r); }
+    function updateMoney(t) {
         const ph = document.getElementById('mPh').value;
-        const amt = parseFloat(document.getElementById('mAmt').value);
-        if(!ph || !amt) return alert("Bhai, Details dalo!");
-        db.ref('users/' + ph + '/balance').transaction(b => (parseFloat(b)||0) + (type==='add'?amt:-amt));
+        const am = parseFloat(document.getElementById('mAmt').value);
+        db.ref('users/'+ph+'/balance').transaction(b => (parseFloat(b)||0) + am);
         alert("Wallet Updated!");
     }
 
-    // 4. SAVE SETTINGS
-    function saveSettings() {
-        db.ref('admin_settings/support').update({ whatsapp: document.getElementById('waNo').value });
-        db.ref('admin_settings/payment').update({ upi_id: document.getElementById('upiId').value, qr_url: document.getElementById('qrUrl').value });
-        db.ref('admin_settings/notification').set(document.getElementById('notifMsg').value);
-        alert("Settings Saved!");
-    }
-
-    // 5. PLAYER LIST
-    db.ref('users').on('value', snap => {
-        const list = document.getElementById('p-list-body');
-        document.getElementById('p-count').innerText = snap.numChildren();
+    // --- LIVE REQUEST MONITOR ---
+    db.ref('requests').on('value', snap => {
+        const list = document.getElementById('req-list');
         list.innerHTML = "";
-        snap.forEach(p => {
-            list.innerHTML += `<div style="padding:5px; border-bottom:1px solid #222;">${p.key} - ₹${(p.val().balance||0).toFixed(2)}</div>`;
+        if(!snap.exists()) { list.innerHTML = "No pending work."; return; }
+        snap.forEach(c => {
+            const r = c.val();
+            list.innerHTML += `<div style="background:#1a1a1a; padding:10px; border-radius:8px; margin-bottom:10px; border-left:4px solid gold;">
+                <b>${r.type}</b> | ${r.phone}<br>
+                Amount: ₹${r.amount}<br>
+                ${r.upi ? 'UPI: '+r.upi : '<button class="btn btn-blue" style="padding:4px; width:auto;" onclick="window.open(\''+r.image+'\')">VIEW SS</button>'}
+                <button onclick="db.ref('requests/${c.key}').remove()" style="float:right; background:red; color:#fff; border:none; border-radius:4px; padding:2px 6px;">X</button>
+            </div>`;
         });
     });
 </script>
