@@ -92,6 +92,7 @@
 <div id="req-ctrl" class="content-section">
     <div class="card"><h3>📩 Requests</h3><table class="user-table"><thead><tr><th>User</th><th>Type</th><th>Amt</th><th>Action</th></tr></thead><tbody id="master-request-body"></tbody></table></div>
 </div>
+
 <div id="users-list" class="content-section">
     <div class="card"><h3>👥 Players</h3><table class="user-table"><thead><tr><th>Phone</th><th>Balance</th><th>UID</th></tr></thead><tbody id="all-users-data"></tbody></table></div>
 </div>
@@ -114,41 +115,33 @@
         evt.currentTarget.classList.add("active");
     }
 
-    // ✅ CONNECTED TO NEW SCRIPTS
     function masterControl(game, res) {
         const mode = (res === 'auto') ? 'auto' : 'manual';
-        
         if(game === 'dvt') {
-            // Updated Path for Dragon Tiger
             db.ref('game_settings/dvt').update({ mode: mode, result: res });
         } else {
-            // Updated Path for Andar Bahar
-            db.ref('manual_result_ab').set(res); // Jo humne script mein 'adminCommand' ke liye rakha tha
+            db.ref('game_settings/ab').update({ mode: mode, result: res });
+            db.ref('manual_result_ab').set(res);
         }
-        alert("✅ " + res.toUpperCase() + " SENT!");
+        alert("Sent: " + res);
     }
 
-    // ✅ LIVE POOL MONITORING (Sync with Real/Bot Money)
-    // Note: Ismein real time betting dikhegi
     db.ref('game_live_bets_dvt').on('value', s => {
         const d = s.val() || {dragon:0, tiger:0, tie:0};
-        document.getElementById('dvt-monitor').innerText = `D: ₹${d.dragon} | T: ₹${d.tiger} | Ti: ₹${d.tie}`;
+        document.getElementById('dvt-monitor').innerText = `D: ₹${(d.dragon||0)} | T: ₹${(d.tiger||0)} | Ti: ₹${(d.tie||0)}`;
     });
-    
-    // Note: Ismein Andar Bahar ki live betting dikhegi
+
     db.ref('game_live_bets_ab').on('value', s => {
         const d = s.val() || {andar:0, bahar:0};
-        document.getElementById('ab-monitor').innerText = `Andar: ₹${d.andar} | Bahar: ₹${d.bahar}`;
+        document.getElementById('ab-monitor').innerText = `Andar: ₹${(d.andar||0)} | Bahar: ₹${(d.bahar||0)}`;
     });
 
     function modifyWallet(action) {
         const ph = document.getElementById('userPhone').value;
         const amt = parseFloat(document.getElementById('newAmt').value);
-        if(!ph || !amt) return alert("Pehle Phone aur Amount daalein!");
-        
-        db.ref('users/' + ph + '/balance').transaction(b => {
-            return action === 'add' ? (parseFloat(b) || 0) + amt : (parseFloat(b) || 0) - amt;
-        }).then(() => alert("Balance Updated!"));
+        if(!ph || !amt) return alert("Phone/Amt missing");
+        db.ref('users/' + ph + '/balance').transaction(b => action==='add'?(parseFloat(b)||0)+amt:(parseFloat(b)||0)-amt)
+        .then(() => alert("Done!"));
     }
 
     function updateSettings() {
@@ -157,22 +150,17 @@
             qr: document.getElementById('qrUrl').value,
             whatsapp: document.getElementById('waLink').value,
             telegram: document.getElementById('tgLink').value
-        }).then(() => alert("Settings Saved!"));
+        }).then(() => alert("Saved!"));
+    }
+
+    function updateNotif() {
+        db.ref('admin_settings/notification').set(document.getElementById('notifMsg').value).then(()=>alert("Notice Saved!"));
     }
 
     db.ref('users').on('value', s => {
-        let h = ""; 
-        s.forEach(c => { 
-            let data = c.val();
-            h += `<tr><td>${c.key}</td><td>₹${(data.balance || 0).toFixed(2)}</td><td>${data.uid || 'N/A'}</td></tr>`; 
-        });
+        let h = ""; s.forEach(c => { h += `<tr><td>${c.key}</td><td>₹${(c.val().balance||0)}</td><td>${c.val().uid||'NA'}</td></tr>`; });
         document.getElementById('all-users-data').innerHTML = h;
     });
-
-    function updateNotif() {
-        const msg = document.getElementById('notifMsg').value;
-        db.ref('admin_settings/notification').set(msg).then(() => alert("Notice Updated!"));
-    }
 </script>
 </body>
 </html>
