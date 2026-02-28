@@ -1,5 +1,96 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KALYAN VIP CASINO ADMIN</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <style>
+        body { background: #0a0a0a; color: white; font-family: sans-serif; margin: 0; padding-bottom: 30px; }
+        .header { background: #111; padding: 15px; text-align: center; border-bottom: 2px solid #ffd700; }
+        .nav-tabs { display: flex; background: #1a1a1a; overflow-x: auto; padding: 10px; gap: 8px; position: sticky; top: 0; z-index: 100; scrollbar-width: none; }
+        .tab-btn { flex-shrink: 0; background: #333; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .tab-btn.active { background: #ffd700; color: black; }
+        .content-section { display: none; padding: 15px; }
+        .active-section { display: block; }
+        .card { background: #151515; padding: 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; }
+        h3 { margin: 0 0 10px 0; color: #ffd700; font-size: 14px; border-left: 4px solid #ffd700; padding-left: 10px; }
+        input { width: 92%; padding: 12px; margin: 8px 0; background: #222; color: white; border: 1px solid #444; border-radius: 8px; }
+        .btn { padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
+        .btn-green { background: #2ecc71; color: white; }
+        .btn-red { background: #e74c3c; color: white; }
+        .user-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+        .user-table th { background: #222; color: #ffd700; padding: 8px; border: 1px solid #333; }
+        .user-table td { padding: 8px; border: 1px solid #222; text-align: center; }
+        .g-btn { padding: 15px 5px; border-radius: 8px; border: 1px solid #444; background: #222; color: white; font-size: 11px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="header"><h3>💎 KALYAN VIP CASINO</h3></div>
+
+<div class="nav-tabs">
+    <button class="tab-btn active" onclick="openTab(event, 'game-ctrl')">🎮 GAMES</button>
+    <button class="tab-btn" onclick="openTab(event, 'req-ctrl')">📩 REQ</button>
+    <button class="tab-btn" onclick="openTab(event, 'money-ctrl')">💰 WALLET</button>
+    <button class="tab-btn" onclick="openTab(event, 'settings-ctrl')">⚙️ SETTINGS</button>
+</div>
+
+<div id="game-ctrl" class="content-section active-section">
+    <div class="card">
+        <h3>🐯 Dragon Tiger (game.html)</h3>
+        <div class="game-btn-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+            <button class="g-btn" onclick="masterControl('dvt', 'dragon')">DRAGON</button>
+            <button class="g-btn" onclick="masterControl('dvt', 'tiger')">TIGER</button>
+            <button class="g-btn" style="grid-column: span 2;" onclick="masterControl('dvt', 'auto')">AUTO PROFIT</button>
+        </div>
+    </div>
+    <div class="card">
+        <h3>🃏 Andar Bahar (andarbahar.html)</h3>
+        <div class="game-btn-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+            <button class="g-btn" onclick="masterControl('ab', 'andar')">ANDAR</button>
+            <button class="g-btn" onclick="masterControl('ab', 'bahar')">BAHAR</button>
+            <button class="g-btn" style="grid-column: span 2;" onclick="masterControl('ab', 'auto')">AUTO PROFIT</button>
+        </div>
+    </div>
+</div>
+
+<div id="req-ctrl" class="content-section">
+    <div class="card">
+        <h3>📩 Deposit/Withdraw Requests</h3>
+        <table class="user-table">
+            <thead><tr><th>Phone</th><th>Type</th><th>Amt</th><th>Action</th></tr></thead>
+            <tbody id="req-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="money-ctrl" class="content-section">
+    <div class="card">
+        <h3>💵 Add/Cut Balance</h3>
+        <input type="text" id="targetPhone" placeholder="Phone Number">
+        <input type="number" id="targetAmt" placeholder="Amount">
+        <button class="btn btn-green" onclick="walletAction('add')">ADD MONEY</button>
+        <button class="btn btn-red" onclick="walletAction('cut')">CUT MONEY</button>
+    </div>
+</div>
+
+<div id="settings-ctrl" class="content-section">
+    <div class="card">
+        <h3>📢 Notice Board (notice.html)</h3>
+        <input type="text" id="notifText" placeholder="Enter notice...">
+        <button class="btn btn-green" onclick="saveNotice()">UPDATE NOTICE</button>
+    </div>
+    <div class="card">
+        <h3>🏦 Payment & Social</h3>
+        <input type="text" id="upiId" placeholder="UPI ID">
+        <input type="text" id="qrLink" placeholder="QR Image URL">
+        <button class="btn btn-green" onclick="saveSettings()">SAVE ALL</button>
+    </div>
+</div>
+
 <script>
-    // Firebase Config (Aapka Wala)
     const firebaseConfig = { 
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
@@ -8,79 +99,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ✅ 1. GAME CONTROL (Ab ye Wallet ki tarah Direct kaam karega)
-    function gameAction(game, res) {
-        // Humne Dragon Tiger aur Andar Bahar dono ke paths ko merge kar diya hai
-        if(game === 'dvt') {
-            db.ref('games/dragon_tiger').update({ result: res, winning: res });
-            db.ref('game_settings/dvt').update({ result: res });
-        } else {
-            db.ref('games/andar_bahar').update({ result: res, winning: res });
-            db.ref('manual_result_ab').set(res);
-        }
-        alert("Success: " + res);
-    }
-
-    // ✅ 2. NOTICE BOARD (Direct Path)
-    function saveNotice() {
-        const msg = document.getElementById('notifMsg').value;
-        // Ye path check karo, marquee yahi se chalti hai
-        db.ref('admin_settings/notification').set(msg)
-          .then(() => alert("Notice Saved!"))
-          .catch((e) => alert("Error: " + e.message));
-    }
-
-    // ✅ 3. SETTINGS (UPI & QR)
-    function saveAdminSettings() {
-        db.ref('admin_settings').update({
-            upi: document.getElementById('adminUpi').value,
-            qr: document.getElementById('qrUrl').value,
-            whatsapp: document.getElementById('waLink').value,
-            telegram: document.getElementById('tgLink').value
-        }).then(() => alert("Settings Saved!"));
-    }
-
-    // ✅ 4. WALLET (Jo aapka kaam kar raha hai)
-    function modifyWallet(action) {
-        const ph = document.getElementById('userPhone').value;
-        const amt = parseFloat(document.getElementById('newAmt').value);
-        if(!ph) return alert("Phone Number daalo");
-        
-        db.ref('users/' + ph + '/balance').transaction(b => {
-            return action === 'add' ? (parseFloat(b) || 0) + amt : (parseFloat(b) || 0) - amt;
-        }).then(() => alert("Balance Updated!"));
-    }
-
-    // ✅ 5. REQUESTS (Approve/Reject)
-    db.ref('requests').on('value', s => {
-        let h = "";
-        s.forEach(c => {
-            let r = c.val(); let id = c.key;
-            h += `<tr><td>${r.phone}</td><td>${r.type}</td><td>₹${r.amount}</td>
-            <td><button onclick="handleReq('${id}','${r.phone}',${r.amount},'${r.type}','ok')">✔</button></td></tr>`;
-        });
-        document.getElementById('master-request-body').innerHTML = h;
-    });
-
-    function handleReq(id, ph, amt, type, action) {
-        if(type === 'Deposit') {
-            db.ref('users/'+ph+'/balance').transaction(b => (parseFloat(b)||0)+amt);
-        }
-        db.ref('requests/'+id).remove();
-        alert("Done!");
-    }
-
-    // ✅ 6. USERS LIST
-    db.ref('users').on('value', s => {
-        let h = ""; 
-        s.forEach(c => { 
-            let d = c.val();
-            h += `<tr><td>${c.key}</td><td>₹${(d.balance||0).toFixed(2)}</td></tr>`; 
-        });
-        document.getElementById('all-users-data').innerHTML = h;
-    });
-
-    // Tab Switcher
     function openTab(evt, name) {
         let content = document.getElementsByClassName("content-section");
         for (let i = 0; i < content.length; i++) content[i].style.display = "none";
@@ -89,4 +107,58 @@
         for (let i = 0; i < tabs.length; i++) tabs[i].classList.remove("active");
         evt.currentTarget.classList.add("active");
     }
+
+    // ✅ GAME CONTROL FIXED
+    function masterControl(game, res) {
+        const path = (game === 'dvt') ? 'game_settings/dvt' : 'game_settings/ab';
+        const manualPath = (game === 'ab') ? 'manual_result_ab' : 'manual_result_dvt';
+        
+        db.ref(path).update({ mode: (res==='auto'?'auto':'manual'), result: res });
+        if(res !== 'auto') db.ref(manualPath).set(res);
+        alert("Command Sent: " + res);
+    }
+
+    // ✅ WALLET FIXED (Jaise aapka chalta hai)
+    function walletAction(type) {
+        const ph = document.getElementById('targetPhone').value;
+        const amt = parseFloat(document.getElementById('targetAmt').value);
+        if(!ph || !amt) return alert("Details bhariye");
+
+        db.ref('users/' + ph + '/balance').transaction(b => {
+            return type === 'add' ? (parseFloat(b) || 0) + amt : (parseFloat(b) || 0) - amt;
+        }).then(() => alert("Balance Updated!"));
+    }
+
+    // ✅ NOTICE FIXED (notice.html path)
+    function saveNotice() {
+        const msg = document.getElementById('notifText').value;
+        db.ref('admin_settings/notification').set(msg).then(() => alert("Notice Live!"));
+    }
+
+    // ✅ SETTINGS FIXED
+    function saveSettings() {
+        db.ref('admin_settings').update({
+            upi: document.getElementById('upiId').value,
+            qr: document.getElementById('qrLink').value
+        }).then(() => alert("Settings Saved!"));
+    }
+
+    // ✅ REQUESTS FIXED
+    db.ref('requests').on('value', s => {
+        let h = "";
+        s.forEach(c => {
+            let r = c.val(); let id = c.key;
+            h += `<tr><td>${r.phone}</td><td>${r.type}</td><td>₹${r.amount}</td>
+            <td><button class="btn-green" onclick="handleReq('${id}','${r.phone}',${r.amount},'approve')">✔</button></td></tr>`;
+        });
+        document.getElementById('req-body').innerHTML = h;
+    });
+
+    function handleReq(id, ph, amt, action) {
+        db.ref('users/'+ph+'/balance').transaction(b => (parseFloat(b)||0)+amt);
+        db.ref('requests/'+id).remove();
+        alert("Approved!");
+    }
 </script>
+</body>
+</html>
