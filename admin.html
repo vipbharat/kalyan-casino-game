@@ -3,89 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KALYAN VIP MASTER ADMIN</title>
+    <title>KALYAN VIP - MASTER ADMIN</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        body { background: #0b0b0b; color: #fff; font-family: sans-serif; margin: 0; padding-bottom: 50px; }
-        .header { background: #1a1a1a; padding: 15px; text-align: center; border-bottom: 2px solid gold; color: gold; font-weight: bold; }
-        .nav-tabs { display: flex; background: #151515; padding: 10px; gap: 10px; overflow-x: auto; position: sticky; top: 0; z-index: 100; }
-        .tab-btn { background: #333; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
-        .tab-btn.active { background: gold; color: #000; font-weight: bold; }
+        body { background: #050505; color: #fff; font-family: sans-serif; margin: 0; padding-bottom: 50px; }
+        .header { background: #111; padding: 15px; text-align: center; border-bottom: 2px solid gold; color: gold; font-weight: bold; font-size: 20px; }
+        .nav-tabs { display: flex; background: #1a1a1a; padding: 10px; gap: 10px; overflow-x: auto; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
+        .tab-btn { background: #333; color: #fff; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; white-space: nowrap; font-size: 12px; font-weight: bold; }
+        .tab-btn.active { background: gold; color: #000; }
         .section { display: none; padding: 15px; }
         .active { display: block; }
-        .card { background: #1a1a1a; border-radius: 12px; border: 1px solid #333; padding: 15px; margin-bottom: 15px; }
-        h3 { color: gold; margin-top: 0; font-size: 16px; border-left: 4px solid gold; padding-left: 10px; }
-        input { width: 94%; padding: 12px; margin: 10px 0; background: #222; color: #fff; border: 1px solid #444; border-radius: 8px; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-green { background: #2ecc71; color: #fff; }
-        .btn-red { background: #e74c3c; color: #fff; }
-        .game-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-        .g-btn { padding: 12px; background: #222; color: #fff; border: 1px solid #444; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .card { background: #111; border-radius: 12px; border: 1px solid #333; padding: 15px; margin-bottom: 15px; border-left: 4px solid gold; }
+        h3 { color: gold; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 5px; }
+        
+        /* Game Buttons Grid */
+        .game-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+        .g-btn { padding: 15px 5px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; text-transform: uppercase; color: #fff; }
+        .bg-red { background: #ff3333; }
+        .bg-blue { background: #33aaff; }
+        .bg-green { background: #2ecc71; color: #000; }
+        .bg-tie { background: #666; }
+        .bg-auto { background: gold; color: #000; grid-column: span 3; margin-top: 5px; }
+
+        input { width: 92%; padding: 12px; margin: 8px 0; background: #222; color: #fff; border: 1px solid #444; border-radius: 8px; }
+        .btn-action { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px; background: gold; color: #000; }
+        .req-box { background: #222; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #444; font-size: 13px; }
+        
+        #imgModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1001; text-align: center; }
+        #imgModal img { max-width: 90%; max-height: 80%; margin-top: 50px; border: 2px solid gold; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-<div class="header">KALYAN VIP MASTER ADMIN</div>
+<div class="header">💎 KALYAN VIP MASTER CONTROL</div>
 
 <div class="nav-tabs">
-    <button class="tab-btn active" onclick="showTab(event, 'games')">🎮 GAME CTRL</button>
-    <button class="tab-btn" onclick="showTab(event, 'requests')">📩 PLAYER REQ</button>
-    <button class="tab-btn" onclick="showTab(event, 'wallet')">💰 WALLET</button>
-    <button class="tab-btn" onclick="showTab(event, 'settings')">⚙️ DASHBOARD</button>
+    <button class="tab-btn active" onclick="showTab(event, 'wallet')">💰 WALLET (ADD/CUT)</button>
+    <button class="tab-btn" onclick="showTab(event, 'games')">🎮 GAME CONTROL</button>
+    <button class="tab-btn" onclick="showTab(event, 'requests')">📩 REQ/INFO</button>
+    <button class="tab-btn" onclick="showTab(event, 'setup')">⚙️ SETUP</button>
 </div>
 
-<div id="games" class="section active">
+<div id="wallet" class="section active">
     <div class="card">
-        <h3>🐯 Dragon Tiger (game.html)</h3>
-        <div class="game-grid">
-            <button class="g-btn" style="color:red;" onclick="setWin('dvt', 'dragon')">DRAGON</button>
-            <button class="g-btn" style="color:gold;" onclick="setWin('dvt', 'tie')">TIE</button>
-            <button class="g-btn" style="color:skyblue;" onclick="setWin('dvt', 'tiger')">TIGER</button>
-            <button class="g-btn" style="grid-column: span 3; color: #0f0;" onclick="setWin('dvt', 'auto')">AUTO PROFIT MODE</button>
+        <h3>💰 WALLET MANAGER</h3>
+        <input type="text" id="mPh" placeholder="Player Mobile Number">
+        <input type="number" id="mAmt" placeholder="Amount (₹)">
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button onclick="manualUpdate('add')" style="flex: 1; padding: 15px; background: #2ecc71; color: #000; font-weight: bold; border: none; border-radius: 8px; cursor: pointer;">(+) ADD MONEY</button>
+            <button onclick="manualUpdate('cut')" style="flex: 1; padding: 15px; background: #e74c3c; color: #fff; font-weight: bold; border: none; border-radius: 8px; cursor: pointer;">(-) CUT MONEY</button>
         </div>
     </div>
+</div>
+
+<div id="games" class="section">
     <div class="card">
-        <h3>🃏 Andar Bahar (sdml)</h3>
+        <h3>🐯 Dragon Tiger Control</h3>
         <div class="game-grid">
-            <button class="g-btn" style="color:red; grid-column: span 1.5;" onclick="setWin('ab', 'andar')">ANDAR</button>
-            <button class="g-btn" style="color:skyblue; grid-column: span 1.5;" onclick="setWin('ab', 'bahar')">BAHAR</button>
-            <button class="g-btn" style="grid-column: span 3; color: #0f0;" onclick="setWin('ab', 'auto')">AUTO PROFIT MODE</button>
+            <button class="g-btn bg-red" onclick="setRes('dvt','dragon')">Dragon</button>
+            <button class="g-btn bg-tie" onclick="setRes('dvt','tie')">Tie</button>
+            <button class="g-btn bg-blue" onclick="setRes('dvt','tiger')">Tiger</button>
+            <button class="g-btn bg-auto" onclick="setRes('dvt','auto')">Auto Profit Mode</button>
+        </div>
+    </div>
+    <div class="card" style="border-left-color: #ff3333;">
+        <h3>🃏 Andar Bahar Control</h3>
+        <div class="game-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <button class="g-btn bg-red" onclick="setRes('ab','andar')">Andar</button>
+            <button class="g-btn bg-blue" onclick="setRes('ab','bahar')">Bahar</button>
+            <button class="g-btn bg-auto" style="grid-column: span 2;" onclick="setRes('ab','auto')">Auto Profit Mode</button>
         </div>
     </div>
 </div>
 
 <div id="requests" class="section">
     <div class="card">
-        <h3>📩 Deposit/Withdrawal Notifications</h3>
-        <div id="req-data">No new requests</div>
+        <h3>📩 PLAYER SCREENSHOTS & INFO</h3>
+        <div id="req-data">Loading Requests...</div>
     </div>
 </div>
 
-<div id="wallet" class="section">
+<div id="setup" class="section">
     <div class="card">
-        <h3>💵 Instant Balance Manager</h3>
-        <input type="text" id="targetPh" placeholder="Phone Number">
-        <input type="number" id="targetAmt" placeholder="Amount (₹)">
-        <button class="btn btn-green" onclick="updateBal('add')">ADD BALANCE</button>
-        <button class="btn btn-red" onclick="updateBal('cut')">CUT BALANCE</button>
+        <h3>📢 MAJOR NOTICE (GAMES)</h3>
+        <input type="text" id="majNote" placeholder="Enter Scrolling Notice text...">
+        <button class="btn-action" onclick="saveNotice()">UPDATE NOTICE</button>
     </div>
-</div>
-
-<div id="settings" class="section">
     <div class="card">
-        <h3>🏦 Dashboard Social & Payments</h3>
+        <h3>🏦 DEPOSIT & SUPPORT</h3>
         <input type="text" id="upiId" placeholder="UPI ID">
-        <input type="text" id="qrImg" placeholder="QR URL">
-        <input type="text" id="waNo" placeholder="WhatsApp">
+        <input type="text" id="qrLink" placeholder="QR Image Link">
+        <input type="text" id="waNo" placeholder="WhatsApp Number">
         <input type="text" id="tgLink" placeholder="Telegram Link">
-        <button class="btn btn-green" onclick="saveDashboard()">SAVE TO DASHBOARD</button>
+        <button class="btn-action" onclick="saveSettings()">SAVE ALL SETTINGS</button>
     </div>
-    <div class="card">
-        <h3>📢 Notice Board</h3>
-        <input type="text" id="notifText" placeholder="Marquee text">
-        <button class="btn btn-green" onclick="saveNotice()">UPDATE NOTICE</button>
-    </div>
+</div>
+
+<div id="imgModal">
+    <span onclick="this.parentElement.style.display='none'" style="position:absolute; top:20px; right:30px; font-size:40px; color:gold; cursor:pointer;">&times;</span>
+    <img id="popImg" src="">
 </div>
 
 <script>
@@ -104,54 +121,63 @@
         e.currentTarget.classList.add('active');
     }
 
-    // ✅ GAME RESULT (Targeting your specific file logic)
-    function setWin(game, res) {
-        const path = (game === 'dvt') ? 'game_settings/dvt' : 'game_settings/ab';
+    // WALLET LOGIC (ADD & CUT)
+    function manualUpdate(type) {
+        const ph = document.getElementById('mPh').value;
+        const amt = parseFloat(document.getElementById('mAmt').value);
+        if(!ph || !amt) return alert("Phone aur Amount bhariye!");
+
+        db.ref('users/' + ph + '/balance').transaction(bal => {
+            let current = parseFloat(bal) || 0;
+            return type === 'add' ? current + amt : current - amt;
+        }).then(() => {
+            db.ref('users/'+ph+'/history').push({
+                type: type === 'add' ? "Deposit (Admin)" : "Withdraw (Admin)",
+                amount: amt, status: "success", date: new Date().toLocaleString()
+            });
+            alert("✅ Wallet Update Success!");
+        });
+    }
+
+    // GAME RESULT LOGIC
+    function setRes(game, res) {
         const mode = (res === 'auto') ? 'auto' : 'manual';
-        db.ref(path).update({ mode: mode, result: res }).then(() => alert("Command Sent!"));
+        db.ref('game_settings/' + game).update({ mode: mode, result: res })
+        .then(() => alert(game.toUpperCase() + " Updated: " + res.toUpperCase()));
     }
 
-    // ✅ WALLET (Working)
-    function updateBal(type) {
-        const ph = document.getElementById('targetPh').value;
-        const amt = parseFloat(document.getElementById('targetAmt').value);
-        db.ref('users/' + ph + '/balance').transaction(b => {
-            return type === 'add' ? (parseFloat(b) || 0) + amt : (parseFloat(b) || 0) - amt;
-        }).then(() => alert("Balance Sync!"));
-    }
-
-    // ✅ DASHBOARD & NOTICE
-    function saveDashboard() {
-        db.ref('admin_settings').update({
-            upi: document.getElementById('upiId').value,
-            qr: document.getElementById('qrImg').value,
-            whatsapp: document.getElementById('waNo').value,
-            telegram: document.getElementById('tgLink').value
-        }).then(() => alert("Dashboard Settings Saved!"));
-    }
-
-    function saveNotice() {
-        db.ref('admin_settings/notification').set(document.getElementById('notifText').value)
-        .then(() => alert("Notice Updated!"));
-    }
-
-    // ✅ REQUEST MONITOR
+    // REQUESTS LOGIC
     db.ref('requests').on('value', snap => {
-        let html = "";
-        snap.forEach(child => {
-            let r = child.val();
-            html += `<div style="background:#222; padding:10px; border-radius:8px; margin-bottom:10px; border-left:4px solid gold;">
-                <b>${r.phone}</b> | ${r.type} | ₹${r.amount}
-                <button onclick="approveReq('${child.key}','${r.phone}',${r.amount},'${r.type}')" style="float:right; background:gold; border:none; padding:5px; font-weight:bold;">APPROVE</button>
+        let h = "";
+        snap.forEach(c => {
+            let r = c.val();
+            h += `<div class="req-box">
+                <b>${r.phone}</b> | ₹${r.amount} (${r.type})
+                <br><br>
+                <button onclick="viewImg('${r.image}')" style="background:#3498db; color:#fff; border:none; padding:5px 10px; border-radius:4px;">👁 INFO (IMG)</button>
+                <button onclick="delReq('${c.key}')" style="background:#e74c3c; color:#fff; border:none; padding:5px 10px; border-radius:4px; float:right;">DELETE</button>
             </div>`;
         });
-        document.getElementById('req-data').innerHTML = html || "No pending requests.";
+        document.getElementById('req-data').innerHTML = h || "No Requests.";
     });
 
-    function approveReq(id, ph, amt, type) {
-        if(type === 'Deposit') { db.ref('users/'+ph+'/balance').transaction(b => (parseFloat(b)||0)+amt); }
-        db.ref('requests/'+id).remove();
-        alert("Approved!");
+    function viewImg(url) {
+        if(!url || url === "undefined") return alert("No Screenshot!");
+        document.getElementById('popImg').src = url;
+        document.getElementById('imgModal').style.display = "block";
+    }
+
+    function delReq(id) { if(confirm("Delete?")) db.ref('requests/'+id).remove(); }
+
+    // SETUP LOGIC
+    function saveNotice() {
+        db.ref('admin_settings/major_notice').set(document.getElementById('majNote').value).then(() => alert("Notice Updated!"));
+    }
+
+    function saveSettings() {
+        db.ref('admin_settings/payment').update({ upi_id: document.getElementById('upiId').value, qr_url: document.getElementById('qrLink').value });
+        db.ref('admin_settings/support').update({ whatsapp: document.getElementById('waNo').value, telegram: document.getElementById('tgLink').value });
+        alert("✅ Settings Saved!");
     }
 </script>
 </body>
