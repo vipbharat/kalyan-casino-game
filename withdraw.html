@@ -33,7 +33,7 @@
 
         <div class="input-group">
             <label>Game ID (Phone Number)</label>
-            <input type="tel" id="w-game-id" readonly>
+            <input type="tel" id="w-game-id" readonly title="Aapka login number">
         </div>
 
         <div class="input-group">
@@ -63,17 +63,14 @@
         const userPhone = localStorage.getItem('userPhone');
         
         let totalDisplayBalance = 0;
-        let pName = "User"; 
 
         if(userPhone) {
             document.getElementById('w-game-id').value = userPhone;
             db.ref('users/' + userPhone).on('value', (snap) => {
                 const data = snap.val() || {};
-                pName = data.name || "Player"; 
                 const b = parseFloat(data.balance || 0);
                 const w = parseFloat(data.winning_balance || 0);
                 const bo = parseFloat(data.bonus_balance || 0);
-                
                 totalDisplayBalance = b + w + bo;
                 document.getElementById('current-bal').innerText = totalDisplayBalance.toFixed(2);
             });
@@ -84,36 +81,41 @@
             const upi = document.getElementById('w-upi').value.trim();
             const amt = parseFloat(amtVal);
 
-            if(!userPhone) return alert("Please Login First!");
-            if(isNaN(amt) || amt < 500) return alert("Minimum withdrawal ₹500 hai!");
+            if(!userPhone || userPhone === "Guest") return alert("Kripya pehle Login karein!");
+            if(isNaN(amt) || amt < 500) return alert("Kam se kam ₹500 withdrawal karein!");
             if(amt > totalDisplayBalance) return alert("Aapke paas itna balance nahi hai!");
-            if(upi === "") return alert("Please enter UPI ID!");
+            if(upi === "") return alert("Apni UPI ID dalein!");
 
             document.getElementById('sub-btn').disabled = true;
             document.getElementById('sub-btn').innerText = "Processing...";
 
-            const requestData = {
-                name: pName,          
+            // 1. Request Data for Admin Panel
+            const withdrawRequest = {
                 phone: userPhone,
                 amount: amt,
-                detail: upi,           
-                type: "WITHDRAW",      
-                status: "pending",     
-                time: new Date().toLocaleString(),
-                timestamp: Date.now()
+                upi: upi,
+                type: "WITHDRAWAL",
+                image: "none", // Withdraw mein image nahi hoti
+                date: new Date().toLocaleString()
             };
 
-            const newMainBal = totalDisplayBalance - amt;
-            
-            // Step 1: Balance Update
+            // 2. Update Database: Minus from Main Balance & Clear others
             db.ref('users/' + userPhone).update({
-                balance: newMainBal,
+                balance: totalDisplayBalance - amt,
                 winning_balance: 0,
                 bonus_balance: 0
             }).then(() => {
-                // Step 2: Push to All Requests
-                db.ref('all_requests').push(requestData).then(() => {
-                    alert("Success! Request Admin Panel mein bhej di gayi.");
+                // 3. Send to Admin 'requests' folder
+                db.ref('requests').push(withdrawRequest).then(() => {
+                    // 4. Add to Player History
+                    db.ref('users/' + userPhone + '/history').push({
+                        type: "Withdrawal",
+                        amount: amt,
+                        status: "pending",
+                        date: new Date().toLocaleString()
+                    });
+                    
+                    alert("✅ Success! Withdrawal Request bhej di gayi hai.");
                     window.location.href = "dashboard.html";
                 });
             }).catch(e => {
