@@ -2,44 +2,60 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - All Request Information</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Live Request Center</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; padding: 15px; }
-        h2 { color: gold; text-align: center; font-size: 18px; margin-bottom: 20px; text-transform: uppercase; }
-        table { width: 100%; border-collapse: collapse; background: #111; border: 1px solid #333; }
-        th { background: #222; color: gold; padding: 10px; font-size: 12px; border: 1px solid #333; }
-        td { padding: 10px; border: 1px solid #333; text-align: center; font-size: 12px; }
-        .btn-approve { background: green; color: #fff; border: none; padding: 5px 8px; border-radius: 3px; cursor: pointer; }
-        .btn-reject { background: red; color: #fff; border: none; padding: 5px 8px; border-radius: 3px; cursor: pointer; }
-        .type-tag { font-weight: bold; padding: 2px 5px; border-radius: 3px; font-size: 10px; }
-        .w-type { background: #ff4d4d; color: white; }
-        .d-type { background: #008cff; color: white; }
+        body { background: #050505; color: #fff; font-family: sans-serif; padding: 10px; margin: 0; }
+        h2 { color: gold; text-align: center; font-size: 16px; border-bottom: 2px solid gold; padding-bottom: 10px; text-transform: uppercase; }
+        
+        .table-container { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; background: #111; border-radius: 8px; overflow: hidden; }
+        th { background: #222; color: gold; padding: 12px 8px; font-size: 11px; text-align: center; border-bottom: 1px solid #333; }
+        td { padding: 12px 8px; border-bottom: 1px solid #222; text-align: center; font-size: 12px; vertical-align: middle; }
+        
+        .type-tag { font-weight: bold; padding: 3px 6px; border-radius: 4px; font-size: 10px; }
+        .w-type { background: #ff4d4d; color: white; } /* Withdraw - Red */
+        .d-type { background: #2ecc71; color: black; } /* Deposit - Green */
+        
+        .btn-view { background: #3498db; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-size: 10px; }
+        .btn-delete { background: #e74c3c; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-size: 10px; margin-left: 5px; }
+        
+        /* Modal for Screenshot */
+        #imgModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; justify-content:center; align-items:center; flex-direction:column; }
+        #popImg { max-width: 90%; max-height: 80%; border: 2px solid gold; border-radius: 10px; }
+        .close-btn { position: absolute; top: 20px; right: 20px; color: gold; font-size: 35px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <h2>📩 Request Information</h2>
+    <h2>📩 LIVE REQUEST CENTER</h2>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Type</th>
-                <th>Information</th>
-                <th>Phone</th>
-                <th>Amount</th>
-                <th>Details</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="master-table">
-            <tr><td colspan="6">Checking for new requests...</td></tr>
-        </tbody>
-    </table>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>TYPE</th>
+                    <th>PLAYER PHONE</th>
+                    <th>AMOUNT</th>
+                    <th>DETAILS / SS</th>
+                    <th>ACTION</th>
+                </tr>
+            </thead>
+            <tbody id="request-table">
+                <tr><td colspan="5" style="padding:40px;">Checking for live requests...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="imgModal">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <img id="popImg" src="">
+        <p style="color:gold; margin-top:15px; font-weight:bold;">PLAYER SCREENSHOT</p>
+    </div>
 
 <script>
-    // --- APKA FIREBASE CONFIG ---
     const firebaseConfig = {
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
@@ -48,45 +64,58 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Data Load Logic
-    db.ref('all_requests').on('value', snap => {
-        const tableBody = document.getElementById('master-table');
+    // Live Monitor 'requests' Path
+    db.ref('requests').on('value', snap => {
+        const tableBody = document.getElementById('request-table');
         tableBody.innerHTML = "";
         const data = snap.val();
 
         if(!data) {
-            tableBody.innerHTML = "<tr><td colspan='6'>Koi request nahi mili.</td></tr>";
+            tableBody.innerHTML = "<tr><td colspan='5' style='padding:40px; color:#666;'>Abhi koi request nahi hai.</td></tr>";
             return;
         }
 
-        Object.keys(data).forEach(key => {
+        Object.keys(data).reverse().forEach(key => {
             const req = data[key];
-            // Sirf pending requests dikhayega
-            if(req.status === "pending") {
-                const typeLabel = req.type === 'WITHDRAW' ? 'W' : 'D';
-                const typeClass = req.type === 'WITHDRAW' ? 'w-type' : 'd-type';
-
-                tableBody.innerHTML += `
-                    <tr>
-                        <td><span class="type-tag ${typeClass}">${typeLabel}</span></td>
-                        <td><b>${req.name || 'User'}</b></td>
-                        <td>${req.phone}</td>
-                        <td style="color:gold;">₹${req.amount}</td>
-                        <td style="font-size:10px;">${req.detail || 'No Detail'}</td>
-                        <td>
-                            <button class="btn-approve" onclick="updateReq('${key}', 'approved')">✔</button>
-                            <button class="btn-reject" onclick="updateReq('${key}', 'rejected')">✖</button>
-                        </td>
-                    </tr>
-                `;
+            const isWithdraw = req.type === 'WITHDRAWAL';
+            const typeLabel = isWithdraw ? 'WITHDRAW' : 'DEPOSIT';
+            const typeClass = isWithdraw ? 'w-type' : 'd-type';
+            
+            // Details: Withdraw hai toh UPI, Deposit hai toh Screenshot button
+            let detailContent = "";
+            if(isWithdraw) {
+                detailContent = `<span style="color:#aaa; font-size:10px;">UPI:</span><br><b>${req.upi || 'N/A'}</b>`;
+            } else {
+                detailContent = `<button class="btn-view" onclick="viewSS('${req.image}')">👁 VIEW SS</button>`;
             }
+
+            tableBody.innerHTML += `
+                <tr>
+                    <td><span class="type-tag ${typeClass}">${typeLabel}</span></td>
+                    <td><b>${req.phone}</b></td>
+                    <td style="color:gold; font-weight:bold;">₹${req.amount}</td>
+                    <td>${detailContent}</td>
+                    <td>
+                        <button class="btn-delete" onclick="deleteReq('${key}')">❌ DONE</button>
+                    </td>
+                </tr>
+            `;
         });
     });
 
-    function updateReq(key, newStatus) {
-        if(confirm("Confirm " + newStatus + "?")) {
-            db.ref('all_requests/' + key).update({ status: newStatus })
-            .then(() => alert("Request " + newStatus));
+    function viewSS(url) {
+        if(!url || url === "none" || url === "undefined") return alert("Bhai, Screenshot nahi mila!");
+        document.getElementById('popImg').src = url;
+        document.getElementById('imgModal').style.display = "flex";
+    }
+
+    function closeModal() {
+        document.getElementById('imgModal').style.display = "none";
+    }
+
+    function deleteReq(key) {
+        if(confirm("Bhai, kya aapne balance update kar diya? Request delete karein?")) {
+            db.ref('requests/' + key).remove();
         }
     }
 </script>
