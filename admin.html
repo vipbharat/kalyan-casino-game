@@ -1,115 +1,5 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP BHARAT MASTER ADMIN</title>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    <style>
-        body { background: #0a0a0a; color: white; font-family: sans-serif; margin: 0; padding-bottom: 30px; }
-        .header { background: #111; padding: 15px; text-align: center; border-bottom: 2px solid #ffd700; }
-        .nav-tabs { display: flex; background: #1a1a1a; overflow-x: auto; padding: 10px; gap: 8px; position: sticky; top: 0; z-index: 100; scrollbar-width: none; }
-        .tab-btn { flex-shrink: 0; background: #333; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; }
-        .tab-btn.active { background: #ffd700; color: black; }
-        .content-section { display: none; padding: 15px; }
-        .active-section { display: block; }
-        .card { background: #151515; padding: 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; }
-        h3 { margin: 0 0 10px 0; color: #ffd700; font-size: 14px; border-left: 4px solid #ffd700; padding-left: 10px; }
-        input { width: 92%; padding: 12px; margin: 8px 0; background: #222; color: white; border: 1px solid #444; border-radius: 8px; }
-        .btn { padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
-        .btn-green { background: #2ecc71; color: white; }
-        .btn-red { background: #e74c3c; color: white; }
-        .user-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
-        .user-table th { background: #222; color: #ffd700; padding: 8px; border: 1px solid #333; }
-        .user-table td { padding: 8px; border: 1px solid #222; text-align: center; }
-        .game-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .g-btn { padding: 15px 5px; border-radius: 8px; border: 1px solid #444; background: #222; color: white; font-size: 11px; font-weight: bold; cursor: pointer; }
-        .monitor { font-size: 12px; color: #0f0; background: #001a00; padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #004400; }
-    </style>
-</head>
-<body>
-
-<div class="header"><h3>💎 VIP BHARAT MASTER ADMIN</h3></div>
-
-<div class="nav-tabs">
-    <button class="tab-btn active" onclick="openTab(event, 'game-ctrl')">🎮 GAMES</button>
-    <button class="tab-btn" onclick="openTab(event, 'req-ctrl')">📩 REQUESTS</button>
-    <button class="tab-btn" onclick="openTab(event, 'money-ctrl')">💰 WALLET</button>
-    <button class="tab-btn" onclick="openTab(event, 'settings-ctrl')">⚙️ SETTINGS</button>
-    <button class="tab-btn" style="background:#ffd700;color:black" onclick="openTab(event, 'users-list')">👥 USERS</button>
-</div>
-
-<div id="game-ctrl" class="content-section active-section">
-    <div class="card">
-        <h3>🐯 Dragon Tiger Control</h3>
-        <div id="dvt-monitor" class="monitor">D: ₹0 | T: ₹0 | Ti: ₹0</div>
-        <div class="game-btn-grid">
-            <button class="g-btn" onclick="masterControl('dvt', 'auto')">AUTO PROFIT</button>
-            <button class="g-btn" style="border: 1px solid red;" onclick="masterControl('dvt', 'dragon')">DRAGON WIN</button>
-            <button class="g-btn" style="border: 1px solid blue;" onclick="masterControl('dvt', 'tiger')">TIGER WIN</button>
-            <button class="g-btn" style="border: 1px solid green;" onclick="masterControl('dvt', 'tie')">TIE WIN</button>
-        </div>
-    </div>
-    <div class="card">
-        <h3>🃏 Andar Bahar Control</h3>
-        <div id="ab-monitor" class="monitor">Andar: ₹0 | Bahar: ₹0</div>
-        <div class="game-btn-grid">
-            <button class="g-btn" onclick="masterControl('ab', 'auto')">AUTO PROFIT</button>
-            <button class="g-btn" style="border: 1px solid red;" onclick="masterControl('ab', 'andar')">ANDAR WIN</button>
-            <button class="g-btn" style="border: 1px solid blue;" onclick="masterControl('ab', 'bahar')">BAHAR WIN</button>
-        </div>
-    </div>
-</div>
-
-<div id="req-ctrl" class="content-section">
-    <div class="card">
-        <h3>📩 Player Requests</h3>
-        <table class="user-table">
-            <thead><tr><th>User/Date</th><th>Type</th><th>Amt</th><th>Action</th></tr></thead>
-            <tbody id="master-request-body"></tbody>
-        </table>
-    </div>
-</div>
-
-<div id="money-ctrl" class="content-section">
-    <div class="card">
-        <h3>💵 Balance Manager</h3>
-        <input type="text" id="userPhone" placeholder="Player Phone">
-        <input type="number" id="newAmt" placeholder="Amount">
-        <button class="btn btn-green" onclick="modifyWallet('add')">ADD BALANCE</button>
-        <button class="btn btn-red" onclick="modifyWallet('cut')">CUT BALANCE</button>
-    </div>
-</div>
-
-<div id="settings-ctrl" class="content-section">
-    <div class="card">
-        <h3>🏦 Links, UPI & QR</h3>
-        <input type="text" id="adminUpi" placeholder="UPI ID">
-        <input type="text" id="qrUrl" placeholder="QR Image URL">
-        <input type="text" id="waLink" placeholder="WhatsApp Number">
-        <input type="text" id="tgLink" placeholder="Telegram Link">
-        <button class="btn btn-green" onclick="updateSettings()">SAVE SETTINGS</button>
-    </div>
-    <div class="card">
-        <h3>📢 Notice Board</h3>
-        <input type="text" id="notifMsg" placeholder="Enter marquee text">
-        <button class="btn btn-green" onclick="updateNotif()">UPDATE NOTICE</button>
-    </div>
-</div>
-
-<div id="users-list" class="content-section">
-    <div class="card">
-        <h3>👥 Registered Players</h3>
-        <table class="user-table">
-            <thead><tr><th>Phone</th><th>Balance</th><th>UID</th></tr></thead>
-            <tbody id="all-users-data"></tbody>
-        </table>
-    </div>
-</div>
-
 <script>
-    // Firebase Config
+    // Firebase Setup
     const firebaseConfig = { 
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
@@ -118,51 +8,56 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Tab Navigation
-    function openTab(evt, name) {
-        let content = document.getElementsByClassName("content-section");
-        for (let i = 0; i < content.length; i++) content[i].classList.remove("active-section");
-        let tabs = document.getElementsByClassName("tab-btn");
-        for (let i = 0; i < tabs.length; i++) tabs[i].classList.remove("active");
-        document.getElementById(name).classList.add("active-section");
-        evt.currentTarget.classList.add("active");
-    }
-
-    // ✅ GAME CONTROL
+    // 1. 🎮 GAME CONTROL (Fixing Paths)
     function masterControl(game, res) {
         const mode = (res === 'auto') ? 'auto' : 'manual';
+        
         if(game === 'dvt') {
+            // Dragon Tiger: Dono paths update honge taaki game script pick kar sake
             db.ref('game_settings/dvt').update({ mode: mode, result: res });
+            db.ref('games/dragon_tiger').update({ mode: mode, result: res });
         } else {
+            // Andar Bahar: Iska manual result humne 'manual_result_ab' rakha tha
             db.ref('game_settings/ab').update({ mode: mode, result: res });
             db.ref('manual_result_ab').set(res);
         }
-        alert("✅ " + res.toUpperCase() + " SET!");
+        alert("✅ " + game.toUpperCase() + " Set to " + res.toUpperCase());
     }
 
-    // ✅ LIVE MONITORING
-    db.ref('game_live_bets_dvt').on('value', s => {
-        const d = s.val() || {dragon:0, tiger:0, tie:0};
-        document.getElementById('dvt-monitor').innerText = `D: ₹${(d.dragon||0)} | T: ₹${(d.tiger||0)} | Ti: ₹${(d.tie||0)}`;
-    });
-    db.ref('game_live_bets_ab').on('value', s => {
-        const d = s.val() || {andar:0, bahar:0};
-        document.getElementById('ab-monitor').innerText = `Andar: ₹${(d.andar||0)} | Bahar: ₹${(d.bahar||0)}`;
-    });
+    // 2. 📢 NOTICE & SETTINGS (Fixing Path)
+    function updateNotif() {
+        const msg = document.getElementById('notifMsg').value;
+        // Game marquee isi path se data uthayega
+        db.ref('admin_settings/notification').set(msg).then(() => alert("Notice Updated!"));
+    }
 
-    // ✅ REQUESTS LOGIC (Deposit/Withdrawal)
+    function updateSettings() {
+        const upi = document.getElementById('adminUpi').value;
+        const qr = document.getElementById('qrUrl').value;
+        const wa = document.getElementById('waLink').value;
+        const tg = document.getElementById('tgLink').value;
+
+        db.ref('admin_settings').update({
+            upi: upi,
+            qr: qr,
+            whatsapp: wa,
+            telegram: tg
+        }).then(() => alert("All Settings Saved!"));
+    }
+
+    // 3. 📩 REQUESTS (Deposit/Withdrawal Sync)
     db.ref('requests').on('value', s => {
         let h = "";
         s.forEach(child => {
             let req = child.val();
             let id = child.key;
             h += `<tr>
-                <td>${req.phone}<br><small>${req.date}</small></td>
-                <td style="color:${req.type === 'Deposit' ? '#2ecc71' : '#e74c3c'}">${req.type}</td>
+                <td>${req.phone}</td>
+                <td style="color:${req.type==='Deposit'?'#2ecc71':'#e74c3c'}">${req.type}</td>
                 <td>₹${req.amount}</td>
                 <td>
-                    <button class="btn-green" style="padding:4px; font-size:9px;" onclick="manageRequest('${id}','${req.phone}',${req.amount},'${req.type}','approve')">Approve</button>
-                    <button class="btn-red" style="padding:4px; font-size:9px; margin-top:2px;" onclick="manageRequest('${id}','${req.phone}',${req.amount},'${req.type}','reject')">Reject</button>
+                    <button class="btn-green" style="padding:5px;" onclick="manageRequest('${id}','${req.phone}',${req.amount},'${req.type}','approve')">Approve</button>
+                    <button class="btn-red" style="padding:5px;" onclick="manageRequest('${id}','${req.phone}',${req.amount},'${req.type}','reject')">Reject</button>
                 </td></tr>`;
         });
         document.getElementById('master-request-body').innerHTML = h;
@@ -175,30 +70,15 @@
             db.ref('users/' + phone + '/balance').transaction(b => (parseFloat(b) || 0) + amt);
         }
         db.ref('requests/' + id).remove();
-        alert("✅ Request " + action.toUpperCase());
+        alert("Request " + action);
     }
 
-    // ✅ SETTINGS & NOTICE
-    function updateSettings() {
-        db.ref('admin_settings').update({
-            upi: document.getElementById('adminUpi').value,
-            qr: document.getElementById('qrUrl').value,
-            whatsapp: document.getElementById('waLink').value,
-            telegram: document.getElementById('tgLink').value
-        }).then(() => alert("✅ Settings Saved!"));
-    }
-
-    function updateNotif() {
-        db.ref('admin_settings/notification').set(document.getElementById('notifMsg').value).then(()=>alert("✅ Notice Updated!"));
-    }
-
-    // ✅ WALLET & USERS
+    // 4. 👥 USER LIST & WALLET (Already Working)
     function modifyWallet(action) {
         const ph = document.getElementById('userPhone').value;
         const amt = parseFloat(document.getElementById('newAmt').value);
-        if(!ph || !amt) return alert("Phone/Amt missing");
         db.ref('users/' + ph + '/balance').transaction(b => action==='add'?(parseFloat(b)||0)+amt:(parseFloat(b)||0)-amt)
-        .then(() => alert("✅ Wallet Updated!"));
+        .then(() => alert("Wallet Updated!"));
     }
 
     db.ref('users').on('value', s => {
@@ -208,6 +88,13 @@
         });
         document.getElementById('all-users-data').innerHTML = h;
     });
+
+    function openTab(evt, name) {
+        let content = document.getElementsByClassName("content-section");
+        for (let i = 0; i < content.length; i++) content[i].classList.remove("active-section");
+        let tabs = document.getElementsByClassName("tab-btn");
+        for (let i = 0; i < tabs.length; i++) tabs[i].classList.remove("active");
+        document.getElementById(name).classList.add("active-section");
+        evt.currentTarget.classList.add("active");
+    }
 </script>
-</body>
-</html>
