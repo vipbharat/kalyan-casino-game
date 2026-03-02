@@ -41,12 +41,12 @@
         .selected { transform: scale(1.1); border: 3px solid var(--gold) !important; box-shadow: 0 0 10px var(--gold); }
     </style>
 </head>
-<body>
+<body onclick="unlockAudio()">
 
 <div class="top-bar">
     <div>
         <div id="live-date" style="font-size:10px; color:var(--gold)">--/--/--</div>
-        <div style="font-size:10px; color:#0f0; font-weight:bold;">1,248 Online</div>
+        <div style="font-size:10px; color:#0f0; font-weight:bold;"><span id="online-count">1,248</span> Online</div>
     </div>
     <div class="bal-box">₹ <span id="balance">0.00</span></div>
 </div>
@@ -95,12 +95,23 @@
     const db = firebase.database();
     const phone = localStorage.getItem('userPhone');
 
+    // Audio Logic
+    var audioMaster = new Audio('https://files.catbox.moe/396ke9.mp3');
+    function unlockAudio() { audioMaster.play().then(()=>audioMaster.pause()); }
+
+    // Online Count Logic
+    let currentOnline = 1248;
+    setInterval(() => {
+        currentOnline += Math.floor(Math.random() * 21) - 10;
+        if(currentOnline < 300) currentOnline = 500;
+        document.getElementById('online-count').innerText = currentOnline.toLocaleString();
+    }, 4000);
+
     const chipConfig = { 10:{c:"#fff",t:"10",f:"#000"}, 100:{c:"#2196f3",t:"100",f:"#fff"}, 500:{c:"#4caf50",t:"500",f:"#fff"}, 1000:{c:"#f44336",t:"1K",f:"#fff"}, 5000:{c:"#ffd700",t:"5K",f:"#000"} };
     let totalBal=0, currentChip=10, isBetting=false, adminCommand=null;
     let realPool={dragon:0, tiger:0, tie:0}, botPool={dragon:0, tiger:0, tie:0}, myBets = { dragon: 0, tiger: 0, tie: 0 };
     const deckCodes = ["A","2","3","4","5","6","7","8","9","0","J","Q","K"];
     
-    // Bots logic
     let botsData = [];
     let lastWinSide = '';
 
@@ -142,10 +153,7 @@
             let botIndex = Math.floor(Math.random()*botsData.length);
             let s = ['dragon','tiger','tie'][Math.floor(Math.random()*3)];
             let a = [10, 100, 500, 1000, 5000][Math.floor(Math.random()*5)]; 
-            
             if(s === 'tie' && botPool.tie > 3000) s = Math.random() > 0.5 ? 'dragon' : 'tiger';
-            
-            // Bot balance minus
             if(botsData[botIndex].bal >= a) {
                 botsData[botIndex].bal -= a;
                 botsData[botIndex].currentBetSide = s;
@@ -168,7 +176,10 @@
                 else win = Math.random() > 0.5 ? 'dragon' : 'tiger';
                 if(Math.random() < 0.04) win = 'tie';
             }
-            lastWinSide = win;
+            
+            // Sound Play Logic
+            if(win === 'dragon') { audioMaster.volume = 0.2; audioMaster.currentTime = 0.3; audioMaster.play(); }
+            else if(win === 'tiger') { audioMaster.volume = 1.0; audioMaster.currentTime = 0; audioMaster.play(); }
 
             let d_i = Math.floor(Math.random() * 13), t_i;
             if (win === 'dragon') t_i = d_i > 0 ? Math.floor(Math.random() * d_i) : 0;
@@ -184,7 +195,6 @@
             winBox.innerText = win.toUpperCase() + " WINS";
             winBox.style.display = 'block';
 
-            // Bot Winning logic (Balance update)
             botsData.forEach(bot => {
                 if(bot.currentBetSide === win) {
                     let multi = (win === 'tie') ? 9 : 2;
@@ -197,7 +207,7 @@
             let payout = 0;
             if (win === 'dragon') payout = myBets.dragon * 1.95;
             else if (win === 'tiger') payout = myBets.tiger * 1.95;
-            else if (win === 'tie') payout = (myBets.tie * 9) + (myBets.dragon * 0.5) + (myBets.tiger * 0.5);
+            else if (win === 'tie') payout = (myBets.tie * 9);
 
             if (payout > 0 && phone) {
                 db.ref('users/'+phone).once('value', s => {
@@ -205,7 +215,7 @@
                     db.ref('users/'+phone).update({balance: b + payout});
                 });
             }
-            setTimeout(updateBotsUI, 2000); // Update balance after win
+            setTimeout(updateBotsUI, 2000);
         } catch(e) {}
     }
 
@@ -226,6 +236,7 @@
         db.ref('users/'+phone).once('value', s => {
             let b = s.val() ? s.val().balance : 0; 
             if(b >= currentChip) {
+                if (navigator.vibrate) navigator.vibrate(40);
                 db.ref('users/'+phone).update({balance: b - currentChip});
                 realPool[side] += currentChip; myBets[side] += currentChip;
                 updatePoolUI(); spawnChip(side, currentChip);
