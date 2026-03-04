@@ -59,7 +59,7 @@
 <body onload="initGame()">
     <div class="bg"></div>
     <div class="top-status">
-        <div class="total-money">Wallet: <span id="user-balance">₹0</span></div>
+        <div class="total-money">Wallet: <span id="user-balance">₹0.00</span></div>
         <div class="hist-container" id="hist-row"></div>
     </div>
     <div id="win-popup" class="win-popup">+₹0</div>
@@ -94,31 +94,28 @@
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLiLz", 
-        authDomain: "kalyan-casino.firebaseapp.com",
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
-        projectId: "kalyan-casino",
-        storageBucket: "kalyan-casino.appspot.com",
-        messagingSenderId: "805675620545",
-        appId: "1:805675620545:web:6b49c99f325432a8249c40"
+        projectId: "kalyan-casino"
     };
     
-    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    let userBalance = 0;
-    let userID = "user_1"; 
+    let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0;
+    let userID = localStorage.getItem('userPhone') || "user_1"; 
     let players = [], historyAnk = [];
     let myBets = { low:0, seven:0, high:0 }, botTotal = { low:0, seven:0, high:0 }, globalRealBets = { low:0, seven:0, high:0 };
     let currentChip = 1000, isRolling = false, currentCycleId = -1;
 
     function syncWallet() {
-        firebase.database().ref(`users/${userID}/balance`).on('value', (snap) => {
-            userBalance = snap.val() || 0;
-            document.getElementById('user-balance').innerText = "₹" + userBalance.toLocaleString();
+        db.ref(`users/${userID}`).on('value', (snap) => {
+            const data = snap.val() || {};
+            depBal = parseFloat(data.balance || 0);
+            winBal = parseFloat(data.winning_balance || 0);
+            bonBal = parseFloat(data.bonus_balance || 0);
+            totalBal = depBal + winBal + bonBal;
+            document.getElementById('user-balance').innerText = "₹" + totalBal.toFixed(2);
         });
-    }
-
-    function updateDBBalance(amount) {
-        firebase.database().ref(`users/${userID}/balance`).set(amount);
     }
 
     function initGame() {
@@ -139,7 +136,7 @@
 
             if(cycleId !== currentCycleId) {
                 currentCycleId = cycleId; isRolling = false; resetTable();
-                firebase.database().ref(`game_7updown/rounds/${cycleId}/bets`).on('value', snap => {
+                db.ref(`game_7updown/rounds/${cycleId}/bets`).on('value', snap => {
                     globalRealBets = snap.val() || { low:0, seven:0, high:0 };
                 });
             }
@@ -147,14 +144,7 @@
             if(phase < 15000) {
                 let left = Math.ceil((15000 - phase) / 1000);
                 document.getElementById('timer').innerText = left + "s";
-                
-                // --- BOT TURBO BETTING LOGIC ---
-                // Amount badha di aur frequency tez kar di taaki ₹30k cross ho jaye
-                if(left > 1) {
-                   for(let i=0; i<4; i++) { // Ek bar mein 4 bets
-                      simulateBots();
-                   }
-                }
+                if(left > 1) { for(let i=0; i<4; i++) { simulateBots(); } }
             } else if(!isRolling) {
                 isRolling = true;
                 calculateAndRoll();
@@ -162,15 +152,35 @@
         }, 100);
     }
 
+    // ✅ 100% PROFIT LOGIC + DYNAMIC DICE (Fixed 4-4 issue)
     function calculateAndRoll() {
         let options = [
-            { id: 'low', cost: globalRealBets.low * 2, v1: 2, v2: 2 },
-            { id: 'seven', cost: globalRealBets.seven * 6, v1: 3, v2: 4 },
-            { id: 'high', cost: globalRealBets.high * 2, v1: 5, v2: 5 }
+            { id: 'low', cost: (globalRealBets.low || 0) * 2 },
+            { id: 'seven', cost: (globalRealBets.seven || 0) * 6 },
+            { id: 'high', cost: (globalRealBets.high || 0) * 2 }
         ].sort((a, b) => a.cost - b.cost);
 
-        let win = options[0];
-        startRoll(win.v1, win.v2, win.id);
+        let winSide = options[0].id;
+        let v1, v2, total;
+
+        if (winSide === 'low') {
+            total = Math.floor(Math.random() * 5) + 2; // 2 to 6
+            v1 = Math.floor(Math.random() * (total - 1)) + 1;
+            v2 = total - v1;
+        } else if (winSide === 'high') {
+            total = Math.floor(Math.random() * 5) + 8; // 8 to 12
+            v1 = Math.floor(Math.random() * 5) + (total > 10 ? 5 : 2); 
+            v2 = total - v1;
+            if(v1 > 6 || v2 > 6 || v1 < 1 || v2 < 1) { // Safety re-roll
+                v1 = 6; v2 = total - 6;
+            }
+        } else {
+            let pairs = [[1,6],[2,5],[3,4],[4,3],[5,2],[6,1]];
+            let p = pairs[Math.floor(Math.random()*pairs.length)];
+            v1 = p[0]; v2 = p[1];
+        }
+
+        startRoll(v1, v2, winSide);
     }
 
     function startRoll(v1, v2, winId) {
@@ -190,63 +200,23 @@
         }, 500);
     }
 
-    function updateBotWallets() {
-        players.forEach(p => {
-            p.bal += (Math.random() > 0.5 ? Math.random() * 15000 : -Math.random() * 15000);
-            if(p.bal < 10000) p.bal = 100000;
-        });
-        renderFooter();
-    }
-
     function userBet(side, e) {
         if(isRolling) return;
-        if(userBalance < currentChip) { alert("Balance Zero! Dashboard se recharge karein."); return; }
-        updateDBBalance(userBalance - currentChip);
+        if(totalBal < currentChip) { alert("Balance Kam hai!"); return; }
+        db.ref(`users/${userID}/balance`).set(depBal - currentChip);
         myBets[side] += currentChip;
         document.getElementById('a-'+side).innerText = "₹" + (myBets[side] + botTotal[side]).toLocaleString();
         spawnChip(side, currentChip, false, e.clientX, e.clientY);
-        firebase.database().ref(`game_7updown/rounds/${currentCycleId}/bets/${side}`).set(firebase.database.ServerValue.increment(currentChip));
+        db.ref(`game_7updown/rounds/${currentCycleId}/bets/${side}`).set(firebase.database.ServerValue.increment(currentChip));
     }
 
-    function botBet(side, val) {
-        botTotal[side] += val;
-        document.getElementById('a-'+side).innerText = "₹" + (myBets[side] + botTotal[side]).toLocaleString();
-        spawnChip(side, val, true);
-        let randBot = players[Math.floor(Math.random()*12)];
-        randBot.bal -= val;
-        renderFooter();
-    }
-
-    function simulateBots() {
-        if(Math.random() > 0.3) { // Betting speed badha di
-            let s = ['low','high','seven'][Math.floor(Math.random()*3)];
-            let amt = [500, 1000, 5000][Math.floor(Math.random()*3)]; // Higher chips focus
-            
-            // Lucky 7 limit wahi rakhi hai taaki admin ko nuksan na dikhe
-            if(s === 'seven' && botTotal.seven > 8000) s = Math.random() > 0.5 ? 'low' : 'high';
-            
-            botBet(s, amt);
+    function checkPayout(winId) {
+        if(myBets[winId] > 0) {
+            let winAmt = (winId === 'seven') ? myBets[winId] * 6 : myBets[winId] * 2;
+            db.ref(`users/${userID}/winning_balance`).set(winBal + winAmt);
+            let p = document.getElementById('win-popup'); p.innerText = "+₹"+winAmt; p.classList.add('show');
+            setTimeout(() => p.classList.remove('show'), 2000);
         }
-    }
-
-    function spawnChip(side, val, isBot, x, y) {
-        let chip = document.createElement('div'); chip.className = 'chip-visual';
-        chip.style.backgroundColor = chipColors[val]; chip.innerText = val >= 1000 ? (val/1000)+'K' : val;
-        let rect = document.getElementById(side).getBoundingClientRect();
-        chip.style.left = (isBot ? Math.random()*window.innerWidth : x) + 'px';
-        chip.style.top = (isBot ? window.innerHeight : y) + 'px';
-        document.body.appendChild(chip);
-        setTimeout(() => {
-            chip.style.left = (rect.left + 20 + Math.random()*(rect.width-40)) + 'px';
-            chip.style.top = (rect.top + 40 + Math.random()*(rect.height-80)) + 'px';
-        }, 50);
-    }
-
-    function resetTable() {
-        document.querySelectorAll('.chip-visual').forEach(c => c.remove());
-        document.querySelectorAll('.box').forEach(b => b.classList.remove('win-glow'));
-        myBets = {low:0,seven:0,high:0}; botTotal = {low:0,seven:0,high:0};
-        document.querySelectorAll('.box b').forEach(b => b.innerText = "₹0");
     }
 
     function build3DDice(id) {
@@ -265,18 +235,44 @@
     const chipColors = { 10:'#00d2ff', 100:'#e65c00', 500:'#1D976C', 1000:'#ef473a', 5000:'#38ef7d' };
     function sel(v, el) { currentChip = v; document.querySelectorAll('.chip-btn').forEach(c => c.classList.remove('active')); el.classList.add('active'); }
     function renderFooter() { document.getElementById('plist').innerHTML = players.map(p => `<div class="p-card"><div style="color:var(--gold)">${p.name}</div><b>₹${Math.floor(p.bal).toLocaleString()}</b></div>`).join(''); }
+    function updateBotWallets() { players.forEach(p => { p.bal += (Math.random() > 0.5 ? 5000 : -5000); if(p.bal < 10000) p.bal = 100000; }); renderFooter(); }
     function updateHistory(v) {
         let col = v < 7 ? 'var(--blue)' : (v > 7 ? 'var(--pink)' : 'var(--gold)');
         historyAnk.unshift({v, col}); if(historyAnk.length > 8) historyAnk.pop();
         document.getElementById('hist-row').innerHTML = historyAnk.map(h => `<div class="h-ank" style="background:${h.col}">${h.v}</div>`).join('');
     }
-    function checkPayout(winId) {
-        if(myBets[winId] > 0) {
-            let winAmt = (winId === 'seven') ? myBets[winId] * 6 : myBets[winId] * 2;
-            updateDBBalance(userBalance + winAmt);
-            let p = document.getElementById('win-popup'); p.innerText = "+₹"+winAmt; p.classList.add('show');
-            setTimeout(() => p.classList.remove('show'), 2000);
+    function spawnChip(side, val, isBot, x, y) {
+        let chip = document.createElement('div'); chip.className = 'chip-visual';
+        chip.style.backgroundColor = chipColors[val]; chip.innerText = val >= 1000 ? (val/1000)+'K' : val;
+        let rect = document.getElementById(side).getBoundingClientRect();
+        chip.style.left = (isBot ? Math.random()*window.innerWidth : x) + 'px';
+        chip.style.top = (isBot ? window.innerHeight : y) + 'px';
+        document.body.appendChild(chip);
+        setTimeout(() => {
+            chip.style.left = (rect.left + 20 + Math.random()*(rect.width-40)) + 'px';
+            chip.style.top = (rect.top + 40 + Math.random()*(rect.height-80)) + 'px';
+        }, 50);
+    }
+    function resetTable() {
+        document.querySelectorAll('.chip-visual').forEach(c => c.remove());
+        document.querySelectorAll('.box').forEach(b => b.classList.remove('win-glow'));
+        myBets = {low:0,seven:0,high:0}; botTotal = {low:0,seven:0,high:0};
+        document.querySelectorAll('.box b').forEach(b => b.innerText = "₹0");
+    }
+    function simulateBots() {
+        if(Math.random() > 0.3) {
+            let s = ['low','high','seven'][Math.floor(Math.random()*3)];
+            let amt = [1000, 5000][Math.floor(Math.random()*2)];
+            if(s === 'seven' && botTotal.seven > 9000) s = Math.random() > 0.5 ? 'low' : 'high';
+            botBet(s, amt);
         }
+    }
+    function botBet(side, val) {
+        botTotal[side] += val;
+        document.getElementById('a-'+side).innerText = "₹" + (myBets[side] + botTotal[side]).toLocaleString();
+        spawnChip(side, val, true);
+        let randBot = players[Math.floor(Math.random()*12)];
+        randBot.bal -= val; renderFooter();
     }
 </script>
 </body>
