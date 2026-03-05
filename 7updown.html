@@ -109,7 +109,7 @@
     <div class="footer" id="plist"></div>
 
 <script>
-    // ✅ YAHAN AASLI API KEY ADD HO GAYI HAI
+    // Asli API key daal di gayi hai
     const firebaseConfig = {
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
@@ -128,7 +128,8 @@
     const faceOrder = ['front', 'right', 'back', 'left', 'top', 'bottom'];
     const chipColors = { 10:'#00d2ff', 100:'#e65c00', 500:'#1D976C', 1000:'#ef473a', 5000:'#38ef7d' };
 
-    let totalBal = 0; 
+    // WALLET FIX: Dashboard ki tarah Deposit, Winning, Bonus add kiye
+    let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0; 
     let userID = localStorage.getItem('userPhone') || "user_1"; 
     
     let players = [], historyAnk = [];
@@ -141,10 +142,16 @@
         return { name: "ID_"+Math.floor(1000+Math.random()*9000), bal: b, startBal: b };
     }
 
+    // WALLET FIX: Dashboard wala SyncWallet Function
     function syncWallet() {
-        db.ref(`users/${userID}/balance`).on('value', (snap) => {
-            totalBal = parseFloat(snap.val() || 0); 
-            document.getElementById('user-balance').innerText = "₹" + totalBal.toLocaleString();
+        db.ref(`users/${userID}`).on('value', (snap) => {
+            const data = snap.val() || {};
+            depBal = parseFloat(data.balance || 0);
+            winBal = parseFloat(data.winning_balance || 0);
+            bonBal = parseFloat(data.bonus_balance || 0);
+            
+            totalBal = depBal + winBal + bonBal; 
+            document.getElementById('user-balance').innerText = "₹" + totalBal.toFixed(2);
         });
     }
 
@@ -235,12 +242,13 @@
         }, 500);
     }
 
+    // WALLET FIX: Bet katega Dashboard ke Deposit Balance se
     function userBet(side, e) {
         if(isRolling) return;
         if(totalBal < currentChip) { alert("Balance Kam hai!"); return; }
         
-        totalBal -= currentChip;
-        document.getElementById('user-balance').innerText = "₹" + totalBal.toLocaleString();
+        // Paisa direct database ke deposit(balance) me se minus hoga
+        db.ref(`users/${userID}/balance`).set(depBal - currentChip);
         
         myBets[side] += currentChip;
         document.getElementById('a-'+side).innerText = "₹" + (myBets[side] + botTotal[side]).toLocaleString();
@@ -248,18 +256,16 @@
         
         spawnChip(side, currentChip, false, e.clientX, e.clientY);
         
-        db.ref(`users/${userID}/balance`).set(totalBal);
         db.ref(`game_7updown/rounds/${currentCycleId}/bets/${side}`).set(firebase.database.ServerValue.increment(currentChip));
     }
 
+    // WALLET FIX: Jeetne par Dashboard ke Winning Balance mein paisa jayega
     function checkPayout(winId) {
         if(myBets[winId] > 0) {
             let winAmt = (winId === 'seven') ? myBets[winId] * 6 : myBets[winId] * 2;
             
-            totalBal += winAmt;
-            document.getElementById('user-balance').innerText = "₹" + totalBal.toLocaleString();
-            
-            db.ref(`users/${userID}/balance`).set(totalBal);
+            // Paisa direct database ke winning_balance mein plus hoga
+            db.ref(`users/${userID}/winning_balance`).set(winBal + winAmt);
             
             let p = document.getElementById('win-popup'); p.innerText = "+₹"+winAmt.toLocaleString(); p.classList.add('show');
             setTimeout(() => p.classList.remove('show'), 2000);
