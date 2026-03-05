@@ -79,6 +79,7 @@
         
         .popup { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 4rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold), 0 0 40px #ff3333; z-index: 1000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .popup.show { transform: translate(-50%, -50%) scale(1); }
+
     </style>
 </head>
 <body>
@@ -152,9 +153,9 @@
     import { getDatabase, ref, onValue, set, get, update, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-    // 👇 YAHAN APNI ASLI API KEY DALEIN (Screen shot wali) 👇
+    // Yahan aapki exact details set kar di hain
     const firebaseConfig = {
-        apiKey: "APNI_FULL_API_KEY_YAHAN_DALEIN", 
+        apiKey: "AIzaSyCy2zsDDJeVTQEblCenkLILqJ_Pz0a0", 
         authDomain: "kalyan-casino.firebaseapp.com",
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
         projectId: "kalyan-casino",
@@ -168,7 +169,6 @@
     const db = getDatabase(app);
     const auth = getAuth(app);
 
-    // Game Variables
     let currentUserId = null;
     let userBalance = 0;
     let selectedChip = 100;
@@ -183,13 +183,11 @@
     const wheelIcons = { porsche:'P', ferrari:'F', lambo:'L', maserati:'M', bmw:'BMW', mercedes:'BENZ', audi:'A', jaguar:'JAG' };
     const wheelClasses = { porsche:'icon-porsche', ferrari:'icon-ferrari', lambo:'icon-lambo', maserati:'icon-maserati', bmw:'icon-bmw', mercedes:'icon-mercedes', audi:'icon-audi', jaguar:'icon-jaguar' };
 
-    // Audio
     var audioSpin = document.getElementById('soundSpin');
     var audioWin = document.getElementById('soundWin');
     var audioBet = document.getElementById('soundBet');
     function playAudio(audioObj) { try { if(audioObj){ audioObj.currentTime=0; audioObj.play().catch(e=>{}); } } catch(e){} }
 
-    // Initial Wheel Draw
     function drawWheel() {
         var wrapper = document.getElementById('wheelWrapper');
         var radius = 100; 
@@ -209,13 +207,11 @@
     }
     drawWheel();
 
-    // 1. SINGLE WALLET INTEGRATION
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUserId = user.uid;
             document.getElementById('msgText').innerText = "Account Connected";
             
-            // Listen to Dashboard Balance
             onValue(ref(db, `Users/${currentUserId}/balance`), (snapshot) => {
                 userBalance = snapshot.val() || 0;
                 document.getElementById('balanceDisplay').innerText = "₹" + userBalance;
@@ -241,7 +237,6 @@
         return 'radial-gradient(circle at 30% 30%, #9b59b6, #4a1c5e)';
     }
 
-    // Placing Bet updates Firebase directly
     window.placeBet = function(carId, event) {
         if(!isBettingOpen) return;
         if(!currentUserId) { alert("Login Error! Please restart app."); return; }
@@ -249,19 +244,15 @@
 
         playAudio(audioBet);
 
-        // Deduct from Real Firebase Wallet instantly
         update(ref(db, `Users/${currentUserId}`), { balance: userBalance - selectedChip });
         
-        // Add to Real Server Bets (100% Profit calculation ke liye)
         update(ref(db, `Game/CarRoulette/Bets/${currentUserId}`), { 
             [carId]: increment(selectedChip) 
         });
 
-        // Local UI update
         myBets[carId] += selectedChip;
         document.getElementById('bet-' + carId).innerText = "₹" + myBets[carId];
 
-        // Chip animation
         var fly = document.createElement('div');
         fly.className = 'chip-fly';
         fly.style.background = getChipColor(selectedChip);
@@ -278,7 +269,6 @@
         }, 50);
     };
 
-    // 2. SAME TIME ON ALL MOBILES (Firebase Sync Timer)
     let lastTimerTick = Date.now();
     let isMaster = false;
 
@@ -294,20 +284,17 @@
                 document.getElementById('timeText').style.color = timer <= 5 ? "var(--neon-red)" : "var(--neon-green)";
                 document.getElementById('msgText').innerText = timer <= 5 ? "CLOSING..." : "PLACE YOUR BETS";
                 
-                if(timer === 15) { resetTable(); } // Fresh round reset
+                if(timer === 15) { resetTable(); } 
             } 
             else if (status.state === 'spinning' && isBettingOpen) {
-                // Timer finished, close bets and pull winner
                 isBettingOpen = false;
                 runWheelSpin(status.winner);
             }
         }
     });
 
-    // 3. 100% PROFIT LOGIC + MASTER HOST
-    // (If timer is not running, this client will temporarily run the timer to keep the game alive)
     setInterval(() => {
-        if(Date.now() - lastTimerTick > 3000) { isMaster = true; } // Take over if server dead
+        if(Date.now() - lastTimerTick > 3000) { isMaster = true; } 
         
         if(isMaster) {
             get(ref(db, 'Game/CarRoulette/Status/timer')).then((snap) => {
@@ -315,7 +302,6 @@
                 if(t > 0) {
                     set(ref(db, 'Game/CarRoulette/Status'), { timer: t - 1, state: 'betting', winner: '' });
                 } else {
-                    // Timer is 0, Calculate 100% Profit based ONLY on Real Users
                     get(ref(db, 'Game/CarRoulette/Bets')).then((betsSnap) => {
                         let allUserBets = betsSnap.val() || {};
                         let totalRealBets = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
@@ -326,7 +312,6 @@
                             }
                         }
 
-                        // Find lowest liability (100% Profit Math)
                         let minLoss = 9999999999;
                         for(let car in totalRealBets) {
                             let loss = totalRealBets[car] * carData[car];
@@ -336,3 +321,79 @@
                         let safeCars = [];
                         for(let car in totalRealBets) {
                             if(totalRealBets[car] * carData[car] === minLoss) safeCars.push(car);
+                        }
+
+                        let winningCar = safeCars[Math.floor(Math.random() * safeCars.length)];
+                        
+                        set(ref(db, 'Game/CarRoulette/Status'), { timer: 0, state: 'spinning', winner: winningCar });
+                        
+                        setTimeout(() => {
+                            set(ref(db, 'Game/CarRoulette/Bets'), null);
+                            set(ref(db, 'Game/CarRoulette/Status'), { timer: 15, state: 'betting', winner: '' });
+                        }, 8000);
+                    });
+                    isMaster = false; 
+                }
+            });
+        }
+    }, 1000);
+
+    function runWheelSpin(winnerCar) {
+        document.getElementById('msgText').innerText = "SPINNING...";
+        document.getElementById('timeText').innerText = "0";
+        playAudio(audioSpin);
+        
+        var possibleIndexes = [];
+        for(var i=0; i<wheelOrder.length; i++) {
+            if(wheelOrder[i] === winnerCar) possibleIndexes.push(i);
+        }
+        
+        var finalTargetIndex = possibleIndexes[Math.floor(Math.random() * possibleIndexes.length)];
+        var targetAngle = finalTargetIndex * 22.5; 
+        
+        var extraSpins = 1800; 
+        var baseRotation = Math.floor(currentRotation / 360) * 360; 
+        var finalRotation = baseRotation + extraSpins + targetAngle;
+        
+        currentRotation = finalRotation;
+        var spinner = document.getElementById('spinnerRing');
+        spinner.style.transform = 'rotate(' + finalRotation + 'deg)';
+
+        setTimeout(() => {
+            if(audioSpin) audioSpin.pause();
+            showWinner(winnerCar, finalTargetIndex);
+        }, 4100);
+    }
+
+    function showWinner(winId, iconIndex) {
+        playAudio(audioWin);
+        document.getElementById('msgText').innerText = "WINNER!";
+        document.getElementById('timeText').innerText = winId.toUpperCase();
+        
+        document.getElementById(winId).classList.add('box-win');
+        document.getElementById('wheel-icon-' + iconIndex).classList.add('icon-win');
+
+        if(myBets[winId] > 0 && currentUserId) {
+            var wonAmt = myBets[winId] * carData[winId];
+            update(ref(db, `Users/${currentUserId}`), { balance: increment(wonAmt) });
+
+            var p = document.getElementById('winMsg');
+            p.innerText = "+₹" + wonAmt.toLocaleString();
+            p.classList.add('show');
+            setTimeout(() => { p.classList.remove('show'); }, 3000);
+        }
+    }
+
+    function resetTable() {
+        for(var key in carData) {
+            myBets[key] = 0;
+            document.getElementById('bet-' + key).innerText = "₹0";
+            document.getElementById(key).classList.remove('box-win');
+        }
+        for(var i=0; i<16; i++){
+            document.getElementById('wheel-icon-' + i).classList.remove('icon-win');
+        }
+    }
+</script>
+</body>
+</html>
