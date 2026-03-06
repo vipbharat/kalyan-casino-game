@@ -17,7 +17,6 @@
         
         audio { display: none; }
 
-        /* Top Bar CSS */
         .top-info-bar { background: #050505; padding: 6px 15px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; color: #aaa; border-bottom: 1px solid #222; }
         .top-info-bar .date-time { font-weight: bold; color: var(--gold); letter-spacing: 0.5px; }
         .top-info-bar .online-count { font-weight: bold; color: #fff; font-size: 12px; }
@@ -188,6 +187,17 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // INTERNET & SERVER CONNECTION STATE
+    let isServerConnected = false;
+    db.ref('.info/connected').on('value', function(snap) {
+        if (snap.val() === true) {
+            isServerConnected = true;
+        } else {
+            isServerConnected = false;
+            document.getElementById('msgText').innerText = "RECONNECTING...";
+        }
+    });
+
     let currentUserId = localStorage.getItem('userPhone') || localStorage.getItem('phone');
     let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
     let selectedChip = 100;
@@ -227,7 +237,6 @@
     }
     drawWheel();
 
-    // TOP BAR UPDATE FUNCTION
     function updateTopBar() {
         let d = new Date();
         document.getElementById('topDate').innerText = d.toLocaleDateString('en-GB') + " | " + d.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
@@ -294,6 +303,12 @@
     }
 
     window.placeBet = function(carId, event) {
+        // --- INTERNET LOCK: Agar net ya server band hai to bet nahi lagegi ---
+        if (!navigator.onLine || !isServerConnected) {
+            alert("No Internet Connection! Please check your network.");
+            return;
+        }
+
         if(!isBettingOpen) return;
         if(!currentUserId) { alert("Login Error! Please restart app."); return; }
         if(userBalance < selectedChip) { alert("Insufficient Balance!"); return; }
