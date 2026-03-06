@@ -37,7 +37,7 @@
     </div>
 
     <div class="balance-info">
-        Winning Balance
+        Total Wallet Balance
         <span id="p-bal">₹ 0.00</span>
     </div>
 
@@ -80,6 +80,8 @@
         const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
         let currentWinBal = 0;
+        let currentDepBal = 0;
+        let currentTotalBal = 0;
         let isLocked = false;
 
         if(!userPhone) {
@@ -87,28 +89,28 @@
             window.location.href = "index.html";
         }
 
-        // 1. Balance Sync (Withdrawal sirf Winning Balance se hota hai)
+        // 1. Balance Sync (Ab dono balance fetch honge aur total dikhega)
         db.ref('users/' + userPhone).on('value', (snap) => {
             const data = snap.val() || {};
             currentWinBal = parseFloat(data.winning_balance || 0);
-            document.getElementById('p-bal').innerText = "₹ " + currentWinBal.toFixed(2);
+            currentDepBal = parseFloat(data.balance || 0);
+            currentTotalBal = currentWinBal + currentDepBal;
+            
+            document.getElementById('p-bal').innerText = "₹ " + currentTotalBal.toFixed(2);
         });
 
         // 2. Fetch & Lock Details 
         db.ref('users/' + userPhone + '/payment_details').on('value', (snap) => {
             if(snap.exists()) {
                 let d = snap.val();
-                
                 document.getElementById('w-acc').value = d.accNo;
                 document.getElementById('w-ifsc').value = d.ifsc;
                 document.getElementById('w-upi').value = d.upi;
 
-                // Inputs Lock Karein
                 document.getElementById('w-acc').disabled = true;
                 document.getElementById('w-ifsc').disabled = true;
                 document.getElementById('w-upi').disabled = true;
 
-                // Button Update
                 let saveBtn = document.getElementById('btn-save');
                 saveBtn.innerText = "DETAILS SECURELY LOCKED";
                 saveBtn.className = "btn-main btn-locked";
@@ -139,7 +141,7 @@
             }
         }
 
-        // 4. Request Withdrawal (Balance Cut + Admin + History)
+        // 4. Request Withdrawal (Smart Money Cut Logic)
         function submitWithdraw() {
             if(!isLocked) {
                 alert("Pehle apni Bank Details save aur lock karein!");
@@ -153,8 +155,8 @@
                 return;
             }
 
-            if(amt > currentWinBal) {
-                alert("Aapke paas sufficient winning balance nahi hai!");
+            if(amt > currentTotalBal) {
+                alert("Aapke paas sufficient balance nahi hai!");
                 return;
             }
 
@@ -167,8 +169,26 @@
             let upi = document.getElementById('w-upi').value;
             let dateStr = new Date().toLocaleString('en-GB');
 
-            // STEP A: Cut Balance
-            db.ref('users/' + userPhone + '/winning_balance').set(currentWinBal - amt).then(() => {
+            // --- SMART BALANCE CUT LOGIC ---
+            let newWin = currentWinBal;
+            let newDep = currentDepBal;
+            let remainingCut = amt;
+
+            // Pehle Winning se paise katenge
+            if(newWin >= remainingCut) {
+                newWin -= remainingCut;
+            } else {
+                // Agar winning kam pada toh deposit se katenge
+                remainingCut -= newWin;
+                newWin = 0;
+                newDep -= remainingCut;
+            }
+
+            // STEP A: Update both balances in Database
+            db.ref('users/' + userPhone).update({
+                winning_balance: newWin,
+                balance: newDep
+            }).then(() => {
                 
                 // STEP B: Send to Admin Panel
                 let reqId = db.ref('withdraw_requests').push().key;
