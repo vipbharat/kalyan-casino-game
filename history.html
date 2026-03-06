@@ -1,132 +1,35 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transaction History - Kalyan Pro</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        body { background: #0b0b0b; color: #fff; font-family: sans-serif; margin: 0; padding: 20px; }
-        .header { display: flex; align-items: center; margin-bottom: 25px; }
-        .back-btn { color: gold; text-decoration: none; font-size: 20px; margin-right: 15px; }
-        .tabs { display: flex; background: #1a1a1a; border-radius: 12px; padding: 5px; margin-bottom: 20px; border: 1px solid #333; }
-        .tab { flex: 1; padding: 12px; font-size: 14px; font-weight: bold; cursor: pointer; border-radius: 10px; text-align: center; color: #888; border: none; background: none; }
-        .tab.active { background: gold; color: #000; }
-        .history-list { display: none; }
-        .history-list.active { display: block; }
-        
-        /* Status Card Styling */
-        .card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 5px solid #444; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .card.pending { border-left-color: #ffc107; } /* Yellow for Pending */
-        .card.approved, .card.success { border-left-color: #28a745; } /* Green for Success */
-        .card.rejected, .card.failed { border-left-color: #dc3545; } /* Red for Rejected */
-        
-        .info b { display: block; font-size: 16px; margin-bottom: 4px; }
-        .info small { color: #888; font-size: 11px; }
-        .amt { font-weight: bold; font-size: 18px; }
-        .plus { color: #28a745; }
-        .minus { color: #dc3545; }
-        
-        .status-badge { font-size: 10px; display: inline-block; margin-top: 8px; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; background: rgba(255,255,255,0.1); font-weight: bold; letter-spacing: 1px; }
-        .pending .status-badge { color: #ffc107; border: 1px solid #ffc107; }
-        .approved .status-badge, .success .status-badge { color: #28a745; border: 1px solid #28a745; }
-        .rejected .status-badge, .failed .status-badge { color: #dc3545; border: 1px solid #dc3545; }
-    </style>
-</head>
-<body>
+<div id="all-history-content" style="padding: 10px;">Loading History...</div>
 
-    <div class="header">
-        <a href="dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
-        <h2 style="margin:0;">HISTORY <span style="color: gold;">LOGS</span></h2>
-    </div>
+<script>
+    if(userPhone) {
+        // Sabhi transactions (Deposit, Withdraw, Bonus) ek hi folder se aayenge
+        db.ref(`user_history/${userPhone}`).orderByChild('timestamp').on('value', (snap) => {
+            let html = "";
+            if(snap.exists()) {
+                snap.forEach((child) => {
+                    let d = child.val();
+                    let type = d.type.toUpperCase(); // WITHDRAWAL, DEPOSIT, BONUS, REFER
+                    let status = (d.status || "Success").toUpperCase();
+                    
+                    // Style Settings
+                    let isMinus = d.type === "Withdrawal";
+                    let colorClass = isMinus ? "minus" : "plus";
+                    let sign = isMinus ? "-" : "+";
 
-    <div class="tabs">
-        <button class="tab active" onclick="openTab(event, 'deposits')">DEPOSITS</button>
-        <button class="tab" onclick="openTab(event, 'withdraws')">WITHDRAWALS</button>
-    </div>
-
-    <div id="deposits" class="history-list active">
-        <div id="deposits-content" style="text-align: center; padding: 20px; color: #555;">Loading Deposits...</div>
-    </div>
-
-    <div id="withdraws" class="history-list">
-        <div id="withdraws-content" style="text-align: center; padding: 20px; color: #555;">Loading Withdrawals...</div>
-    </div>
-
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
-            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
-            projectId: "kalyan-casino"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        
-        let userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
-
-        function openTab(evt, tabName) {
-            let list = document.getElementsByClassName("history-list");
-            for (let i = 0; i < list.length; i++) list[i].classList.remove("active");
-            let tabs = document.getElementsByClassName("tab");
-            for (let i = 0; i < tabs.length; i++) tabs[i].classList.remove("active");
-            document.getElementById(tabName).classList.add("active");
-            evt.currentTarget.classList.add("active");
-        }
-
-        if(userPhone) {
-            // Deposits Fetch
-            db.ref('deposit_requests').orderByChild('user').equalTo(userPhone).on('value', (snap) => {
-                let html = "";
-                if(snap.exists()) {
-                    snap.forEach((child) => {
-                        let d = child.val();
-                        let status = (d.status || "Pending").toUpperCase();
-                        let statusClass = status.toLowerCase();
-                        html = `
-                        <div class="card ${statusClass}">
-                            <div class="info">
-                                <b>DEPOSIT</b>
-                                <small>UTR: ${d.utr || 'N/A'}</small><br>
-                                <span class="status-badge">${status}</span>
-                            </div>
-                            <div class="amt plus">+ ₹${d.amount}</div>
-                        </div>` + html;
-                    });
-                    document.getElementById('deposits-content').innerHTML = html;
-                } else {
-                    document.getElementById('deposits-content').innerHTML = "No Deposit History Found";
-                }
-            });
-
-            // Withdrawals Fetch
-            db.ref('withdraw_requests').orderByChild('user').equalTo(userPhone).on('value', (snap) => {
-                let html = "";
-                if(snap.exists()) {
-                    snap.forEach((child) => {
-                        let d = child.val();
-                        let status = (d.status || "Pending").toUpperCase();
-                        let statusClass = status.toLowerCase();
-                        html = `
-                        <div class="card ${statusClass}">
-                            <div class="info">
-                                <b>WITHDRAW</b>
-                                <small>TO: ${d.upi || 'Bank/UPI'}</small><br>
-                                <span class="status-badge">${status}</span>
-                            </div>
-                            <div class="amt minus">- ₹${d.amount}</div>
-                        </div>` + html;
-                    });
-                    document.getElementById('withdraws-content').innerHTML = html;
-                } else {
-                    document.getElementById('withdraws-content').innerHTML = "No Withdrawal History Found";
-                }
-            });
-        } else {
-            document.body.innerHTML = "<center style='margin-top:100px;'><h2>Access Denied</h2><p>Please login to view history.</p><br><button onclick=\"window.location.href='index.html'\" style='background:gold;padding:12px 25px;border:none;border-radius:8px;font-weight:bold;'>BACK TO HOME</button></center>";
-        }
-    </script>
-</body>
-</html>
+                    html = `
+                    <div class="card ${status.toLowerCase()}">
+                        <div class="info">
+                            <b>${type}</b>
+                            <small>${d.date}</small><br>
+                            <span class="status-badge">${status}</span>
+                        </div>
+                        <div class="amt ${colorClass}">${sign} ₹${d.amount}</div>
+                    </div>` + html;
+                });
+                document.getElementById('all-history-content').innerHTML = html;
+            } else {
+                document.getElementById('all-history-content').innerHTML = "<center>No History Found</center>";
+            }
+        });
+    }
+</script>
