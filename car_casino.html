@@ -17,10 +17,11 @@
         
         audio { display: none; }
 
-        .top-info-bar { background: #050505; padding: 6px 15px; font-size: 11px; display: flex; justify-content: space-between; color: #aaa; border-bottom: 1px solid #222; }
-        .top-info-bar .date-time { font-weight: bold; color: var(--gold); }
-        .top-info-bar .online-count { font-weight: bold; color: #fff; }
-        .blink-dot { color: var(--neon-green); animation: blinker 1.5s linear infinite; }
+        /* Top Bar CSS */
+        .top-info-bar { background: #050505; padding: 6px 15px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; color: #aaa; border-bottom: 1px solid #222; }
+        .top-info-bar .date-time { font-weight: bold; color: var(--gold); letter-spacing: 0.5px; }
+        .top-info-bar .online-count { font-weight: bold; color: #fff; font-size: 12px; }
+        .blink-dot { color: var(--neon-green); font-size: 14px; animation: blinker 1.5s linear infinite; margin-right: 3px; }
         @keyframes blinker { 50% { opacity: 0; } }
 
         .header { background: linear-gradient(90deg, #ff8c00, #ff0055, #9900ff); padding: 10px 15px; border-bottom: 3px solid var(--gold); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 5px 20px rgba(255, 0, 85, 0.5); z-index: 100; position: relative; }
@@ -43,7 +44,6 @@
         .bet-table-wrapper { padding: 0 10px; margin-top: 5px; }
         .bet-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         
-        /* Box height adjusted to fit both bets */
         .bet-box { border-radius: 10px; padding-top: 6px; text-align: center; position: relative; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; height: 95px; box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.5); overflow: hidden; }
         .bet-box:active { transform: scale(0.92); }
         
@@ -56,20 +56,10 @@
         #audi { background: linear-gradient(180deg, rgba(255,255,255,0.2), #000); border: 2px solid #ffffff; }
         #jaguar { background: linear-gradient(180deg, rgba(255,71,87,0.2), #000); border: 2px solid #ff4757; }
 
-        #porsche .brand { color: #ff3333; text-shadow: 0 0 5px #ff3333; }
-        #ferrari .brand { color: #ff6b81; text-shadow: 0 0 5px #ff6b81; }
-        #lambo .brand { color: #f1c40f; text-shadow: 0 0 5px #f1c40f; }
-        #maserati .brand { color: #3742fa; text-shadow: 0 0 5px #3742fa; }
-        #bmw .brand { color: #00d2d3; text-shadow: 0 0 5px #00d2d3; }
-        #mercedes .brand { color: #dfe4ea; text-shadow: 0 0 5px #dfe4ea; }
-        #audi .brand { color: #ffffff; text-shadow: 0 0 5px #ffffff; }
-        #jaguar .brand { color: #ff4757; text-shadow: 0 0 5px #ff4757; }
-
         .brand { font-size: 0.65rem; font-weight: 900; margin-bottom: 2px; text-transform: uppercase;}
         .logo { font-size: 1.5rem; line-height: 1.1; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8)); }
         .multi { background: #000; color: var(--gold); font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-bottom: 2px; border: 1px solid var(--gold); }
         
-        /* Total Bet (Bot + Player) and My Bet Styling */
         .total-bet { color: var(--gold); font-size: 0.75rem; font-weight: bold; margin-top: auto; background: rgba(0,0,0,0.6); padding: 1px 6px; border-radius: 4px; }
         .my-bet-amt { color: #fff; font-size: 0.65rem; font-weight: bold; background: rgba(0,255,136,0.3); width: 100%; padding: 2px 0; border-top: 1px dashed var(--neon-green); margin-top: 3px; }
 
@@ -102,7 +92,10 @@
 
     <div class="top-info-bar">
         <div class="date-time" id="topDate">Loading Date...</div>
-        <div><span class="blink-dot">●</span> Online: <span class="online-count" id="onlineCount">215</span></div>
+        <div style="display: flex; align-items: center;">
+            <span class="blink-dot">●</span> 
+            <span>Online: <span class="online-count" id="onlineCount">215</span></span>
+        </div>
     </div>
 
     <div class="header">
@@ -234,6 +227,7 @@
     }
     drawWheel();
 
+    // TOP BAR UPDATE FUNCTION
     function updateTopBar() {
         let d = new Date();
         document.getElementById('topDate').innerText = d.toLocaleDateString('en-GB') + " | " + d.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
@@ -304,6 +298,15 @@
         if(!currentUserId) { alert("Login Error! Please restart app."); return; }
         if(userBalance < selectedChip) { alert("Insufficient Balance!"); return; }
 
+        let betCount = 0;
+        for(let key in myBets) {
+            if(myBets[key] > 0) betCount++;
+        }
+        if(myBets[carId] === 0 && betCount >= 4) {
+            alert("Aap ek round mein maximum 4 alag-alag gaadiyon par hi bet laga sakte hain!");
+            return;
+        }
+
         playAudio(audioBet);
 
         db.ref(`users/${currentUserId}/balance`).set(depBal - selectedChip);
@@ -311,7 +314,6 @@
 
         myBets[carId] += selectedChip;
         
-        // Yahan dono balance alag-alag update ho rahe hain
         document.getElementById('total-' + carId).innerText = "₹" + (myBets[carId] + botBets[carId]).toLocaleString();
         document.getElementById('my-' + carId).innerText = "My Bet: ₹" + myBets[carId].toLocaleString();
 
@@ -326,7 +328,6 @@
             
             botBets[randomCar] += botAmt;
             
-            // Yahan bots sirf Total box ko update karenge
             document.getElementById('total-' + randomCar).innerText = "₹" + (myBets[randomCar] + botBets[randomCar]).toLocaleString();
             
             spawnChip(randomCar, botAmt, true, 0, 0);
