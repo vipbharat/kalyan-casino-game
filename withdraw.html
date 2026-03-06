@@ -11,22 +11,22 @@
         .header i { font-size: 20px; color: gold; cursor: pointer; }
         .header h2 { flex: 1; margin: 0; font-size: 18px; color: gold; text-transform: uppercase; }
 
-        .balance-info { background: #1a1a1a; padding: 15px; border-radius: 12px; border-bottom: 3px solid gold; margin-bottom: 25px; }
-        .balance-info span { color: gold; font-size: 22px; font-weight: bold; display: block; margin-top: 5px; }
+        .balance-info { background: #1a1a1a; padding: 15px; border-radius: 12px; border-bottom: 3px solid gold; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .balance-info span { color: gold; font-size: 28px; font-weight: bold; display: block; margin-top: 5px; }
 
         /* Form Styling */
+        .section-box { background: #111; padding: 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
         .input-group { text-align: left; margin-bottom: 15px; }
-        label { font-size: 12px; color: gold; display: block; margin-bottom: 5px; margin-left: 5px; }
-        input { width: 100%; padding: 15px; background: #151515; border: 1px solid #333; border-radius: 8px; color: #fff; box-sizing: border-box; font-size: 14px; }
+        label { font-size: 12px; color: gold; display: block; margin-bottom: 5px; margin-left: 5px; font-weight: bold; }
+        input { width: 100%; padding: 15px; background: #151515; border: 1px solid #333; border-radius: 8px; color: #fff; box-sizing: border-box; font-size: 14px; outline: none; transition: 0.3s; }
+        input:focus { border-color: gold; }
+        input:disabled { background: #0a0a0a; color: #666; border-color: #222; }
         
-        /* QR Upload Box */
-        .upload-card { background: #1a1a1a; border: 2px dashed #444; padding: 20px; border-radius: 12px; cursor: pointer; transition: 0.3s; margin-bottom: 20px; }
-        .upload-card:active { border-color: gold; background: #222; }
-        .upload-card i { font-size: 30px; color: gold; margin-bottom: 10px; display: block; }
-        .upload-card p { font-size: 12px; color: #888; margin: 0; }
+        .btn-main { width: 100%; padding: 16px; background: gold; color: #000; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2); transition: 0.3s; }
+        .btn-main:active { transform: scale(0.98); }
+        .btn-locked { background: #333; color: #888; box-shadow: none; cursor: not-allowed; }
 
-        .btn-withdraw { width: 100%; padding: 16px; background: gold; color: #000; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2); }
-        .note { font-size: 11px; color: #666; margin-top: 15px; line-height: 1.5; }
+        .note { font-size: 11px; color: #888; margin-top: 15px; line-height: 1.5; font-style: italic; }
     </style>
 </head>
 <body>
@@ -37,36 +37,33 @@
     </div>
 
     <div class="balance-info">
-        Available Balance
+        Winning Balance
         <span id="p-bal">₹ 0.00</span>
     </div>
 
-    <div class="input-group">
-        <label>Mobile Number (Paytm/GPay)</label>
-        <input type="number" id="w-phone" placeholder="Enter Mobile Number">
+    <div class="section-box">
+        <div class="input-group">
+            <label>BANK ACCOUNT NUMBER</label>
+            <input type="number" id="w-acc" placeholder="Enter Account Number">
+        </div>
+        <div class="input-group">
+            <label>IFSC CODE</label>
+            <input type="text" id="w-ifsc" placeholder="Enter IFSC Code" style="text-transform: uppercase;">
+        </div>
+        <div class="input-group">
+            <label>UPI ID (example@ybl)</label>
+            <input type="text" id="w-upi" placeholder="Enter UPI ID">
+        </div>
+        <button id="btn-save" class="btn-main" onclick="saveDetails()">SAVE & LOCK DETAILS</button>
+        <div class="note">* Note: Ek baar save karne ke baad details lock ho jayengi.</div>
     </div>
 
-    <div class="input-group">
-        <label>UPI ID (example@ybl)</label>
-        <input type="text" id="w-upi" placeholder="Enter UPI ID">
-    </div>
-
-    <div class="input-group">
-        <label>Withdrawal Amount (₹)</label>
-        <input type="number" id="w-amount" placeholder="Min ₹500 - Max ₹50000">
-    </div>
-
-    <div class="upload-card" onclick="document.getElementById('qr-file').click()">
-        <i class="fa fa-qrcode"></i>
-        <p id="qr-status">Upload your Receiving QR Code (Optional)</p>
-        <input type="file" id="qr-file" style="display: none;" onchange="updateStatus(this)">
-    </div>
-
-    <button class="btn-withdraw" onclick="submitWithdraw()">REQUEST WITHDRAWAL</button>
-
-    <div class="note">
-        * Note: Withdrawal requests are processed within 1-2 hours. <br>
-        Make sure your UPI ID and QR are correct.
+    <div class="section-box">
+        <div class="input-group">
+            <label>WITHDRAWAL AMOUNT (₹)</label>
+            <input type="number" id="w-amount" placeholder="Min ₹500 - Max ₹50000">
+        </div>
+        <button id="btn-with" class="btn-main" onclick="submitWithdraw()" style="background: #28a745; color: white; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);">REQUEST WITHDRAWAL</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -80,49 +77,129 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const userPhone = localStorage.getItem('userPhone') || "Guest";
+        const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
-        // Balance Sync
-        db.ref('users/' + userPhone).on('value', (snap) => {
-            const data = snap.val() || {};
-            const total = (parseFloat(data.balance||0) + parseFloat(data.winning_balance||0));
-            document.getElementById('p-bal').innerText = "₹ " + total.toFixed(2);
-        });
+        let currentWinBal = 0;
+        let isLocked = false;
 
-        function updateStatus(input) {
-            if(input.files.length > 0) {
-                document.getElementById('qr-status').innerText = "✅ QR Code Selected";
-                document.getElementById('qr-status').style.color = "#2ecc71";
-            }
+        if(!userPhone) {
+            alert("Please login first!");
+            window.location.href = "index.html";
         }
 
-        function submitWithdraw() {
-            const phone = document.getElementById('w-phone').value;
-            const upi = document.getElementById('w-upi').value;
-            const amt = document.getElementById('w-amount').value;
+        // 1. Balance Sync (Withdrawal sirf Winning Balance se hota hai)
+        db.ref('users/' + userPhone).on('value', (snap) => {
+            const data = snap.val() || {};
+            currentWinBal = parseFloat(data.winning_balance || 0);
+            document.getElementById('p-bal').innerText = "₹ " + currentWinBal.toFixed(2);
+        });
 
-            if(!phone || !upi || !amt) {
-                alert("Bhai, saari details bhariye!");
+        // 2. Fetch & Lock Details 
+        db.ref('users/' + userPhone + '/payment_details').on('value', (snap) => {
+            if(snap.exists()) {
+                let d = snap.val();
+                
+                document.getElementById('w-acc').value = d.accNo;
+                document.getElementById('w-ifsc').value = d.ifsc;
+                document.getElementById('w-upi').value = d.upi;
+
+                // Inputs Lock Karein
+                document.getElementById('w-acc').disabled = true;
+                document.getElementById('w-ifsc').disabled = true;
+                document.getElementById('w-upi').disabled = true;
+
+                // Button Update
+                let saveBtn = document.getElementById('btn-save');
+                saveBtn.innerText = "DETAILS SECURELY LOCKED";
+                saveBtn.className = "btn-main btn-locked";
+                saveBtn.onclick = null;
+                isLocked = true;
+            }
+        });
+
+        // 3. Save Details Function
+        function saveDetails() {
+            let acc = document.getElementById('w-acc').value.trim();
+            let ifsc = document.getElementById('w-ifsc').value.trim().toUpperCase();
+            let upi = document.getElementById('w-upi').value.trim();
+
+            if(!acc || !ifsc || !upi) {
+                alert("Please fill Account Number, IFSC, and UPI ID!");
                 return;
             }
 
-            if(amt < 500) {
+            if(confirm("Confirm details? Ek baar save hone par aap ise change nahi kar payenge.")) {
+                db.ref('users/' + userPhone + '/payment_details').set({
+                    accNo: acc,
+                    ifsc: ifsc,
+                    upi: upi
+                }).then(() => {
+                    alert("Details Saved and Locked!");
+                });
+            }
+        }
+
+        // 4. Request Withdrawal (Balance Cut + Admin + History)
+        function submitWithdraw() {
+            if(!isLocked) {
+                alert("Pehle apni Bank Details save aur lock karein!");
+                return;
+            }
+
+            let amt = parseFloat(document.getElementById('w-amount').value);
+            
+            if(!amt || amt < 500) {
                 alert("Minimum withdrawal ₹500 hai!");
                 return;
             }
 
-            // Submit to Admin
-            db.ref('requests').push({
-                phone: userPhone,
-                w_phone: phone,
-                upi: upi,
-                amount: amt,
-                type: 'WITHDRAWAL',
-                status: 'PENDING',
-                time: new Date().toLocaleString()
-            }).then(() => {
-                alert("Withdrawal Request Bhej Di Gayi Hai!");
-                window.location.href = "dashboard.html";
+            if(amt > currentWinBal) {
+                alert("Aapke paas sufficient winning balance nahi hai!");
+                return;
+            }
+
+            let btn = document.getElementById('btn-with');
+            btn.disabled = true;
+            btn.innerText = "PROCESSING...";
+
+            let acc = document.getElementById('w-acc').value;
+            let ifsc = document.getElementById('w-ifsc').value;
+            let upi = document.getElementById('w-upi').value;
+            let dateStr = new Date().toLocaleString('en-GB');
+
+            // STEP A: Cut Balance
+            db.ref('users/' + userPhone + '/winning_balance').set(currentWinBal - amt).then(() => {
+                
+                // STEP B: Send to Admin Panel
+                let reqId = db.ref('withdraw_requests').push().key;
+                db.ref('withdraw_requests/' + reqId).set({
+                    id: userPhone,
+                    amount: amt,
+                    accNo: acc,
+                    ifsc: ifsc,
+                    upi: upi,
+                    status: "Pending",
+                    type: "Withdrawal",
+                    date: dateStr,
+                    timestamp: Date.now()
+                });
+
+                // STEP C: Add to History
+                db.ref('user_history/' + userPhone + '/' + reqId).set({
+                    amount: amt,
+                    type: "Withdrawal",
+                    status: "Pending",
+                    date: dateStr,
+                    timestamp: Date.now()
+                }).then(() => {
+                    alert("Withdrawal Successful! Balance Deducted.");
+                    window.location.href = "history.html"; // Player ko history page par bhejo
+                });
+
+            }).catch(() => {
+                alert("Network Error!");
+                btn.disabled = false;
+                btn.innerText = "REQUEST WITHDRAWAL";
             });
         }
     </script>
