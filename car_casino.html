@@ -17,7 +17,6 @@
         
         audio { display: none; }
 
-        /* Top Bar for Date and Online Players */
         .top-info-bar { background: #050505; padding: 6px 15px; font-size: 11px; display: flex; justify-content: space-between; color: #aaa; border-bottom: 1px solid #222; }
         .top-info-bar .date-time { font-weight: bold; color: var(--gold); }
         .top-info-bar .online-count { font-weight: bold; color: #fff; }
@@ -82,7 +81,6 @@
         .c500 { background: radial-gradient(circle at 30% 30%, #ff4757, #8b0000); } 
         .c1k { background: radial-gradient(circle at 30% 30%, #9b59b6, #4a1c5e); }
 
-        /* Chips ki CSS - pointer-events:none lagaya taaki chip click block na kare */
         .chip-fly { position: absolute; width: 22px; height: 22px; border-radius: 50%; border: 2px dashed #fff; z-index: 50; font-size: 8px; font-weight: bold; display: flex; justify-content: center; align-items: center; color: white; transition: all 0.4s ease-out; box-shadow: 0 5px 10px rgba(0,0,0,0.5); pointer-events: none; }
         
         .popup { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 4rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold), 0 0 40px #ff3333; z-index: 1000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -212,7 +210,6 @@
     }
     drawWheel();
 
-    // Setup Date and Online Players
     function updateTopBar() {
         let d = new Date();
         document.getElementById('topDate').innerText = d.toLocaleDateString('en-GB') + " | " + d.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
@@ -254,7 +251,6 @@
         return 'radial-gradient(circle at 30% 30%, #9b59b6, #4a1c5e)';
     }
 
-    // NAYA SPAWN CHIP LOGIC: Chip gayab nahi hogi
     function spawnChip(carId, amt, isBot, cX, cY) {
         var fly = document.createElement('div');
         fly.className = 'chip-fly';
@@ -276,7 +272,6 @@
             fly.style.left = (targetBox.left + 15 + Math.random() * (targetBox.width - 30)) + 'px';
             fly.style.top = (targetBox.top + 15 + Math.random() * (targetBox.height - 30)) + 'px';
         }, 50);
-        // Ab humne isko remove() karna band kar diya hai, ye table par rahegi.
     }
 
     window.placeBet = function(carId, event) {
@@ -295,12 +290,12 @@
         spawnChip(carId, selectedChip, false, event.clientX, event.clientY);
     };
 
-    // BOT BETTING SYSTEM (1000 se kam nahi)
+    // BOTS KI LIMIT KHATAM - Ab 10, 50, 100, 500, 1000 saari chips phekange
     setInterval(() => {
         if(isBettingOpen && Math.random() > 0.3) {
             let cars = Object.keys(carData);
             let randomCar = cars[Math.floor(Math.random() * cars.length)];
-            let botAmt = [1000, 5000, 10000][Math.floor(Math.random() * 3)]; 
+            let botAmt = [10, 50, 100, 500, 1000][Math.floor(Math.random() * 5)]; 
             
             botBets[randomCar] += botAmt;
             document.getElementById('bet-' + randomCar).innerText = "₹" + (myBets[randomCar] + botBets[randomCar]);
@@ -370,10 +365,12 @@
                         
                         db.ref('Game/CarRoulette/Status').set({ timer: 0, state: 'spinning', winner: winningCar });
                         
+                        // FIX: Time badha kar 14 second kar diya gaya hai.
+                        // 7.5s Spin + 6.5s winner display aur WAIT time, uske baad board clear.
                         setTimeout(() => {
                             db.ref('Game/CarRoulette/Bets').remove();
                             db.ref('Game/CarRoulette/Status').set({ timer: 15, state: 'betting', winner: '' });
-                        }, 12000); 
+                        }, 14000); 
                     });
                     isMaster = false; 
                 }
@@ -426,6 +423,7 @@
         }
     }
 
+    // ROUND KHATAM HOTE HI BOARD CLEAN
     function resetTable() {
         for(var key in carData) {
             myBets[key] = 0;
@@ -436,7 +434,7 @@
         for(var i=0; i<16; i++){
             document.getElementById('wheel-icon-' + i).classList.remove('icon-win');
         }
-        // Saari jama hui chips round start hone par saaf ho jayengi
+        // Saari jama hui chips ek jhatke mein gayab
         document.querySelectorAll('.chip-fly').forEach(chip => chip.remove());
     }
 </script>
