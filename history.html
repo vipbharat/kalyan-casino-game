@@ -3,44 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Transactions - Kalyan Pro</title>
+    <title>Kalyan Pro - All History</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { background: #0b0b0b; color: #fff; font-family: sans-serif; margin: 0; padding: 20px; }
+        
         .header { display: flex; align-items: center; margin-bottom: 25px; }
-        .back-btn { color: gold; text-decoration: none; font-size: 20px; margin-right: 15px; }
-        
-        .history-list { display: block; }
-        
-        /* Status Card Styling */
-        .card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 5px solid #444; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .header i { font-size: 20px; color: gold; cursor: pointer; margin-right: 15px; }
+        .header h2 { flex: 1; margin: 0; font-size: 18px; color: gold; text-transform: uppercase; }
+
+        .history-container { margin-top: 10px; }
+
+        /* Transaction Card Styling */
+        .card { 
+            background: #111; 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin-bottom: 12px; 
+            border: 1px solid #333;
+            border-left: 5px solid #444; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+        }
+
+        /* Status Border Colors */
         .card.pending { border-left-color: #ffc107; } /* Yellow */
-        .card.approved, .card.success { border-left-color: #28a745; } /* Green */
-        .card.rejected, .card.failed { border-left-color: #dc3545; } /* Red */
-        
-        .info b { display: block; font-size: 16px; margin-bottom: 4px; }
+        .card.success { border-left-color: #28a745; } /* Green */
+        .card.rejected { border-left-color: #dc3545; } /* Red */
+
+        .info { flex: 1; }
+        .info b { display: block; font-size: 15px; margin-bottom: 4px; color: #fff; letter-spacing: 0.5px; }
         .info small { color: #888; font-size: 11px; }
-        .amt { font-weight: bold; font-size: 18px; }
-        .plus { color: #28a745; }
-        .minus { color: #dc3545; }
         
-        .status-badge { font-size: 10px; display: inline-block; margin-top: 8px; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; background: rgba(255,255,255,0.1); font-weight: bold; letter-spacing: 1px; }
-        .pending .status-badge { color: #ffc107; border: 1px solid #ffc107; }
-        .approved .status-badge, .success .status-badge { color: #28a745; border: 1px solid #28a745; }
-        .rejected .status-badge, .failed .status-badge { color: #dc3545; border: 1px solid #dc3545; }
-        
-        .empty-msg { text-align: center; color: #888; margin-top: 50px; font-size: 16px; }
+        /* Amount Colors */
+        .amt { font-weight: bold; font-size: 18px; text-align: right; }
+        .plus { color: #28a745; } /* Green for Deposit/Bonus */
+        .minus { color: #dc3545; } /* Red for Withdrawal */
+
+        /* Status Badge */
+        .status-badge { 
+            font-size: 10px; 
+            display: inline-block; 
+            margin-top: 6px; 
+            text-transform: uppercase; 
+            padding: 3px 8px; 
+            border-radius: 4px; 
+            background: rgba(255,255,255,0.05); 
+            font-weight: bold; 
+            letter-spacing: 1px; 
+        }
+        .pending .status-badge { color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3); }
+        .success .status-badge { color: #28a745; border: 1px solid rgba(40, 167, 69, 0.3); }
+        .rejected .status-badge { color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.3); }
+
+        .empty-msg { text-align: center; color: #666; margin-top: 60px; font-size: 14px; }
+        .empty-msg i { font-size: 40px; color: #333; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <a href="dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
-        <h2 style="margin:0;">TRANSACTION <span style="color: gold;">HISTORY</span></h2>
+        <i class="fa fa-arrow-left" onclick="window.history.back()"></i>
+        <h2>Transaction History</h2>
     </div>
 
-    <div id="all-history-content" class="history-list">
-        <div class="empty-msg">Loading History...</div>
+    <div id="history-content" class="history-container">
+        <div class="empty-msg">
+            <i class="fa-solid fa-spinner fa-spin"></i><br>Loading History...
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -57,26 +89,40 @@
         
         let userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
-        if(userPhone) {
-            // Naye folder "user_history" se data la raha hai
+        if(!userPhone) {
+            document.getElementById('history-content').innerHTML = `
+                <div class="empty-msg">
+                    <i class="fa-solid fa-lock"></i><br>Please Login to view history.
+                </div>`;
+        } else {
+            // Fetching all data from user_history folder
             db.ref(`user_history/${userPhone}`).on('value', (snap) => {
                 let html = "";
                 if(snap.exists()) {
-                    // Data ko list mein convert karke ulta (latest pehle) karne ke liye
                     let transactions = [];
+                    
+                    // Saara data array mein daalna
                     snap.forEach((child) => {
                         transactions.push(child.val());
                     });
                     
-                    // Latest entry sabse upar
+                    // Latest sabse upar dikhane ke liye reverse karna
                     transactions.reverse();
 
                     transactions.forEach((d) => {
                         let type = (d.type || "Transaction").toUpperCase(); 
-                        let status = (d.status || "Pending").toUpperCase();
-                        let statusClass = status.toLowerCase();
+                        let rawStatus = (d.status || "Pending").toLowerCase();
+                        let displayStatus = (d.status || "Pending").toUpperCase();
                         
-                        // Withdraw hai toh Minus (-), baaki sab Plus (+)
+                        // Status Card Color Logic
+                        let statusClass = "pending"; 
+                        if(rawStatus === "success" || rawStatus === "approved") {
+                            statusClass = "success";
+                        } else if(rawStatus === "rejected" || rawStatus === "failed" || rawStatus === "cancelled" || rawStatus === "cancel") {
+                            statusClass = "rejected";
+                        }
+
+                        // Amount Sign & Color Logic (+ or -)
                         let isWithdraw = type.includes("WITHDRAW");
                         let colorClass = isWithdraw ? "minus" : "plus";
                         let sign = isWithdraw ? "-" : "+";
@@ -85,19 +131,21 @@
                         <div class="card ${statusClass}">
                             <div class="info">
                                 <b>${type}</b>
-                                <small><i class="fa-regular fa-clock"></i> ${d.date}</small><br>
-                                <span class="status-badge">${status}</span>
+                                <small><i class="fa-regular fa-calendar"></i> ${d.date}</small><br>
+                                <span class="status-badge">${displayStatus}</span>
                             </div>
                             <div class="amt ${colorClass}">${sign} ₹${d.amount}</div>
                         </div>`;
                     });
-                    document.getElementById('all-history-content').innerHTML = html;
+                    
+                    document.getElementById('history-content').innerHTML = html;
                 } else {
-                    document.getElementById('all-history-content').innerHTML = "<div class='empty-msg'><i class='fa-solid fa-file-invoice' style='font-size:40px; margin-bottom:10px; opacity:0.5;'></i><br>No Transactions Found</div>";
+                    document.getElementById('history-content').innerHTML = `
+                        <div class="empty-msg">
+                            <i class="fa-solid fa-receipt"></i><br>No Transactions Found
+                        </div>`;
                 }
             });
-        } else {
-            document.body.innerHTML = "<center style='margin-top:100px;'><h2>Access Denied</h2><p>Please login to view history.</p><br><button onclick=\"window.location.href='index.html'\" style='background:gold;padding:12px 25px;border:none;border-radius:8px;font-weight:bold;'>BACK TO LOGIN</button></center>";
         }
     </script>
 </body>
