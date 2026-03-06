@@ -71,17 +71,18 @@
         .box-win { box-shadow: 0 0 25px var(--neon-green), inset 0 0 20px var(--neon-green) !important; border-color: var(--neon-green) !important; transform: scale(1.05); }
         .icon-win { filter: drop-shadow(0 0 15px var(--neon-green)); transform: scale(1.8); z-index: 20; color: var(--neon-green) !important; }
 
-        .chip-rack { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
-        .chip { width: 45px; height: 45px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 0.85rem; border: 3px dashed rgba(255,255,255,0.8); cursor: pointer; transition: 0.3s; color: white; text-shadow: 1px 1px 2px #000; box-shadow: inset 0 5px 10px rgba(255,255,255,0.4), inset 0 -5px 10px rgba(0,0,0,0.5), 0 5px 10px rgba(0,0,0,0.6); }
-        .chip.active { transform: translateY(-10px) scale(1.15); border-style: solid; box-shadow: inset 0 5px 10px rgba(255,255,255,0.6), inset 0 -5px 10px rgba(0,0,0,0.5), 0 10px 20px var(--gold); border-color: var(--gold); }
+        .chip-rack { display: flex; justify-content: center; gap: 8px; margin-top: 15px; }
+        .chip { width: 42px; height: 42px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 0.8rem; border: 2px dashed rgba(255,255,255,0.8); cursor: pointer; transition: 0.3s; color: white; text-shadow: 1px 1px 2px #000; box-shadow: inset 0 5px 10px rgba(255,255,255,0.4), inset 0 -5px 10px rgba(0,0,0,0.5), 0 5px 10px rgba(0,0,0,0.6); }
+        .chip.active { transform: translateY(-8px) scale(1.15); border-style: solid; box-shadow: inset 0 5px 10px rgba(255,255,255,0.6), inset 0 -5px 10px rgba(0,0,0,0.5), 0 10px 20px var(--gold); border-color: var(--gold); }
         
         .c10 { background: radial-gradient(circle at 30% 30%, #1e90ff, #09407a); } 
         .c50 { background: radial-gradient(circle at 30% 30%, #eccc68, #b8860b); color: #333; text-shadow: none; } 
         .c100 { background: radial-gradient(circle at 30% 30%, #2ed573, #0a5f2a); } 
         .c500 { background: radial-gradient(circle at 30% 30%, #ff4757, #8b0000); } 
         .c1k { background: radial-gradient(circle at 30% 30%, #9b59b6, #4a1c5e); }
+        .c5k { background: radial-gradient(circle at 30% 30%, #ff8c00, #ff0055); }
 
-        .chip-fly { position: absolute; width: 22px; height: 22px; border-radius: 50%; border: 2px dashed #fff; z-index: 50; font-size: 8px; font-weight: bold; display: flex; justify-content: center; align-items: center; color: white; transition: all 0.4s ease-out; box-shadow: 0 5px 10px rgba(0,0,0,0.5); pointer-events: none; }
+        .chip-fly { position: absolute; width: 20px; height: 20px; border-radius: 50%; border: 2px dashed #fff; z-index: 50; font-size: 7px; font-weight: bold; display: flex; justify-content: center; align-items: center; color: white; transition: all 0.4s ease-out; box-shadow: 0 5px 10px rgba(0,0,0,0.5); pointer-events: none; }
         
         .popup { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 4rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold), 0 0 40px #ff3333; z-index: 1000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .popup.show { transform: translate(-50%, -50%) scale(1); }
@@ -155,6 +156,7 @@
         <div class="chip c100 active" onclick="chooseChip(100, this)">100</div>
         <div class="chip c500" onclick="chooseChip(500, this)">500</div>
         <div class="chip c1k" onclick="chooseChip(1000, this)">1K</div>
+        <div class="chip c5k" onclick="chooseChip(5000, this)">5K</div>
     </div>
 
     <div class="popup" id="winMsg">+₹0</div>
@@ -177,6 +179,7 @@
     let selectedChip = 100;
     let isBettingOpen = false;
     let currentRotation = 0;
+    let currentGameState = ''; 
     
     const carData = { porsche:40, ferrari:30, lambo:20, maserati:10, bmw:5, mercedes:5, audi:5, jaguar:5 };
     let myBets = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
@@ -231,12 +234,10 @@
             userBalance = depBal + winBal + bonBal;
             document.getElementById('balanceDisplay').innerText = "₹" + userBalance.toFixed(2);
         });
-    } else {
-        document.getElementById('msgText').innerText = "Please Login First!";
     }
 
     window.chooseChip = function(amt, elem) {
-        selectedChip = amt; 
+        selectedChip = parseInt(amt); 
         var allChips = document.querySelectorAll('.chip');
         for(var i=0; i<allChips.length; i++) { allChips[i].classList.remove('active'); }
         elem.classList.add('active');
@@ -244,11 +245,14 @@
     };
 
     function getChipColor(amt) {
-        if(amt == 10) return 'radial-gradient(circle at 30% 30%, #1e90ff, #09407a)'; 
-        if(amt == 50) return 'radial-gradient(circle at 30% 30%, #eccc68, #b8860b)';
-        if(amt == 100) return 'radial-gradient(circle at 30% 30%, #2ed573, #0a5f2a)'; 
-        if(amt == 500) return 'radial-gradient(circle at 30% 30%, #ff4757, #8b0000)'; 
-        return 'radial-gradient(circle at 30% 30%, #9b59b6, #4a1c5e)';
+        let val = parseInt(amt);
+        if(val === 10) return 'radial-gradient(circle at 30% 30%, #1e90ff, #09407a)'; 
+        if(val === 50) return 'radial-gradient(circle at 30% 30%, #eccc68, #b8860b)';
+        if(val === 100) return 'radial-gradient(circle at 30% 30%, #2ed573, #0a5f2a)'; 
+        if(val === 500) return 'radial-gradient(circle at 30% 30%, #ff4757, #8b0000)'; 
+        if(val === 1000) return 'radial-gradient(circle at 30% 30%, #9b59b6, #4a1c5e)';
+        if(val === 5000) return 'radial-gradient(circle at 30% 30%, #ff8c00, #ff0055)';
+        return '#fff';
     }
 
     function spawnChip(carId, amt, isBot, cX, cY) {
@@ -290,12 +294,11 @@
         spawnChip(carId, selectedChip, false, event.clientX, event.clientY);
     };
 
-    // BOTS KI LIMIT KHATAM - Ab 10, 50, 100, 500, 1000 saari chips phekange
     setInterval(() => {
         if(isBettingOpen && Math.random() > 0.3) {
             let cars = Object.keys(carData);
             let randomCar = cars[Math.floor(Math.random() * cars.length)];
-            let botAmt = [10, 50, 100, 500, 1000][Math.floor(Math.random() * 5)]; 
+            let botAmt = [10, 50, 100, 500, 1000, 5000][Math.floor(Math.random() * 6)]; 
             
             botBets[randomCar] += botAmt;
             document.getElementById('bet-' + randomCar).innerText = "₹" + (myBets[randomCar] + botBets[randomCar]);
@@ -319,15 +322,22 @@
                 document.getElementById('timeText').style.color = timer <= 5 ? "var(--neon-red)" : "var(--neon-green)";
                 document.getElementById('msgText').innerText = timer <= 5 ? "CLOSING..." : "PLACE YOUR BETS";
                 
-                if(timer === 15) { resetTable(); } 
+                if(currentGameState !== 'betting') {
+                    resetTable(); 
+                    currentGameState = 'betting';
+                }
             } 
-            else if (status.state === 'spinning' && isBettingOpen) {
+            else if (status.state === 'spinning') {
                 isBettingOpen = false;
-                runWheelSpin(status.winner);
+                if(currentGameState !== 'spinning') {
+                    runWheelSpin(status.winner);
+                    currentGameState = 'spinning';
+                }
             }
         }
     });
 
+    // RACE CONDITION FIX: Master Timer Logic Updated
     setInterval(() => {
         if(Date.now() - lastTimerTick > 3000) { isMaster = true; } 
         
@@ -338,7 +348,9 @@
 
                 if(t > 0) {
                     db.ref('Game/CarRoulette/Status').set({ timer: t - 1, state: 'betting', winner: '' });
-                } else {
+                } 
+                else if (t === 0) {
+                    // Result calculate aur Spin shuru (Timer -1 ho jayega)
                     db.ref('Game/CarRoulette/Bets').once('value').then((betsSnap) => {
                         let allUserBets = betsSnap.val() || {};
                         let totalRealBets = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
@@ -363,16 +375,17 @@
                         let winningCar = safeCars[Math.floor(Math.random() * safeCars.length)];
                         if(!winningCar) winningCar = 'bmw'; 
                         
-                        db.ref('Game/CarRoulette/Status').set({ timer: 0, state: 'spinning', winner: winningCar });
-                        
-                        // FIX: Time badha kar 14 second kar diya gaya hai.
-                        // 7.5s Spin + 6.5s winner display aur WAIT time, uske baad board clear.
-                        setTimeout(() => {
-                            db.ref('Game/CarRoulette/Bets').remove();
-                            db.ref('Game/CarRoulette/Status').set({ timer: 15, state: 'betting', winner: '' });
-                        }, 14000); 
+                        db.ref('Game/CarRoulette/Status').set({ timer: -1, state: 'spinning', winner: winningCar });
                     });
-                    isMaster = false; 
+                } 
+                else if (t < 0 && t > -14) {
+                    // SERVER ALIVE PING: Taaki timer reset na ho
+                    db.ref('Game/CarRoulette/Status').update({ timer: t - 1 });
+                } 
+                else if (t <= -14) {
+                    // 14 Second baad (Spin + Wait), ab naya round start hoga
+                    db.ref('Game/CarRoulette/Bets').remove();
+                    db.ref('Game/CarRoulette/Status').set({ timer: 15, state: 'betting', winner: '' });
                 }
             });
         }
@@ -419,11 +432,16 @@
             var p = document.getElementById('winMsg');
             p.innerText = "+₹" + wonAmt.toLocaleString();
             p.classList.add('show');
-            setTimeout(() => { p.classList.remove('show'); }, 3000);
         }
+
+        setTimeout(() => {
+            let p = document.getElementById('winMsg');
+            if(p) p.classList.remove('show');
+            document.getElementById('msgText').innerText = "GET READY...";
+            document.getElementById('timeText').innerText = "WAIT";
+        }, 4000);
     }
 
-    // ROUND KHATAM HOTE HI BOARD CLEAN
     function resetTable() {
         for(var key in carData) {
             myBets[key] = 0;
@@ -434,7 +452,6 @@
         for(var i=0; i<16; i++){
             document.getElementById('wheel-icon-' + i).classList.remove('icon-win');
         }
-        // Saari jama hui chips ek jhatke mein gayab
         document.querySelectorAll('.chip-fly').forEach(chip => chip.remove());
     }
 </script>
