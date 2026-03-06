@@ -148,35 +148,27 @@
 
     <div class="popup" id="winMsg">+₹0</div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, onValue, set, get, update, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
-    // Yahan aapki exact details set kar di hain
+<script>
+    // Asli API Key lag gayi hai
     const firebaseConfig = {
-        apiKey: "AIzaSyCy2zsDDJeVTQEblCenkLILqJ_Pz0a0", 
-        authDomain: "kalyan-casino.firebaseapp.com",
+        apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
-        projectId: "kalyan-casino",
-        storageBucket: "kalyan-casino.appspot.com",
-        messagingSenderId: "805675620545",
-        appId: "1:805675620545:web:6b49c99f325432a8249o40",
-        measurementId: "G-Q6SFLD01YD"
+        projectId: "kalyan-casino"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    let currentUserId = null;
-    let userBalance = 0;
+    let currentUserId = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+    let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
     let selectedChip = 100;
     let isBettingOpen = false;
     let currentRotation = 0;
     
     const carData = { porsche:40, ferrari:30, lambo:20, maserati:10, bmw:5, mercedes:5, audi:5, jaguar:5 };
-    const carKeys = Object.keys(carData);
     let myBets = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
 
     const wheelOrder = ['porsche', 'bmw', 'ferrari', 'mercedes', 'lambo', 'audi', 'maserati', 'jaguar', 'porsche', 'mercedes', 'ferrari', 'bmw', 'lambo', 'jaguar', 'maserati', 'audi'];
@@ -207,19 +199,21 @@
     }
     drawWheel();
 
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            currentUserId = user.uid;
-            document.getElementById('msgText').innerText = "Account Connected";
+    // WALLET SYNC
+    if (currentUserId) {
+        document.getElementById('msgText').innerText = "Account Connected";
+        db.ref(`users/${currentUserId}`).on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            depBal = parseFloat(data.balance || 0);
+            winBal = parseFloat(data.winning_balance || 0);
+            bonBal = parseFloat(data.bonus_balance || 0);
             
-            onValue(ref(db, `Users/${currentUserId}/balance`), (snapshot) => {
-                userBalance = snapshot.val() || 0;
-                document.getElementById('balanceDisplay').innerText = "₹" + userBalance;
-            });
-        } else {
-            document.getElementById('msgText').innerText = "Please Login First!";
-        }
-    });
+            userBalance = depBal + winBal + bonBal;
+            document.getElementById('balanceDisplay').innerText = "₹" + userBalance.toFixed(2);
+        });
+    } else {
+        document.getElementById('msgText').innerText = "Please Login First!";
+    }
 
     window.chooseChip = function(amt, elem) {
         selectedChip = amt; 
@@ -237,6 +231,7 @@
         return 'radial-gradient(circle at 30% 30%, #9b59b6, #4a1c5e)';
     }
 
+    // PLACE BET FIX
     window.placeBet = function(carId, event) {
         if(!isBettingOpen) return;
         if(!currentUserId) { alert("Login Error! Please restart app."); return; }
@@ -244,11 +239,11 @@
 
         playAudio(audioBet);
 
-        update(ref(db, `Users/${currentUserId}`), { balance: userBalance - selectedChip });
+        // Deduct specifically from Deposit Balance
+        db.ref(`users/${currentUserId}/balance`).set(depBal - selectedChip);
         
-        update(ref(db, `Game/CarRoulette/Bets/${currentUserId}`), { 
-            [carId]: increment(selectedChip) 
-        });
+        // Add to Global Bets pool
+        db.ref(`Game/CarRoulette/Bets/${currentUserId}/${carId}`).set(firebase.database.ServerValue.increment(selectedChip));
 
         myBets[carId] += selectedChip;
         document.getElementById('bet-' + carId).innerText = "₹" + myBets[carId];
@@ -272,7 +267,7 @@
     let lastTimerTick = Date.now();
     let isMaster = false;
 
-    onValue(ref(db, 'Game/CarRoulette/Status'), (snapshot) => {
+    db.ref('Game/CarRoulette/Status').on('value', (snapshot) => {
         let status = snapshot.val();
         if(status) {
             lastTimerTick = Date.now();
@@ -293,16 +288,19 @@
         }
     });
 
+    // 100% PROFIT LOGIC AND TIMER
     setInterval(() => {
         if(Date.now() - lastTimerTick > 3000) { isMaster = true; } 
         
         if(isMaster) {
-            get(ref(db, 'Game/CarRoulette/Status/timer')).then((snap) => {
-                let t = snap.val() || 15;
+            db.ref('Game/CarRoulette/Status/timer').once('value').then((snap) => {
+                let t = snap.val();
+                if(t === null) t = 15;
+
                 if(t > 0) {
-                    set(ref(db, 'Game/CarRoulette/Status'), { timer: t - 1, state: 'betting', winner: '' });
+                    db.ref('Game/CarRoulette/Status').set({ timer: t - 1, state: 'betting', winner: '' });
                 } else {
-                    get(ref(db, 'Game/CarRoulette/Bets')).then((betsSnap) => {
+                    db.ref('Game/CarRoulette/Bets').once('value').then((betsSnap) => {
                         let allUserBets = betsSnap.val() || {};
                         let totalRealBets = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
 
@@ -324,12 +322,13 @@
                         }
 
                         let winningCar = safeCars[Math.floor(Math.random() * safeCars.length)];
+                        if(!winningCar) winningCar = 'bmw'; // fallback
                         
-                        set(ref(db, 'Game/CarRoulette/Status'), { timer: 0, state: 'spinning', winner: winningCar });
+                        db.ref('Game/CarRoulette/Status').set({ timer: 0, state: 'spinning', winner: winningCar });
                         
                         setTimeout(() => {
-                            set(ref(db, 'Game/CarRoulette/Bets'), null);
-                            set(ref(db, 'Game/CarRoulette/Status'), { timer: 15, state: 'betting', winner: '' });
+                            db.ref('Game/CarRoulette/Bets').remove();
+                            db.ref('Game/CarRoulette/Status').set({ timer: 15, state: 'betting', winner: '' });
                         }, 8000);
                     });
                     isMaster = false; 
@@ -365,6 +364,7 @@
         }, 4100);
     }
 
+    // WINNING PAYOUT FIX
     function showWinner(winId, iconIndex) {
         playAudio(audioWin);
         document.getElementById('msgText').innerText = "WINNER!";
@@ -375,7 +375,9 @@
 
         if(myBets[winId] > 0 && currentUserId) {
             var wonAmt = myBets[winId] * carData[winId];
-            update(ref(db, `Users/${currentUserId}`), { balance: increment(wonAmt) });
+            
+            // Winning amount goes specifically to Winning Balance
+            db.ref(`users/${currentUserId}/winning_balance`).set(winBal + wonAmt);
 
             var p = document.getElementById('winMsg');
             p.innerText = "+₹" + wonAmt.toLocaleString();
