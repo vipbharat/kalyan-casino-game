@@ -7,73 +7,76 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        :root { --gold: #ffd700; --red: #ff3333; --green: #00cc66; --blue: #3399ff; --yellow: #ffcc00; }
+        :root { --gold: #ffd700; --red: #ff2a2a; --green: #00cc66; --blue: #1a75ff; --yellow: #ffcc00; }
         body { margin: 0; background: #050505; font-family: 'Arial Black', sans-serif; color: white; user-select: none; overflow: hidden; display: flex; flex-direction: column; align-items: center;}
         
         .header { width: 100%; display:flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; box-sizing: border-box; border-bottom: 2px solid var(--gold); z-index: 10;}
         
-        .camera-box { position: absolute; bottom: 100px; right: 20px; width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--gold); overflow: visible; z-index: 100; background: #222; box-shadow: 0 0 10px var(--gold);}
-        #playerVideo { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; transform: scaleX(-1); }
-        .opp-box { position: absolute; top: 70px; left: 20px; width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--green); display: flex; align-items: center; justify-content: center; background: #222; box-shadow: 0 0 10px var(--green); z-index: 100; overflow: visible;}
+        /* Opponent (Bot) - Upar Left */
+        .opp-box { position: absolute; top: 70px; left: 15px; width: 65px; height: 65px; border-radius: 50%; border: 3px solid var(--blue); display: flex; align-items: center; justify-content: center; background: #222; box-shadow: 0 0 15px var(--blue); z-index: 100; overflow: visible;}
         .opp-box img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-        .name-tag { position: absolute; bottom: -15px; color: #fff; font-size: 10px; background: #000; padding: 2px 6px; border-radius: 5px; border: 1px solid var(--gold); white-space: nowrap; left: 50%; transform: translateX(-50%); }
+        .opp-name { position: absolute; bottom: -15px; color: #fff; font-size: 10px; background: #000; padding: 2px 6px; border-radius: 5px; border: 1px solid var(--blue); white-space: nowrap; left: 50%; transform: translateX(-50%); }
 
+        /* Player - Niche Left */
+        .camera-box { position: absolute; bottom: 100px; left: 15px; width: 65px; height: 65px; border-radius: 50%; border: 3px solid var(--red); overflow: visible; z-index: 100; background: #222; box-shadow: 0 0 15px var(--red);}
+        #playerVideo { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; transform: scaleX(-1); }
+        .player-name { position: absolute; bottom: -15px; color: #fff; font-size: 10px; background: #000; padding: 2px 6px; border-radius: 5px; border: 1px solid var(--red); white-space: nowrap; left: 50%; transform: translateX(-50%); }
+
+        /* Chat Bubbles */
         .chat-bubble { position: absolute; background: #fff; color: #000; padding: 6px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; z-index: 500; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); white-space: nowrap; }
         .chat-bubble::after { content: ''; position: absolute; border-width: 6px; border-style: solid; }
         #opp-chat { top: -30px; left: 10px; border-bottom-left-radius: 0; }
         #opp-chat::after { bottom: -10px; left: 5px; border-color: #fff transparent transparent transparent; }
-        #player-chat { top: -30px; right: 10px; border-bottom-right-radius: 0; }
-        #player-chat::after { bottom: -10px; right: 5px; border-color: #fff transparent transparent transparent; }
+        #player-chat { top: -30px; left: 10px; border-bottom-left-radius: 0; }
+        #player-chat::after { bottom: -10px; left: 5px; border-color: #fff transparent transparent transparent; }
         
-        .chat-menu { position: absolute; bottom: 180px; right: 20px; background: rgba(0,0,0,0.8); border: 2px solid var(--gold); border-radius: 10px; padding: 10px; display: none; flex-direction: column; gap: 8px; z-index: 1000; }
+        .chat-menu { position: absolute; bottom: 180px; left: 90px; background: rgba(0,0,0,0.8); border: 2px solid var(--gold); border-radius: 10px; padding: 10px; display: none; flex-direction: column; gap: 8px; z-index: 1000; }
         .chat-msg-btn { background: #222; color: #fff; padding: 5px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; border: 1px solid #555; white-space: nowrap;}
         
-        .emoji-panel { position: absolute; bottom: 105px; right: 90px; display: flex; gap: 10px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 20px; border: 1px solid var(--gold); z-index: 100;}
+        .emoji-panel { position: absolute; bottom: 115px; left: 90px; display: flex; gap: 10px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 20px; border: 1px solid var(--gold); z-index: 100;}
         .e-btn { font-size: 18px; cursor: pointer; transition: 0.2s; }
-        .open-chat-btn { background: var(--blue); color: #fff; border: 1px solid #fff; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer;}
+        .open-chat-btn { background: var(--gold); color: #000; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer;}
         .flying-item { position: absolute; font-size: 35px; z-index: 2000; transition: all 0.5s ease-in; pointer-events: none;}
 
-        /* --- THE REAL LUDO BOARD --- */
-        .board-container { width: 300px; height: 300px; margin-top: 30px; position: relative; background: #fff; border: 5px solid #333; border-radius: 10px; box-shadow: 0 0 20px rgba(255,255,255,0.2); overflow: hidden;}
+        /* --- ACTUAL PIXEL-PERFECT LUDO BOARD --- */
+        .board-container { width: 300px; height: 300px; margin-top: 30px; position: relative; background: #fff; border: 5px solid #222; border-radius: 10px; box-shadow: 0 0 25px rgba(255,0,0,0.2); overflow: hidden;}
         
-        /* Grid container ab absolute positions ko handle karega (No Grid crash) */
         .bg-grid { position: absolute; width: 100%; height: 100%; top:0; left:0; z-index: 2;}
         
-        .base-red { position: absolute; bottom: 0; left: 0; width: 40%; height: 40%; background: var(--red); border-top: 2px solid #333; border-right: 2px solid #333; z-index: 1;}
-        .base-green { position: absolute; top: 0; right: 0; width: 40%; height: 40%; background: var(--green); border-bottom: 2px solid #333; border-left: 2px solid #333; z-index: 1;}
-        .base-blue { position: absolute; top: 0; left: 0; width: 40%; height: 40%; background: var(--blue); border-bottom: 2px solid #333; border-right: 2px solid #333; z-index: 1;}
-        .base-yellow { position: absolute; bottom: 0; right: 0; width: 40%; height: 40%; background: var(--yellow); border-top: 2px solid #333; border-left: 2px solid #333; z-index: 1;}
+        /* 4 Bases */
+        .base-red { position: absolute; bottom: 0; left: 0; width: 40%; height: 40%; background: var(--red); border-top: 2px solid #222; border-right: 2px solid #222; z-index: 1;}
+        .base-blue { position: absolute; top: 0; left: 0; width: 40%; height: 40%; background: var(--blue); border-bottom: 2px solid #222; border-right: 2px solid #222; z-index: 1;}
+        .base-green { position: absolute; top: 0; right: 0; width: 40%; height: 40%; background: var(--green); border-bottom: 2px solid #222; border-left: 2px solid #222; z-index: 1;}
+        .base-yellow { position: absolute; bottom: 0; right: 0; width: 40%; height: 40%; background: var(--yellow); border-top: 2px solid #222; border-left: 2px solid #222; z-index: 1;}
         
-        .base-white { position: absolute; width: 60%; height: 60%; background: #fff; top: 20%; left: 20%; border-radius: 10px; display: grid; grid-template-columns: 1fr 1fr; gap:8px; padding:10px; box-sizing: border-box; box-shadow: inset 0 0 10px rgba(0,0,0,0.3);}
+        .base-white { position: absolute; width: 60%; height: 60%; background: #fff; top: 20%; left: 20%; border-radius: 10px; display: grid; grid-template-columns: 1fr 1fr; gap:8px; padding:10px; box-sizing: border-box; box-shadow: inset 0 0 10px rgba(0,0,0,0.4);}
         .spot { background: #ddd; border-radius: 50%; border: 2px solid #555; width: 100%; height: 100%; box-shadow: inset 0 0 5px rgba(0,0,0,0.5);}
         
-        .center-box { position: absolute; top: 40%; left: 40%; width: 20%; height: 20%; background: radial-gradient(circle, var(--gold), #000); border: 2px solid #333; display:flex; align-items:center; justify-content:center; font-size:25px; z-index: 1; box-sizing: border-box;}
+        .center-box { position: absolute; top: 40%; left: 40%; width: 20%; height: 20%; background: radial-gradient(circle, var(--gold), #aa7700); border: 2px solid #222; display:flex; align-items:center; justify-content:center; font-size:25px; z-index: 1; box-sizing: border-box;}
 
-        /* Gotiyan (Tokens) */
-        .goti { position: absolute; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; z-index: 50; transition: left 0.3s linear, top 0.3s linear; box-shadow: 0 3px 5px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold;}
-        .goti.red { background: radial-gradient(circle at 30% 30%, #ff6b81, #cc0000); color: white;}
-        .goti.green { background: radial-gradient(circle at 30% 30%, #7bed9f, #008000); color: white;}
+        /* --- ASLI DIKHNE WALI GOTIYAN (Real 3D Tokens) --- */
+        .goti { 
+            position: absolute; width: 14px; height: 14px; border-radius: 50%; 
+            border: 2px solid rgba(255,255,255,0.9); z-index: 50; 
+            transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bounce effect */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(0,0,0,0.4), inset 2px 2px 4px rgba(255,255,255,0.7);
+        }
+        .goti.red { background: radial-gradient(circle at 30% 30%, #ff4d4d, #990000); }
+        .goti.blue { background: radial-gradient(circle at 30% 30%, #4d94ff, #003399); }
+        
         .highlight { box-shadow: 0 0 15px 5px var(--gold); animation: pulse 1s infinite; cursor: pointer; border-color: var(--gold); z-index: 60;}
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
 
-        /* --- DICE ANIMATION --- */
+        /* DICE ANIMATION */
         .dice-area { position: absolute; bottom: 20px; display: flex; flex-direction: column; align-items: center; width: 100%;}
         .dice-btn { width: 60px; height: 60px; background: white; border-radius: 15px; border: 3px solid var(--gold); display: inline-flex; align-items: center; justify-content: center; font-size: 35px; color: #000; cursor: pointer; box-shadow: 0 5px 15px rgba(255,215,0,0.5);}
-        .dice-rolling { animation: spin-dice 0.5s ease-out; }
-        @keyframes spin-dice {
-            0% { transform: rotate(0deg) scale(1); }
-            50% { transform: rotate(180deg) scale(1.3); }
-            100% { transform: rotate(360deg) scale(1); }
-        }
+        .dice-rolling { animation: spin-dice 0.4s ease-out; }
+        @keyframes spin-dice { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.3); } 100% { transform: rotate(360deg) scale(1); } }
         
-        .win-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: #111; border: 3px solid var(--gold); padding: 30px; border-radius: 20px; display: none; z-index: 1000; text-align: center; width: 80%;}
+        .win-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: #111; border: 3px solid var(--gold); padding: 30px; border-radius: 20px; display: none; z-index: 1000; text-align: center; width: 80%; box-shadow: 0 0 30px #000;}
     </style>
 </head>
-<body onclick="unlockAudio()">
-
-    <audio id="soundDice" src="https://actions.google.com/sounds/v1/foley/rolling_dice_on_table.ogg" preload="auto"></audio>
-    <audio id="soundMove" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg" preload="auto"></audio>
-    <audio id="soundWin" src="https://actions.google.com/sounds/v1/cartoon/clown_bicycle_horn.ogg" preload="auto"></audio>
+<body>
 
     <div class="header">
         <button onclick="window.location.href='vip-ludo.html'" style="background:#444; color:white; border:none; padding:5px 10px; border-radius:8px; font-weight:bold;">EXIT</button>
@@ -87,13 +90,13 @@
     <div class="opp-box" id="oppBox">
         <div id="opp-chat" class="chat-bubble"></div>
         <img src="https://i.pravatar.cc/100?img=11" id="opp-img">
-        <div class="name-tag" id="opp-name">Waiting...</div>
+        <div class="opp-name" id="opp-name">Waiting...</div>
     </div>
 
     <div class="camera-box" id="playerBox">
         <div id="player-chat" class="chat-bubble"></div>
         <video id="playerVideo" autoplay playsinline></video>
-        <div class="name-tag">You (RED)</div>
+        <div class="player-name">You (RED)</div>
     </div>
 
     <div class="chat-menu" id="chatMenu">
@@ -116,8 +119,8 @@
         <div class="bg-grid" id="gridBg"></div>
         
         <div class="base-red"><div class="base-white"><div class="spot"></div><div class="spot"></div><div class="spot"></div><div class="spot"></div></div></div>
-        <div class="base-green"><div class="base-white"><div class="spot"></div><div class="spot"></div><div class="spot"></div><div class="spot"></div></div></div>
         <div class="base-blue"><div class="base-white"><div class="spot"></div><div class="spot"></div><div class="spot"></div><div class="spot"></div></div></div>
+        <div class="base-green"><div class="base-white"><div class="spot"></div><div class="spot"></div><div class="spot"></div><div class="spot"></div></div></div>
         <div class="base-yellow"><div class="base-white"><div class="spot"></div><div class="spot"></div><div class="spot"></div><div class="spot"></div></div></div>
         
         <div class="center-box">🏆</div>
@@ -135,6 +138,7 @@
 </div>
 
 <script>
+    // --- FIREBASE DATA ---
     var firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEblCenkLILqJ_Pz0a0", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     var db = firebase.database();
@@ -150,16 +154,20 @@
         document.getElementById('bal').innerText = (s.val() || 0).toFixed(2);
     });
 
-    function unlockAudio() {
-        var a1 = document.getElementById('soundDice');
-        var a2 = document.getElementById('soundMove');
-        try { a1.play().then(function(){ a1.pause(); a1.currentTime = 0; }); } catch(e){}
-        try { a2.play().then(function(){ a2.pause(); a2.currentTime = 0; }); } catch(e){}
-    }
-
-    function playSound(id) {
-        var audio = document.getElementById(id);
-        if(audio) { audio.currentTime = 0; audio.play().catch(function(e){}); }
+    // --- REAL SOUND & VIBRATION ENGINE ---
+    function playActionSound(type) {
+        try {
+            if(type === 'dice') {
+                new Audio("https://actions.google.com/sounds/v1/foley/rolling_dice_on_table.ogg").play();
+                if(navigator.vibrate) navigator.vibrate([50, 50, 50]); // Dice shake
+            } else if (type === 'move') {
+                new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg").play();
+                if(navigator.vibrate) navigator.vibrate(30); // Pop vibration
+            } else if (type === 'win') {
+                new Audio("https://actions.google.com/sounds/v1/cartoon/clown_bicycle_horn.ogg").play();
+                if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            }
+        } catch(e) {}
     }
 
     var botNames = ['Rahul_99', 'Priya_Cute', 'Amit_King', 'NehaSharma', 'Kabir88'];
@@ -175,14 +183,16 @@
             .catch(function(e) { console.log("No Cam"); });
         }
         
-        drawBoardGrid(); // Yeh naya function hai jo 100% board theek draw karega
+        drawBoardGrid(); 
         startBotActivity();
         setTimeout(function() { 
             turn = 'red'; 
             document.getElementById('turn-msg').innerText = "YOUR TURN (RED)!"; 
+            document.getElementById('turn-msg').style.color = "var(--red)";
         }, 1500);
     };
 
+    // --- CHAT & EMOJI ---
     function toggleChatMenu() {
         var m = document.getElementById('chatMenu');
         m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
@@ -220,7 +230,7 @@
         }, Math.random() * 6000 + 5000);
     }
 
-    // --- NEW DRAWING METHOD (100% BULLETPROOF PIXEL GRID) ---
+    // --- DRAWING GRID (Pixel Perfect for All Browsers) ---
     function drawBoardGrid() {
         var bg = document.getElementById('gridBg');
         bg.innerHTML = '';
@@ -243,16 +253,16 @@
                     cell.style.boxSizing = 'border-box';
                     cell.style.background = '#fff';
                     
-                    // Paths Colors
+                    // colored Paths
                     if(c == 7 && r >= 9 && r <= 13) cell.style.background = 'var(--red)';
-                    if(c == 7 && r >= 1 && r <= 5) cell.style.background = 'var(--green)';
                     if(r == 7 && c >= 1 && c <= 5) cell.style.background = 'var(--blue)';
+                    if(c == 7 && r >= 1 && r <= 5) cell.style.background = 'var(--green)';
                     if(r == 7 && c >= 9 && c <= 13) cell.style.background = 'var(--yellow)';
                     
                     // Starts Colors
                     if(r == 13 && c == 6) cell.style.background = 'var(--red)';
-                    if(r == 1 && c == 8) cell.style.background = 'var(--green)';
                     if(r == 6 && c == 1) cell.style.background = 'var(--blue)';
+                    if(r == 1 && c == 8) cell.style.background = 'var(--green)';
                     if(r == 8 && c == 13) cell.style.background = 'var(--yellow)';
                     
                     // Safe Stars
@@ -267,18 +277,27 @@
         initTokens();
     }
 
+    // 52 Exact Coordinate Map for Tracks [Col, Row]
     var pathMap = [
         [0,0], 
         [6,13], [6,12], [6,11], [6,10], [6,9], [5,8], [4,8], [3,8], [2,8], [1,8], [0,8], [0,7], [0,6], [1,6], [2,6], [3,6], [4,6], [5,6], [6,5], [6,4], [6,3], [6,2], [6,1], [6,0], [7,0], [8,0], [8,1], [8,2], [8,3], [8,4], [8,5], [9,6], [10,6], [11,6], [12,6], [13,6], [14,6], [14,7], [14,8], [13,8], [12,8], [11,8], [10,8], [9,8], [8,9], [8,10], [8,11], [8,12], [8,13], [8,14], [7,14], [6,14]
     ];
+    
+    // RED (Player) - Bottom Left
     var homeRed = [[7,13],[7,12],[7,11],[7,10],[7,9]]; 
-    var homeGreen = [[7,1],[7,2],[7,3],[7,4],[7,5]]; 
-    var winPos = [7,8]; 
+    
+    // BLUE (Bot) - Top Left (Offset by 13 steps from Red)
+    var homeBlue = [[1,7],[2,7],[3,7],[4,7],[5,7]]; 
+    
+    // Win Box center
+    var winPos = [7,7]; 
 
-    var tokens = { red: [0, 0, 0, 0], green: [0, 0, 0, 0] };
+    var tokens = { red: [0, 0, 0, 0], blue: [0, 0, 0, 0] };
+    
+    // Exact inner box positions for Red and Blue bases
     var baseCoords = {
-        red: [[1.5, 10.5], [3.5, 10.5], [1.5, 12.5], [3.5, 12.5]], 
-        green: [[10.5, 1.5], [12.5, 1.5], [10.5, 3.5], [12.5, 3.5]] 
+        red: [[1.5, 10.5], [3.5, 10.5], [1.5, 12.5], [3.5, 12.5]], // Bottom Left
+        blue: [[1.5, 1.5], [3.5, 1.5], [1.5, 3.5], [3.5, 3.5]] // Top Left
     };
 
     var turn = 'none'; 
@@ -288,50 +307,53 @@
     function initTokens() {
         var board = document.getElementById('board');
         for(var i=0; i<4; i++) {
+            // RED PLAYER (No text, just pure plastic look)
             var r = document.createElement('div'); r.className = 'goti red'; r.id = 'red-'+i;
-            r.innerText = 'R'; r.onclick = function() { moveToken('red', parseInt(this.id.split('-')[1])); };
+            r.onclick = function() { moveToken('red', parseInt(this.id.split('-')[1])); };
             board.appendChild(r);
             
-            var g = document.createElement('div'); g.className = 'goti green'; g.id = 'green-'+i;
-            g.innerText = 'G';
-            board.appendChild(g);
+            // BLUE BOT
+            var b = document.createElement('div'); b.className = 'goti blue'; b.id = 'blue-'+i;
+            board.appendChild(b);
         }
         updateBoard();
     }
 
     function updateBoard() {
         for(var i=0; i<4; i++) {
-            var t = document.getElementById('red-'+i);
-            var pos = tokens.red[i];
-            if(pos === 0) setPos(t, baseCoords.red[i][0], baseCoords.red[i][1]);
-            else if(pos <= 52) setPos(t, pathMap[pos][0], pathMap[pos][1]);
-            else if(pos <= 57) setPos(t, homeRed[pos-53][0], homeRed[pos-53][1]);
-            else if(pos === 58) setPos(t, winPos[0], winPos[1]);
-        }
-        for(var i=0; i<4; i++) {
-            var t = document.getElementById('green-'+i);
-            var pos = tokens.green[i];
-            if(pos === 0) setPos(t, baseCoords.green[i][0], baseCoords.green[i][1]);
-            else if(pos <= 52) {
-                var actualPos = pos + 26;
+            // Red Move
+            var tRed = document.getElementById('red-'+i);
+            var posR = tokens.red[i];
+            if(posR === 0) setPos(tRed, baseCoords.red[i][0], baseCoords.red[i][1]);
+            else if(posR <= 52) setPos(tRed, pathMap[posR][0], pathMap[posR][1]);
+            else if(posR <= 57) setPos(tRed, homeRed[posR-53][0], homeRed[posR-53][1]);
+            else if(posR === 58) setPos(tRed, winPos[0], winPos[1]);
+
+            // Blue Move (Bot) - Path Offset by 13
+            var tBlue = document.getElementById('blue-'+i);
+            var posB = tokens.blue[i];
+            if(posB === 0) setPos(tBlue, baseCoords.blue[i][0], baseCoords.blue[i][1]);
+            else if(posB <= 52) {
+                var actualPos = posB + 13;
                 if(actualPos > 52) actualPos = actualPos - 52;
-                setPos(t, pathMap[actualPos][0], pathMap[actualPos][1]);
+                setPos(tBlue, pathMap[actualPos][0], pathMap[actualPos][1]);
             }
-            else if(pos <= 57) setPos(t, homeGreen[pos-53][0], homeGreen[pos-53][1]);
-            else if(pos === 58) setPos(t, winPos[0], winPos[1]);
+            else if(posB <= 57) setPos(tBlue, homeBlue[posB-53][0], homeBlue[posB-53][1]);
+            else if(posB === 58) setPos(tBlue, winPos[0], winPos[1]);
         }
     }
 
     function setPos(elem, x, y) {
-        elem.style.left = (x * 20) + 2 + 'px';
-        elem.style.top = (y * 20) + 2 + 'px';
+        elem.style.left = (x * 20) + 3 + 'px';
+        elem.style.top = (y * 20) + 3 + 'px';
     }
 
-    // --- DICE & GAME LOGIC ---
+    // --- DICE & PLAY ENGINE ---
     function rollDice() {
         if(turn !== 'red' || isWaitingForClick) return;
         var diceBtn = document.getElementById('dice');
-        playSound('soundDice');
+        
+        playActionSound('dice'); // Play sound & Vibrate
         diceBtn.classList.add('dice-rolling');
         
         var rollInt = setInterval(function() { diceBtn.innerText = Math.floor(Math.random()*6)+1; }, 50);
@@ -344,14 +366,14 @@
             diceBtn.innerText = currentDice;
             
             checkMoves('red');
-        }, 500);
+        }, 400);
     }
 
     function checkMoves(player) {
         var movable = [];
         for(var i=0; i<4; i++) {
             var p = tokens[player][i];
-            if(p === 0 && currentDice === 6) movable.push(i); 
+            if(p === 0 && currentDice === 6) movable.push(i); // 6 aane par hi khulega
             else if(p > 0 && p + currentDice <= 58) movable.push(i); 
         }
 
@@ -360,15 +382,15 @@
         } else {
             if(player === 'red') {
                 isWaitingForClick = true;
-                document.getElementById('turn-msg').innerText = "Select Goti to Move";
+                document.getElementById('turn-msg').innerText = "TAP A GOTI!";
                 movable.forEach(function(i) { document.getElementById('red-'+i).classList.add('highlight'); });
             } else {
                 setTimeout(function() {
                     var choice = movable[0];
                     if(currentDice === 6) {
-                        for(var k=0; k<movable.length; k++) { if(tokens.green[movable[k]] === 0) choice = movable[k]; }
+                        for(var k=0; k<movable.length; k++) { if(tokens.blue[movable[k]] === 0) choice = movable[k]; }
                     }
-                    moveToken('green', choice);
+                    moveToken('blue', choice);
                 }, 1000);
             }
         }
@@ -379,16 +401,15 @@
         
         for(var i=0; i<4; i++) document.getElementById('red-'+i).classList.remove('highlight');
         isWaitingForClick = false;
-        playSound('soundMove');
+        
+        playActionSound('move'); // "Pop" Sound on movement
 
-        if(tokens[player][index] === 0) {
-            tokens[player][index] = 1; 
-        } else {
-            tokens[player][index] += currentDice; 
-        }
+        if(tokens[player][index] === 0) tokens[player][index] = 1; 
+        else tokens[player][index] += currentDice; 
         
         updateBoard();
 
+        // 1 Goti center pahunchne par Winner
         if(tokens[player][index] === 58) {
             if(player === 'red') triggerWin(activeWinAmt, true);
             else triggerWin(0, false);
@@ -396,8 +417,11 @@
         }
 
         if(currentDice === 6) {
-            if(player === 'red') { document.getElementById('turn-msg').innerText = "Roll Again! (You got 6)"; }
-            else { botTurn(); }
+            if(player === 'red') { 
+                document.getElementById('turn-msg').innerText = "ROLL AGAIN!"; 
+            } else { 
+                setTimeout(botTurn, 800); 
+            }
         } else {
             passTurn();
         }
@@ -405,22 +429,23 @@
 
     function passTurn() {
         if(turn === 'red') {
-            turn = 'green';
+            turn = 'blue';
             document.getElementById('turn-msg').innerText = "Opponent's Turn...";
-            document.getElementById('turn-msg').style.color = "var(--red)";
-            setTimeout(botTurn, 1500);
+            document.getElementById('turn-msg').style.color = "var(--blue)";
+            setTimeout(botTurn, 1000);
         } else {
             turn = 'red';
             document.getElementById('turn-msg').innerText = "YOUR TURN (RED)!";
-            document.getElementById('turn-msg').style.color = "var(--gold)";
+            document.getElementById('turn-msg').style.color = "var(--red)";
             document.getElementById('dice').innerText = "🎲";
         }
     }
 
     function botTurn() {
-        if(turn !== 'green') return;
+        if(turn !== 'blue') return;
         var diceBtn = document.getElementById('dice');
-        playSound('soundDice');
+        
+        playActionSound('dice');
         diceBtn.classList.add('dice-rolling');
         
         var rollInt = setInterval(function() { diceBtn.innerText = Math.floor(Math.random()*6)+1; }, 50);
@@ -429,17 +454,18 @@
             clearInterval(rollInt);
             diceBtn.classList.remove('dice-rolling');
             
+            // Profit Logic Admin side se
             var bias = currentMode == 2 ? 0.3 : 0.4;
             currentDice = (Math.random() < bias) ? 6 : Math.floor(Math.random() * 5) + 1;
             diceBtn.innerText = currentDice;
             
-            checkMoves('green');
-        }, 500);
+            checkMoves('blue');
+        }, 400);
     }
 
     function triggerWin(amt, isPlayerWin) {
         turn = 'none'; 
-        playSound('soundWin');
+        playActionSound('win');
         var modal = document.getElementById('win-modal');
         var title = document.getElementById('win-title');
         var cashText = document.getElementById('win-cash');
