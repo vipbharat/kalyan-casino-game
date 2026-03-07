@@ -33,10 +33,10 @@
         .bubble-right { top: -30px; right: 10px; border-bottom-right-radius: 0; }
         .bubble-right::after { bottom: -10px; right: 5px; border-color: #fff transparent transparent transparent; }
         
-        .chat-menu { position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border: 2px solid var(--gold); border-radius: 10px; padding: 10px; display: none; flex-direction: column; gap: 8px; z-index: 1000; }
+        .chat-menu { position: absolute; bottom: 170px; left: 80px; background: rgba(0,0,0,0.8); border: 2px solid var(--gold); border-radius: 10px; padding: 10px; display: none; flex-direction: column; gap: 8px; z-index: 1000; }
         .chat-msg-btn { background: #222; color: #fff; padding: 5px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; border: 1px solid #555; white-space: nowrap;}
         
-        .emoji-panel { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 20px; border: 1px solid var(--gold); z-index: 100;}
+        .emoji-panel { position: absolute; bottom: 115px; left: 80px; display: flex; gap: 10px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 20px; border: 1px solid var(--gold); z-index: 100;}
         .e-btn { font-size: 18px; cursor: pointer; transition: 0.2s; }
         .open-chat-btn { background: var(--gold); color: #000; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer;}
         .flying-item { position: absolute; font-size: 35px; z-index: 2000; transition: all 0.5s ease-in; pointer-events: none;}
@@ -195,7 +195,6 @@
         turnTimer = setInterval(function() {
             timeLeft--; tBox.innerText = "⏳ " + timeLeft + "s";
             
-            // 15 SECOND TIME OVER (AUTO-SKIP TURN)
             if(timeLeft <= 0) {
                 clearInterval(turnTimer);
                 if(turn === 'red') {
@@ -207,7 +206,7 @@
                     isRolling = false; 
                     document.getElementById('turn-msg').innerText = "TURN SKIPPED!";
                     document.getElementById('turn-msg').style.color = "var(--red)";
-                    setTimeout(passTurn, 1000); // 1 sec baad bot ko turn chali jayegi
+                    setTimeout(passTurn, 1000); 
                 }
             }
         }, 1000);
@@ -227,7 +226,7 @@
             msgBox.innerText = "YOUR TURN!"; msgBox.style.color = "var(--red)";
             diceBtn.innerText = "🎲";
             diceBtn.style.bottom = '100px'; diceBtn.style.left = '85px'; 
-            startTimer(); // Pasa phekne ke liye 15 sec
+            startTimer(); 
         } else {
             stopTimer(); 
             msgBox.innerText = turn.toUpperCase() + "'s Turn..."; msgBox.style.color = "var(--" + turn + ")";
@@ -238,17 +237,14 @@
         }
     }
 
-    // --- 5 SECONDS EMOJI & CHAT DISPLAY ---
     function toggleChatMenu() { var m = document.getElementById('chatMenu'); m.style.display = (m.style.display === 'flex') ? 'none' : 'flex'; }
     function sendChat(msg) { document.getElementById('chatMenu').style.display = 'none'; showBubble('player-chat', msg); }
     
-    // Chat Bubble 5 Second tak dikhega
     function showBubble(id, msg) { 
         var b = document.getElementById(id); b.innerText = msg; b.style.display = 'block'; 
         setTimeout(function() { b.style.display = 'none'; }, 5000); 
     }
     
-    // Emoji 5 Second tak Profile par rahega
     function throwItem(emoji, isBot) {
         var fly = document.createElement('div'); fly.className = 'flying-item'; fly.innerText = emoji; document.body.appendChild(fly);
         var p = document.getElementById('playerBox').getBoundingClientRect();
@@ -259,16 +255,14 @@
         
         fly.style.left = (start.left+15)+'px'; fly.style.top = (start.top+15)+'px';
         
-        // Hawa me udna (0.5 sec)
         setTimeout(function() { fly.style.left = (end.left+15)+'px'; fly.style.top = (end.top+15)+'px'; }, 50);
         
-        // Udne ke baad Profile par 5 second tak chipka rahega
         setTimeout(function() { 
             fly.style.transition = 'none'; 
-            fly.style.transform = 'scale(1.5)'; // Thoda bada dikhega
+            fly.style.transform = 'scale(1.5)'; 
             setTimeout(function() {
                 fly.style.transition = 'opacity 0.5s ease';
-                fly.style.opacity = '0'; // 5 second baad fade out hoga
+                fly.style.opacity = '0'; 
                 setTimeout(function() { fly.remove(); }, 500);
             }, 4500); 
         }, 550);
@@ -300,12 +294,34 @@
         initTokens();
     }
 
-    var masterPath = [ [13,6], [12,6], [11,6], [10,6], [9,6], [8,5], [8,4], [8,3], [8,2], [8,1], [8,0], [7,0], [6,0], [6,1], [6,2], [6,3], [6,4], [6,5], [5,6], [4,6], [3,6], [2,6], [1,6], [0,6], [0,7], [0,8], [1,8], [2,8], [3,8], [4,8], [5,8], [6,9], [6,10], [6,11], [6,12], [6,13], [6,14], [7,14], [8,14], [8,13], [8,12], [8,11], [8,10], [8,9], [9,8], [10,8], [11,8], [12,8], [13,8], [14,8], [14,7] ];
-    function buildPath(startIndex, homeStretch) { var path = [[0,0]]; for(var i=0; i<51; i++) path.push(masterPath[(startIndex + i) % 52]); for(var i=0; i<5; i++) path.push(homeStretch[i]); path.push([7,7]); return path; }
+    // --- 100% PERFECT FIXED LUDO MATHEMATICAL PATHS ---
+    // Ab koi bhi goti "and-sand" (ulti ya galat dabbe me) nahi daudegi
+    var masterPath = [
+        [6,13], [6,12], [6,11], [6,10], [6,9], [5,8], [4,8], [3,8], [2,8], [1,8], [0,8], [0,7], [0,6], [1,6], [2,6], [3,6], [4,6], [5,6], [6,5], [6,4], [6,3], [6,2], [6,1], [6,0], [7,0], [8,0], [8,1], [8,2], [8,3], [8,4], [8,5], [9,6], [10,6], [11,6], [12,6], [13,6], [14,6], [14,7], [14,8], [13,8], [12,8], [11,8], [10,8], [9,8], [8,9], [8,10], [8,11], [8,12], [8,13], [8,14], [7,14], [6,14]
+    ];
+    
+    function buildPath(startIndex, homeStretch) { 
+        var path = [[0,0]]; 
+        for(var i=0; i<51; i++) path.push(masterPath[(startIndex + i) % 52]); 
+        for(var i=0; i<5; i++) path.push(homeStretch[i]); 
+        path.push([7,7]); 
+        return path; 
+    }
 
-    var paths = { red: buildPath(0, [[13,7], [12,7], [11,7], [10,7], [9,7]]), blue: buildPath(13, [[7,1], [7,2], [7,3], [7,4], [7,5]]), green: buildPath(26, [[1,7], [2,7], [3,7], [4,7], [5,7]]), yellow: buildPath(39, [[7,13], [7,12], [7,11], [7,10], [7,9]]) };
+    var paths = { 
+        red: buildPath(0, [[7,13], [7,12], [7,11], [7,10], [7,9]]), 
+        blue: buildPath(13, [[1,7], [2,7], [3,7], [4,7], [5,7]]), 
+        green: buildPath(26, [[7,1], [7,2], [7,3], [7,4], [7,5]]), 
+        yellow: buildPath(39, [[13,7], [12,7], [11,7], [10,7], [9,7]]) 
+    };
+
     var tokens = { red: [0,0,0,0], blue: [0,0,0,0], green: [0,0,0,0], yellow: [0,0,0,0] };
-    var baseCoords = { red: [[1.5, 10.5], [3.5, 10.5], [1.5, 12.5], [3.5, 12.5]], blue: [[1.5, 1.5], [3.5, 1.5], [1.5, 3.5], [3.5, 3.5]], green: [[10.5, 1.5], [12.5, 1.5], [10.5, 3.5], [12.5, 3.5]], yellow: [[10.5, 10.5], [12.5, 10.5], [10.5, 12.5], [12.5, 12.5]] };
+    var baseCoords = { 
+        red: [[1.5, 10.5], [3.5, 10.5], [1.5, 12.5], [3.5, 12.5]], 
+        blue: [[1.5, 1.5], [3.5, 1.5], [1.5, 3.5], [3.5, 3.5]], 
+        green: [[10.5, 1.5], [12.5, 1.5], [10.5, 3.5], [12.5, 3.5]], 
+        yellow: [[10.5, 10.5], [12.5, 10.5], [10.5, 12.5], [12.5, 12.5]] 
+    };
 
     var currentDice = 0;
     var isWaitingForClick = false;
@@ -353,7 +369,6 @@
             currentDice = Math.floor(Math.random() * 6) + 1;
             diceBtn.innerText = currentDice;
             
-            // Pasa phekne ke baad GOTI CHUN NE KE LIYE wapas 15 second milenge
             startTimer(); 
             checkMoves('red');
         }, 400);
@@ -363,8 +378,6 @@
         var movable = [];
         for(var i=0; i<4; i++) {
             var p = tokens[player][i];
-            
-            // GAME LOGIC: 6 Aane par andar wali aur bahar wali dono valid hain
             if(p === 0 && currentDice === 6) movable.push(i); 
             else if(p > 0 && p + currentDice <= 57) movable.push(i); 
         }
@@ -375,8 +388,6 @@
             if(player === 'red') {
                 isWaitingForClick = true;
                 document.getElementById('turn-msg').innerText = "TAP A GOTI TO MOVE!";
-                
-                // Valid Gotiyan chamkengi, aapki marzi kise chalna hai
                 movable.forEach(function(i) { 
                     var g = document.getElementById('red-'+i);
                     g.classList.add('highlight'); g.style.zIndex = "150"; 
@@ -396,7 +407,6 @@
             var g = document.getElementById('red-'+index);
             if(!isWaitingForClick || !g.classList.contains('highlight')) return; 
             
-            // Select karte hi sabki chamak hata do
             for(var i=0; i<4; i++) {
                 document.getElementById('red-'+i).classList.remove('highlight');
                 document.getElementById('red-'+i).style.zIndex = "50"; 
@@ -422,7 +432,7 @@
             if(player === 'red') { 
                 document.getElementById('turn-msg').innerText = "ROLL AGAIN!"; 
                 isRolling = false; 
-                startTimer(); // 6 aane par dobara pasa phekne ke 15 sec milenge
+                startTimer(); 
             } 
             else { setTimeout(botTurn, 800); }
         } else { passTurn(); }
