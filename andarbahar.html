@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ANDAR BAHAR PRO</title>
+    <title>ANDAR BAHAR PRO VIP</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
@@ -176,15 +176,14 @@
         botsList = [];
         for(let i=0; i<5; i++) {
             let id = Math.floor(Math.random()*8999)+1000; 
-            let bal = Math.floor(Math.random() * 50000) + 20000; // 20k to 70k limit
+            let bal = Math.floor(Math.random() * 50000) + 20000; 
             botsList.push({id: id, bal: bal});
         }
         renderBotsUI();
     }
     
-    // 🔥 BOTS REFRESH HOTEY RAHENGE
+    // BOTS REFRESH HOTEY RAHENGE
     setInterval(() => {
-        // Ek ya Do player completely change honge taaki asli lage
         let numToChange = Math.floor(Math.random() * 2) + 1;
         for(let i=0; i<numToChange; i++) {
             let idx = Math.floor(Math.random() * botsList.length);
@@ -194,14 +193,13 @@
             };
         }
         
-        // Baaki thoda amount fluctuate hoga
         botsList.forEach(b => {
             b.bal += (Math.random() > 0.5 ? 1200 : -800);
-            if(b.bal > 100000) b.bal = 95000; // Strictly MAX 1 Lakh
+            if(b.bal > 100000) b.bal = 95000; 
             if(b.bal < 5000) b.bal = 45000;
         });
         renderBotsUI();
-    }, 3500); // Har 3.5 sec mein update
+    }, 3500);
 
     function renderBotsUI() {
         let h = "";
@@ -263,15 +261,15 @@
         playSound(coinSnd, 0.5);
     }
 
-    // Bot Bets (Ignored by Server DB)
+    // 🔥 Bot Bets (Dheere aur balance ho kar)
     function botBetAction() {
         if(!isBettingOpen) return;
-        let numBets = Math.floor(Math.random() * 2) + 1; 
+        
+        let sides = ['andar', 'bahar'];
         let botBetted = false;
 
-        for(let i=0; i<numBets; i++) {
-            let s = Math.random() > 0.5 ? 'andar' : 'bahar';
-            let amt = [100, 500, 1000][Math.floor(Math.random()*3)];
+        sides.forEach(s => {
+            let amt = [1000, 2000, 3000, 5000][Math.floor(Math.random()*4)];
             let randomBot = botsList[Math.floor(Math.random() * botsList.length)];
             
             if(randomBot.bal >= amt) {
@@ -281,7 +279,8 @@
                 spawnChip(s, amt);
                 botBetted = true;
             }
-        }
+        });
+
         if(botBetted) playSound(coinSnd, 0.05); 
     }
 
@@ -291,19 +290,18 @@
         let tEl = document.getElementById('timer');
         
         if(st.state === 'betting') {
-            // FIXED 1: Joker hamesha open rahega aur sahi dikhega
             document.getElementById('joker-img').src = `https://deckofcardsapi.com/static/img/${st.jokerVal}${st.jokerSuit}.png`;
             
             if(!isBettingOpen) {
                 isBettingOpen = true;
-                // Reset table for new round
                 document.getElementById('img-a').style.display = 'none'; 
                 document.getElementById('img-b').style.display = 'none';
                 document.getElementById('back-a').style.display = 'block'; 
                 document.getElementById('back-b').style.display = 'block';
                 
                 clearInterval(botInterval);
-                botInterval = setInterval(botBetAction, 500); 
+                // 🔥 Bots thoda aaram se bet lagayenge (800ms)
+                botInterval = setInterval(botBetAction, 800); 
             }
             
             tEl.innerText = st.timer + "s";
@@ -320,14 +318,13 @@
         }
     });
 
-    // 🔥 FIXED 2: Patte gayab nahi honge, SAHI SE KHULENGE (Sarvshreshth Animation)
+    // 🔥 Lamba Suspense (8 se 15 patte girenge tezi se)
     async function showAnimation(win, jVal) {
-        let steps = Math.floor(Math.random() * 3) + 3; 
-        // Logic: Andar Odd step par aata hai, Bahar Even step par aata hai.
+        let steps = Math.floor(Math.random() * 8) + 8; 
+        
         if(win === 'andar' && steps % 2 === 0) steps++; 
         if(win === 'bahar' && steps % 2 !== 0) steps++; 
 
-        // Dono Card ka Back hide karke blank (khali) chhod do
         document.getElementById('back-a').style.display = 'none'; 
         document.getElementById('back-b').style.display = 'none';
         
@@ -343,14 +340,12 @@
 
             const slotImg = document.getElementById(side==='andar'?'img-a':'img-b');
             
-            // Jhatke ke sath naya patta khulega (Animation)
-            slotImg.style.transform = "scale(1.2)";
+            slotImg.style.transform = "scale(1.15)";
             slotImg.src = `https://deckofcardsapi.com/static/img/${resVal}${resSuit}.png`;
             slotImg.style.display = 'block';
             playSound(cardSnd, 1.0); 
             
-            // Wapas normal size
-            setTimeout(() => { slotImg.style.transform = "scale(1)"; }, 150);
+            setTimeout(() => { slotImg.style.transform = "scale(1)"; }, 120);
 
             if(isLast) {
                 const ov = document.getElementById('win-overlay');
@@ -361,16 +356,13 @@
                 let cDot = `<div class="record-dot" style="background:${side === 'andar' ? 'var(--andar)' : 'var(--bahar)'};">${side === 'andar' ? 'A' : 'B'}</div>`;
                 document.getElementById('record-board').innerHTML = cDot + hHtml;
 
-                // Payout
                 let winAmt = (side === 'andar') ? myBets.andar * 1.95 : myBets.bahar * 1.95;
                 if(winAmt > 0 && phone) { db.ref('users/'+phone+'/winning_balance').set(winBal + winAmt); }
                 return;
             }
             
-            // Patte ke beech ka time gap
-            await new Promise(r => setTimeout(r, 800)); 
-            
-            // Note: Patta yahan 'none' nahi kiya gaya hai. Wo screen par dikhta rahega aur jab naya patta aayega tabhi image badlegi. Ye ekdum real lagta hai.
+            // 🔥 Time set kiya hai taaki lamba chale bina atak ke
+            await new Promise(r => setTimeout(r, 350)); 
         }
     }
 
