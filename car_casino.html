@@ -69,10 +69,12 @@
         .player { text-align: center; transition: 0.5s; }
         .p-avatar { width: 28px; height: 28px; background: linear-gradient(45deg, #444, #222); border: 2px solid var(--gold); border-radius: 50%; margin: 0 auto; line-height: 26px; font-size: 12px; color: #fff; box-shadow: 0 0 8px var(--gold); }
 
-        .chip-rack { position: fixed; bottom: 0; width: 100%; background: linear-gradient(to top, #000, #1a1a1a); display: flex; justify-content: center; gap: 8px; padding: 15px 0; border-top: 3px solid var(--gold); z-index: 1100; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); }
-        .chip { width: 48px; height: 48px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 0.85rem; border: 3px solid rgba(255,255,255,0.5); cursor: pointer; transition: 0.3s; color: white; text-shadow: 1px 1px 2px #000; box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 10px rgba(0,0,0,0.5); }
+        /* 🔥 VIP CHIP RACK WITH 6 CHIPS 🔥 */
+        .chip-rack { position: fixed; bottom: 0; width: 100%; background: linear-gradient(to top, #000, #1a1a1a); display: flex; justify-content: center; gap: 6px; padding: 15px 0; border-top: 3px solid var(--gold); z-index: 1100; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); }
+        .chip { width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 0.8rem; border: 3px solid rgba(255,255,255,0.5); cursor: pointer; transition: 0.3s; color: white; text-shadow: 1px 1px 2px #000; box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 10px rgba(0,0,0,0.5); flex-shrink: 0; }
         .chip.active { transform: translateY(-8px) scale(1.15); border-color: var(--gold); box-shadow: inset 0 5px 10px rgba(255,255,255,0.6), 0 10px 20px var(--gold); }
         
+        .c10 { background: radial-gradient(circle, #ffffff, #cccccc); color: #000; text-shadow: none; }
         .c100 { background: radial-gradient(circle, #4fc3f7, #0288d1); }
         .c500 { background: radial-gradient(circle, #81c784, #388e3c); }
         .c1k { background: radial-gradient(circle, #e57373, #d32f2f); }
@@ -91,9 +93,7 @@
     <audio id="bgMusic" src="https://assets.mixkit.co/active_storage/sfx/135/135-preview.mp3" loop></audio>
     <audio id="soundSpin" src="https://assets.mixkit.co/active_storage/sfx/2042/2042-preview.mp3"></audio>
     <audio id="soundWin" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
-    <audio id="soundBet" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
-
-    <div class="top-info-bar">
+    <audio id="soundBet" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3"></audio> <div class="top-bar">
         <div class="date-time" id="topDate">Loading Date...</div>
         <div style="display: flex; align-items: center;">
             <span class="blink-dot">●</span> 
@@ -170,6 +170,7 @@
     <div class="live-players" id="player-row"></div>
 
     <div class="chip-rack">
+        <div class="chip c10" onclick="chooseChip(10, this)">10</div>
         <div class="chip c100 active" onclick="chooseChip(100, this)">100</div>
         <div class="chip c500" onclick="chooseChip(500, this)">500</div>
         <div class="chip c1k" onclick="chooseChip(1000, this)">1K</div>
@@ -204,7 +205,7 @@
     function initAudio() {
         if(!isAudioInit) {
             let bgm = document.getElementById('bgMusic');
-            bgm.volume = 0.20; // Background music ekdum soft rakhi hai taaki disturbance na ho
+            bgm.volume = 0.20; 
             bgm.play().catch(e=>{});
             isAudioInit = true;
         }
@@ -237,7 +238,7 @@
     }
     drawWheel();
 
-    // 🔥 VIP BOTS SETUP (Max 1 Lakh)
+    // 🔥 VIP BOTS SETUP
     let botsList = [];
     function generateBots() {
         botsList = [];
@@ -296,6 +297,7 @@
     };
 
     function getChipColor(amt) {
+        if(amt === 10) return 'radial-gradient(circle, #ffffff, #cccccc)';
         if(amt === 100) return 'radial-gradient(circle, #4fc3f7, #0288d1)'; 
         if(amt === 500) return 'radial-gradient(circle, #81c784, #388e3c)';
         if(amt === 1000) return 'radial-gradient(circle, #e57373, #d32f2f)'; 
@@ -309,7 +311,9 @@
         fly.className = 'chip-fly';
         fly.style.background = getChipColor(amt);
         fly.innerText = amt >= 1000 ? (amt/1000)+'K' : amt;
-        if(amt === 10000) fly.style.color = '#000';
+        
+        // 10 aur 10,000 wale chip par text black hona chahiye taaki saaf dikhe
+        if(amt === 10 || amt === 10000) fly.style.color = '#000';
         
         if(isBot) { 
             fly.style.left = (Math.random() * window.innerWidth) + 'px'; 
@@ -351,7 +355,7 @@
         spawnChip(carId, selectedChip, false, event.clientX, event.clientY);
     };
 
-    // 🔥 Bot Bets (Dheere-dheere 50k+ Target)
+    // 🔥 Bot Bets (Ab bot 10 ka chip bhi fekega)
     function botBetAction() {
         if(!isBettingOpen) return;
         let numBets = Math.floor(Math.random() * 3) + 1; 
@@ -360,7 +364,8 @@
 
         for(let i=0; i<numBets; i++) {
             let randomCar = cars[Math.floor(Math.random() * cars.length)];
-            let amt = [1000, 2000, 3000, 5000][Math.floor(Math.random()*4)];
+            // Bot amounts mein 10 aur 100 bhi add kar diye hain mix lagne ke liye
+            let amt = [10, 100, 500, 1000, 5000][Math.floor(Math.random()*5)];
             let randomBot = botsList[Math.floor(Math.random() * botsList.length)];
             
             if(randomBot.bal >= amt) {
@@ -387,16 +392,17 @@
             if(!isBettingOpen) {
                 isBettingOpen = true; 
                 isSpinning = false;
+                // 🔥 Naya Round aate hi Purane Chips Clean
                 resetTable();
                 
                 clearInterval(botInterval);
-                botInterval = setInterval(botBetAction, 800); // Makkhan speed
+                botInterval = setInterval(botBetAction, 800); 
             }
         } 
         else if (st.state === 'spinning' && !isSpinning) {
             isBettingOpen = false; 
             isSpinning = true;
-            clearInterval(botInterval); 
+            clearInterval(botInterval); // Stop bots
             runWheelSpin(st.winner);
         }
     });
@@ -404,7 +410,6 @@
     function runWheelSpin(winnerCar) {
         document.getElementById('msgText').innerText = "SPINNING..."; document.getElementById('timeText').innerText = "0";
         
-        // 🔥 WHEEL SPIN SOUND (Looping jab tak ghoomega)
         let spinSnd = document.getElementById('soundSpin');
         spinSnd.currentTime = 0;
         spinSnd.loop = true;
@@ -417,7 +422,7 @@
         var finalTargetIndex = possibleIndexes[Math.floor(Math.random() * possibleIndexes.length)];
         var targetAngle = finalTargetIndex * 22.5; 
         
-        var extraSpins = 3600; // 10 full spins
+        var extraSpins = 3600; 
         var baseRotation = Math.floor(currentRotation / 360) * 360; 
         currentRotation = baseRotation + extraSpins + targetAngle;
         
@@ -430,7 +435,7 @@
     }
 
     function showWinner(winId, iconIndex) {
-        playSound(document.getElementById('soundWin'), 1.0); // Badi jeet ki awaaz
+        playSound(document.getElementById('soundWin'), 1.0); 
         document.getElementById('msgText').innerText = "WINNER!"; document.getElementById('timeText').innerText = winId.toUpperCase();
         
         document.getElementById(winId).classList.add('box-win');
