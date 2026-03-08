@@ -7,48 +7,83 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        :root { --andar: #ff3333; --bahar: #33aaff; --gold: #ffd700; }
-        body { margin: 0; background: #050505; font-family: 'Arial Black', sans-serif; overflow: hidden; color: white; user-select: none; padding-bottom: 120px; }
+        :root { --andar: #ff1a1a; --bahar: #1a8cff; --gold: #ffd700; --gold-glow: #ffae42; }
         
-        .top-bar { display: flex; justify-content: space-between; padding: 10px; background: #111; border-bottom: 2px solid var(--gold); align-items: center; }
-        .top-left { font-size: 10px; color: var(--gold); line-height: 1.4; }
-        .bal-box { background: #222; border: 1.5px solid var(--gold); padding: 4px 12px; border-radius: 20px; color: var(--gold); font-size: 14px; font-weight: bold; }
+        /* 🎨 Animated Premium Background */
+        body { 
+            margin: 0; 
+            font-family: 'Arial Black', sans-serif; 
+            overflow: hidden; 
+            color: white; 
+            user-select: none; 
+            padding-bottom: 120px; 
+            background: linear-gradient(135deg, #1a0000, #330000, #1a0033, #001a33);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 👑 Top Bar Styling */
+        .top-bar { display: flex; justify-content: space-between; padding: 10px 15px; background: rgba(0,0,0,0.8); border-bottom: 2px solid var(--gold); align-items: center; box-shadow: 0 2px 15px rgba(255, 215, 0, 0.3); backdrop-filter: blur(5px); }
+        .top-left { font-size: 11px; color: var(--gold); line-height: 1.5; text-shadow: 0 0 5px var(--gold); }
+        .bal-box { background: linear-gradient(to bottom, #333, #111); border: 1.5px solid var(--gold); padding: 5px 15px; border-radius: 25px; color: #0f0; font-size: 15px; font-weight: bold; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); }
         
-        .admin-note-bar { background: #800; color: #fff; font-size: 12px; height: 22px; line-height: 22px; overflow: hidden; white-space: nowrap; border-bottom: 1.5px solid var(--gold); font-weight: bold; }
+        .admin-note-bar { background: linear-gradient(to right, #600, #a00, #600); color: #fff; font-size: 12px; height: 25px; line-height: 25px; overflow: hidden; white-space: nowrap; border-bottom: 1.5px solid var(--gold); font-weight: bold; text-shadow: 1px 1px 2px #000; }
 
-        .record-panel { position: absolute; right: 10px; top: 60px; display: flex; flex-direction: column; gap: 5px; z-index: 100; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 20px; border: 1px solid #333; }
-        .record-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 1px solid gold; color: white; }
+        .record-panel { position: absolute; right: 10px; top: 75px; display: flex; flex-direction: column; gap: 5px; z-index: 100; background: rgba(0,0,0,0.7); padding: 8px; border-radius: 15px; border: 1px solid var(--gold); box-shadow: 0 0 10px rgba(255,215,0,0.2); }
+        .record-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid #fff; color: white; box-shadow: 0 0 8px #000 inset; }
 
-        .joker-section { text-align: center; margin-top: 5px; }
-        .joker-card { width: 55px; height: 80px; background: #fff; border-radius: 8px; margin: 0 auto; border: 2.5px solid var(--gold); box-shadow: 0 0 10px var(--gold); overflow: hidden; }
+        /* 🃏 Joker Card Animation */
+        .joker-section { text-align: center; margin-top: 15px; position: relative; }
+        .joker-title { font-size: 12px; color: var(--gold); letter-spacing: 2px; text-shadow: 0 0 10px var(--gold); margin-bottom: 5px; }
+        .joker-card { width: 65px; height: 95px; background: #fff; border-radius: 8px; margin: 0 auto; border: 3px solid var(--gold); box-shadow: 0 0 25px var(--gold-glow); overflow: hidden; transition: transform 0.3s; }
         .joker-card img { width: 100%; height: 100%; object-fit: fill; }
         
-        .timer-sec { font-size: 32px; color: var(--gold); text-align: center; margin: 2px 0; height: 40px; font-weight: 900; }
+        .timer-sec { font-size: 38px; color: #fff; text-align: center; margin: 5px 0; height: 45px; font-weight: 900; text-shadow: 0 0 15px #0f0; transition: color 0.3s; }
 
-        .table-top { display: flex; justify-content: center; gap: 35px; margin-top: 10px; }
-        .card-slot { width: 62px; height: 85px; background: rgba(255,255,255,0.05); border-radius: 6px; border: 2px solid #333; position: relative; display: flex; align-items: center; justify-content: center; }
-        .card-slot img { width: 100%; height: 100%; border-radius: 4px; display: none; }
-        .card-back { background: url('https://deckofcardsapi.com/static/img/back.png') center/cover; position: absolute; width: 100%; height: 100%; z-index: 5; border-radius: 4px; }
+        .table-top { display: flex; justify-content: center; gap: 40px; margin-top: 15px; }
+        .card-slot { width: 70px; height: 100px; background: rgba(0,0,0,0.5); border-radius: 8px; border: 2px dashed rgba(255,255,255,0.3); position: relative; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
+        .card-slot img { width: 100%; height: 100%; border-radius: 6px; display: none; box-shadow: 0 0 15px rgba(255,255,255,0.5); }
+        .card-back { background: url('https://deckofcardsapi.com/static/img/back.png') center/cover; position: absolute; width: 100%; height: 100%; z-index: 5; border-radius: 6px; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
 
-        #win-overlay { position: fixed; top: 60%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; display: none; font-size: 22px; font-weight: 900; background: rgba(0,0,0,0.95); padding: 12px 30px; border-radius: 12px; border: 3px solid var(--gold); color: gold; text-align: center; width: 65%; pointer-events: none; box-shadow: 0 0 20px #000; }
+        #win-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; display: none; font-size: 28px; font-weight: 900; background: linear-gradient(45deg, #ffd700, #ff8c00); padding: 15px 40px; border-radius: 15px; border: 4px solid #fff; color: #000; text-align: center; width: 70%; pointer-events: none; box-shadow: 0 0 40px var(--gold), 0 0 20px #000 inset; text-transform: uppercase; letter-spacing: 2px; }
 
-        .bet-grid { display: flex; justify-content: center; gap: 8px; margin-top: 15px; }
-        .box { width: 165px; height: 190px; border: 3.5px solid rgba(255,255,255,0.4); border-radius: 12px; position: relative; background: rgba(0,0,0,0.6); overflow: hidden; transition: all 0.3s; }
-        .andar-box { border-color: var(--andar) !important; box-shadow: inset 0 0 15px rgba(255, 51, 51, 0.4); } 
-        .bahar-box { border-color: var(--bahar) !important; box-shadow: inset 0 0 15px rgba(51, 170, 255, 0.4); }
+        /* 🎲 Betting Grid (Glowing Boxes) */
+        .bet-grid { display: flex; justify-content: center; gap: 15px; margin-top: 25px; padding: 0 10px; }
+        .box { flex: 1; max-width: 180px; height: 210px; border: 4px solid; border-radius: 15px; position: relative; background: rgba(0,0,0,0.7); overflow: hidden; transition: all 0.2s; cursor: pointer; backdrop-filter: blur(5px); }
+        .box:active { transform: scale(0.95); }
         
-        .pool-amt { display: block; background: rgba(0,0,0,0.85); color: #0f0; text-align: center; font-size: 15px; padding: 5px; font-weight: bold; border-bottom: 2px solid rgba(255,255,255,0.2); }
-        .my-box-bet { position: absolute; top: 5px; right: 5px; font-size: 10px; color: var(--gold); background: rgba(0,0,0,0.8); padding: 3px 6px; border-radius: 4px; border: 1px solid var(--gold); z-index: 30; display: none; }
+        .andar-box { border-color: var(--andar); box-shadow: 0 0 20px rgba(255, 26, 26, 0.4), inset 0 0 30px rgba(255, 26, 26, 0.2); } 
+        .bahar-box { border-color: var(--bahar); box-shadow: 0 0 20px rgba(26, 140, 255, 0.4), inset 0 0 30px rgba(26, 140, 255, 0.2); }
         
-        .chip { width: 18px; height: 18px; border-radius: 50%; border: 0.5px solid #fff; position: absolute; z-index: 20; font-size: 7px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px #000; }
+        .box-title-bg { background: rgba(0,0,0,0.8); padding: 8px 0; text-align: center; border-bottom: 2px solid rgba(255,255,255,0.2); }
+        .a-title { color: var(--andar); font-size: 18px; text-shadow: 0 0 10px var(--andar); }
+        .b-title { color: var(--bahar); font-size: 18px; text-shadow: 0 0 10px var(--bahar); }
+        
+        .pool-amt { display: block; color: #fff; text-align: center; font-size: 16px; padding: 5px; font-weight: bold; text-shadow: 0 0 5px #fff; }
+        .my-box-bet { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #000; background: var(--gold); padding: 4px 10px; border-radius: 20px; border: 2px solid #fff; z-index: 30; display: none; font-weight: 900; box-shadow: 0 2px 5px rgba(0,0,0,0.8); white-space: nowrap; }
+        
+        .chip { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #fff; position: absolute; z-index: 20; font-size: 8px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.8); transition: 0.3s ease-out; }
 
-        .live-players { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; padding: 5px 0; background: #000; position: fixed; bottom: 85px; width: 100%; border-top: 1px solid #333; }
+        .live-players { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 8px 0; background: rgba(0,0,0,0.9); position: fixed; bottom: 90px; width: 100%; border-top: 2px solid var(--gold); box-shadow: 0 -5px 15px rgba(0,0,0,0.5); }
         .player { text-align: center; }
-        .p-avatar { width: 25px; height: 25px; background: #222; border: 1px solid gold; border-radius: 50%; margin: 0 auto; line-height: 24px; font-size: 7px; color: #fff; }
+        .p-avatar { width: 28px; height: 28px; background: linear-gradient(45deg, #444, #222); border: 2px solid var(--gold); border-radius: 50%; margin: 0 auto; line-height: 26px; font-size: 12px; color: #fff; box-shadow: 0 0 8px var(--gold); }
 
-        .chip-footer { position: fixed; bottom: 0; width: 100%; background: #111; display: flex; justify-content: center; gap: 6px; padding: 15px 0; border-top: 2px solid var(--gold); z-index: 1100; }
-        .c-btn { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer; border: 2px dashed #fff; color: white; font-size: 13px; }
-        .selected { transform: scale(1.1); border: 3px solid var(--gold) !important; box-shadow: 0 0 15px var(--gold); }
+        /* 💰 VIP High Roller Footer */
+        .chip-footer { position: fixed; bottom: 0; width: 100%; background: linear-gradient(to top, #000, #1a1a1a); display: flex; justify-content: center; gap: 8px; padding: 15px 0; border-top: 3px solid var(--gold); z-index: 1100; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); }
+        .c-btn { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer; border: 3px solid rgba(255,255,255,0.5); color: white; font-size: 14px; box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 10px rgba(0,0,0,0.5); transition: all 0.2s; text-shadow: 1px 1px 2px #000; }
+        
+        .c100 { background: radial-gradient(circle, #4fc3f7, #0288d1); }
+        .c500 { background: radial-gradient(circle, #81c784, #388e3c); }
+        .c1k { background: radial-gradient(circle, #e57373, #d32f2f); }
+        .c5k { background: radial-gradient(circle, #ba68c8, #7b1fa2); }
+        .c10k { background: radial-gradient(circle, #ffd54f, #f57f17); color: #000; }
+        
+        .selected { transform: scale(1.15) translateY(-5px); border-color: var(--gold) !important; box-shadow: 0 10px 20px rgba(0,0,0,0.8), 0 0 20px var(--gold); }
     </style>
 </head>
 <body>
@@ -56,7 +91,7 @@
 <div class="top-bar">
     <div class="top-left">
         <div id="live-date">--/--/--</div>
-        <div id="online-count" style="color:#0f0; font-weight:bold;">● 584 Online</div>
+        <div id="online-count" style="color:#0f0; font-weight:bold; letter-spacing: 1px;">● 1250 VIP ONLINE</div>
     </div>
     <div class="top-right">
         <div class="bal-box">₹ <span id="balance">0.00</span></div>
@@ -64,24 +99,25 @@
 </div>
 
 <div class="admin-note-bar">
-    <marquee id="admin-notif">PRIYA GRAHAK, AGAR DEPOSIT WITHDRAWAL YA ANYA KOI SAMASYA HO TO TELEGRAM PAR TURANT MESSAGE KAREIN AAPKI SAMASYA KA SAMADHAN TURANT HO JAEGA.</marquee>
+    <marquee id="admin-notif">WELCOME TO KALYAN ULTRA VIP. HIGHEST LIMITS, FASTEST PAYOUTS. PLAY RESPONSIBLY.</marquee>
 </div>
 
 <div class="record-panel" id="record-board"></div>
 
 <div class="joker-section">
+    <div class="joker-title">MASTER JOKER</div>
     <div class="joker-card"><img id="joker-img" src="https://deckofcardsapi.com/static/img/back.png"></div>
 </div>
 
-<div class="timer-sec" id="timer">Wait</div>
+<div class="timer-sec" id="timer">WAITING</div>
 
 <div class="table-top">
     <div style="text-align:center">
-        <div style="font-size:10px; color:var(--andar); margin-bottom:3px;">ANDAR</div>
+        <div style="font-size:12px; color:var(--andar); margin-bottom:5px; font-weight:900; letter-spacing:1px; text-shadow: 0 0 5px var(--andar);">ANDAR</div>
         <div class="card-slot" id="slot-andar"><div class="card-back" id="back-a"></div><img id="img-a"></div>
     </div>
     <div style="text-align:center">
-        <div style="font-size:10px; color:var(--bahar); margin-bottom:3px;">BAHAR</div>
+        <div style="font-size:12px; color:var(--bahar); margin-bottom:5px; font-weight:900; letter-spacing:1px; text-shadow: 0 0 5px var(--bahar);">BAHAR</div>
         <div class="card-slot" id="slot-bahar"><div class="card-back" id="back-b"></div><img id="img-b"></div>
     </div>
 </div>
@@ -90,11 +126,13 @@
 
 <div class="bet-grid">
     <div class="box andar-box" onclick="placeBet('andar')">
+        <div class="box-title-bg"><span class="a-title">ANDAR (A)</span></div>
         <span class="pool-amt">₹<span id="p-andar">0</span></span>
         <div class="my-box-bet" id="my-andar">₹0</div>
         <div id="chips-andar"></div>
     </div>
     <div class="box bahar-box" onclick="placeBet('bahar')">
+        <div class="box-title-bg"><span class="b-title">BAHAR (B)</span></div>
         <span class="pool-amt">₹<span id="p-bahar">0</span></span>
         <div class="my-box-bet" id="my-bahar">₹0</div>
         <div id="chips-bahar"></div>
@@ -104,14 +142,25 @@
 <div class="live-players" id="player-row"></div>
 
 <div class="chip-footer">
-    <div class="c-btn" id="chip10" style="background:#fff; color:#000" onclick="setChip(10, this)">10</div>
-    <div class="c-btn" id="chip100" style="background:#2196f3;" onclick="setChip(100, this)">100</div>
-    <div class="c-btn" id="chip500" style="background:#4caf50; color:#000" onclick="setChip(500, this)">500</div>
-    <div class="c-btn" id="chip1000" style="background:#f44336;" onclick="setChip(1000, this)">1K</div>
-    <div class="c-btn" id="chip5000" style="background:#ffd700; color:#000" onclick="setChip(5000, this)">5K</div>
+    <div class="c-btn c100" id="chip100" onclick="setChip(100, this)">100</div>
+    <div class="c-btn c500" id="chip500" onclick="setChip(500, this)">500</div>
+    <div class="c-btn c1k selected" id="chip1000" onclick="setChip(1000, this)">1K</div>
+    <div class="c-btn c5k" id="chip5000" onclick="setChip(5000, this)">5K</div>
+    <div class="c-btn c10k" id="chip10000" onclick="setChip(10000, this)">10K</div>
 </div>
 
 <script>
+    // 🎵 SOUND EFFECTS SETUP 🎵
+    const coinSnd = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3");
+    const cardSnd = new Audio("https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3");
+
+    // Ye function awaaz play karne ke liye hai
+    function playSound(audioObj, vol) {
+        let clone = audioObj.cloneNode(); // Taaki ek sath aane wali awaazein aapas mein na kattein
+        clone.volume = vol;
+        clone.play().catch(e => { /* Ignore autoplay blocks */ });
+    }
+
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -119,17 +168,26 @@
 
     const cardSuits = ["S", "H", "D", "C"];
     const cardValues = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "0", "J", "Q", "K"];
-    const chipConfig = { 10:{b:"#fff",c:"#000",t:"10"}, 100:{b:"#2196f3",c:"#fff",t:"100"}, 500:{b:"#4caf50",c:"#000",t:"500"}, 1000:{b:"#f44336",c:"#fff",t:"1K"}, 5000:{b:"#ffd700",c:"#000",t:"5K"} };
+    
+    // VIP Chip Config
+    const chipConfig = { 
+        100: {b:"radial-gradient(circle, #4fc3f7, #0288d1)", c:"#fff", t:"100"}, 
+        500: {b:"radial-gradient(circle, #81c784, #388e3c)", c:"#fff", t:"500"}, 
+        1000: {b:"radial-gradient(circle, #e57373, #d32f2f)", c:"#fff", t:"1K"}, 
+        5000: {b:"radial-gradient(circle, #ba68c8, #7b1fa2)", c:"#fff", t:"5K"}, 
+        10000: {b:"radial-gradient(circle, #ffd54f, #f57f17)", c:"#000", t:"10K"} 
+    };
 
-    let currentChip = 10, isBettingOpen = false;
+    let currentChip = 1000, isBettingOpen = false;
     let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0;
     let pool = {andar:0, bahar:0}, myBets = {andar:0, bahar:0};
+    let botInterval;
     
     // Header Info
     document.getElementById('live-date').innerText = new Date().toLocaleDateString();
     setInterval(() => {
-        let online = Math.floor(Math.random() * 200) + 1150;
-        document.getElementById('online-count').innerText = `● ${online} Online`;
+        let online = Math.floor(Math.random() * 300) + 1250;
+        document.getElementById('online-count').innerText = `● ${online} VIP ONLINE`;
     }, 4000);
 
     db.ref('admin_settings/notification').on('value', s => { if(s.val()) document.getElementById('admin-notif').innerText = s.val(); });
@@ -157,34 +215,96 @@
         // PUSH ONLY REAL MONEY TO SERVER
         db.ref(`Game/AndarBahar/Bets/${phone}/${side}`).set(firebase.database.ServerValue.increment(currentChip));
         myBets[side] += currentChip; 
-        document.getElementById('my-'+side).innerText = "₹" + myBets[side];
+        document.getElementById('my-'+side).innerText = "MY BET: ₹" + myBets[side].toLocaleString();
         document.getElementById('my-'+side).style.display = "block";
         spawnChip(side, currentChip);
+        
+        // 🔊 ASLI PLAYER KI ZORDAAR CHHAN-CHHAN AWAZ
+        playSound(coinSnd, 1.0);
     }
 
     function spawnChip(side, amt) {
         const div = document.getElementById('chips-'+side);
-        const config = chipConfig[amt] || chipConfig[10];
+        const config = chipConfig[amt] || chipConfig[1000];
         const c = document.createElement('div');
         c.className = 'chip'; c.style.background = config.b; c.style.color = config.c; c.innerText = config.t;
-        c.style.left = (Math.random()*75+10)+"%"; c.style.top = (Math.random()*65+20)+"%";
+        c.style.left = (Math.random()*75+10)+"%"; c.style.top = (Math.random()*60+25)+"%";
+        
+        // Start from outside the box for fly-in effect
+        c.style.transform = "scale(2) translateY(50px)";
+        c.style.opacity = "0";
         div.appendChild(c);
-        if(div.children.length > 50) div.firstChild.remove();
+        
+        // Animate to position
+        setTimeout(() => {
+            c.style.transform = "scale(1) translateY(0)";
+            c.style.opacity = "1";
+        }, 50);
+
+        if(div.children.length > 60) div.firstChild.remove();
     }
 
-    window.setChip = function(v, el) { currentChip = v; document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); }
-    document.getElementById('chip10').classList.add('selected');
+    window.setChip = function(v, el) { 
+        currentChip = v; 
+        document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected')); 
+        el.classList.add('selected'); 
+        
+        // Click sound for chip selection
+        playSound(coinSnd, 0.5);
+    }
 
-    // Live Bots (Visual Only)
-    function renderBots() {
-        let h = "";
+    // Live Bots (High Roller Balance)
+    let botsList = [];
+    function generateBots() {
+        botsList = [];
         for(let i=0; i<5; i++) {
-            let id = Math.floor(Math.random()*8999)+1000; let bal = Math.floor(Math.random()*90000)+10000;
-            h += `<div class="player"><div class="p-avatar">👤</div><div style="font-size:7px;color:#0f0">ID ${id}</div><div style="font-size:7px;color:gold">₹${bal.toLocaleString()}</div></div>`;
+            let id = Math.floor(Math.random()*8999)+1000; 
+            // Bot Balance: 15 Lakh se 30 Lakh
+            let bal = Math.floor(Math.random()*1500000)+1500000;
+            botsList.push({id: id, bal: bal});
         }
+        renderBotsUI();
+    }
+    
+    function renderBotsUI() {
+        let h = "";
+        botsList.forEach(b => {
+            let displayBal = b.bal >= 100000 ? (b.bal/100000).toFixed(1) + "L" : (b.bal/1000).toFixed(1) + "K";
+            h += `<div class="player"><div class="p-avatar">👑</div><div style="font-size:9px;color:#fff;font-weight:bold;margin-top:2px;">VIP_${b.id}</div><div style="font-size:10px;color:var(--gold);font-weight:900;">₹${displayBal}</div></div>`;
+        });
         document.getElementById('player-row').innerHTML = h;
     }
-    renderBots(); setInterval(renderBots, 15000);
+    generateBots();
+
+    // 🚄 Rajdhani Bot Action
+    function botBetAction() {
+        if(!isBettingOpen) return;
+        
+        let numBets = Math.floor(Math.random() * 3) + 1; // 1-3 bets per interval
+        let botBetted = false;
+
+        for(let i=0; i<numBets; i++) {
+            let s = Math.random() > 0.5 ? 'andar' : 'bahar';
+            // VIP Amounts
+            let amt = [1000, 5000, 10000][Math.floor(Math.random()*3)];
+            let randomBot = botsList[Math.floor(Math.random() * botsList.length)];
+            
+            if(randomBot.bal >= amt) {
+                randomBot.bal -= amt;
+                pool[s] += amt;
+                document.getElementById('p-'+s).innerText = pool[s].toLocaleString();
+                spawnChip(s, amt);
+                botBetted = true;
+            }
+        }
+        
+        // 🔊 BOTS KI DHEEMI CHHAN-CHHAN AWAZ
+        if(botBetted) {
+            playSound(coinSnd, 0.05); // Volume ekdum low rakha hai shor na mache
+        }
+        
+        renderBotsUI();
+    }
 
     // ==== THE DUMB CLIENT (LISTENS TO MASTER SERVER) ====
     db.ref('Game/AndarBahar/Status').on('value', snap => {
@@ -192,27 +312,36 @@
         
         let tEl = document.getElementById('timer');
         if(st.state === 'betting') {
-            isBettingOpen = true;
-            tEl.innerText = st.timer;
-            tEl.style.color = st.timer <= 5 ? "red" : "var(--gold)";
+            
+            if(!isBettingOpen) {
+                isBettingOpen = true;
+                // Start Rajdhani Bots
+                clearInterval(botInterval);
+                botInterval = setInterval(botBetAction, 400); // 0.4s speed (fast)
+            }
+            
+            tEl.innerText = st.timer + "s";
+            
+            if(st.timer <= 5) {
+                tEl.style.color = "#ff3333";
+                tEl.style.textShadow = "0 0 15px #ff3333";
+            } else {
+                tEl.style.color = "#0f0";
+                tEl.style.textShadow = "0 0 15px #0f0";
+            }
             
             if(st.timer === 15) {
                 resetUI();
+                generateBots(); // Refresh bots for new round
                 document.getElementById('joker-img').src = `https://deckofcardsapi.com/static/img/${st.jokerVal}${st.jokerSuit}.png`;
-            }
-
-            // Bots Betting
-            if(st.timer > 2 && Math.random() > 0.4) {
-                let s = Math.random() > 0.5 ? 'andar' : 'bahar';
-                let a = [10, 100, 500][Math.floor(Math.random()*3)];
-                pool[s] += a;
-                document.getElementById('p-'+s).innerText = pool[s].toLocaleString();
-                spawnChip(s, a);
             }
         } 
         else if (st.state === 'dealing' && isBettingOpen) {
             isBettingOpen = false;
+            clearInterval(botInterval); // Stop bots immediately
             tEl.innerText = "STOP!";
+            tEl.style.color = "#fff";
+            tEl.style.textShadow = "0 0 15px #fff";
             showAnimation(st.winner, st.jokerVal, st.finalSteps);
         }
     });
@@ -234,14 +363,18 @@
             const slotBack = document.getElementById(side==='andar'?'back-a':'back-b');
             
             slotImg.src = `https://deckofcardsapi.com/static/img/${resVal}${resSuit}.png`;
+            
+            // 🔊 PATTA KHULNE KI AWAZ (SWISH)
+            playSound(cardSnd, 1.0);
+            
             slotBack.style.display = 'none'; slotImg.style.display = 'block';
 
             if(isLast) {
                 const ov = document.getElementById('win-overlay');
-                ov.innerText = side.toUpperCase() + " WINS"; ov.style.display = 'block';
+                ov.innerText = side.toUpperCase() + " WINS!"; ov.style.display = 'block';
 
                 let hHtml = document.getElementById('record-board').innerHTML;
-                let cDot = `<div class="record-dot" style="background:${side === 'andar' ? '#ff3333' : '#33aaff'};">${side === 'andar' ? 'A' : 'B'}</div>`;
+                let cDot = `<div class="record-dot" style="background:${side === 'andar' ? 'var(--andar)' : 'var(--bahar)'};">${side === 'andar' ? 'A' : 'B'}</div>`;
                 document.getElementById('record-board').innerHTML = cDot + hHtml;
 
                 // Payout
