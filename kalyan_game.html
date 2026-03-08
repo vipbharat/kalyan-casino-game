@@ -7,149 +7,210 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        :root { --gold: #ffd700; }
-        body { margin: 0; background: #000; font-family: 'Arial Narrow', sans-serif; overflow: hidden; color: white; user-select: none; height: 100vh; display: flex; flex-direction: column; }
-        .top-bar { display: flex; justify-content: space-between; padding: 5px 10px; background: #111; border-bottom: 1.5px solid var(--gold); align-items: center; }
-        .logo-hd { font-size: 14px; font-weight: 900; color: var(--gold); }
-        .online-status { font-size: 10px; color: #0f0; font-weight: bold; padding: 2px 8px; border-radius: 10px; border: 0.5px solid #0f0; min-width: 80px; text-align: center; }
-        .stats-area { display: flex; gap: 5px; align-items: center; }
-        .bal-box { background: #111; border: 1px solid var(--gold); padding: 3px 10px; border-radius: 15px; color: #0f0; font-size: 12px; font-weight: bold; }
-        .my-bet-box { background: #111; border: 1px solid #f00; padding: 3px 10px; border-radius: 15px; color: #fff; font-size: 12px; font-weight: bold; }
-        .timer-sec { font-size: 32px; color: #fff; text-align: center; margin: 5px 0; font-weight: 900; text-shadow: 0 0 15px red; }
-        .joker-reveal { text-align: center; min-height: 85px; display: flex; align-items: center; justify-content: center; flex-direction: column; }
-        .joker-pata { width: 60px; height: 80px; background: #fff; border: 2.5px solid var(--gold); border-radius: 8px; display: none; box-shadow: 0 0 25px gold; z-index: 100; }
-        .joker-pata img { width: 100%; height: 100%; border-radius: 6px; }
-        .cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 5px; justify-items: center; flex-grow: 1; }
-        .card-bet-box { width: 78px; height: 105px; background: #fff; border: 2px solid #444; border-radius: 8px; position: relative; }
-        .card-bet-box img { width: 100%; height: 100%; border-radius: 6px; }
-        .guna-tag { position: absolute; bottom: 3px; right: 3px; background: rgba(0,0,0,0.9); color: gold; font-size: 10px; padding: 1px 4px; border-radius: 4px; font-weight: 900; border: 1px solid gold; z-index: 20; }
-        .pool-on-card { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #0f0; color: #000; font-size: 10px; padding: 1px 6px; border-radius: 50px; font-weight: bold; z-index: 30; border: 1px solid #000; }
-        .chip-animate { position: fixed; width: 22px; height: 22px; border-radius: 50%; border: 1px solid #fff; z-index: 50; font-size: 9px; font-weight: 900; color: white; display: flex; align-items: center; justify-content: center; pointer-events: none; transition: all 0.5s ease-out; }
-        .bot-players-row { display: flex; justify-content: space-around; background: #111; padding: 8px 0; border-top: 1px solid #333; min-height: 45px; }
-        .bot-p { text-align: center; width: 62px; font-size: 9px; }
-        .chip-footer { display: flex; justify-content: center; gap: 8px; padding: 15px 0; border-top: 2.5px solid var(--gold); background: #000; }
-        .c-btn { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid #fff; cursor: pointer; font-size: 11px; }
-        .selected { border: 4px solid var(--gold) !important; transform: scale(1.1); }
-        .game-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); border: 3px solid gold; color: gold; padding: 25px; border-radius: 20px; z-index: 2000; display: none; text-align: center; font-size: 24px; font-weight: 900; }
+        :root { --gold: #ffd700; --bg-dark: #0a0a0a; --neon-red: #ff3333; --neon-green: #00ff88; }
+        body { margin: 0; background: radial-gradient(circle at center, #220000, #000); font-family: 'Arial Black', sans-serif; overflow: hidden; color: white; user-select: none; height: 100vh; display: flex; flex-direction: column; }
+        
+        .top-bar { display: flex; justify-content: space-between; padding: 8px 12px; background: rgba(0,0,0,0.85); border-bottom: 2px solid var(--gold); align-items: center; box-shadow: 0 2px 15px rgba(255,215,0,0.3); z-index: 100;}
+        .logo-hd { font-size: 15px; font-weight: 900; color: var(--gold); letter-spacing: 1px; text-shadow: 0 0 10px var(--gold); }
+        .online-status { font-size: 11px; color: var(--neon-green); font-weight: bold; padding: 3px 10px; border-radius: 12px; border: 1px solid var(--neon-green); min-width: 80px; text-align: center; background: rgba(0,255,136,0.1); box-shadow: 0 0 10px rgba(0,255,136,0.2); }
+        .stats-area { display: flex; gap: 8px; align-items: center; }
+        .bal-box { background: linear-gradient(to bottom, #333, #111); border: 1.5px solid var(--gold); padding: 4px 12px; border-radius: 15px; color: var(--neon-green); font-size: 13px; font-weight: bold; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); }
+        .my-bet-box { background: linear-gradient(to bottom, #600, #300); border: 1.5px solid var(--neon-red); padding: 4px 12px; border-radius: 15px; color: #fff; font-size: 13px; font-weight: bold; box-shadow: 0 0 10px rgba(255, 0, 0, 0.4); }
+        
+        .timer-sec { font-size: 38px; color: #fff; text-align: center; margin: 5px 0; font-weight: 900; text-shadow: 0 0 20px var(--neon-red); transition: 0.3s; }
+        
+        .joker-reveal { text-align: center; min-height: 95px; display: flex; align-items: center; justify-content: center; flex-direction: column; margin-bottom: 5px;}
+        .joker-pata { width: 65px; height: 90px; background: transparent; border: 3px solid var(--gold); border-radius: 8px; display: none; box-shadow: 0 0 30px var(--gold); z-index: 100; position: relative; transform: scale(1.2); }
+        
+        .cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 5px 10px; justify-items: center; flex-grow: 1; max-height: 300px; overflow: visible;}
+        .card-bet-box { width: 75px; height: 105px; background: rgba(255,255,255,0.05); border: 2.5px solid #555; border-radius: 8px; position: relative; cursor: pointer; transition: 0.2s; box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 5px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;}
+        .card-bet-box:active { transform: scale(0.92); border-color: var(--gold); }
+        
+        .guna-tag { position: absolute; bottom: -8px; right: -5px; background: #000; color: var(--gold); font-size: 11px; padding: 2px 6px; border-radius: 6px; font-weight: 900; border: 2px solid var(--gold); z-index: 20; box-shadow: 0 2px 5px #000; }
+        .pool-on-card { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--neon-green); color: #000; font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 900; z-index: 30; border: 2px solid #000; box-shadow: 0 2px 5px rgba(0,0,0,0.8); white-space: nowrap; }
+        
+        .chip-animate { position: fixed; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #fff; z-index: 50; font-size: 8px; font-weight: 900; color: white; display: flex; align-items: center; justify-content: center; pointer-events: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 2px 2px 6px rgba(0,0,0,0.8); }
+        
+        .bot-players-row { display: flex; justify-content: space-around; background: rgba(0,0,0,0.8); padding: 8px 0; border-top: 2px solid var(--gold); box-shadow: 0 -5px 15px rgba(0,0,0,0.5); z-index: 100;}
+        .bot-p { text-align: center; width: 65px; font-size: 10px; font-family: Arial, sans-serif; font-weight: bold;}
+        .bot-avatar { width: 26px; height: 26px; background: linear-gradient(45deg, #444, #222); border: 2px solid var(--gold); border-radius: 50%; margin: 0 auto 2px; line-height: 24px; font-size: 12px; color: #fff; box-shadow: 0 0 8px var(--gold); }
+        
+        .chip-footer { display: flex; justify-content: center; gap: 8px; padding: 15px 0 25px 0; border-top: 3px solid var(--gold); background: linear-gradient(to top, #000, #1a1a1a); z-index: 100; box-shadow: 0 -10px 30px rgba(0,0,0,0.8);}
+        .c-btn { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; border: 3px solid rgba(255,255,255,0.5); cursor: pointer; font-size: 13px; color: white; text-shadow: 1px 1px 2px #000; box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 10px rgba(0,0,0,0.5); transition: 0.2s;}
+        
+        .c10 { background: radial-gradient(circle, #fff, #ccc); color:#000; text-shadow:none; }
+        .c100 { background: radial-gradient(circle, #4fc3f7, #0288d1); }
+        .c500 { background: radial-gradient(circle, #81c784, #388e3c); }
+        .c1k { background: radial-gradient(circle, #e57373, #d32f2f); }
+        .c5k { background: radial-gradient(circle, #ba68c8, #7b1fa2); }
+        .c10k { background: radial-gradient(circle, #ffd54f, #f57f17); color:#000; text-shadow:none;}
+
+        .selected { border-color: var(--gold) !important; transform: scale(1.15) translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.8), 0 0 20px var(--gold); }
+        
+        .game-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); background: rgba(0,0,0,0.95); border: 4px solid var(--gold); color: var(--gold); padding: 25px 40px; border-radius: 20px; z-index: 2000; text-align: center; font-size: 32px; font-weight: 900; box-shadow: 0 0 50px var(--gold), inset 0 0 20px var(--gold); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-transform: uppercase; white-space: nowrap; }
+        .popup-show { transform: translate(-50%, -50%) scale(1); }
     </style>
 </head>
-<body>
+<body onclick="initAudio()">
+
+    <audio id="bgMusic" src="https://assets.mixkit.co/active_storage/sfx/135/135-preview.mp3" loop></audio>
+    <audio id="soundBet" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3"></audio> <audio id="soundWin" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
+    <audio id="soundCard" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
 
     <div class="top-bar">
         <div class="logo-hd">VIP KALYAN</div>
-        <div class="online-status">🟢 <span id="online-count">750</span></div>
+        <div class="online-status">🟢 <span id="online-count">750</span> LIVE</div>
         <div class="stats-area">
-            <div class="my-bet-box">My Bet: ₹<span id="total-bet">0</span></div>
+            <div class="my-bet-box">MY BET: ₹<span id="total-bet">0</span></div>
             <div class="bal-box">₹<span id="balance">0.00</span></div>
         </div>
     </div>
 
-    <div class="timer-sec" id="timer">15</div>
+    <div class="timer-sec" id="timer">WAIT</div>
 
     <div class="joker-reveal">
         <div id="joker-display" class="joker-pata"></div>
-        <div id="status-msg" style="color:gold; font-size:12px; font-weight:bold; margin-top:5px;">BETTING START</div>
+        <div id="status-msg" style="color:var(--gold); font-size:14px; font-weight:900; margin-top:10px; letter-spacing:1px; text-shadow:0 0 5px var(--gold);">PLACE YOUR BETS</div>
     </div>
 
     <div class="cards-grid" id="main-grid"></div>
+    
     <div id="bot-row" class="bot-players-row"></div>
 
     <div class="chip-footer">
-        <div class="c-btn" id="c10" style="background:#fff; color:#000" onclick="setChip(10, this)">10</div>
-        <div class="c-btn" id="c50" style="background:orange; color:#000" onclick="setChip(50, this)">50</div>
-        <div class="c-btn" id="c100" style="background:#2196f3; color:#fff" onclick="setChip(100, this)">100</div>
-        <div class="c-btn" id="c500" style="background:#4caf50; color:#fff" onclick="setChip(500, this)">500</div>
-        <div class="c-btn" id="c1000" style="background:#f44336; color:#fff" onclick="setChip(1000, this)">1K</div>
+        <div class="c-btn c10" id="c10" onclick="setChip(10, 'c10', this)">10</div>
+        <div class="c-btn c100" id="c100" onclick="setChip(100, 'c100', this)">100</div>
+        <div class="c-btn c500 selected" id="c500" onclick="setChip(500, 'c500', this)">500</div>
+        <div class="c-btn c1k" id="c1k" onclick="setChip(1000, 'c1k', this)">1K</div>
+        <div class="c-btn c5k" id="c5k" onclick="setChip(5000, 'c5k', this)">5K</div>
+        <div class="c-btn c10k" id="c10k" onclick="setChip(10000, 'c10k', this)">10K</div>
     </div>
 
     <div id="bet-stop-pop" class="game-popup">🚫 BET STOP 🚫</div>
 
     <script>
+        // 🔊 Audio Setup
+        let isAudioInit = false;
+        function initAudio() {
+            if(!isAudioInit) {
+                let bgm = document.getElementById('bgMusic');
+                bgm.volume = 0.20; bgm.play().catch(e=>{});
+                isAudioInit = true;
+            }
+        }
+        function playSound(id, vol) {
+            try { 
+                let snd = document.getElementById(id).cloneNode(); 
+                snd.volume = vol; 
+                snd.play().catch(e=>{}); 
+            } catch(e){}
+        }
+
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || "Guest";
 
+        // 🔥 CSS Card Database
         const cards = [
-            {v:'A', g:2, i:'https://deckofcardsapi.com/static/img/AS.png'}, {v:'2', g:2, i:'https://deckofcardsapi.com/static/img/2H.png'},
-            {v:'3', g:3, i:'https://deckofcardsapi.com/static/img/3D.png'}, {v:'4', g:4, i:'https://deckofcardsapi.com/static/img/4C.png'},
-            {v:'5', g:5, i:'https://deckofcardsapi.com/static/img/5H.png'}, {v:'6', g:6, i:'https://deckofcardsapi.com/static/img/6S.png'},
-            {v:'8', g:8, i:'https://deckofcardsapi.com/static/img/8C.png'}, {v:'J', g:11, i:'https://deckofcardsapi.com/static/img/JH.png'},
-            {v:'Q', g:2, i:'https://deckofcardsapi.com/static/img/QD.png'}, {v:'K', g:25, i:'https://deckofcardsapi.com/static/img/KC.png'}
+            {v:'A', s:'S', g:2}, {v:'2', s:'H', g:2},
+            {v:'3', s:'D', g:3}, {v:'4', s:'C', g:4},
+            {v:'5', s:'H', g:5}, {v:'6', s:'S', g:6},
+            {v:'8', s:'C', g:8}, {v:'J', s:'H', g:11},
+            {v:'Q', s:'D', g:2}, {v:'K', s:'C', g:25}
         ];
 
-        let curChip = 10, chipBg="#fff", chipTxt="#000", isBetting = false, pool = {}, myBets = {}, timer = 15, bots = [], totalUserBet = 0;
-        let botInterval; // Bot ki speed control karne ke liye
-        
-        // Naye High Roller Chips add kiye gaye hain
-        const chipColors = { 10: '#fff', 50: 'orange', 100: '#2196f3', 500: '#4caf50', 1000: '#f44336', 2000: '#9c27b0', 5000: '#000' };
-        const chipTextColors = { 10: '#000', 50: '#000', 100: '#fff', 500: '#fff', 1000: '#fff', 2000: '#fff', 5000: 'gold' };
+        function getCssCard(val, suit) {
+            let suitSym = suit === 'S' ? '♠' : suit === 'H' ? '♥' : suit === 'D' ? '♦' : '♣';
+            let col = (suit === 'H' || suit === 'D') ? '#ff1a1a' : '#000';
+            return `<div style="background:#fff; width:100%; height:100%; border-radius:6px; box-shadow:0 0 10px rgba(0,0,0,0.5); display:flex; flex-direction:column; justify-content:space-between; padding:4px; box-sizing:border-box; color:${col}; font-family:Arial, sans-serif;">
+                <div style="font-size:14px; font-weight:900; line-height:1; text-align:left;">${val}<br><span style="font-size:14px;">${suitSym}</span></div>
+                <div style="font-size:32px; text-align:center; margin-top:-5px;">${suitSym}</div>
+                <div style="font-size:14px; font-weight:900; line-height:1; text-align:left; transform:rotate(180deg); margin-top:-5px;">${val}<br><span style="font-size:14px;">${suitSym}</span></div>
+            </div>`;
+        }
+
+        let curChip = 500, curChipClass = 'c500', isBetting = false, pool = {}, myBets = {}, timer = 15, bots = [], totalUserBet = 0;
+        let botInterval; 
 
         function init() {
             const grid = document.getElementById('main-grid'); grid.innerHTML = "";
             cards.forEach(c => {
                 pool[c.v] = 0; myBets[c.v] = 0;
-                grid.innerHTML += `<div class="card-bet-box" id="box-${c.v}" onclick="userBet('${c.v}')"><span class="pool-on-card" id="pool-${c.v}">₹0</span><img src="${c.i}"><span class="guna-tag">${c.g}x</span></div>`;
+                grid.innerHTML += `<div class="card-bet-box" id="box-${c.v}" onclick="userBet('${c.v}')">
+                    <span class="pool-on-card" id="pool-${c.v}">₹0</span>
+                    <div style="width:100%; height:100%;" id="c-ui-${c.v}"></div>
+                    <span class="guna-tag">${c.g}x</span>
+                </div>`;
             });
-            document.getElementById('c10').classList.add('selected');
+            
+            setTimeout(() => {
+                cards.forEach(c => { document.getElementById(`c-ui-${c.v}`).innerHTML = getCssCard(c.v, c.s); });
+            }, 10);
+
             createBots(); 
             engineLoop();
             startOnlineCounter();
         }
 
         function startOnlineCounter() {
-            let count = 750;
+            let count = 1250;
             setInterval(() => {
-                let change = Math.floor(Math.random() * 9) - 4; 
-                count += change;
-                if(count < 730) count = 740;
-                if(count > 800) count = 790;
+                count += Math.floor(Math.random() * 20) - 10;
+                if(count < 1100) count = 1200;
                 document.getElementById('online-count').innerText = count;
             }, 3500);
         }
 
         function createBots() {
             bots = []; 
-            // Bot ka balance badha diya (5 Lakh se 10 Lakh tak) taaki kangal na hon
-            for(let i=0; i<5; i++) bots.push({ id: Math.floor(1000+Math.random()*9000), bal: Math.floor(500000+Math.random()*500000) });
+            for(let i=0; i<5; i++) bots.push({ id: Math.floor(1000+Math.random()*8999), bal: Math.floor(100000+Math.random()*400000) });
             updateBotUI();
         }
 
         function updateBotUI() {
             const row = document.getElementById('bot-row'); row.innerHTML = "";
-            bots.forEach(b => { row.innerHTML += `<div class="bot-p">ID:${b.id}<br><b style="color:#0f0">₹${(b.bal/1000).toFixed(1)}K</b></div>`; });
+            bots.forEach(b => { 
+                let dBal = b.bal >= 100000 ? (b.bal/100000).toFixed(2)+"L" : (b.bal/1000).toFixed(1)+"K";
+                row.innerHTML += `<div class="bot-p"><div class="bot-avatar">👑</div>ID_${b.id}<br><b style="color:var(--gold);font-size:11px;">₹${dBal}</b></div>`; 
+            });
         }
 
         function engineLoop() {
             isBetting = true; timer = 15;
             resetUI();
             
-            // 🚀 RAJDHANI EXPRESS SPEED (Har 0.3 second mein bet aayegi)
-            botInterval = setInterval(botAction, 300);
+            botInterval = setInterval(botAction, 600);
 
             let timerInt = setInterval(() => {
                 if(timer > 0) {
-                    timer--; document.getElementById('timer').innerText = timer;
+                    timer--; 
+                    let tEl = document.getElementById('timer');
+                    tEl.innerText = timer + "s";
+                    tEl.style.color = timer <= 5 ? "var(--neon-red)" : "#fff";
+                    tEl.style.textShadow = timer <= 5 ? "0 0 20px var(--neon-red)" : "0 0 10px #fff";
                 } else {
                     clearInterval(timerInt);
-                    clearInterval(botInterval); // Timer khatam toh bot stop
+                    clearInterval(botInterval); 
                     isBetting = false;
                     handleResult();
                 }
             }, 1000);
         }
 
+        function getBotChipClass(amt) {
+            if(amt===10) return 'c10'; if(amt===100) return 'c100'; if(amt===500) return 'c500';
+            if(amt===1000) return 'c1k'; if(amt===5000) return 'c5k'; return 'c10k';
+        }
+
         function botAction() {
             if(!isBetting) return;
             
-            // Bot ek baar mein 1 se 3 alag-alag patton par bet lagayega
             let numBets = Math.floor(Math.random() * 3) + 1;
             
             for(let i=0; i<numBets; i++) {
                 let randomCard = cards[Math.floor(Math.random() * cards.length)];
-                
-                // 💸 HIGH ROLLER AMOUNTS (500, 1000, 2000, 5000)
-                const amtList = [500, 1000, 2000, 5000];
+                const amtList = [100, 500, 1000, 5000];
                 const amt = amtList[Math.floor(Math.random() * amtList.length)];
                 const randomBot = bots[Math.floor(Math.random() * bots.length)];
                 
@@ -158,20 +219,24 @@
                     pool[randomCard.v] += amt;
                     document.getElementById(`pool-${randomCard.v}`).innerText = "₹" + pool[randomCard.v].toLocaleString();
                     
-                    // Chip ka label aur color set karna
                     let label = amt >= 1000 ? (amt/1000) + 'K' : amt;
-                    flyChip('right', randomCard.v, label, chipColors[amt], chipTextColors[amt]);
+                    // Chip fly hoke table par giregi aur aawaz aayegi
+                    flyChip('right', randomCard.v, label, getBotChipClass(amt));
                 }
             }
             updateBotUI();
         }
 
         async function handleResult() {
-            document.getElementById('bet-stop-pop').style.display = 'block';
+            playSound('soundCard', 1.0);
+            document.getElementById('timer').innerText = "STOP!";
+            let pop = document.getElementById('bet-stop-pop');
+            pop.innerText = "🚫 BET STOP 🚫";
+            pop.classList.add('popup-show');
+            
             await new Promise(r => setTimeout(r, 1500));
-            document.getElementById('bet-stop-pop').style.display = 'none';
+            pop.classList.remove('popup-show');
 
-            // WINNING LOGIC: Sirf real player ke paise ko dekhega
             let zeroRealBets = cards.filter(c => myBets[c.v] === 0);
             let win;
             if (zeroRealBets.length > 0) {
@@ -180,9 +245,14 @@
                 win = cards.reduce((p, c) => (myBets[p.v] < myBets[c.v]) ? p : c);
             }
 
-            document.getElementById('joker-display').innerHTML = `<img src="${win.i}">`;
+            document.getElementById('joker-display').innerHTML = getCssCard(win.v, win.s);
             document.getElementById('joker-display').style.display = 'block';
-            document.getElementById('status-msg').innerText = "WINNER: " + win.v;
+            document.getElementById('status-msg').innerHTML = `<span style="color:var(--neon-green)">WINNER: ${win.v}</span>`;
+            
+            playSound('soundWin', 1.0);
+            
+            document.getElementById(`box-${win.v}`).style.borderColor = "var(--neon-green)";
+            document.getElementById(`box-${win.v}`).style.boxShadow = "0 0 20px var(--neon-green)";
 
             if(myBets[win.v] > 0) {
                 const winAmt = myBets[win.v] * win.g;
@@ -190,58 +260,107 @@
                     let b = parseFloat(s.val().balance || 0);
                     db.ref('users/'+phone).update({balance: (b + winAmt)});
                 });
+                
+                setTimeout(()=>{
+                    pop.innerText = "+₹" + winAmt.toLocaleString();
+                    pop.style.color = "var(--neon-green)";
+                    pop.style.borderColor = "var(--neon-green)";
+                    pop.classList.add('popup-show');
+                }, 500);
             }
 
-            await new Promise(r => setTimeout(r, 4000));
+            await new Promise(r => setTimeout(r, 4500));
+            pop.classList.remove('popup-show');
+            pop.style.color = "gold"; pop.style.borderColor = "gold"; 
+            
             createBots(); 
             engineLoop();
         }
 
-        function flyChip(side, v, label, bg, col) {
+        // 🔥 PERFECT CHIP ANIMATION WITH SOUND 🔥
+        function flyChip(side, v, label, cssClass) {
             const box = document.getElementById(`box-${v}`).getBoundingClientRect();
             const chip = document.createElement('div');
+            
+            let refBtn = document.querySelector('.'+cssClass);
             chip.className = 'chip-animate game-chip-stack';
-            chip.innerText = label; chip.style.background = bg; chip.style.color = col;
-            chip.style.left = (side === 'left' ? '-30px' : window.innerWidth + 'px');
-            chip.style.top = (Math.random() * 400 + 100) + 'px';
+            chip.innerText = label; 
+            chip.style.background = window.getComputedStyle(refBtn).background; 
+            chip.style.color = window.getComputedStyle(refBtn).color;
+            
+            chip.style.left = (side === 'left' ? '50%' : (Math.random() * window.innerWidth) + 'px');
+            chip.style.top = (side === 'left' ? '100%' : '-50px');
+            
             document.body.appendChild(chip);
+            
             setTimeout(() => {
-                const rx = (Math.random() * 30) + 15; const ry = (Math.random() * 50) + 20;
-                chip.style.left = (box.left + rx) + 'px'; chip.style.top = (box.top + ry) + 'px';
-                chip.style.transform = "scale(0.8)";
+                const rx = (box.width/2) - 12 + (Math.random() * 20 - 10); 
+                const ry = (box.height/2) - 12 + (Math.random() * 20 - 10);
+                chip.style.left = (box.left + rx) + 'px'; 
+                chip.style.top = (box.top + ry) + 'px';
+                chip.style.transform = "scale(0.85)";
+                
+                // 🔥 JAISE HI CHIP TABLE PAR GIREGA, AWAAZ AAYEGI 🔥
+                playSound('soundBet', side === 'left' ? 1.0 : 0.03); // Apna chip loud, bot ka quiet
+
             }, 50);
+            
+            const allChips = document.querySelectorAll('.game-chip-stack');
+            if(allChips.length > 60) allChips[0].remove();
         }
 
-        function userBet(v) {
+        window.userBet = function(v) {
             if(!isBetting) return;
+            if(phone === "Guest") { alert("Login Error!"); return; }
+            
             db.ref('users/'+phone).once('value', s => {
                 let b = parseFloat(s.val().balance || 0);
                 if(b >= curChip) {
                     db.ref('users/'+phone).update({balance: (b - curChip)});
                     pool[v] += curChip; myBets[v] += curChip;
                     totalUserBet += curChip;
-                    document.getElementById('total-bet').innerText = totalUserBet;
+                    document.getElementById('total-bet').innerText = totalUserBet.toLocaleString();
                     document.getElementById(`pool-${v}`).innerText = "₹" + pool[v].toLocaleString();
-                    flyChip('left', v, curChip >= 1000 ? '1K' : curChip, chipBg, chipTxt);
+                    
+                    let label = curChip >= 1000 ? (curChip/1000) + 'K' : curChip;
+                    flyChip('left', v, label, curChipClass);
+                    
+                    // Note: Sound ab flyChip ke andar baje gi jab chip board pe land hogi
+                } else {
+                    alert("Insufficient Balance!");
                 }
             });
         }
 
         function resetUI() {
             document.getElementById('joker-display').style.display = 'none';
-            document.getElementById('status-msg').innerText = "BETTING START";
+            document.getElementById('status-msg').innerHTML = `PLACE YOUR BETS`;
             document.querySelectorAll('.game-chip-stack').forEach(c => c.remove());
+            
             totalUserBet = 0;
             document.getElementById('total-bet').innerText = "0";
-            cards.forEach(c => { pool[c.v]=0; myBets[c.v]=0; document.getElementById(`pool-${c.v}`).innerText = "₹0"; });
+            
+            cards.forEach(c => { 
+                pool[c.v]=0; myBets[c.v]=0; 
+                document.getElementById(`pool-${c.v}`).innerText = "₹0"; 
+                document.getElementById(`box-${c.v}`).style.borderColor = "#555";
+                document.getElementById(`box-${c.v}`).style.boxShadow = "inset 0 0 15px rgba(0,0,0,0.8), 0 5px 10px rgba(0,0,0,0.5)";
+            });
         }
 
-        function setChip(v, el) { 
-            curChip = v; chipBg = chipColors[v]; chipTxt = chipTextColors[v];
-            document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); 
+        window.setChip = function(v, cls, el) { 
+            curChip = v; curChipClass = cls;
+            document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected')); 
+            el.classList.add('selected'); 
+            playSound('soundBet', 0.5); // Chip select karne ki awaaz
         }
 
-        db.ref('users/'+phone).on('value', s => { document.getElementById('balance').innerText = parseFloat(s.val().balance||0).toFixed(2); });
+        db.ref('users/'+phone).on('value', s => { 
+            let data = s.val() || {};
+            let tb = parseFloat(data.balance||0) + parseFloat(data.winning_balance||0) + parseFloat(data.bonus_balance||0);
+            document.getElementById('balance').innerText = tb.toFixed(2); 
+        });
+        
         init();
     </script>
 </body>
