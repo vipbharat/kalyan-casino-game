@@ -60,7 +60,7 @@
         .multi { background: #000; color: var(--gold); font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-bottom: 2px; border: 1px solid var(--gold); }
         
         .total-bet { color: var(--gold); font-size: 0.75rem; font-weight: bold; margin-top: auto; background: rgba(0,0,0,0.6); padding: 1px 6px; border-radius: 4px; }
-        .my-bet-amt { color: #fff; font-size: 0.65rem; font-weight: bold; background: rgba(0,255,136,0.3); width: 100%; padding: 2px 0; border-top: 1px dashed var(--neon-green); margin-top: 3px; }
+        .my-bet-amt { color: #fff; font-size: 0.65rem; font-weight: bold; background: rgba(0,255,136,0.3); width: 100%; padding: 2px 0; border-top: 1px dashed var(--neon-green); margin-top: 3px; display: none; }
 
         .box-win { box-shadow: 0 0 25px var(--neon-green), inset 0 0 20px var(--neon-green) !important; border-color: var(--neon-green) !important; transform: scale(1.05); }
         .icon-win { filter: drop-shadow(0 0 15px var(--neon-green)); transform: scale(1.8); z-index: 20; color: var(--neon-green) !important; }
@@ -83,7 +83,7 @@
 
     </style>
 </head>
-<body>
+<body onclick="initAudio()">
 
     <audio id="soundSpin" src="https://actions.google.com/sounds/v1/foley/mechanical_clock_ring.ogg"></audio>
     <audio id="soundWin" src="https://actions.google.com/sounds/v1/cartoon/clown_bicycle_horn.ogg"></audio>
@@ -178,44 +178,28 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
-        databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
-        projectId: "kalyan-casino"
-    };
+    const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+    firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // INTERNET & SERVER CONNECTION STATE
-    let isServerConnected = false;
-    db.ref('.info/connected').on('value', function(snap) {
-        if (snap.val() === true) {
-            isServerConnected = true;
-        } else {
-            isServerConnected = false;
-            document.getElementById('msgText').innerText = "RECONNECTING...";
-        }
-    });
-
-    let currentUserId = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+    const currentUserId = localStorage.getItem('userPhone') || localStorage.getItem('phone');
     let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
-    let selectedChip = 100;
-    let isBettingOpen = false;
-    let currentRotation = 0;
-    let currentGameState = ''; 
+    let selectedChip = 100, isBettingOpen = false;
+    let currentRotation = 0, isAudioInit = false;
     
     const carData = { porsche:40, ferrari:30, lambo:20, maserati:10, bmw:5, mercedes:5, audi:5, jaguar:5 };
     let myBets = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
-    let botBets = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
+    let pool = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
 
     const wheelOrder = ['porsche', 'bmw', 'ferrari', 'mercedes', 'lambo', 'audi', 'maserati', 'jaguar', 'porsche', 'mercedes', 'ferrari', 'bmw', 'lambo', 'jaguar', 'maserati', 'audi'];
     const wheelIcons = { porsche:'🔴', ferrari:'🐎', lambo:'🐂', maserati:'🔱', bmw:'🔵', mercedes:'🌟', audi:'⭕', jaguar:'🐆' };
     const wheelClasses = { porsche:'icon-porsche', ferrari:'icon-ferrari', lambo:'icon-lambo', maserati:'icon-maserati', bmw:'icon-bmw', mercedes:'icon-mercedes', audi:'icon-audi', jaguar:'icon-jaguar' };
 
-    var audioSpin = document.getElementById('soundSpin');
-    var audioWin = document.getElementById('soundWin');
-    var audioBet = document.getElementById('soundBet');
+    function initAudio() {
+        if(!isAudioInit) {
+            document.getElementById('soundSpin').play().then(() => document.getElementById('soundSpin').pause()).catch(e=>{});
+            isAudioInit = true;
+        }
+    }
     function playAudio(audioObj) { try { if(audioObj){ audioObj.currentTime=0; audioObj.play().catch(e=>{}); } } catch(e){} }
 
     function drawWheel() {
@@ -237,24 +221,16 @@
     }
     drawWheel();
 
-    function updateTopBar() {
+    setInterval(() => {
         let d = new Date();
         document.getElementById('topDate').innerText = d.toLocaleDateString('en-GB') + " | " + d.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
-        let base = 200;
-        let offset = Math.floor(Math.random() * 41) - 20; 
-        document.getElementById('onlineCount').innerText = base + offset;
-    }
-    updateTopBar();
-    setInterval(updateTopBar, 3000);
+        document.getElementById('onlineCount').innerText = Math.floor(Math.random() * 50) + 200;
+    }, 3000);
 
     if (currentUserId) {
-        document.getElementById('msgText').innerText = "Account Connected";
         db.ref(`users/${currentUserId}`).on('value', (snapshot) => {
             const data = snapshot.val() || {};
-            depBal = parseFloat(data.balance || 0);
-            winBal = parseFloat(data.winning_balance || 0);
-            bonBal = parseFloat(data.bonus_balance || 0);
-            
+            depBal = parseFloat(data.balance || 0); winBal = parseFloat(data.winning_balance || 0); bonBal = parseFloat(data.bonus_balance || 0);
             userBalance = depBal + winBal + bonBal;
             document.getElementById('balanceDisplay').innerText = "₹" + userBalance.toFixed(2);
         });
@@ -262,20 +238,18 @@
 
     window.chooseChip = function(amt, elem) {
         selectedChip = parseInt(amt); 
-        var allChips = document.querySelectorAll('.chip');
-        for(var i=0; i<allChips.length; i++) { allChips[i].classList.remove('active'); }
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
         elem.classList.add('active');
-        playAudio(audioBet);
+        playAudio(document.getElementById('soundBet'));
     };
 
     function getChipColor(amt) {
-        let val = parseInt(amt);
-        if(val === 10) return 'radial-gradient(circle at 30% 30%, #1e90ff, #09407a)'; 
-        if(val === 50) return 'radial-gradient(circle at 30% 30%, #eccc68, #b8860b)';
-        if(val === 100) return 'radial-gradient(circle at 30% 30%, #2ed573, #0a5f2a)'; 
-        if(val === 500) return 'radial-gradient(circle at 30% 30%, #ff4757, #8b0000)'; 
-        if(val === 1000) return 'radial-gradient(circle at 30% 30%, #9b59b6, #4a1c5e)';
-        if(val === 5000) return 'radial-gradient(circle at 30% 30%, #ff8c00, #ff0055)';
+        if(amt === 10) return 'radial-gradient(circle at 30% 30%, #1e90ff, #09407a)'; 
+        if(amt === 50) return 'radial-gradient(circle at 30% 30%, #eccc68, #b8860b)';
+        if(amt === 100) return 'radial-gradient(circle at 30% 30%, #2ed573, #0a5f2a)'; 
+        if(amt === 500) return 'radial-gradient(circle at 30% 30%, #ff4757, #8b0000)'; 
+        if(amt === 1000) return 'radial-gradient(circle at 30% 30%, #9b59b6, #4a1c5e)';
+        if(amt === 5000) return 'radial-gradient(circle at 30% 30%, #ff8c00, #ff0055)';
         return '#fff';
     }
 
@@ -285,181 +259,94 @@
         fly.style.background = getChipColor(amt);
         fly.innerText = amt >= 1000 ? (amt/1000)+'K' : amt;
         
-        if(isBot) {
-            fly.style.left = (Math.random() * window.innerWidth) + 'px';
-            fly.style.top = (window.innerHeight) + 'px';
-        } else {
-            fly.style.left = cX + 'px';
-            fly.style.top = cY + 'px';
-        }
+        if(isBot) { fly.style.left = (Math.random() * window.innerWidth) + 'px'; fly.style.top = window.innerHeight + 'px'; } 
+        else { fly.style.left = cX + 'px'; fly.style.top = cY + 'px'; }
         
         document.body.appendChild(fly);
-
         var targetBox = document.getElementById(carId).getBoundingClientRect();
         setTimeout(() => {
             fly.style.left = (targetBox.left + 15 + Math.random() * (targetBox.width - 30)) + 'px';
             fly.style.top = (targetBox.top + 15 + Math.random() * (targetBox.height - 30)) + 'px';
         }, 50);
+        setTimeout(() => fly.remove(), 2000); // Cleanup chips
     }
 
     window.placeBet = function(carId, event) {
-        // --- INTERNET LOCK: Agar net ya server band hai to bet nahi lagegi ---
-        if (!navigator.onLine || !isServerConnected) {
-            alert("No Internet Connection! Please check your network.");
-            return;
-        }
-
         if(!isBettingOpen) return;
-        if(!currentUserId) { alert("Login Error! Please restart app."); return; }
+        if(!currentUserId) { alert("Login Error!"); return; }
         if(userBalance < selectedChip) { alert("Insufficient Balance!"); return; }
 
-        let betCount = 0;
-        for(let key in myBets) {
-            if(myBets[key] > 0) betCount++;
-        }
-        if(myBets[carId] === 0 && betCount >= 4) {
-            alert("Aap ek round mein maximum 4 alag-alag gaadiyon par hi bet laga sakte hain!");
-            return;
-        }
+        let betCount = Object.values(myBets).filter(v => v > 0).length;
+        if(myBets[carId] === 0 && betCount >= 4) { alert("Max 4 cars allowed!"); return; }
 
-        playAudio(audioBet);
+        playAudio(document.getElementById('soundBet'));
 
-        db.ref(`users/${currentUserId}/balance`).set(depBal - selectedChip);
+        // Deduction Logic
+        let nDep = depBal, nWin = winBal, rem = selectedChip;
+        if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
+        db.ref('users/'+currentUserId).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
+
         db.ref(`Game/CarRoulette/Bets/${currentUserId}/${carId}`).set(firebase.database.ServerValue.increment(selectedChip));
 
         myBets[carId] += selectedChip;
-        
-        document.getElementById('total-' + carId).innerText = "₹" + (myBets[carId] + botBets[carId]).toLocaleString();
-        document.getElementById('my-' + carId).innerText = "My Bet: ₹" + myBets[carId].toLocaleString();
-
+        document.getElementById('my-' + carId).innerText = "My Bet: ₹" + myBets[carId];
+        document.getElementById('my-' + carId).style.display = "block";
         spawnChip(carId, selectedChip, false, event.clientX, event.clientY);
     };
 
-    setInterval(() => {
-        if(isBettingOpen && Math.random() > 0.3) {
-            let cars = Object.keys(carData);
-            let randomCar = cars[Math.floor(Math.random() * cars.length)];
-            let botAmt = [10, 50, 100, 500, 1000, 5000][Math.floor(Math.random() * 6)]; 
-            
-            botBets[randomCar] += botAmt;
-            
-            document.getElementById('total-' + randomCar).innerText = "₹" + (myBets[randomCar] + botBets[randomCar]).toLocaleString();
-            
-            spawnChip(randomCar, botAmt, true, 0, 0);
-        }
-    }, 400);
-
-    let lastTimerTick = Date.now();
-    let isMaster = false;
-
+    // THE DUMB CLIENT - LISTENING TO MASTER
+    let isSpinning = false;
     db.ref('Game/CarRoulette/Status').on('value', (snapshot) => {
-        let status = snapshot.val();
-        if(status) {
-            lastTimerTick = Date.now();
-            let timer = status.timer;
+        let st = snapshot.val(); if(!st) return;
 
-            if(status.state === 'betting') {
-                isBettingOpen = true;
-                document.getElementById('timeText').innerText = timer;
-                document.getElementById('timeText').style.color = timer <= 5 ? "var(--neon-red)" : "var(--neon-green)";
-                document.getElementById('msgText').innerText = timer <= 5 ? "CLOSING..." : "PLACE YOUR BETS";
-                
-                if(currentGameState !== 'betting') {
-                    resetTable(); 
-                    currentGameState = 'betting';
-                }
-            } 
-            else if (status.state === 'spinning') {
-                isBettingOpen = false;
-                if(currentGameState !== 'spinning') {
-                    runWheelSpin(status.winner);
-                    currentGameState = 'spinning';
-                }
+        if(st.state === 'betting') {
+            isBettingOpen = true; isSpinning = false;
+            document.getElementById('timeText').innerText = st.timer;
+            document.getElementById('timeText').style.color = st.timer <= 5 ? "var(--neon-red)" : "var(--neon-green)";
+            document.getElementById('msgText').innerText = st.timer <= 5 ? "CLOSING..." : "PLACE YOUR BETS";
+            
+            if(st.timer === 15) resetTable();
+
+            // Bot Visual Betting
+            if(st.timer > 2 && Math.random() > 0.4) {
+                let randomCar = Object.keys(carData)[Math.floor(Math.random() * 8)];
+                let botAmt = [10, 50, 100, 500, 1000][Math.floor(Math.random() * 5)]; 
+                pool[randomCar] += botAmt;
+                document.getElementById('total-' + randomCar).innerText = "₹" + pool[randomCar].toLocaleString();
+                spawnChip(randomCar, botAmt, true, 0, 0);
             }
+        } 
+        else if (st.state === 'spinning' && !isSpinning) {
+            isBettingOpen = false; isSpinning = true;
+            runWheelSpin(st.winner);
         }
     });
 
-    setInterval(() => {
-        if(Date.now() - lastTimerTick > 3000) { isMaster = true; } 
-        
-        if(isMaster) {
-            db.ref('Game/CarRoulette/Status/timer').once('value').then((snap) => {
-                let t = snap.val();
-                if(t === null) t = 15;
-
-                if(t > 0) {
-                    db.ref('Game/CarRoulette/Status').set({ timer: t - 1, state: 'betting', winner: '' });
-                } 
-                else if (t === 0) {
-                    db.ref('Game/CarRoulette/Bets').once('value').then((betsSnap) => {
-                        let allUserBets = betsSnap.val() || {};
-                        let totalRealBets = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
-
-                        for(let uid in allUserBets) {
-                            for(let car in allUserBets[uid]) {
-                                totalRealBets[car] += allUserBets[uid][car];
-                            }
-                        }
-
-                        let minLoss = 9999999999;
-                        for(let car in totalRealBets) {
-                            let loss = totalRealBets[car] * carData[car];
-                            if(loss < minLoss) minLoss = loss;
-                        }
-
-                        let safeCars = [];
-                        for(let car in totalRealBets) {
-                            if(totalRealBets[car] * carData[car] === minLoss) safeCars.push(car);
-                        }
-
-                        let winningCar = safeCars[Math.floor(Math.random() * safeCars.length)];
-                        if(!winningCar) winningCar = 'bmw'; 
-                        
-                        db.ref('Game/CarRoulette/Status').set({ timer: -1, state: 'spinning', winner: winningCar });
-                    });
-                } 
-                else if (t < 0 && t > -14) {
-                    db.ref('Game/CarRoulette/Status').update({ timer: t - 1 });
-                } 
-                else if (t <= -14) {
-                    db.ref('Game/CarRoulette/Bets').remove();
-                    db.ref('Game/CarRoulette/Status').set({ timer: 15, state: 'betting', winner: '' });
-                }
-            });
-        }
-    }, 1000);
-
     function runWheelSpin(winnerCar) {
-        document.getElementById('msgText').innerText = "SPINNING...";
-        document.getElementById('timeText').innerText = "0";
-        playAudio(audioSpin);
+        document.getElementById('msgText').innerText = "SPINNING..."; document.getElementById('timeText').innerText = "0";
+        playAudio(document.getElementById('soundSpin'));
         
         var possibleIndexes = [];
-        for(var i=0; i<wheelOrder.length; i++) {
-            if(wheelOrder[i] === winnerCar) possibleIndexes.push(i);
-        }
+        for(var i=0; i<wheelOrder.length; i++) { if(wheelOrder[i] === winnerCar) possibleIndexes.push(i); }
         
         var finalTargetIndex = possibleIndexes[Math.floor(Math.random() * possibleIndexes.length)];
         var targetAngle = finalTargetIndex * 22.5; 
         
         var extraSpins = 3600; 
         var baseRotation = Math.floor(currentRotation / 360) * 360; 
-        var finalRotation = baseRotation + extraSpins + targetAngle;
+        currentRotation = baseRotation + extraSpins + targetAngle;
         
-        currentRotation = finalRotation;
-        var spinner = document.getElementById('spinnerRing');
-        spinner.style.transform = 'rotate(' + finalRotation + 'deg)';
+        document.getElementById('spinnerRing').style.transform = 'rotate(' + currentRotation + 'deg)';
 
         setTimeout(() => {
-            if(audioSpin) audioSpin.pause();
+            document.getElementById('soundSpin').pause();
             showWinner(winnerCar, finalTargetIndex);
         }, 7600);
     }
 
     function showWinner(winId, iconIndex) {
-        playAudio(audioWin);
-        document.getElementById('msgText').innerText = "WINNER!";
-        document.getElementById('timeText').innerText = winId.toUpperCase();
+        playAudio(document.getElementById('soundWin'));
+        document.getElementById('msgText').innerText = "WINNER!"; document.getElementById('timeText').innerText = winId.toUpperCase();
         
         document.getElementById(winId).classList.add('box-win');
         document.getElementById('wheel-icon-' + iconIndex).classList.add('icon-win');
@@ -468,13 +355,11 @@
             var wonAmt = myBets[winId] * carData[winId];
             db.ref(`users/${currentUserId}/winning_balance`).set(winBal + wonAmt);
             var p = document.getElementById('winMsg');
-            p.innerText = "+₹" + wonAmt.toLocaleString();
-            p.classList.add('show');
+            p.innerText = "+₹" + wonAmt.toLocaleString(); p.classList.add('show');
+            setTimeout(() => p.classList.remove('show'), 4000);
         }
 
         setTimeout(() => {
-            let p = document.getElementById('winMsg');
-            if(p) p.classList.remove('show');
             document.getElementById('msgText').innerText = "GET READY...";
             document.getElementById('timeText').innerText = "WAIT";
         }, 4000);
@@ -482,16 +367,13 @@
 
     function resetTable() {
         for(var key in carData) {
-            myBets[key] = 0;
-            botBets[key] = 0;
+            myBets[key] = 0; pool[key] = 0;
             document.getElementById('total-' + key).innerText = "₹0";
             document.getElementById('my-' + key).innerText = "My Bet: ₹0";
+            document.getElementById('my-' + key).style.display = "none";
             document.getElementById(key).classList.remove('box-win');
         }
-        for(var i=0; i<16; i++){
-            document.getElementById('wheel-icon-' + i).classList.remove('icon-win');
-        }
-        document.querySelectorAll('.chip-fly').forEach(chip => chip.remove());
+        for(var i=0; i<16; i++) { document.getElementById('wheel-icon-' + i).classList.remove('icon-win'); }
     }
 </script>
 </body>
