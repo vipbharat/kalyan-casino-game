@@ -3,14 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KALYAN PRO - MASTER ADMIN</title>
+    <title>KALYAN PRO - SECURE ADMIN</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --gold: #ffd700; --bg: #0a0a0a; --card: #141414; --green: #00ff88; --red: #ff3333; }
         body { background: var(--bg); color: #fff; font-family: 'Arial', sans-serif; margin: 0; padding-bottom: 70px; }
         
+        /* 🔥 LOGIN SCREEN 🔥 */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 999999; display: flex; justify-content: center; align-items: center; }
+        .login-box { background: #111; padding: 30px; border-radius: 15px; border: 2px solid var(--gold); text-align: center; width: 85%; max-width: 350px; box-shadow: 0 0 30px rgba(255,215,0,0.3); }
+        .login-box input { width: 100%; padding: 12px; margin-bottom: 15px; background: #222; border: 1px solid #444; border-radius: 8px; color: #fff; box-sizing: border-box; }
+        .login-btn { width: 100%; padding: 12px; background: var(--gold); color: #000; font-weight: 900; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+
         /* Top Header */
         .top-header { background: #000; padding: 15px; text-align: center; border-bottom: 2px solid var(--gold); position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(255,215,0,0.2); }
         .top-header h1 { margin: 0; font-size: 18px; color: var(--gold); letter-spacing: 2px; font-weight: 900; }
@@ -30,34 +37,28 @@
         .card { background: var(--card); border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
         .card-title { color: var(--gold); font-size: 14px; text-transform: uppercase; margin: 0 0 15px 0; border-bottom: 1px dashed #444; padding-bottom: 8px; font-weight: 900; }
         
-        /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .stat-box { background: #1a1a1a; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #333; }
         .stat-box h3 { margin: 0; font-size: 24px; color: var(--green); }
         .stat-box p { margin: 5px 0 0 0; font-size: 11px; color: #aaa; text-transform: uppercase; font-weight: bold; }
 
-        /* Inputs & Buttons */
         label { font-size: 11px; color: #aaa; display: block; margin-bottom: 5px; text-transform: uppercase; font-weight: bold; }
         input { width: 100%; padding: 12px; margin-bottom: 12px; background: #000; border: 1px solid #444; border-radius: 8px; color: #fff; box-sizing: border-box; font-size: 14px; }
-        input:focus { border-color: var(--gold); outline: none; }
         
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn { padding: 12px; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; font-size: 13px; text-transform: uppercase; color: #fff; transition: 0.2s; }
-        .btn:active { transform: scale(0.95); }
         .btn-add { background: linear-gradient(45deg, #00b09b, #96c93d); }
         .btn-cut { background: linear-gradient(45deg, #ff416c, #ff4b2b); }
         .btn-save { background: linear-gradient(45deg, #f12711, #f5af19); width: 100%; margin-top: 10px; }
 
-        /* Withdraw Requests */
+        /* Withdraw & Users Table */
         .req-card { background: #000; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .req-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .req-amt { font-size: 22px; font-weight: 900; color: var(--gold); }
         .req-details p { margin: 4px 0; font-size: 12px; color: #ccc; }
         .req-details span { color: #fff; font-weight: bold; }
 
-        /* Users Table */
         .search-box { display: flex; gap: 10px; margin-bottom: 15px; }
-        .search-box input { margin: 0; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
         th { background: #222; color: var(--gold); padding: 10px; text-align: left; }
         td { padding: 12px 10px; border-bottom: 1px solid #222; background: #0a0a0a; }
@@ -74,7 +75,7 @@
 
         /* Modal */
         .modal { display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); }
-        .modal-content { background: #111; margin: 25% auto; padding: 20px; border: 2px solid var(--gold); border-radius: 15px; width: 85%; max-width: 400px; position: relative; box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+        .modal-content { background: #111; margin: 25% auto; padding: 20px; border: 2px solid var(--gold); border-radius: 15px; width: 85%; max-width: 400px; position: relative; }
         .close-btn { color: #fff; position: absolute; top: -12px; right: -12px; font-size: 18px; cursor: pointer; background: var(--red); width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; border: 2px solid #fff; }
         .detail-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; border-bottom: 1px solid #222; padding-bottom: 8px; }
         .detail-row span:first-child { color: #888; }
@@ -83,106 +84,118 @@
 </head>
 <body>
 
-    <div class="top-header">
-        <h1><i class="fa-solid fa-crown"></i> MASTER ADMIN</h1>
-    </div>
-
-    <div id="page-home" class="page active">
-        <div class="stats-grid">
-            <div class="stat-box">
-                <h3 id="stat-users">0</h3>
-                <p>Total Players</p>
-            </div>
-            <div class="stat-box">
-                <h3 id="stat-withdraws" style="color:var(--gold)">0</h3>
-                <p>Pending Payouts</p>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2 class="card-title"><i class="fa-solid fa-wallet"></i> QUICK WALLET CONTROL</h2>
-            <label>Player Mobile Number</label>
-            <input type="number" id="quick-phone" placeholder="Enter 10 digit number">
-            <label>Amount (₹)</label>
-            <input type="number" id="quick-amount" placeholder="Enter Amount">
-            
-            <div class="btn-grid">
-                <button class="btn btn-add" onclick="quickWallet('add')"><i class="fa-solid fa-plus"></i> ADD FUNDS</button>
-                <button class="btn btn-cut" onclick="quickWallet('cut')"><i class="fa-solid fa-minus"></i> CUT FUNDS</button>
-            </div>
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2 style="color:var(--gold); margin-top:0;"><i class="fa-solid fa-lock"></i> MASTER ADMIN</h2>
+            <p style="color:#aaa; font-size:12px; margin-bottom:20px;">Please login to access the control panel</p>
+            <input type="email" id="adminEmail" placeholder="Admin Email ID">
+            <input type="password" id="adminPass" placeholder="Password">
+            <button class="login-btn" onclick="loginAdmin()">SECURE LOGIN</button>
+            <p id="loginError" style="color:var(--red); font-size:12px; font-weight:bold; display:none; margin-top:10px;">Incorrect Email or Password!</p>
         </div>
     </div>
 
-    <div id="page-setup" class="page">
-        <div class="card">
-            <h2 class="card-title"><i class="fa-solid fa-gears"></i> GLOBAL APP SETUP</h2>
-            
-            <div style="margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
-                <span style="font-size: 13px; color: #fff; font-weight: bold;">Show QR Code in App?</span>
-                <label class="switch"><input type="checkbox" id="qrStatus"><span class="slider"></span></label>
+    <div id="main-content" style="display:none;">
+        
+        <div class="top-header">
+            <h1><i class="fa-solid fa-crown"></i> VIP ADMIN DASHBOARD</h1>
+            <button onclick="logoutAdmin()" style="position:absolute; top:15px; right:15px; background:var(--red); color:white; border:none; padding:5px 10px; border-radius:5px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-power-off"></i></button>
+        </div>
+
+        <div id="page-home" class="page active">
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <h3 id="stat-users">0</h3>
+                    <p>Total Players</p>
+                </div>
+                <div class="stat-box">
+                    <h3 id="stat-withdraws" style="color:var(--gold)">0</h3>
+                    <p>Pending Payouts</p>
+                </div>
             </div>
 
-            <label>Admin UPI ID</label>
-            <input type="text" id="upiId" placeholder="example@ybl">
-            
-            <label>Upload QR Code (Deposit)</label>
-            <input type="file" id="qrFile" accept="image/*" style="padding: 8px; background: #222;" onchange="previewAndConvert(this)">
-            <div style="text-align: center;"><img id="qrPreview" class="qr-preview-img"></div>
-
-            <label>WhatsApp Link</label>
-            <input type="text" id="waNo" placeholder="https://wa.me/91...">
-            
-            <label>Telegram Link</label>
-            <input type="text" id="tgLink" placeholder="https://t.me/...">
-            
-            <label>Scrolling Notice (Marquee)</label>
-            <input type="text" id="notif" placeholder="Enter welcome message...">
-            
-            <button class="btn btn-save" onclick="saveAll()"><i class="fa-solid fa-floppy-disk"></i> SAVE SETTINGS</button>
-        </div>
-    </div>
-
-    <div id="page-payout" class="page">
-        <div class="card">
-            <h2 class="card-title"><i class="fa-solid fa-money-bill-transfer"></i> PENDING PAYOUTS</h2>
-            <div id="new-req-list">
-                <p style="text-align: center; color: #888;"><i class="fa-solid fa-spinner fa-spin"></i> Loading requests...</p>
+            <div class="card">
+                <h2 class="card-title"><i class="fa-solid fa-wallet"></i> QUICK WALLET CONTROL</h2>
+                <label>Player Mobile Number</label>
+                <input type="number" id="quick-phone" placeholder="Enter 10 digit number">
+                <label>Amount (₹)</label>
+                <input type="number" id="quick-amount" placeholder="Enter Amount">
+                
+                <div class="btn-grid">
+                    <button class="btn btn-add" onclick="quickWallet('add')"><i class="fa-solid fa-plus"></i> ADD FUNDS</button>
+                    <button class="btn btn-cut" onclick="quickWallet('cut')"><i class="fa-solid fa-minus"></i> CUT FUNDS</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="page-users" class="page">
-        <div class="card">
-            <h2 class="card-title"><i class="fa-solid fa-users"></i> PLAYERS LIST</h2>
-            
-            <div class="search-box">
-                <input type="number" id="searchPhone" placeholder="Search Mobile No..." onkeyup="filterUsers()">
-            </div>
+        <div id="page-setup" class="page">
+            <div class="card">
+                <h2 class="card-title"><i class="fa-solid fa-gears"></i> GLOBAL APP SETUP</h2>
+                
+                <div style="margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                    <span style="font-size: 13px; color: #fff; font-weight: bold;">Show QR Code in App?</span>
+                    <label class="switch"><input type="checkbox" id="qrStatus"><span class="slider"></span></label>
+                </div>
 
-            <div style="max-height: 60vh; overflow-y: auto;">
-                <table id="p-table">
-                    <thead><tr><th>Mobile No.</th><th>Balance</th><th>Action</th></tr></thead>
-                    <tbody id="p-list-body"></tbody>
-                </table>
+                <label>Admin UPI ID</label>
+                <input type="text" id="upiId" placeholder="example@ybl">
+                
+                <label>Upload QR Code (Deposit)</label>
+                <input type="file" id="qrFile" accept="image/*" style="padding: 8px; background: #222;" onchange="previewAndConvert(this)">
+                <div style="text-align: center;"><img id="qrPreview" class="qr-preview-img"></div>
+
+                <label>WhatsApp Link</label>
+                <input type="text" id="waNo" placeholder="https://wa.me/91...">
+                
+                <label>Telegram Link</label>
+                <input type="text" id="tgLink" placeholder="https://t.me/...">
+                
+                <label>Scrolling Notice (Marquee)</label>
+                <input type="text" id="notif" placeholder="Enter welcome message...">
+                
+                <button class="btn btn-save" onclick="saveAll()"><i class="fa-solid fa-floppy-disk"></i> SAVE SETTINGS</button>
             </div>
         </div>
-    </div>
 
-    <div id="playerModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></span>
-            <h3 style="color: var(--gold); border-bottom: 1px dashed #444; padding-bottom: 10px; margin-top: 0;"><i class="fa-solid fa-user-circle"></i> PLAYER PROFILE</h3>
-            <div id="modal-body" style="margin-top: 15px;">
-                <p style="text-align:center; color:var(--gold);">Loading Details...</p>
+        <div id="page-payout" class="page">
+            <div class="card">
+                <h2 class="card-title"><i class="fa-solid fa-money-bill-transfer"></i> PENDING PAYOUTS</h2>
+                <div id="new-req-list">
+                    <p style="text-align: center; color: #888;"><i class="fa-solid fa-spinner fa-spin"></i> Loading requests...</p>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="switchTab('page-home', this)"><i class="fa-solid fa-house"></i>Home</div>
-        <div class="nav-item" onclick="switchTab('page-payout', this)"><i class="fa-solid fa-hand-holding-dollar"></i>Payout</div>
-        <div class="nav-item" onclick="switchTab('page-users', this)"><i class="fa-solid fa-users"></i>Users</div>
-        <div class="nav-item" onclick="switchTab('page-setup', this)"><i class="fa-solid fa-gear"></i>Setup</div>
+        <div id="page-users" class="page">
+            <div class="card">
+                <h2 class="card-title"><i class="fa-solid fa-users"></i> PLAYERS LIST</h2>
+                <div class="search-box">
+                    <input type="number" id="searchPhone" placeholder="Search Mobile No..." onkeyup="filterUsers()">
+                </div>
+                <div style="max-height: 60vh; overflow-y: auto;">
+                    <table id="p-table">
+                        <thead><tr><th>Mobile No.</th><th>Balance</th><th>Action</th></tr></thead>
+                        <tbody id="p-list-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="playerModal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></span>
+                <h3 style="color: var(--gold); border-bottom: 1px dashed #444; padding-bottom: 10px; margin-top: 0;"><i class="fa-solid fa-user-circle"></i> PLAYER PROFILE</h3>
+                <div id="modal-body" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('page-home', this)"><i class="fa-solid fa-house"></i>Home</div>
+            <div class="nav-item" onclick="switchTab('page-payout', this)"><i class="fa-solid fa-hand-holding-dollar"></i>Payout</div>
+            <div class="nav-item" onclick="switchTab('page-users', this)"><i class="fa-solid fa-users"></i>Users</div>
+            <div class="nav-item" onclick="switchTab('page-setup', this)"><i class="fa-solid fa-gear"></i>Setup</div>
+        </div>
+
     </div>
 
 <script>
@@ -193,8 +206,36 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const auth = firebase.auth();
 
-    // --- NAVIGATION LOGIC ---
+    // 🔥 AUTHENTICATION LOGIC 🔥
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            loadAdminData(); 
+        } else {
+            document.getElementById('login-overlay').style.display = 'flex';
+            document.getElementById('main-content').style.display = 'none';
+        }
+    });
+
+    function loginAdmin() {
+        const e = document.getElementById('adminEmail').value;
+        const p = document.getElementById('adminPass').value;
+        document.getElementById('loginError').style.display = 'none';
+        
+        auth.signInWithEmailAndPassword(e, p).catch(err => {
+            document.getElementById('loginError').innerText = err.message;
+            document.getElementById('loginError').style.display = 'block';
+        });
+    }
+
+    function logoutAdmin() {
+        auth.signOut();
+    }
+
+    // --- NAVIGATION ---
     function switchTab(pageId, element) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -202,69 +243,85 @@
         element.classList.add('active');
     }
 
-    // --- QR CODE CONVERTOR ---
-    let base64Image = "";
-    function previewAndConvert(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (e) => { 
-                base64Image = e.target.result; 
-                document.getElementById('qrPreview').src = base64Image; 
-                document.getElementById('qrPreview').style.display = "block"; 
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
-    // --- SAVE & LOAD SETTINGS ---
-    function saveAll() {
-        db.ref('admin_settings/payment').update({ upi_id: document.getElementById('upiId').value, qr_url: base64Image, show_qr: document.getElementById('qrStatus').checked });
-        db.ref('admin_settings/support').update({ whatsapp: document.getElementById('waNo').value, telegram: document.getElementById('tgLink').value });
-        db.ref('admin_settings/notification').set(document.getElementById('notif').value);
-        alert("✅ Settings Saved Successfully!");
-    }
-
-    db.ref('admin_settings/payment').on('value', snap => {
-        const d = snap.val(); if(!d) return;
-        document.getElementById('upiId').value = d.upi_id || ""; document.getElementById('qrStatus').checked = d.show_qr || false;
-        if(d.qr_url) { base64Image = d.qr_url; document.getElementById('qrPreview').src = d.qr_url; document.getElementById('qrPreview').style.display = "block"; }
-    });
-    db.ref('admin_settings/support').on('value', snap => {
-        const d = snap.val(); if(!d) return;
-        document.getElementById('waNo').value = d.whatsapp || ""; document.getElementById('tgLink').value = d.telegram || "";
-    });
-    db.ref('admin_settings/notification').on('value', snap => document.getElementById('notif').value = snap.val() || "");
-
-    // --- WITHDRAWAL SYSTEM ---
-    db.ref('withdraw_requests').orderByChild('status').equalTo('Pending').on('value', snap => {
-        const reqList = document.getElementById('new-req-list');
-        reqList.innerHTML = "";
+    // --- ALL DATA LOADING FUNCTIONS (Called after login) ---
+    function loadAdminData() {
         
-        let pendingCount = snap.numChildren();
-        document.getElementById('stat-withdraws').innerText = pendingCount;
+        // Payouts Listener
+        db.ref('withdraw_requests').orderByChild('status').equalTo('Pending').on('value', snap => {
+            const reqList = document.getElementById('new-req-list');
+            reqList.innerHTML = "";
+            document.getElementById('stat-withdraws').innerText = snap.numChildren();
+            if(!snap.exists()) { reqList.innerHTML = "<p style='text-align:center; color:#555;'>No Pending Requests</p>"; return; }
 
-        if(!snap.exists()) { reqList.innerHTML = "<p style='text-align:center; color:#555;'>No Pending Requests</p>"; return; }
-
-        snap.forEach(child => {
-            const d = child.val(); const reqKey = child.key;
-            reqList.innerHTML += `
-            <div class="req-card">
-                <div class="req-header">
-                    <div><div style="color:#aaa; font-size:11px;">Player ID</div><div style="font-weight:bold; font-size:14px; color:#fff;">${d.id}</div></div>
-                    <div class="req-amt">₹${d.amount}</div>
-                </div>
-                <div class="req-details">
-                    <p>Account No: <span>${d.accNo || 'N/A'}</span></p>
-                    <p>IFSC Code: <span style="text-transform:uppercase;">${d.ifsc || 'N/A'}</span></p>
-                    <p>UPI ID: <span>${d.upi || 'N/A'}</span></p>
-                </div>
-                <div class="btn-grid" style="margin-top: 15px;">
-                    <button class="btn btn-add" onclick="handleWithdraw('${reqKey}', '${d.id}', 'Approve')">APPROVE</button>
-                    <button class="btn btn-cut" onclick="handleWithdraw('${reqKey}', '${d.id}', 'Reject', ${d.amount})">REJECT</button>
-                </div>
-            </div>`;
+            snap.forEach(child => {
+                const d = child.val(); const reqKey = child.key;
+                reqList.innerHTML += `
+                <div class="req-card">
+                    <div class="req-header">
+                        <div><div style="color:#aaa; font-size:11px;">Player ID</div><div style="font-weight:bold; font-size:14px; color:#fff;">${d.id}</div></div>
+                        <div class="req-amt">₹${d.amount}</div>
+                    </div>
+                    <div class="req-details">
+                        <p>Account No: <span>${d.accNo || 'N/A'}</span></p>
+                        <p>IFSC Code: <span style="text-transform:uppercase;">${d.ifsc || 'N/A'}</span></p>
+                        <p>UPI ID: <span>${d.upi || 'N/A'}</span></p>
+                    </div>
+                    <div class="btn-grid" style="margin-top: 15px;">
+                        <button class="btn btn-add" onclick="handleWithdraw('${reqKey}', '${d.id}', 'Approve')">APPROVE</button>
+                        <button class="btn btn-cut" onclick="handleWithdraw('${reqKey}', '${d.id}', 'Reject', ${d.amount})">REJECT</button>
+                    </div>
+                </div>`;
+            });
         });
-    });
+
+        // Users Listener
+        db.ref('users').on('value', snap => {
+            const body = document.getElementById('p-list-body');
+            document.getElementById('stat-users').innerText = snap.numChildren();
+            body.innerHTML = "";
+            snap.forEach(p => {
+                const bal = (parseFloat(p.val().balance||0) + parseFloat(p.val().winning_balance||0)).toFixed(2);
+                body.innerHTML += `
+                <tr class="player-row" data-phone="${p.key}">
+                    <td style="color:var(--gold); font-weight:bold;">${p.key}</td>
+                    <td style="color:var(--green); font-weight:bold;">₹${bal}</td>
+                    <td><button class="view-btn" onclick="openModal('${p.key}')">VIEW</button></td>
+                </tr>`;
+            });
+        });
+
+        // Settings Listener
+        db.ref('admin_settings/payment').on('value', snap => {
+            const d = snap.val(); if(!d) return;
+            document.getElementById('upiId').value = d.upi_id || ""; document.getElementById('qrStatus').checked = d.show_qr || false;
+            if(d.qr_url) { base64Image = d.qr_url; document.getElementById('qrPreview').src = d.qr_url; document.getElementById('qrPreview').style.display = "block"; }
+        });
+        db.ref('admin_settings/support').on('value', snap => {
+            const d = snap.val(); if(!d) return;
+            document.getElementById('waNo').value = d.whatsapp || ""; document.getElementById('tgLink').value = d.telegram || "";
+        });
+        db.ref('admin_settings/notification').on('value', snap => document.getElementById('notif').value = snap.val() || "");
+    }
+
+    // --- QUICK WALLET LOGIC ---
+    window.quickWallet = function(type) {
+        const phone = document.getElementById('quick-phone').value;
+        const amt = parseFloat(document.getElementById('quick-amount').value);
+        if(!phone || !amt) { alert("Please enter Mobile Number and Amount!"); return; }
+        
+        db.ref(`users/${phone}`).once('value', snap => {
+            if(!snap.exists()){ alert("Player Not Found!"); return; }
+            let currentBal = parseFloat(snap.val().balance || 0);
+            let newBal = type === 'add' ? currentBal + amt : currentBal - amt;
+            if(newBal < 0) newBal = 0; 
+            
+            db.ref(`users/${phone}/balance`).set(newBal).then(() => {
+                alert(`₹${amt} Successfully ${type === 'add' ? 'Added to' : 'Deducted from'} ${phone}`);
+                document.getElementById('quick-phone').value = "";
+                document.getElementById('quick-amount').value = "";
+            }).catch(e => alert("Error: Make sure Firebase Auth Rules are correct."));
+        });
+    };
 
     window.handleWithdraw = function(reqKey, phone, action, amount = 0) {
         if(!confirm(`Are you sure you want to ${action} this request?`)) return;
@@ -280,46 +337,26 @@
         }
     };
 
-    // --- QUICK WALLET LOGIC ---
-    window.quickWallet = function(type) {
-        const phone = document.getElementById('quick-phone').value;
-        const amt = parseFloat(document.getElementById('quick-amount').value);
-        if(!phone || !amt) { alert("Please enter Mobile Number and Amount!"); return; }
-        
-        db.ref(`users/${phone}`).once('value', snap => {
-            if(!snap.exists()){ alert("Player Not Found!"); return; }
-            
-            let currentBal = parseFloat(snap.val().balance || 0);
-            let newBal = type === 'add' ? currentBal + amt : currentBal - amt;
-            
-            if(newBal < 0) newBal = 0; // Balance minus me nahi jayega
+    let base64Image = "";
+    function previewAndConvert(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => { 
+                base64Image = e.target.result; 
+                document.getElementById('qrPreview').src = base64Image; 
+                document.getElementById('qrPreview').style.display = "block"; 
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
 
-            db.ref(`users/${phone}/balance`).set(newBal).then(() => {
-                alert(`₹${amt} Successfully ${type === 'add' ? 'Added to' : 'Deducted from'} ${phone}`);
-                document.getElementById('quick-phone').value = "";
-                document.getElementById('quick-amount').value = "";
-            });
-        });
-    };
+    function saveAll() {
+        db.ref('admin_settings/payment').update({ upi_id: document.getElementById('upiId').value, qr_url: base64Image, show_qr: document.getElementById('qrStatus').checked });
+        db.ref('admin_settings/support').update({ whatsapp: document.getElementById('waNo').value, telegram: document.getElementById('tgLink').value });
+        db.ref('admin_settings/notification').set(document.getElementById('notif').value);
+        alert("✅ Settings Saved Successfully!");
+    }
 
-    // --- PLAYERS FULL DETAILS LOGIC (WITH SEARCH) ---
-    db.ref('users').on('value', snap => {
-        const body = document.getElementById('p-list-body');
-        document.getElementById('stat-users').innerText = snap.numChildren();
-        body.innerHTML = "";
-        
-        snap.forEach(p => {
-            const bal = (parseFloat(p.val().balance||0) + parseFloat(p.val().winning_balance||0)).toFixed(2);
-            body.innerHTML += `
-            <tr class="player-row" data-phone="${p.key}">
-                <td style="color:var(--gold); font-weight:bold;">${p.key}</td>
-                <td style="color:var(--green); font-weight:bold;">₹${bal}</td>
-                <td><button class="view-btn" onclick="openModal('${p.key}')">VIEW</button></td>
-            </tr>`;
-        });
-    });
-
-    // SEARCH FILTER
     window.filterUsers = function() {
         let input = document.getElementById("searchPhone").value;
         let rows = document.querySelectorAll(".player-row");
@@ -330,7 +367,6 @@
         });
     }
 
-    // OPEN POPUP
     window.openModal = function(phone) {
         document.getElementById('playerModal').style.display = "block";
         db.ref('users/' + phone).once('value', snap => {
@@ -344,17 +380,14 @@
                 document.getElementById('modal-body').innerHTML = `
                     <div class="detail-row"><span>Mobile No:</span><span style="color:var(--gold);">${phone}</span></div>
                     <div class="detail-row"><span>Password:</span><span>${d.password || 'N/A'}</span></div>
-                    
                     <h4 style="color:#3498db; margin: 15px 0 5px 0;">💰 Wallet Details</h4>
                     <div class="detail-row"><span>Total Balance:</span><span style="color:var(--green);">₹${tBal}</span></div>
                     <div class="detail-row"><span>Deposit:</span><span>₹${depBal}</span></div>
                     <div class="detail-row"><span>Winnings:</span><span>₹${winBal}</span></div>
-
                     <h4 style="color:#e67e22; margin: 15px 0 5px 0;">🏦 Bank Information</h4>
                     <div class="detail-row"><span>Account No:</span><span>${pay.accNo || 'Not Saved'}</span></div>
                     <div class="detail-row"><span>IFSC Code:</span><span style="text-transform:uppercase;">${pay.ifsc || 'Not Saved'}</span></div>
                     <div class="detail-row"><span>UPI ID:</span><span>${pay.upi || 'Not Saved'}</span></div>
-                    
                     <button onclick="resetBank('${phone}')" style="width:100%; padding:12px; background:var(--red); color:#fff; border:none; border-radius:8px; font-weight:bold; margin-top:15px; cursor:pointer;">
                         <i class="fa-solid fa-trash"></i> DELETE BANK INFO
                     </button>
@@ -363,18 +396,10 @@
         });
     };
 
-    // CLOSE POPUP
-    window.closeModal = function() { 
-        document.getElementById('playerModal').style.display = "none"; 
-    };
-
-    // UNLOCK BANK FEATURE
+    window.closeModal = function() { document.getElementById('playerModal').style.display = "none"; };
     window.resetBank = function(phone) {
-        if(confirm("Are you sure? This will allow player to add new bank details.")) {
-            db.ref('users/' + phone + '/payment_details').remove().then(() => {
-                alert("Bank Details Deleted Successfully!");
-                closeModal();
-            });
+        if(confirm("Delete this player's bank details?")) {
+            db.ref('users/' + phone + '/payment_details').remove().then(() => { alert("Deleted!"); closeModal(); });
         }
     };
 </script>
