@@ -16,7 +16,6 @@
         
         .admin-note-bar { background: #800; color: #fff; font-size: 12px; height: 22px; line-height: 22px; overflow: hidden; white-space: nowrap; border-bottom: 1.5px solid var(--gold); font-weight: bold; }
 
-        /* ✅ NEW: HISTORY RECORD PANEL */
         .record-panel { position: absolute; right: 10px; top: 60px; display: flex; flex-direction: column; gap: 5px; z-index: 100; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 20px; border: 1px solid #333; }
         .record-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 1px solid gold; color: white; }
 
@@ -39,6 +38,7 @@
         .bahar-box { border-color: var(--bahar) !important; box-shadow: inset 0 0 15px rgba(51, 170, 255, 0.4); }
         
         .pool-amt { display: block; background: rgba(0,0,0,0.85); color: #0f0; text-align: center; font-size: 15px; padding: 5px; font-weight: bold; border-bottom: 2px solid rgba(255,255,255,0.2); }
+        .my-box-bet { position: absolute; top: 5px; right: 5px; font-size: 10px; color: var(--gold); background: rgba(0,0,0,0.8); padding: 3px 6px; border-radius: 4px; border: 1px solid var(--gold); z-index: 30; display: none; }
         
         .chip { width: 18px; height: 18px; border-radius: 50%; border: 0.5px solid #fff; position: absolute; z-index: 20; font-size: 7px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px #000; }
 
@@ -73,7 +73,7 @@
     <div class="joker-card"><img id="joker-img" src="https://deckofcardsapi.com/static/img/back.png"></div>
 </div>
 
-<div class="timer-sec" id="timer">15</div>
+<div class="timer-sec" id="timer">Wait</div>
 
 <div class="table-top">
     <div style="text-align:center">
@@ -91,10 +91,12 @@
 <div class="bet-grid">
     <div class="box andar-box" onclick="placeBet('andar')">
         <span class="pool-amt">₹<span id="p-andar">0</span></span>
+        <div class="my-box-bet" id="my-andar">₹0</div>
         <div id="chips-andar"></div>
     </div>
     <div class="box bahar-box" onclick="placeBet('bahar')">
         <span class="pool-amt">₹<span id="p-bahar">0</span></span>
+        <div class="my-box-bet" id="my-bahar">₹0</div>
         <div id="chips-bahar"></div>
     </div>
 </div>
@@ -113,148 +115,51 @@
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const phone = localStorage.getItem('userPhone');
+    const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
     const cardSuits = ["S", "H", "D", "C"];
     const cardValues = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "0", "J", "Q", "K"];
     const chipConfig = { 10:{b:"#fff",c:"#000",t:"10"}, 100:{b:"#2196f3",c:"#fff",t:"100"}, 500:{b:"#4caf50",c:"#000",t:"500"}, 1000:{b:"#f44336",c:"#fff",t:"1K"}, 5000:{b:"#ffd700",c:"#000",t:"5K"} };
 
-    let currentChip = 10, isBetting = false, totalBal = 0, jokerVal = "", jokerSuit = "";
-    let pool = {andar:0, bahar:0}, realBets = {andar:0, bahar:0}, myBets = {andar:0, bahar:0}, bots = [];
-
-    // ✅ LOAD HISTORY FROM FIREBASE
-    db.ref('game_history').limitToLast(10).on('value', s => {
-        const board = document.getElementById('record-board');
-        board.innerHTML = "";
-        if(s.val()){
-            Object.values(s.val()).reverse().forEach(res => {
-                const dot = document.createElement('div');
-                dot.className = 'record-dot';
-                dot.style.background = (res === 'A') ? '#ff3333' : '#33aaff';
-                dot.innerText = res;
-                board.appendChild(dot);
-            });
-        }
-    });
-
-    function updateHeader() {
-        document.getElementById('live-date').innerText = new Date().toLocaleDateString();
-        setInterval(() => {
-            let online = Math.floor(Math.random() * 200) + 550;
-            document.getElementById('online-count').innerText = `● ${online} Online`;
-        }, 4000);
-    }
+    let currentChip = 10, isBettingOpen = false;
+    let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0;
+    let pool = {andar:0, bahar:0}, myBets = {andar:0, bahar:0};
+    
+    // Header Info
+    document.getElementById('live-date').innerText = new Date().toLocaleDateString();
+    setInterval(() => {
+        let online = Math.floor(Math.random() * 200) + 1150;
+        document.getElementById('online-count').innerText = `● ${online} Online`;
+    }, 4000);
 
     db.ref('admin_settings/notification').on('value', s => { if(s.val()) document.getElementById('admin-notif').innerText = s.val(); });
 
-    function initBots() {
-        bots = [];
-        for(let i=0; i<10; i++) bots[i] = { id: Math.floor(Math.random()*8999)+1000, bal: Math.floor(Math.random()*95001)+10000, side:'', amt:0 };
-        renderBots();
-    }
-
-    function renderBots() {
-        const row = document.getElementById('player-row'); row.innerHTML = "";
-        bots.forEach(b => { 
-            row.innerHTML += `<div class="player"><div class="p-avatar">ID</div><div style="font-size:7px;color:#0f0">ID ${b.id}</div><div style="font-size:7px;color:gold">₹${Math.floor(b.bal).toLocaleString()}</div></div>`; 
+    // Balance Sync
+    if(phone) {
+        db.ref('users/'+phone).on('value', s => { 
+            let d = s.val() || {};
+            depBal = parseFloat(d.balance || 0); winBal = parseFloat(d.winning_balance || 0); bonBal = parseFloat(d.bonus_balance || 0);
+            totalBal = Math.max(0, depBal + winBal + bonBal);
+            document.getElementById('balance').innerText = totalBal.toFixed(2); 
         });
     }
 
-    function startEngine() {
-        const loopTime = 40000;
-        setInterval(() => {
-            const now = Date.now();
-            const cyclePos = now % loopTime;
-            const remaining = Math.floor((15000 - cyclePos) / 1000);
+    // Place Bet
+    window.placeBet = function(side) {
+        if(!isBettingOpen) return;
+        if(!phone) { alert("Login Error!"); return; }
+        if(totalBal < currentChip) { alert("Insufficient Balance!"); return; }
 
-            if (cyclePos < 15000) {
-                if(!isBetting) { 
-                    isBetting = true; 
-                    jokerVal = cardValues[Math.floor(Math.random()*13)];
-                    jokerSuit = cardSuits[Math.floor(Math.random()*4)];
-                    resetUI(jokerVal, jokerSuit); 
-                }
-                document.getElementById('timer').innerText = remaining > 0 ? remaining : "0";
-                botBetting();
-            } else if (isBetting) {
-                isBetting = false; 
-                document.getElementById('timer').innerText = "STOP!"; 
-                processGame(); 
-            }
-        }, 1000);
-    }
-
-    function botBetting() {
-        let count = Math.floor(Math.random()*10)+8; 
-        for(let i=0; i<count; i++) {
-            let bIdx = Math.floor(Math.random()*10);
-            let s = Math.random() > 0.5 ? 'andar' : 'bahar';
-            let a = [10, 100, 500, 1000, 5000][Math.floor(Math.random()*5)];
-            if(bots[bIdx].bal >= a) { 
-                bots[bIdx].bal -= a; 
-                bots[bIdx].side = s; 
-                bots[bIdx].amt += a; 
-                pool[s] += a; 
-                spawnChip(s, a); 
-            }
-        }
-        document.getElementById('p-andar').innerText = pool.andar.toLocaleString();
-        document.getElementById('p-bahar').innerText = pool.bahar.toLocaleString();
-        renderBots();
-    }
-
-    async function processGame() {
-        // ✅ ADMIN PROFIT LOGIC: Winning side is where REAL MONEY is LESS
-        let win = (realBets.andar <= realBets.bahar) ? 'andar' : 'bahar';
+        let nDep = depBal, nWin = winBal, rem = currentChip;
+        if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
+        db.ref('users/'+phone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
         
-        let matched = false, step = 0;
-        while(!matched) {
-            step++;
-            let side = (step % 2 !== 0) ? 'andar' : 'bahar';
-            let resVal = (step > 6 && side === win) ? jokerVal : cardValues[Math.floor(Math.random()*13)];
-            let resSuit = cardSuits[Math.floor(Math.random()*4)];
-            if(resVal === jokerVal && side !== win) resVal = (resVal==="A")?"K":"2";
-
-            const slotImg = document.getElementById(side==='andar'?'img-a':'img-b');
-            const slotBack = document.getElementById(side==='andar'?'back-a':'back-b');
-            
-            const nextImg = new Image();
-            nextImg.src = `https://deckofcardsapi.com/static/img/${resVal}${resSuit}.png`;
-            
-            await new Promise(r => { nextImg.onload = r; setTimeout(r, 900); });
-
-            slotImg.src = nextImg.src;
-            slotBack.style.display = 'none';
-            slotImg.style.display = 'block';
-
-            if(resVal === jokerVal) {
-                matched = true;
-                const ov = document.getElementById('win-overlay');
-                ov.innerText = side.toUpperCase() + " WINS"; ov.style.display = 'block';
-
-                // ✅ SAVE HISTORY TO FIREBASE
-                db.ref('game_history').push(side === 'andar' ? 'A' : 'B');
-                
-                bots.forEach(b => { 
-                    if(b.side === side) b.bal += (b.amt * 1.95); 
-                    b.side=''; b.amt=0; 
-                });
-                renderBots();
-
-                if(myBets[side] > 0 && phone) {
-                    db.ref('users/'+phone).once('value', s => {
-                        let b = (s.val().balance || 0) + (myBets[side] * 1.95);
-                        db.ref('users/'+phone).update({balance: b});
-                    });
-                }
-                return;
-            }
-            
-            await new Promise(r => setTimeout(r, 1600)); 
-            slotImg.style.display = 'none';
-            slotBack.style.display = 'block';
-            await new Promise(r => setTimeout(r, 600));
-        }
+        // PUSH ONLY REAL MONEY TO SERVER
+        db.ref(`Game/AndarBahar/Bets/${phone}/${side}`).set(firebase.database.ServerValue.increment(currentChip));
+        myBets[side] += currentChip; 
+        document.getElementById('my-'+side).innerText = "₹" + myBets[side];
+        document.getElementById('my-'+side).style.display = "block";
+        spawnChip(side, currentChip);
     }
 
     function spawnChip(side, amt) {
@@ -264,39 +169,102 @@
         c.className = 'chip'; c.style.background = config.b; c.style.color = config.c; c.innerText = config.t;
         c.style.left = (Math.random()*75+10)+"%"; c.style.top = (Math.random()*65+20)+"%";
         div.appendChild(c);
-        if(div.children.length > 80) div.firstChild.remove();
+        if(div.children.length > 50) div.firstChild.remove();
     }
 
-    function placeBet(side) {
-        if(!isBetting || totalBal < currentChip) return;
-        db.ref('users/'+phone).once('value', s => {
-            let b = s.val().balance || 0;
-            if(b >= currentChip) {
-                db.ref('users/'+phone).update({balance: b - currentChip});
-                myBets[side] += currentChip; 
-                realBets[side] += currentChip; // ✅ TRACK REAL MONEY ONLY
-                pool[side] += currentChip;
-                spawnChip(side, currentChip);
+    window.setChip = function(v, el) { currentChip = v; document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); }
+    document.getElementById('chip10').classList.add('selected');
+
+    // Live Bots (Visual Only)
+    function renderBots() {
+        let h = "";
+        for(let i=0; i<5; i++) {
+            let id = Math.floor(Math.random()*8999)+1000; let bal = Math.floor(Math.random()*90000)+10000;
+            h += `<div class="player"><div class="p-avatar">👤</div><div style="font-size:7px;color:#0f0">ID ${id}</div><div style="font-size:7px;color:gold">₹${bal.toLocaleString()}</div></div>`;
+        }
+        document.getElementById('player-row').innerHTML = h;
+    }
+    renderBots(); setInterval(renderBots, 15000);
+
+    // ==== THE DUMB CLIENT (LISTENS TO MASTER SERVER) ====
+    db.ref('Game/AndarBahar/Status').on('value', snap => {
+        let st = snap.val(); if(!st) return;
+        
+        let tEl = document.getElementById('timer');
+        if(st.state === 'betting') {
+            isBettingOpen = true;
+            tEl.innerText = st.timer;
+            tEl.style.color = st.timer <= 5 ? "red" : "var(--gold)";
+            
+            if(st.timer === 15) {
+                resetUI();
+                document.getElementById('joker-img').src = `https://deckofcardsapi.com/static/img/${st.jokerVal}${st.jokerSuit}.png`;
             }
-        });
+
+            // Bots Betting
+            if(st.timer > 2 && Math.random() > 0.4) {
+                let s = Math.random() > 0.5 ? 'andar' : 'bahar';
+                let a = [10, 100, 500][Math.floor(Math.random()*3)];
+                pool[s] += a;
+                document.getElementById('p-'+s).innerText = pool[s].toLocaleString();
+                spawnChip(s, a);
+            }
+        } 
+        else if (st.state === 'dealing' && isBettingOpen) {
+            isBettingOpen = false;
+            tEl.innerText = "STOP!";
+            showAnimation(st.winner, st.jokerVal, st.finalSteps);
+        }
+    });
+
+    async function showAnimation(win, jVal, steps) {
+        let step = 0;
+        
+        for (let i = 0; i < steps; i++) {
+            step++;
+            let side = (step % 2 !== 0) ? 'andar' : 'bahar';
+            let isLast = (i === steps - 1);
+            
+            // Random card or Winning Card
+            let resVal = isLast ? jVal : cardValues[Math.floor(Math.random()*13)];
+            let resSuit = cardSuits[Math.floor(Math.random()*4)];
+            if(!isLast && resVal === jVal) resVal = (resVal==="A")?"K":"2";
+
+            const slotImg = document.getElementById(side==='andar'?'img-a':'img-b');
+            const slotBack = document.getElementById(side==='andar'?'back-a':'back-b');
+            
+            slotImg.src = `https://deckofcardsapi.com/static/img/${resVal}${resSuit}.png`;
+            slotBack.style.display = 'none'; slotImg.style.display = 'block';
+
+            if(isLast) {
+                const ov = document.getElementById('win-overlay');
+                ov.innerText = side.toUpperCase() + " WINS"; ov.style.display = 'block';
+
+                let hHtml = document.getElementById('record-board').innerHTML;
+                let cDot = `<div class="record-dot" style="background:${side === 'andar' ? '#ff3333' : '#33aaff'};">${side === 'andar' ? 'A' : 'B'}</div>`;
+                document.getElementById('record-board').innerHTML = cDot + hHtml;
+
+                // Payout
+                let winAmt = (side === 'andar') ? myBets.andar * 1.95 : myBets.bahar * 1.95;
+                if(winAmt > 0 && phone) { db.ref('users/'+phone+'/winning_balance').set(winBal + winAmt); }
+                return;
+            }
+            
+            await new Promise(r => setTimeout(r, 600)); 
+            slotImg.style.display = 'none'; slotBack.style.display = 'block';
+            await new Promise(r => setTimeout(r, 200));
+        }
     }
 
-    function resetUI(val, suit) {
+    function resetUI() {
         document.getElementById('win-overlay').style.display = 'none';
-        document.getElementById('joker-img').src = `https://deckofcardsapi.com/static/img/${val}${suit}.png`;
         document.getElementById('img-a').style.display = 'none'; document.getElementById('img-b').style.display = 'none';
         document.getElementById('back-a').style.display = 'block'; document.getElementById('back-b').style.display = 'block';
         document.querySelectorAll('.chip').forEach(c => c.remove());
-        pool = {andar:0, bahar:0}; realBets = {andar:0, bahar:0}; myBets = {andar:0, bahar:0}; 
+        document.querySelectorAll('.my-box-bet').forEach(m => m.style.display = 'none');
+        pool = {andar:0, bahar:0}; myBets = {andar:0, bahar:0}; 
         document.getElementById('p-andar').innerText = "0"; document.getElementById('p-bahar').innerText = "0";
-        initBots();
     }
-
-    function setChip(v, el) { currentChip = v; document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); }
-    if(phone) db.ref('users/'+phone).on('value', s => { totalBal = s.val().balance || 0; document.getElementById('balance').innerText = totalBal.toFixed(2); });
-    
-    document.getElementById('chip10').classList.add('selected');
-    updateHeader(); startEngine();
 </script>
 </body>
 </html>
