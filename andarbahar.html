@@ -251,7 +251,7 @@
         div.appendChild(c);
         
         setTimeout(() => { c.style.transform = "scale(1) translateY(0)"; c.style.opacity = "1"; }, 50);
-        if(div.children.length > 60) div.firstChild.remove();
+        if(div.children.length > 60) div.firstChild.remove(); // Limit chips to avoid lag
     }
 
     window.setChip = function(v, el) { 
@@ -261,7 +261,7 @@
         playSound(coinSnd, 0.5);
     }
 
-    // 🔥 Bot Bets (Dheere aur balance ho kar)
+    // 🔥 Bot Bets (Dheere aur balance ho kar - 50k+ Target)
     function botBetAction() {
         if(!isBettingOpen) return;
         
@@ -284,6 +284,14 @@
         if(botBetted) playSound(coinSnd, 0.05); 
     }
 
+    function resetUI() {
+        document.getElementById('win-overlay').style.display = 'none';
+        document.querySelectorAll('.chip').forEach(c => c.remove());
+        document.querySelectorAll('.my-box-bet').forEach(m => m.style.display = 'none');
+        pool = {andar:0, bahar:0}; myBets = {andar:0, bahar:0}; 
+        document.getElementById('p-andar').innerText = "0"; document.getElementById('p-bahar').innerText = "0";
+    }
+
     // ==== ENGINE LISTENER ====
     db.ref('Game/AndarBahar/Status').on('value', snap => {
         let st = snap.val(); if(!st) return;
@@ -294,20 +302,20 @@
             
             if(!isBettingOpen) {
                 isBettingOpen = true;
+                // 🔥 Naya Round shuru hote hi purane chips saaf!
+                resetUI();
                 document.getElementById('img-a').style.display = 'none'; 
                 document.getElementById('img-b').style.display = 'none';
                 document.getElementById('back-a').style.display = 'block'; 
                 document.getElementById('back-b').style.display = 'block';
                 
                 clearInterval(botInterval);
-                // 🔥 Bots thoda aaram se bet lagayenge (800ms)
+                // 🔥 Bots aaram se bet lagayenge (800ms) taaki dheere-dheere 50k pahuche
                 botInterval = setInterval(botBetAction, 800); 
             }
             
             tEl.innerText = st.timer + "s";
             tEl.style.color = (st.timer <= 5) ? "#ff3333" : "#0f0";
-            
-            if(st.timer === 15) resetUI();
         } 
         else if (st.state === 'dealing' && isBettingOpen) {
             isBettingOpen = false;
@@ -318,9 +326,9 @@
         }
     });
 
-    // 🔥 Lamba Suspense (8 se 15 patte girenge tezi se)
+    // 🔥 20 SECONDS LAMBA SUSPENSE (20-35 Patte girenge aaram se)
     async function showAnimation(win, jVal) {
-        let steps = Math.floor(Math.random() * 8) + 8; 
+        let steps = Math.floor(Math.random() * 15) + 20; // 20 se 35 patte
         
         if(win === 'andar' && steps % 2 === 0) steps++; 
         if(win === 'bahar' && steps % 2 !== 0) steps++; 
@@ -345,7 +353,7 @@
             slotImg.style.display = 'block';
             playSound(cardSnd, 1.0); 
             
-            setTimeout(() => { slotImg.style.transform = "scale(1)"; }, 120);
+            setTimeout(() => { slotImg.style.transform = "scale(1)"; }, 150);
 
             if(isLast) {
                 const ov = document.getElementById('win-overlay');
@@ -361,17 +369,9 @@
                 return;
             }
             
-            // 🔥 Time set kiya hai taaki lamba chale bina atak ke
-            await new Promise(r => setTimeout(r, 350)); 
+            // 🔥 Makkhan ki tarah 450ms ki speed par girenge patte
+            await new Promise(r => setTimeout(r, 450)); 
         }
-    }
-
-    function resetUI() {
-        document.getElementById('win-overlay').style.display = 'none';
-        document.querySelectorAll('.chip').forEach(c => c.remove());
-        document.querySelectorAll('.my-box-bet').forEach(m => m.style.display = 'none');
-        pool = {andar:0, bahar:0}; myBets = {andar:0, bahar:0}; 
-        document.getElementById('p-andar').innerText = "0"; document.getElementById('p-bahar').innerText = "0";
     }
 </script>
 </body>
