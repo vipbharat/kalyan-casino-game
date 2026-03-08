@@ -66,7 +66,8 @@
 <body onclick="unlockAudio()">
 
 <audio id="bgMusic" src="https://assets.mixkit.co/active_storage/sfx/135/135-preview.mp3" loop></audio>
-<audio id="betSound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio> <audio id="cardSound" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
+<audio id="betSound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+<audio id="cardSound" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
 
 <div class="top-bar">
     <div><div style="font-size:12px; color:var(--gold); font-weight:900;">KALYAN ULTRA VIP</div><div style="font-size:10px; color:#0f0; font-weight:bold; letter-spacing:1px;"><span id="online-count">1,248</span> VIP ONLINE</div></div>
@@ -127,7 +128,6 @@
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     firebase.initializeApp(firebaseConfig); const db = firebase.database();
     const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
-    const deckCodes = ["A","2","3","4","5","6","7","8","9","0","J","Q","K"];
 
     let isBettingOpen=false, currentChip=1000, currentChipColor='radial-gradient(circle, #e57373, #d32f2f)';
     let totalBal=0, depBal=0, winBal=0, bonBal=0;
@@ -135,7 +135,6 @@
     let botInterval;
     let isAudioInit = false;
     
-    // 🔥 Original Sounds + New BGM & Effects
     var tigerAudio = new Audio('https://files.catbox.moe/396ke9.mp3');
     var dragonAudio = new Audio('https://files.catbox.moe/8in4qi.mp3'); 
     
@@ -158,9 +157,7 @@
         } catch(e){} 
     }
 
-    // Online count randomizer
     setInterval(() => { document.getElementById('online-count').innerText = Math.floor(Math.random() * 50) + 1200; }, 4000);
-
     db.ref('admin_settings/notification').on('value', s => { if(s.val()) document.getElementById('admin-note').innerText = s.val(); });
 
     if(phone) {
@@ -172,14 +169,11 @@
         });
     }
 
-    // 🔥 BOT SETUP (Max 1.5 Lakh)
     let botsList = [];
     function generateBots() {
         botsList = [];
         for(let i=0; i<5; i++) {
-            let id = Math.floor(Math.random()*8999)+1000; 
-            let bal = Math.floor(Math.random() * 100000) + 50000; 
-            botsList.push({id: id, bal: bal});
+            botsList.push({id: Math.floor(Math.random()*8999)+1000, bal: Math.floor(Math.random() * 100000) + 50000});
         }
         renderBotsUI();
     }
@@ -209,7 +203,6 @@
     generateBots();
 
 
-    // Place Bet Logic (Sync with Master)
     window.placeBet = function(side) {
         if(!isBettingOpen) return;
         if(!phone) { alert("Login Error!"); return; }
@@ -219,14 +212,13 @@
         if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
         db.ref('users/'+phone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
         
-        // ONLY PUSH BETS TO SERVER
         db.ref(`Game/DragonTiger/Bets/${phone}/${side}`).set(firebase.database.ServerValue.increment(currentChip));
         myBets[side] += currentChip; 
         document.getElementById('my-bet-' + side).innerText = "₹" + myBets[side].toLocaleString();
         document.getElementById('my-bet-' + side).style.display = "block";
         spawnChip(side, currentChip, currentChipColor); 
         
-        playSound(document.getElementById('betSound'), 1.0); // Fortuner awaaz
+        playSound(document.getElementById('betSound'), 1.0);
     };
 
     function spawnChip(side, amt, color) {
@@ -235,7 +227,6 @@
         chip.className = 'chip'; chip.innerText = amt >= 1000 ? (amt/1000)+'K' : amt;
         chip.style.background = color; chip.style.color = (amt === 10000) ? '#000' : '#fff';
         
-        // Fly in effect
         chip.style.top = "150%"; chip.style.left = side === 'dragon' ? "-100px" : "150px";
         chip.style.opacity = "0";
         box.appendChild(chip);
@@ -249,7 +240,6 @@
         if(box.children.length > 50) box.firstChild.remove();
     }
 
-    // 🔥 Bot Bets (Fast & Heavy)
     function botBetAction() {
         if(!isBettingOpen) return;
         
@@ -265,7 +255,6 @@
                 pool[s] += amt;
                 updatePoolUI();
                 
-                // Bot color pick based on amount
                 let bColor = '';
                 if(amt===1000) bColor = 'radial-gradient(circle, #e57373, #d32f2f)';
                 else if(amt===2000 || amt===5000) bColor = 'radial-gradient(circle, #ba68c8, #7b1fa2)';
@@ -275,15 +264,13 @@
             }
         });
         
-        // Tie bet rarely
         if(Math.random() > 0.7) {
             pool['tie'] += 500; updatePoolUI(); spawnChip('tie', 500, 'radial-gradient(circle, #81c784, #388e3c)'); botBetted = true;
         }
 
-        if(botBetted) playSound(document.getElementById('betSound'), 0.05); // Dheemi awaaz
+        if(botBetted) playSound(document.getElementById('betSound'), 0.05); 
     }
 
-    // ==== THE DUMB CLIENT SYNC (ONLY LISTENS TO FIREBASE) ====
     db.ref('Game/DragonTiger/Status').on('value', snap => {
         let status = snap.val();
         if(!status) return;
@@ -291,15 +278,12 @@
         let timerEl = document.getElementById('timer');
         
         if(status.state === 'betting') {
-            
             if(!isBettingOpen) {
                 isBettingOpen = true;
                 resetUI();
-                
                 clearInterval(botInterval);
-                botInterval = setInterval(botBetAction, 700); // 50k+ aaram se pahuchega
+                botInterval = setInterval(botBetAction, 700); 
             }
-
             timerEl.innerText = status.timer + "s";
             
             if(status.timer <= 5) {
@@ -309,7 +293,6 @@
                 timerEl.style.color = "var(--gold)";
                 timerEl.style.textShadow = "0 0 15px var(--gold)";
             }
-            
         } 
         else if (status.state === 'result' && isBettingOpen) {
             isBettingOpen = false;
@@ -317,40 +300,78 @@
             timerEl.innerText = "STOP!";
             timerEl.style.color = "#fff";
             timerEl.style.textShadow = "0 0 15px #fff";
-            showResult(status.winner, status.cardD, status.cardT);
+            
+            // 🔥 AB HUM SIRF WINNER PASS KARENGE, CARDS CODE KHUD GENERATE KAREGA 🔥
+            showResult(status.winner);
         }
     });
 
-    function showResult(win, cD, cT) {
-        
+    // 🔥 MAIN FIX: CARDS AB FRONTEND PAR KHUD GENERATE HONGE (NO BROKEN IMAGES) 🔥
+    function showResult(win) {
         playSound(document.getElementById('cardSound'), 1.0);
         
-        document.getElementById('back-d').style.display='none'; document.getElementById('back-t').style.display='none';
+        document.getElementById('back-d').style.display='none'; 
+        document.getElementById('back-t').style.display='none';
         
         let cD_Elem = document.getElementById('card-d');
         let cT_Elem = document.getElementById('card-t');
         
-        cD_Elem.style.transform = "scale(1.2)"; cT_Elem.style.transform = "scale(1.2)";
+        cD_Elem.style.transform = "scale(1.2)"; 
+        cT_Elem.style.transform = "scale(1.2)";
         
-        document.getElementById('d-v').innerHTML=`<img src="https://deckofcardsapi.com/static/img/${deckCodes[cD]}S.png">`;
-        document.getElementById('t-v').innerHTML=`<img src="https://deckofcardsapi.com/static/img/${deckCodes[cT]}D.png">`;
+        // Logical Card Generation
+        const vals = ["A","2","3","4","5","6","7","8","9","0","J","Q","K"];
+        const suits = ["S","D","C","H"];
+        let dIdx, tIdx;
+
+        if(win === 'dragon') {
+            dIdx = Math.floor(Math.random() * 12) + 1; // 1 to 12
+            tIdx = Math.floor(Math.random() * dIdx);   // 0 to dIdx-1
+        } else if(win === 'tiger') {
+            tIdx = Math.floor(Math.random() * 12) + 1;
+            dIdx = Math.floor(Math.random() * tIdx);
+        } else {
+            dIdx = Math.floor(Math.random() * 13);
+            tIdx = dIdx; // Tie means same card
+        }
+
+        // Format for DeckOfCards API (10 is '0')
+        let dCode = vals[dIdx] === "0" ? "10" : vals[dIdx];
+        let tCode = vals[tIdx] === "0" ? "10" : vals[tIdx];
+
+        let dSuit = suits[Math.floor(Math.random()*4)];
+        let tSuit = suits[Math.floor(Math.random()*4)];
+        if(win === 'tie' && dSuit === tSuit) tSuit = dSuit === "S" ? "H" : "S"; // Avoid exact same card
+
+        let cardBase = "https://www.deckofcardsapi.com/static/img/";
+
+        // Ab kabhi 404 error nahi aayega kyunki card proper create ho gaya hai
+        document.getElementById('d-v').innerHTML=`<img src="${cardBase}${dCode}${dSuit}.png" style="width:100%; height:100%; border-radius:6px; box-shadow: 0 0 15px #fff;">`;
+        document.getElementById('t-v').innerHTML=`<img src="${cardBase}${tCode}${tSuit}.png" style="width:100%; height:100%; border-radius:6px; box-shadow: 0 0 15px #fff;">`;
 
         setTimeout(() => {
-            cD_Elem.style.transform = "scale(1)"; cT_Elem.style.transform = "scale(1)";
+            cD_Elem.style.transform = "scale(1)"; 
+            cT_Elem.style.transform = "scale(1)";
             
-            if(win === 'dragon') { dragonAudio.play().catch(e=>{}); document.getElementById('box-dragon').classList.add('glow-win'); }
-            else if(win === 'tiger') { tigerAudio.play().catch(e=>{}); document.getElementById('box-tiger').classList.add('glow-win'); }
+            if(win === 'dragon') { 
+                dragonAudio.play().catch(e=>{}); 
+                document.getElementById('box-dragon').classList.add('glow-win'); 
+            }
+            else if(win === 'tiger') { 
+                tigerAudio.play().catch(e=>{}); 
+                document.getElementById('box-tiger').classList.add('glow-win'); 
+            }
             else document.getElementById('box-tie').classList.add('glow-win');
 
-            // Handle Payout
             let winAmt = 0;
             if(win === 'dragon') winAmt = myBets.dragon * 2;
             else if(win === 'tiger') winAmt = myBets.tiger * 2;
             else if(win === 'tie') winAmt = myBets.tie * 9;
 
-            if(winAmt > 0 && phone) { db.ref('users/'+phone+'/winning_balance').set(winBal + winAmt); }
+            if(winAmt > 0 && phone) { 
+                db.ref('users/'+phone+'/winning_balance').set(winBal + winAmt); 
+            }
 
-            // History
             let hHtml = document.getElementById('history-row').innerHTML;
             let nB = `<div class="history-bead bead-${win === 'dragon' ? 'D' : (win === 'tiger' ? 'T' : 'Tie')}">${win === 'dragon' ? 'D' : (win === 'tiger' ? 'T' : 'Tie')}</div>`;
             document.getElementById('history-row').innerHTML = hHtml + nB;
@@ -376,7 +397,7 @@
         currentChipColor = window.getComputedStyle(el).backgroundImage; 
         document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected')); 
         el.classList.add('selected'); 
-        playSound(document.getElementById('betSound'), 0.5); // Chip click sound
+        playSound(document.getElementById('betSound'), 0.5); 
     }
 </script>
 </body>
