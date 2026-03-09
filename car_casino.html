@@ -3,18 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Casino VIP Pro</title>
+    <title>Car Casino VIP Pro - SERVER SYNC</title>
     <style>
-        :root { 
-            --bg: #1a002b; 
-            --gold: #ffd700; 
-            --neon-green: #00ff88; 
-            --text: #ffffff; 
-            --neon-red: #ff3333;
-        }
-        
+        :root { --bg: #1a002b; --gold: #ffd700; --neon-green: #00ff88; --text: #ffffff; --neon-red: #ff3333; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #2b0040, #0a0014); color: var(--text); font-family: 'Arial Black', sans-serif; overflow: hidden; user-select: none; }
-        
         audio { display: none; }
 
         .top-info-bar { background: rgba(0,0,0,0.9); padding: 6px 10px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; color: #aaa; border-bottom: 2px solid var(--gold); box-shadow: 0 2px 10px rgba(255,215,0,0.3); z-index: 100; position: relative; }
@@ -31,7 +23,6 @@
         .timer-text { font-size: 2rem; font-weight: 900; color: var(--neon-green); text-shadow: 0 0 15px var(--neon-green); transition: 0.3s; margin-bottom: -5px; }
         .status-msg { font-size: 0.9rem; color: var(--gold); font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
 
-        /* 🔥 Responsive Wheel 🔥 */
         .wheel-wrapper { position: relative; width: 190px; height: 190px; margin: 5px auto; background: radial-gradient(circle, #1a1a2e 40%, #000000 100%); border-radius: 50%; border: 5px solid var(--gold); box-shadow: inset 0 0 30px rgba(0,0,0,0.9), 0 0 20px rgba(255, 215, 0, 0.4); }
         .wheel-icon { position: absolute; width: 26px; height: 26px; top: 50%; left: 50%; margin-top: -13px; margin-left: -13px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 900; transition: 0.3s; text-shadow: 0 0 5px currentColor; }
         
@@ -41,7 +32,6 @@
         .spinner-ring { position: absolute; width: 100%; height: 100%; top: 0; left: 0; border-radius: 50%; transition: transform 7.5s cubic-bezier(0.15, 0.85, 0.2, 1); z-index: 10; }
         .glowing-dot { position: absolute; top: -5px; left: 50%; transform: translateX(-50%); width: 16px; height: 16px; background: #fff; border-radius: 50%; box-shadow: 0 0 15px 5px #fff, 0 0 30px var(--neon-green); border: 2px solid var(--neon-green); }
 
-        /* 🔥 Responsive Bet Boxes 🔥 */
         .bet-table-wrapper { padding: 0 8px; margin-top: 8px; }
         .bet-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
         
@@ -67,7 +57,6 @@
         .box-win { box-shadow: 0 0 25px var(--neon-green), inset 0 0 20px var(--neon-green) !important; border-color: var(--neon-green) !important; transform: scale(1.05); }
         .icon-win { filter: drop-shadow(0 0 15px var(--neon-green)); transform: scale(1.8); z-index: 20; color: var(--neon-green) !important; }
 
-        /* 🔥 Live Players & Chips 🔥 */
         .live-players { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 5px 0; background: rgba(0,0,0,0.95); position: fixed; bottom: 75px; width: 100%; border-top: 2px solid var(--gold); box-shadow: 0 -5px 15px rgba(0,0,0,0.5); z-index: 1050; }
         .player { text-align: center; transition: 0.5s; }
         .p-avatar { width: 24px; height: 24px; background: linear-gradient(45deg, #444, #222); border: 2px solid var(--gold); border-radius: 50%; margin: 0 auto; line-height: 22px; font-size: 10px; color: #fff; box-shadow: 0 0 8px var(--gold); }
@@ -114,7 +103,7 @@
 
     <div class="status-bar">
         <div class="timer-text" id="timeText">Wait</div>
-        <div class="status-msg" id="msgText">SYNCING REAL-TIME...</div>
+        <div class="status-msg" id="msgText">WAITING FOR SERVER...</div>
     </div>
 
     <div class="wheel-wrapper" id="wheelWrapper">
@@ -192,332 +181,160 @@
 
     const currentUserId = localStorage.getItem('userPhone') || localStorage.getItem('phone');
     let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
-    let selectedChip = 100, isBettingOpen = false;
-    let currentRotation = 0, isAudioInit = false;
-    let botInterval;
+    let selectedChip = 100, isBettingOpen = false, isSpinning = false;
+    let currentRotation = 0, isAudioInit = false, botInterval;
     
-    // 🔥 UTC TIME ENGINE (KABHI REFRESH PAR RESET NAHI HOGA) 🔥
-    const CYCLE_TIME = 30000; // 30s per round
-    const BET_TIME = 15000;   // 15s betting
-    let isSpinning = false;
-    let hasJoinedRound = false;
-
     const carData = { porsche:40, ferrari:30, lambo:20, maserati:10, bmw:5, mercedes:5, audi:5, jaguar:5 };
     let myBets = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
-    let pool = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
 
     const wheelOrder = ['porsche', 'bmw', 'ferrari', 'mercedes', 'lambo', 'audi', 'maserati', 'jaguar', 'porsche', 'mercedes', 'ferrari', 'bmw', 'lambo', 'jaguar', 'maserati', 'audi'];
     const wheelIcons = { porsche:'🔴', ferrari:'🐎', lambo:'🐂', maserati:'🔱', bmw:'🔵', mercedes:'🌟', audi:'⭕', jaguar:'🐆' };
     const wheelClasses = { porsche:'icon-porsche', ferrari:'icon-ferrari', lambo:'icon-lambo', maserati:'icon-maserati', bmw:'icon-bmw', mercedes:'icon-mercedes', audi:'icon-audi', jaguar:'icon-jaguar' };
 
-    function initAudio() {
-        if(!isAudioInit) {
-            let bgm = document.getElementById('bgMusic');
-            bgm.volume = 0.20; 
-            bgm.play().catch(e=>{});
-            isAudioInit = true;
-        }
-    }
-    
-    function playSound(audioObj, vol) { 
-        try { let clone = audioObj.cloneNode(); clone.volume = vol; clone.play().catch(e=>{}); } catch(e){} 
-    }
+    function initAudio() { if(!isAudioInit) { document.getElementById('bgMusic').volume = 0.20; document.getElementById('bgMusic').play().catch(e=>{}); isAudioInit = true; } }
+    function playSound(obj, vol) { try { let c = obj.cloneNode(); c.volume = vol; c.play().catch(e=>{}); } catch(e){} }
 
     function drawWheel() {
         var wrapper = document.getElementById('wheelWrapper');
-        var radius = 80; 
         for(var i=0; i<wheelOrder.length; i++) {
-            var carKey = wheelOrder[i];
-            var angle = (i * (360 / 16) - 90) * (Math.PI / 180);
-            var x = Math.round(radius * Math.cos(angle));
-            var y = Math.round(radius * Math.sin(angle));
-
-            var iconDiv = document.createElement('div');
-            iconDiv.className = 'wheel-icon ' + wheelClasses[carKey];
-            iconDiv.id = 'wheel-icon-' + i;
-            iconDiv.innerText = wheelIcons[carKey];
-            iconDiv.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
-            wrapper.appendChild(iconDiv);
+            var cKey = wheelOrder[i];
+            var angle = (i * (360/16) - 90) * (Math.PI/180);
+            var x = Math.round(80 * Math.cos(angle)), y = Math.round(80 * Math.sin(angle));
+            var icon = document.createElement('div');
+            icon.className = 'wheel-icon ' + wheelClasses[cKey];
+            icon.id = 'wheel-icon-' + i; icon.innerText = wheelIcons[cKey];
+            icon.style.transform = `translate(${x}px, ${y}px)`;
+            wrapper.appendChild(icon);
         }
-    }
-    drawWheel();
+    } drawWheel();
 
     let botsList = [];
-    function generateBots() {
-        botsList = [];
-        for(let i=0; i<5; i++) {
-            botsList.push({id: Math.floor(Math.random()*8999)+1000, bal: Math.floor(Math.random() * 50000) + 20000});
-        }
-        renderBotsUI();
-    }
-    
+    function generateBots() { botsList = []; for(let i=0; i<5; i++) botsList.push({id: Math.floor(Math.random()*8999)+1000, bal: Math.floor(Math.random() * 50000) + 20000}); renderBotsUI(); }
     setInterval(() => {
-        let numToChange = Math.floor(Math.random() * 2) + 1;
-        for(let i=0; i<numToChange; i++) {
-            let idx = Math.floor(Math.random() * botsList.length);
-            botsList[idx] = { id: Math.floor(Math.random()*8999)+1000, bal: Math.floor(Math.random() * 50000) + 30000 };
-        }
-        botsList.forEach(b => {
-            b.bal += (Math.random() > 0.5 ? 1200 : -800);
-            if(b.bal > 100000) b.bal = 95000; 
-            if(b.bal < 5000) b.bal = 45000;
-        });
+        let n = Math.floor(Math.random()*2)+1;
+        for(let i=0; i<n; i++) botsList[Math.floor(Math.random()*botsList.length)] = { id: Math.floor(Math.random()*8999)+1000, bal: Math.floor(Math.random() * 50000) + 30000 };
+        botsList.forEach(b => { b.bal += (Math.random()>0.5?1200:-800); if(b.bal>100000) b.bal=95000; if(b.bal<5000) b.bal=45000; });
         renderBotsUI();
     }, 3500);
 
     function renderBotsUI() {
         let h = "";
         botsList.forEach(b => {
-            let displayBal = b.bal >= 100000 ? "1.0L" : (b.bal/1000).toFixed(1) + "K";
-            h += `<div class="player"><div class="p-avatar">👑</div><div style="font-size:9px;color:#fff;font-weight:bold;margin-top:2px;">VIP_${b.id}</div><div style="font-size:9px;color:var(--gold);font-weight:900;">₹${displayBal}</div></div>`;
+            let dB = b.bal >= 100000 ? "1.0L" : (b.bal/1000).toFixed(1) + "K";
+            h += `<div class="player"><div class="p-avatar">👑</div><div style="font-size:9px;color:#fff;font-weight:bold;margin-top:2px;">VIP_${b.id}</div><div style="font-size:9px;color:var(--gold);font-weight:900;">₹${dB}</div></div>`;
         });
         document.getElementById('player-row').innerHTML = h;
-    }
-    generateBots();
+    } generateBots();
 
     setInterval(() => {
-        let d = new Date();
-        document.getElementById('topDate').innerText = d.toLocaleDateString('en-GB') + " | " + d.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
+        let d = new Date(); document.getElementById('topDate').innerText = d.toLocaleDateString('en-GB') + " | " + d.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
         document.getElementById('onlineCount').innerText = Math.floor(Math.random() * 50) + 1200;
     }, 3000);
 
     if (currentUserId) {
-        db.ref(`users/${currentUserId}`).on('value', (snapshot) => {
-            const data = snapshot.val() || {};
-            depBal = parseFloat(data.balance || 0); winBal = parseFloat(data.winning_balance || 0); bonBal = parseFloat(data.bonus_balance || 0);
-            userBalance = depBal + winBal + bonBal;
-            document.getElementById('balanceDisplay').innerText = "₹" + userBalance.toFixed(2);
+        db.ref(`users/${currentUserId}`).on('value', (s) => {
+            const d = s.val() || {}; depBal = parseFloat(d.balance||0); winBal = parseFloat(d.winning_balance||0); bonBal = parseFloat(d.bonus_balance||0);
+            userBalance = depBal + winBal + bonBal; document.getElementById('balanceDisplay').innerText = "₹" + userBalance.toFixed(2);
         });
     }
 
-    window.chooseChip = function(amt, elem) {
-        selectedChip = parseInt(amt); 
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        elem.classList.add('active');
-        playSound(document.getElementById('soundBet'), 0.5);
-    };
-
-    function getChipColor(amt) {
-        if(amt === 10) return 'radial-gradient(circle, #ffffff, #cccccc)';
-        if(amt === 100) return 'radial-gradient(circle, #4fc3f7, #0288d1)'; 
-        if(amt === 500) return 'radial-gradient(circle, #81c784, #388e3c)';
-        if(amt === 1000) return 'radial-gradient(circle, #e57373, #d32f2f)'; 
-        if(amt === 5000) return 'radial-gradient(circle, #ba68c8, #7b1fa2)'; 
-        if(amt === 10000) return 'radial-gradient(circle, #ffd54f, #f57f17)';
-        return '#fff';
-    }
+    window.chooseChip = function(amt, el) { selectedChip = parseInt(amt); document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); playSound(document.getElementById('soundBet'), 0.5); };
+    function getChipColor(amt) { if(amt===10) return 'radial-gradient(circle, #fff, #ccc)'; if(amt===100) return 'radial-gradient(circle, #4fc3f7, #0288d1)'; if(amt===500) return 'radial-gradient(circle, #81c784, #388e3c)'; if(amt===1000) return 'radial-gradient(circle, #e57373, #d32f2f)'; if(amt===5000) return 'radial-gradient(circle, #ba68c8, #7b1fa2)'; return 'radial-gradient(circle, #ffd54f, #f57f17)'; }
 
     function spawnChip(carId, amt, isBot, cX, cY) {
-        var fly = document.createElement('div');
-        fly.className = 'chip-fly';
-        fly.style.background = getChipColor(amt);
-        fly.innerText = amt >= 1000 ? (amt/1000)+'K' : amt;
-        
+        var fly = document.createElement('div'); fly.className = 'chip-fly'; fly.style.background = getChipColor(amt); fly.innerText = amt >= 1000 ? (amt/1000)+'K' : amt;
         if(amt === 10 || amt === 10000) fly.style.color = '#000';
-        
-        if(isBot) { 
-            fly.style.left = (Math.random() * window.innerWidth) + 'px'; 
-            fly.style.top = (window.innerHeight + 50) + 'px'; 
-        } else { 
-            fly.style.left = cX + 'px'; 
-            fly.style.top = cY + 'px'; 
-        }
-        
+        if(isBot) { fly.style.left = (Math.random() * window.innerWidth) + 'px'; fly.style.top = (window.innerHeight + 50) + 'px'; } else { fly.style.left = cX + 'px'; fly.style.top = cY + 'px'; }
         document.body.appendChild(fly);
-        var targetBox = document.getElementById(carId).getBoundingClientRect();
-        
-        setTimeout(() => {
-            fly.style.left = (targetBox.left + 15 + Math.random() * (targetBox.width - 30)) + 'px';
-            fly.style.top = (targetBox.top + 15 + Math.random() * (targetBox.height - 30)) + 'px';
-        }, 50);
+        var tB = document.getElementById(carId).getBoundingClientRect();
+        setTimeout(() => { fly.style.left = (tB.left + 15 + Math.random()*(tB.width-30))+'px'; fly.style.top = (tB.top + 15 + Math.random()*(tB.height-30))+'px'; }, 50);
     }
 
-    window.placeBet = function(carId, event) {
-        if(!isBettingOpen) return;
-        if(!currentUserId) { alert("Login Error!"); return; }
-        if(userBalance < selectedChip) { alert("Insufficient Balance!"); return; }
-
-        let betCount = Object.values(myBets).filter(v => v > 0).length;
-        if(myBets[carId] === 0 && betCount >= 4) { alert("Max 4 cars allowed!"); return; }
-
+    window.placeBet = function(carId, e) {
+        if(!isBettingOpen) return; if(!currentUserId) { alert("Login Error!"); return; } if(userBalance < selectedChip) { alert("Insufficient Balance!"); return; }
+        if(myBets[carId] === 0 && Object.values(myBets).filter(v=>v>0).length >= 4) { alert("Max 4 cars allowed!"); return; }
         playSound(document.getElementById('soundBet'), 1.0); 
-
         let nDep = depBal, nWin = winBal, rem = selectedChip;
         if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
         db.ref('users/'+currentUserId).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
-
         db.ref(`Game/CarRoulette/Bets/${currentUserId}/${carId}`).set(firebase.database.ServerValue.increment(selectedChip));
-
         myBets[carId] += selectedChip;
-        document.getElementById('my-' + carId).innerText = "MY BET: ₹" + myBets[carId].toLocaleString();
-        document.getElementById('my-' + carId).style.display = "block";
-        spawnChip(carId, selectedChip, false, event.clientX, event.clientY);
+        document.getElementById('my-'+carId).innerText = "MY BET: ₹" + myBets[carId].toLocaleString(); document.getElementById('my-'+carId).style.display = "block";
+        spawnChip(carId, selectedChip, false, e.clientX, e.clientY);
     };
 
     function botBetAction() {
         if(!isBettingOpen) return;
-        let numBets = Math.floor(Math.random() * 3) + 1; 
-        let cars = Object.keys(carData);
-        let botBetted = false;
+        let cKeys = Object.keys(carData), bBet = false;
+        for(let i=0; i<(Math.floor(Math.random()*3)+1); i++) {
+            let rC = cKeys[Math.floor(Math.random()*cKeys.length)], amt = [10,100,500,1000,5000][Math.floor(Math.random()*5)], rB = botsList[Math.floor(Math.random()*botsList.length)];
+            if(rB.bal >= amt) { rB.bal -= amt; spawnChip(rC, amt, true, 0, 0); bBet = true; }
+        }
+        if(bBet) playSound(document.getElementById('soundBet'), 0.05); 
+    }
 
-        for(let i=0; i<numBets; i++) {
-            let randomCar = cars[Math.floor(Math.random() * cars.length)];
-            let amt = [10, 100, 500, 1000, 5000][Math.floor(Math.random()*5)];
-            let randomBot = botsList[Math.floor(Math.random() * botsList.length)];
+    // 🔥 SERVER LISTENER 🔥
+    db.ref('Game/CarRoulette/Status').on('value', (s) => {
+        let st = s.val(); if(!st) return;
+
+        if(st.state === 'betting') {
+            document.getElementById('timeText').innerText = st.timer;
+            document.getElementById('timeText').style.color = st.timer <= 5 ? "var(--neon-red)" : "var(--neon-green)";
+            document.getElementById('msgText').innerText = st.timer <= 5 ? "CLOSING..." : "PLACE YOUR BETS";
             
-            if(randomBot.bal >= amt) {
-                randomBot.bal -= amt;
-                pool[randomCar] += amt;
-                document.getElementById('total-' + randomCar).innerText = "₹" + pool[randomCar].toLocaleString();
-                spawnChip(randomCar, amt, true, 0, 0);
-                botBetted = true;
+            if(!isBettingOpen) {
+                isBettingOpen = true; isSpinning = false; resetTable();
+                clearInterval(botInterval); botInterval = setInterval(botBetAction, 800);
+            }
+        } 
+        else if (st.state === 'spinning' || st.state === 'calculating') {
+            if(isBettingOpen && !isSpinning) {
+                isBettingOpen = false; isSpinning = true; clearInterval(botInterval);
+                document.getElementById('timeText').innerText = "0"; document.getElementById('msgText').innerText = "SPINNING...";
+                if(st.winner) runWheelSpin(st.winner);
             }
         }
-        if(botBetted) playSound(document.getElementById('soundBet'), 0.05); 
+    });
+
+    // To sync total pool visually
+    db.ref('Game/CarRoulette/Bets').on('value', s => {
+        let allB = s.val() || {};
+        let tp = {porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0};
+        for(let u in allB) { if(!u.includes('bot')) for(let c in allB[u]) if(tp[c] !== undefined) tp[c] += allB[u][c]; }
+        for(let c in tp) document.getElementById('total-'+c).innerText = "₹" + tp[c].toLocaleString();
+    });
+
+    function runWheelSpin(wCar) {
+        let sSnd = document.getElementById('soundSpin'); sSnd.currentTime = 0; sSnd.loop = true; sSnd.volume = 0.8; sSnd.play().catch(e=>{});
+        var pIdx = []; for(var i=0; i<wheelOrder.length; i++) if(wheelOrder[i] === wCar) pIdx.push(i);
+        if(pIdx.length === 0) pIdx = [1];
+        var fIdx = pIdx[Math.floor(Math.random() * pIdx.length)], tAng = fIdx * 22.5; 
+        currentRotation = (Math.floor(currentRotation/360)*360) + 3600 + tAng;
+        document.getElementById('spinnerRing').style.transform = `rotate(${currentRotation}deg)`;
+        setTimeout(() => { sSnd.pause(); showWinner(wCar, fIdx); }, 7600);
     }
 
-    // 🔥 MASTER REAL-TIME UTC ENGINE 🔥
-    function startGlobalEngine() {
-        checkPhase(); 
-        setInterval(checkPhase, 200); // Har 200ms me sync
-    }
-
-    function checkPhase() {
-        let now = Date.now();
-        let elapsed = now % CYCLE_TIME; 
-        
-        if (elapsed < BET_TIME) {
-            // == BETTING PHASE ==
-            let timeLeft = Math.ceil((BET_TIME - elapsed) / 1000);
-            
-            if (isSpinning || !isBettingOpen) {
-                isSpinning = false;
-                isBettingOpen = true;
-                hasJoinedRound = true; 
-                resetTable();
-                
-                clearInterval(botInterval);
-                botInterval = setInterval(botBetAction, 800);
-            }
-            
-            document.getElementById('timeText').innerText = timeLeft;
-            
-            if (timeLeft <= 5) {
-                document.getElementById('timeText').style.color = "var(--neon-red)";
-                document.getElementById('msgText').innerText = "CLOSING...";
-            } else {
-                document.getElementById('timeText').style.color = "var(--neon-green)";
-                document.getElementById('msgText').innerText = "PLACE YOUR BETS";
-            }
-            
-        } else {
-            // == SPINNING PHASE ==
-            if (!isSpinning) {
-                isSpinning = true;
-                isBettingOpen = false;
-                clearInterval(botInterval); 
-                
-                if (hasJoinedRound) {
-                    document.getElementById('timeText').innerText = "0";
-                    document.getElementById('msgText').innerText = "SPINNING...";
-                    determineWinnerAndSpin(); // 🔥 PROFIT LOGIC FIRED 🔥
-                } else {
-                    document.getElementById('timeText').innerText = "WAIT";
-                    document.getElementById('msgText').innerText = "ROUND IN PROGRESS...";
-                }
-            }
-        }
-    }
-
-    // 🔥 ADMIN PROFIT LOGIC 🔥
-    function determineWinnerAndSpin() {
-        let cars = Object.keys(carData);
-        
-        // 1. Kis gaadi par paise nahi lage?
-        let zeroBets = cars.filter(c => myBets[c] === 0);
-        let winId;
-
-        if (zeroBets.length > 0) {
-            // Randomly select unme se jispar 0 bet hai
-            winId = zeroBets[Math.floor(Math.random() * zeroBets.length)];
-        } else {
-            // 2. Agar sabpe lage hain, toh sabse kam nuksan wali gaadi kholo
-            winId = cars.reduce((minCar, currentCar) => {
-                let currentPayout = myBets[currentCar] * carData[currentCar];
-                let minPayout = myBets[minCar] * carData[minCar];
-                return (currentPayout < minPayout) ? currentCar : minCar;
-            });
-        }
-        
-        runWheelSpin(winId);
-    }
-
-    function runWheelSpin(winnerCar) {
-        let spinSnd = document.getElementById('soundSpin');
-        spinSnd.currentTime = 0;
-        spinSnd.loop = true;
-        spinSnd.volume = 0.8;
-        spinSnd.play().catch(e=>{});
-        
-        var possibleIndexes = [];
-        for(var i=0; i<wheelOrder.length; i++) { if(wheelOrder[i] === winnerCar) possibleIndexes.push(i); }
-        
-        var finalTargetIndex = possibleIndexes[Math.floor(Math.random() * possibleIndexes.length)];
-        var targetAngle = finalTargetIndex * 22.5; 
-        
-        var extraSpins = 3600; 
-        var baseRotation = Math.floor(currentRotation / 360) * 360; 
-        currentRotation = baseRotation + extraSpins + targetAngle;
-        
-        document.getElementById('spinnerRing').style.transform = 'rotate(' + currentRotation + 'deg)';
-
-        setTimeout(() => {
-            spinSnd.pause(); 
-            showWinner(winnerCar, finalTargetIndex);
-        }, 7600); // Wheel Spin Duration
-    }
-
-    function showWinner(winId, iconIndex) {
+    function showWinner(wId, iIdx) {
         playSound(document.getElementById('soundWin'), 1.0); 
-        document.getElementById('msgText').innerText = "WINNER!"; 
-        document.getElementById('timeText').innerText = winId.toUpperCase();
-        
-        document.getElementById(winId).classList.add('box-win');
-        document.getElementById('wheel-icon-' + iconIndex).classList.add('icon-win');
+        document.getElementById('msgText').innerText = "WINNER!"; document.getElementById('timeText').innerText = wId.toUpperCase();
+        document.getElementById(wId).classList.add('box-win'); document.getElementById('wheel-icon-'+iIdx).classList.add('icon-win');
 
-        if(myBets[winId] > 0 && currentUserId) {
-            var wonAmt = myBets[winId] * carData[winId];
-            db.ref(`users/${currentUserId}/winning_balance`).set(winBal + wonAmt);
-            var p = document.getElementById('winMsg');
-            p.innerText = "+₹" + wonAmt.toLocaleString(); p.classList.add('show');
+        if(myBets[wId] > 0 && currentUserId) {
+            var wAmt = myBets[wId] * carData[wId];
+            db.ref(`users/${currentUserId}/winning_balance`).set(winBal + wAmt);
+            var p = document.getElementById('winMsg'); p.innerText = "+₹" + wAmt.toLocaleString(); p.classList.add('show');
         }
-
-        setTimeout(() => {
-            document.getElementById('msgText').innerText = "GET READY...";
-            document.getElementById('timeText').innerText = "WAIT";
-            // Next round automatic Global Engine se shuru hoga
-        }, 3500);
+        setTimeout(() => { document.getElementById('msgText').innerText = "WAITING..."; document.getElementById('timeText').innerText = "WAIT"; }, 4000);
     }
 
     function resetTable() {
-        document.querySelectorAll('.chip-fly').forEach(c => c.remove());
-        document.getElementById('winMsg').classList.remove('show');
-
-        for(var key in carData) {
-            myBets[key] = 0; pool[key] = 0;
-            document.getElementById('total-' + key).innerText = "₹0";
-            document.getElementById('my-' + key).innerText = "MY BET: ₹0";
-            document.getElementById('my-' + key).style.display = "none";
-            document.getElementById(key).classList.remove('box-win');
+        document.querySelectorAll('.chip-fly').forEach(c => c.remove()); document.getElementById('winMsg').classList.remove('show');
+        for(var k in carData) {
+            myBets[k] = 0; document.getElementById('total-'+k).innerText = "₹0"; document.getElementById('my-'+k).innerText = "MY BET: ₹0";
+            document.getElementById('my-'+k).style.display = "none"; document.getElementById(k).classList.remove('box-win');
         }
-        for(var i=0; i<16; i++) { document.getElementById('wheel-icon-' + i).classList.remove('icon-win'); }
+        for(var i=0; i<16; i++) document.getElementById('wheel-icon-'+i).classList.remove('icon-win');
     }
-
-    // 🔥 AUTO START ENGINE 🔥
-    window.onload = function() {
-        startGlobalEngine();
-    };
-
 </script>
 </body>
 </html>
