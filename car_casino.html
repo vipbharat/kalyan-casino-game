@@ -114,7 +114,7 @@
 
     <div class="status-bar">
         <div class="timer-text" id="timeText">Wait</div>
-        <div class="status-msg" id="msgText">WAITING FOR SERVER...</div>
+        <div class="status-msg" id="msgText">SYNCING REAL-TIME...</div>
     </div>
 
     <div class="wheel-wrapper" id="wheelWrapper">
@@ -195,8 +195,13 @@
     let selectedChip = 100, isBettingOpen = false;
     let currentRotation = 0, isAudioInit = false;
     let botInterval;
-    let isSpinning = false;
     
+    // 🔥 UTC TIME ENGINE (KABHI REFRESH PAR RESET NAHI HOGA) 🔥
+    const CYCLE_TIME = 30000; // 30s per round
+    const BET_TIME = 15000;   // 15s betting
+    let isSpinning = false;
+    let hasJoinedRound = false;
+
     const carData = { porsche:40, ferrari:30, lambo:20, maserati:10, bmw:5, mercedes:5, audi:5, jaguar:5 };
     let myBets = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
     let pool = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
@@ -371,42 +376,81 @@
         if(botBetted) playSound(document.getElementById('soundBet'), 0.05); 
     }
 
-    // 🔥 LISTENING TO NODE.JS SERVER ENGINE 🔥
-    db.ref('Game/CarRoulette/Status').on('value', (snapshot) => {
-        let st = snapshot.val(); 
-        if(!st) return;
+    // 🔥 MASTER REAL-TIME UTC ENGINE 🔥
+    function startGlobalEngine() {
+        checkPhase(); 
+        setInterval(checkPhase, 200); // Har 200ms me sync
+    }
 
-        if(st.state === 'betting') {
+    function checkPhase() {
+        let now = Date.now();
+        let elapsed = now % CYCLE_TIME; 
+        
+        if (elapsed < BET_TIME) {
+            // == BETTING PHASE ==
+            let timeLeft = Math.ceil((BET_TIME - elapsed) / 1000);
             
-            document.getElementById('timeText').innerText = st.timer;
-            document.getElementById('timeText').style.color = st.timer <= 5 ? "var(--neon-red)" : "var(--neon-green)";
-            document.getElementById('msgText').innerText = st.timer <= 5 ? "CLOSING..." : "PLACE YOUR BETS";
-            
-            if(!isBettingOpen) {
-                isBettingOpen = true; 
+            if (isSpinning || !isBettingOpen) {
                 isSpinning = false;
+                isBettingOpen = true;
+                hasJoinedRound = true; 
                 resetTable();
                 
                 clearInterval(botInterval);
-                botInterval = setInterval(botBetAction, 800); 
+                botInterval = setInterval(botBetAction, 800);
             }
             
-        } 
-        else if (st.state === 'result' || st.state === 'spinning') {
+            document.getElementById('timeText').innerText = timeLeft;
             
-            if(isBettingOpen && !isSpinning) {
-                isBettingOpen = false; 
+            if (timeLeft <= 5) {
+                document.getElementById('timeText').style.color = "var(--neon-red)";
+                document.getElementById('msgText').innerText = "CLOSING...";
+            } else {
+                document.getElementById('timeText').style.color = "var(--neon-green)";
+                document.getElementById('msgText').innerText = "PLACE YOUR BETS";
+            }
+            
+        } else {
+            // == SPINNING PHASE ==
+            if (!isSpinning) {
                 isSpinning = true;
+                isBettingOpen = false;
                 clearInterval(botInterval); 
                 
-                document.getElementById('timeText').innerText = "0";
-                document.getElementById('msgText').innerText = "SPINNING...";
-                
-                // Server se jo winner aaya hai wahi pass kar rahe hain
-                runWheelSpin(st.winner);
+                if (hasJoinedRound) {
+                    document.getElementById('timeText').innerText = "0";
+                    document.getElementById('msgText').innerText = "SPINNING...";
+                    determineWinnerAndSpin(); // 🔥 PROFIT LOGIC FIRED 🔥
+                } else {
+                    document.getElementById('timeText').innerText = "WAIT";
+                    document.getElementById('msgText').innerText = "ROUND IN PROGRESS...";
+                }
             }
         }
-    });
+    }
+
+    // 🔥 ADMIN PROFIT LOGIC 🔥
+    function determineWinnerAndSpin() {
+        let cars = Object.keys(carData);
+        
+        // 1. Kis gaadi par paise nahi lage?
+        let zeroBets = cars.filter(c => myBets[c] === 0);
+        let winId;
+
+        if (zeroBets.length > 0) {
+            // Randomly select unme se jispar 0 bet hai
+            winId = zeroBets[Math.floor(Math.random() * zeroBets.length)];
+        } else {
+            // 2. Agar sabpe lage hain, toh sabse kam nuksan wali gaadi kholo
+            winId = cars.reduce((minCar, currentCar) => {
+                let currentPayout = myBets[currentCar] * carData[currentCar];
+                let minPayout = myBets[minCar] * carData[minCar];
+                return (currentPayout < minPayout) ? currentCar : minCar;
+            });
+        }
+        
+        runWheelSpin(winId);
+    }
 
     function runWheelSpin(winnerCar) {
         let spinSnd = document.getElementById('soundSpin');
@@ -418,9 +462,6 @@
         var possibleIndexes = [];
         for(var i=0; i<wheelOrder.length; i++) { if(wheelOrder[i] === winnerCar) possibleIndexes.push(i); }
         
-        // Agar galti se server ne galat string bhej di, to default 'bmw'
-        if(possibleIndexes.length === 0) possibleIndexes.push(1); 
-
         var finalTargetIndex = possibleIndexes[Math.floor(Math.random() * possibleIndexes.length)];
         var targetAngle = finalTargetIndex * 22.5; 
         
@@ -433,7 +474,7 @@
         setTimeout(() => {
             spinSnd.pause(); 
             showWinner(winnerCar, finalTargetIndex);
-        }, 7600); // 7.6 Seconds Spinning Time
+        }, 7600); // Wheel Spin Duration
     }
 
     function showWinner(winId, iconIndex) {
@@ -454,8 +495,8 @@
         setTimeout(() => {
             document.getElementById('msgText').innerText = "GET READY...";
             document.getElementById('timeText').innerText = "WAIT";
-            // Ab loop manual chalane ki zaroorat nahi, server khud 'betting' state bhejega
-        }, 4000);
+            // Next round automatic Global Engine se shuru hoga
+        }, 3500);
     }
 
     function resetTable() {
@@ -471,6 +512,11 @@
         }
         for(var i=0; i<16; i++) { document.getElementById('wheel-icon-' + i).classList.remove('icon-win'); }
     }
+
+    // 🔥 AUTO START ENGINE 🔥
+    window.onload = function() {
+        startGlobalEngine();
+    };
 
 </script>
 </body>
