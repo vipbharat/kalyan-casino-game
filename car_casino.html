@@ -31,7 +31,6 @@
         .timer-text { font-size: 2rem; font-weight: 900; color: var(--neon-green); text-shadow: 0 0 15px var(--neon-green); transition: 0.3s; margin-bottom: -5px; }
         .status-msg { font-size: 0.9rem; color: var(--gold); font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
 
-        /* 🔥 Wheel Size Adjusted for smaller screens 🔥 */
         .wheel-wrapper { position: relative; width: 190px; height: 190px; margin: 5px auto; background: radial-gradient(circle, #1a1a2e 40%, #000000 100%); border-radius: 50%; border: 5px solid var(--gold); box-shadow: inset 0 0 30px rgba(0,0,0,0.9), 0 0 20px rgba(255, 215, 0, 0.4); }
         .wheel-icon { position: absolute; width: 26px; height: 26px; top: 50%; left: 50%; margin-top: -13px; margin-left: -13px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 900; transition: 0.3s; text-shadow: 0 0 5px currentColor; }
         
@@ -41,7 +40,6 @@
         .spinner-ring { position: absolute; width: 100%; height: 100%; top: 0; left: 0; border-radius: 50%; transition: transform 7.5s cubic-bezier(0.15, 0.85, 0.2, 1); z-index: 10; }
         .glowing-dot { position: absolute; top: -5px; left: 50%; transform: translateX(-50%); width: 16px; height: 16px; background: #fff; border-radius: 50%; box-shadow: 0 0 15px 5px #fff, 0 0 30px var(--neon-green); border: 2px solid var(--neon-green); }
 
-        /* 🔥 Bet Boxes Adjusted to prevent overlap 🔥 */
         .bet-table-wrapper { padding: 0 8px; margin-top: 8px; }
         .bet-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
         
@@ -67,7 +65,6 @@
         .box-win { box-shadow: 0 0 25px var(--neon-green), inset 0 0 20px var(--neon-green) !important; border-color: var(--neon-green) !important; transform: scale(1.05); }
         .icon-win { filter: drop-shadow(0 0 15px var(--neon-green)); transform: scale(1.8); z-index: 20; color: var(--neon-green) !important; }
 
-        /* 🔥 Adjusted Bottom Bars 🔥 */
         .live-players { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 5px 0; background: rgba(0,0,0,0.95); position: fixed; bottom: 75px; width: 100%; border-top: 2px solid var(--gold); box-shadow: 0 -5px 15px rgba(0,0,0,0.5); z-index: 1050; }
         .player { text-align: center; transition: 0.5s; }
         .p-avatar { width: 24px; height: 24px; background: linear-gradient(45deg, #444, #222); border: 2px solid var(--gold); border-radius: 50%; margin: 0 auto; line-height: 22px; font-size: 10px; color: #fff; box-shadow: 0 0 8px var(--gold); }
@@ -113,9 +110,9 @@
         <div style="font-weight:900; color:#fff; font-size:1.3rem; text-shadow: 0 0 10px #fff;">CAR <span style="color:var(--gold)">VIP</span></div>
     </div>
 
-    <div class="status-bar" id="startBtn">
-        <div class="timer-text" id="timeText">Wait</div>
-        <div class="status-msg" id="msgText">Connecting Server...</div>
+    <div class="status-bar">
+        <div class="timer-text" id="timeText">15</div>
+        <div class="status-msg" id="msgText">PLACE YOUR BETS</div>
     </div>
 
     <div class="wheel-wrapper" id="wheelWrapper">
@@ -196,6 +193,7 @@
     let selectedChip = 100, isBettingOpen = false;
     let currentRotation = 0, isAudioInit = false;
     let botInterval;
+    let countdownTimer = 15;
     
     const carData = { porsche:40, ferrari:30, lambo:20, maserati:10, bmw:5, mercedes:5, audi:5, jaguar:5 };
     let myBets = { porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0 };
@@ -215,16 +213,12 @@
     }
     
     function playSound(audioObj, vol) { 
-        try { 
-            let clone = audioObj.cloneNode(); 
-            clone.volume = vol; 
-            clone.play().catch(e=>{}); 
-        } catch(e){} 
+        try { let clone = audioObj.cloneNode(); clone.volume = vol; clone.play().catch(e=>{}); } catch(e){} 
     }
 
     function drawWheel() {
         var wrapper = document.getElementById('wheelWrapper');
-        var radius = 80; // 🔥 Adjusted radius to fit inside new 190px wheel
+        var radius = 80; 
         for(var i=0; i<wheelOrder.length; i++) {
             var carKey = wheelOrder[i];
             var angle = (i * (360 / 16) - 90) * (Math.PI / 180);
@@ -245,9 +239,7 @@
     function generateBots() {
         botsList = [];
         for(let i=0; i<5; i++) {
-            let id = Math.floor(Math.random()*8999)+1000; 
-            let bal = Math.floor(Math.random() * 50000) + 20000; 
-            botsList.push({id: id, bal: bal});
+            botsList.push({id: Math.floor(Math.random()*8999)+1000, bal: Math.floor(Math.random() * 50000) + 20000});
         }
         renderBotsUI();
     }
@@ -347,8 +339,6 @@
         if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
         db.ref('users/'+currentUserId).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
 
-        db.ref(`Game/CarRoulette/Bets/${currentUserId}/${carId}`).set(firebase.database.ServerValue.increment(selectedChip));
-
         myBets[carId] += selectedChip;
         document.getElementById('my-' + carId).innerText = "MY BET: ₹" + myBets[carId].toLocaleString();
         document.getElementById('my-' + carId).style.display = "block";
@@ -358,8 +348,8 @@
     function botBetAction() {
         if(!isBettingOpen) return;
         let numBets = Math.floor(Math.random() * 3) + 1; 
-        let botBetted = false;
         let cars = Object.keys(carData);
+        let botBetted = false;
 
         for(let i=0; i<numBets; i++) {
             let randomCar = cars[Math.floor(Math.random() * cars.length)];
@@ -377,39 +367,64 @@
         if(botBetted) playSound(document.getElementById('soundBet'), 0.05); 
     }
 
-    let isSpinning = false;
-    db.ref('Game/CarRoulette/Status').on('value', (snapshot) => {
-        let st = snapshot.val(); if(!st) return;
+    // 🔥 MASTER ENGINE (SELF RUNNING WITH PROFIT LOGIC) 🔥
+    function engineLoop() {
+        isBettingOpen = true;
+        countdownTimer = 15;
+        resetTable();
 
-        if(st.state === 'betting') {
-            document.getElementById('timeText').innerText = st.timer;
-            document.getElementById('timeText').style.color = st.timer <= 5 ? "var(--neon-red)" : "var(--neon-green)";
-            document.getElementById('msgText').innerText = st.timer <= 5 ? "CLOSING..." : "PLACE YOUR BETS";
-            
-            if(!isBettingOpen) {
-                isBettingOpen = true; 
-                isSpinning = false;
-                resetTable();
+        document.getElementById('msgText').innerText = "PLACE YOUR BETS";
+        document.getElementById('timeText').style.color = "var(--neon-green)";
+
+        clearInterval(botInterval);
+        botInterval = setInterval(botBetAction, 800);
+
+        let timerInt = setInterval(() => {
+            if (countdownTimer > 0) {
+                countdownTimer--;
+                document.getElementById('timeText').innerText = countdownTimer;
                 
+                if (countdownTimer <= 5) {
+                    document.getElementById('timeText').style.color = "var(--neon-red)";
+                    document.getElementById('msgText').innerText = "CLOSING...";
+                }
+            } else {
+                clearInterval(timerInt);
                 clearInterval(botInterval);
-                botInterval = setInterval(botBetAction, 800); 
+                isBettingOpen = false;
+                determineWinnerAndSpin(); // Calculate Admin Profit Logic
             }
-        } 
-        else if (st.state === 'spinning' && !isSpinning) {
-            isBettingOpen = false; 
-            isSpinning = true;
-            clearInterval(botInterval); 
-            runWheelSpin(st.winner);
+        }, 1000);
+    }
+
+    // 🔥 ADMIN PROFIT LOGIC: SABSE KAM PAYOUT WALI CAR KHULEGI 🔥
+    function determineWinnerAndSpin() {
+        let cars = Object.keys(carData);
+        
+        // Step 1: Check if any car has 0 bets from the player. If yes, pick randomly from them.
+        let zeroBets = cars.filter(c => myBets[c] === 0);
+        let winId;
+
+        if (zeroBets.length > 0) {
+            winId = zeroBets[Math.floor(Math.random() * zeroBets.length)];
+        } else {
+            // Step 2: Find the car that causes the minimum loss to admin (bet amount * multiplier)
+            winId = cars.reduce((minCar, currentCar) => {
+                let currentPayout = myBets[currentCar] * carData[currentCar];
+                let minPayout = myBets[minCar] * carData[minCar];
+                return (currentPayout < minPayout) ? currentCar : minCar;
+            });
         }
-    });
+        
+        runWheelSpin(winId);
+    }
 
     function runWheelSpin(winnerCar) {
-        document.getElementById('msgText').innerText = "SPINNING..."; document.getElementById('timeText').innerText = "0";
+        document.getElementById('msgText').innerText = "SPINNING..."; 
+        document.getElementById('timeText').innerText = "0";
         
         let spinSnd = document.getElementById('soundSpin');
-        spinSnd.currentTime = 0;
-        spinSnd.loop = true;
-        spinSnd.volume = 0.8;
+        spinSnd.currentTime = 0; spinSnd.loop = true; spinSnd.volume = 0.8;
         spinSnd.play().catch(e=>{});
         
         var possibleIndexes = [];
@@ -432,7 +447,8 @@
 
     function showWinner(winId, iconIndex) {
         playSound(document.getElementById('soundWin'), 1.0); 
-        document.getElementById('msgText').innerText = "WINNER!"; document.getElementById('timeText').innerText = winId.toUpperCase();
+        document.getElementById('msgText').innerText = "WINNER!"; 
+        document.getElementById('timeText').innerText = winId.toUpperCase();
         
         document.getElementById(winId).classList.add('box-win');
         document.getElementById('wheel-icon-' + iconIndex).classList.add('icon-win');
@@ -448,6 +464,9 @@
         setTimeout(() => {
             document.getElementById('msgText').innerText = "GET READY...";
             document.getElementById('timeText').innerText = "WAIT";
+            
+            // Loop ko dobaara start karo
+            setTimeout(() => { engineLoop(); }, 1500);
         }, 4000);
     }
 
@@ -463,6 +482,12 @@
         }
         for(var i=0; i<16; i++) { document.getElementById('wheel-icon-' + i).classList.remove('icon-win'); }
     }
+
+    // 🔥 GAME START 🔥
+    window.onload = function() {
+        engineLoop();
+    };
+
 </script>
 </body>
 </html>
