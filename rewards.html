@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kalyan VIP - Spin, Mail & Refer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
+        :root { --gold: #ffd700; --bg: #0a0a0c; --n-red: #ff3333; --n-blue: #00ddff; --n-green: #39ff14; }
+
+        body { background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* --- TOP BAR --- */
+        .top-bar {
+            display: flex; justify-content: space-between; padding: 15px 20px;
+            background: rgba(0,0,0,0.95); border-bottom: 2px solid var(--gold);
+            box-shadow: 0 5px 15px rgba(255,215,0,0.15); z-index: 10;
+        }
+        .bal-box h2 { font-size: 20px; color: var(--n-green); margin: 0; transition: 0.3s;}
+        .pts-box h2 { color: var(--n-blue); text-align: right; margin: 0; transition: 0.3s;}
+
+        /* --- DASHBOARD --- */
+        .dashboard { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+        
+        .promo-card { background: linear-gradient(135deg, #1a0033, #000); border: 2px solid var(--gold); border-radius: 15px; padding: 15px; text-align: center; }
+        
+        .btn-mail-open { background: #111; border: 2px solid var(--n-blue); border-radius: 15px; padding: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 5px 15px rgba(0,221,255,0.2); }
+        .btn-spin-open { background: #111; border: 2px solid var(--n-green); border-radius: 15px; padding: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 5px 15px rgba(57,255,20,0.2); }
+
+        /* 🔥 VIRAL REFER BANNER 🔥 */
+        .bottom-banner {
+            background: linear-gradient(135deg, #b22222, #ff4500, #8b0000);
+            border: 2px solid var(--gold); border-radius: 15px; padding: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(255, 69, 0, 0.4);
+            position: relative; overflow: hidden;
+        }
+        .bottom-banner::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 40px; height: 200%;
+            background: rgba(255,255,255,0.3); transform: rotate(45deg); animation: shine 3s infinite;
+        }
+        @keyframes shine { 0% { left: -50%; } 100% { left: 150%; } }
+        
+        .banner-content h4 { color: var(--gold); font-size: 15px; margin-bottom: 2px; text-shadow: 0 0 5px black; }
+        .banner-content p { font-size: 10px; color: #fff; line-height: 1.4; margin: 0; }
+        .banner-content span { color: var(--gold); font-weight: 900; font-size: 11px;}
+        .banner-icon { font-size: 35px; filter: drop-shadow(0 5px 5px black); margin-left: 10px; }
+
+        /* --- MODALS --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-box { background: #050505; border: 2px solid var(--gold); width: 92%; max-width: 400px; border-radius: 20px; padding: 20px; text-align: center; position: relative; }
+        .close-btn { position: absolute; top: 12px; right: 18px; color: var(--n-red); font-size: 24px; cursor: pointer; font-weight: 900; }
+
+        /* --- MAIL PAPER CSS --- */
+        .mail-paper {
+            background: #fdfdfd; color: #111; padding: 15px; border-radius: 12px;
+            text-align: left; margin: 15px 0 20px 0; box-shadow: 0 5px 20px rgba(0,221,255,0.3);
+            border-left: 5px solid var(--n-blue);
+        }
+        .mail-header { display: flex; justify-content: space-between; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 8px; }
+        .mail-game-name { color: var(--n-red); font-weight: 900; font-size: 14px; }
+        .mail-date { font-size: 10px; color: #666; font-weight: 700; text-align: right; }
+
+        /* --- SPIN WHEEL --- */
+        .m-status { display: flex; justify-content: space-around; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px; margin-bottom: 15px; border: 1px solid #333; }
+        .m-status b { font-size: 16px; color: var(--n-blue); }
+
+        .tiers-container { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 20px; }
+        .tier-btn { flex: 1; padding: 10px 5px; background: #1a1a1a; border: 2px solid #444; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; }
+        .tier-btn span { font-size: 9px; color: #888; margin-top: 2px; }
+        .tier-btn.active { border-color: var(--n-blue); background: rgba(0, 221, 255, 0.1); box-shadow: 0 0 15px rgba(0, 221, 255, 0.3); }
+
+        .wheel-outer { position: relative; width: 260px; height: 260px; margin: 10px auto; }
+        .pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 35px solid var(--n-red); z-index: 100; filter: drop-shadow(0 0 10px black); }
+        .wheel-body { width: 100%; height: 100%; border-radius: 50%; border: 6px solid var(--gold); transition: transform 6s cubic-bezier(0.1, 0, 0.1, 1); overflow: hidden; }
+        .wheel-svg { width: 100%; height: 100%; transform: rotate(-22.5deg); }
+        .slice-text { font-size: 14px; font-weight: 900; fill: #ffffff; paint-order: stroke; stroke: #000; stroke-width: 3px; }
+
+        .spin-btn { width: 100%; padding: 15px; border-radius: 40px; border: 2px solid white; background: linear-gradient(90deg, #ff0077, #aa00ff); color: white; font-size: 20px; font-weight: 900; cursor: pointer; box-shadow: 0 5px 15px rgba(255,0,119,0.5);}
+        
+        .flying-coin { position: fixed; font-size: 35px; z-index: 2000; transition: all 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.1); }
+        .glow-up { animation: flash 1s ease; }
+        @keyframes flash { 0% { color: white; transform: scale(1.3); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="bal-box"><span style="font-size:9px; color:#888;">VIOLET</span><h2 id="main-wallet">₹ 500.00</h2></div>
+        <div class="pts-box"><span style="font-size:9px; color:#888;">POINTS</span><h2 id="main-points">1000</h2></div>
+    </div>
+
+    <div class="dashboard">
+        <div class="promo-card">
+            <h3 style="color:var(--gold); margin-bottom:5px;">VIP MEGA REWARDS</h3>
+            <p style="font-size: 11px; color: #aaa;">Roz mail check karein aur lucky spin ghumayein!</p>
+        </div>
+
+        <div class="btn-mail-open" onclick="openMailModal()">
+            <i style="font-style:normal; font-size:35px;">📬</i>
+            <div style="text-align:left;">
+                <b style="font-size:16px; color:var(--n-blue);">DAILY BONUS MAIL</b>
+                <p style="font-size:10px; color:#aaa; margin:0;">Tap to claim today's reward</p>
+            </div>
+        </div>
+
+        <div class="btn-spin-open" onclick="openSpinModal()">
+            <i style="font-style:normal; font-size:40px;">🎡</i>
+            <b style="font-size:18px; color:var(--n-green);">LUCKY SPIN WHEEL</b>
+        </div>
+
+        <div class="bottom-banner" onclick="copyReferLink()">
+            <div class="banner-content">
+                <h4>🤝 REFER & EARN</h4>
+                <p>
+                    1st Refer <span>₹100</span> | 2nd <span>₹200</span> | 3rd <span>₹300</span><br>
+                    Har naye player par <span>+₹100</span> badhega!
+                </p>
+            </div>
+            <div class="banner-icon">🚀</div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="mail-modal">
+        <div class="modal-box">
+            <span class="close-btn" onclick="closeModals()">✖</span>
+            <h2 style="color:var(--n-blue);">INBOX</h2>
+            
+            <div class="mail-paper">
+                <div class="mail-header">
+                    <span class="mail-game-name">Kalyan VIP Casino</span>
+                    <span class="mail-date" id="live-date-text">Day, 00/00/0000</span>
+                </div>
+                <h4 style="margin-bottom: 5px;">Today's Free Bonus 🎁</h4>
+                <p style="font-size: 12px; line-height: 1.5; color:#444;">Namaste!<br>Aaj ka special free bonus aapke khate mein jama hone ke liye taiyar hai. Neeche click karke claim karein.</p>
+            </div>
+
+            <button class="spin-btn" style="background: var(--n-blue); color:black;" id="claim-btn" onclick="claimMail()">CLAIM BONUS</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="spin-modal">
+        <div class="modal-box">
+            <span class="close-btn" onclick="closeModals()">✖</span>
+            <h2 style="color:var(--gold); margin-bottom: 10px; text-shadow:0 0 10px var(--gold);">MEGA LUCKY SPIN</h2>
+            
+            <div class="m-status">
+                <div style="text-align:left"><small style="font-size:9px;">SPIN COST</small><br><b id="m-cost">100 Pts</b></div>
+                <div style="text-align:right"><small style="font-size:9px;">POINTS LEFT</small><br><b id="m-points">1000 Pts</b></div>
+            </div>
+
+            <div class="tiers-container">
+                <div class="tier-btn active" id="btn-100" onclick="setTier(100)"><b>100</b><span>Points</span></div>
+                <div class="tier-btn" id="btn-500" onclick="setTier(500)"><b>500</b><span>Points</span></div>
+                <div class="tier-btn" id="btn-2000" onclick="setTier(2000)"><b>2000</b><span>Points</span></div>
+            </div>
+
+            <div class="wheel-outer">
+                <div class="pointer"></div>
+                <div class="wheel-body" id="wheel">
+                    <svg class="wheel-svg" viewBox="0 0 200 200" id="wheel-svg"></svg>
+                </div>
+            </div>
+
+            <button class="spin-btn" id="btn-spin" onclick="doSpin()">SPIN NOW</button>
+        </div>
+    </div>
+
+    <script>
+        let wallet = 500.00; let points = 1000; let currentTier = 100;
+        let isSpinning = false; let rotation = 0; let mailClaimedToday = false;
+
+        const config = {
+            100:  { win: [1, 2], display: [500, 10, 250, 50, 100, 20, 5], colors: ['#E74C3C','#2ECC71','#3498DB','#F1C40F','#9B59B6','#1ABC9C','#E67E22','#D35400'] },
+            500:  { win: [5, 10], display: [1500, 50, 800, 100, 500, 200, 20], colors: ['#E74C3C','#2ECC71','#3498DB','#F1C40F','#9B59B6','#1ABC9C','#E67E22','#D35400'] },
+            2000: { win: [10, 50], display: [5000, 100, 2500, 500, 1000, 200, 75], colors: ['#E74C3C','#2ECC71','#3498DB','#F1C40F','#9B59B6','#1ABC9C','#E67E22','#D35400'] }
+        };
+
+        // UI UPDATE
+        function updateUI() {
+            document.getElementById('main-wallet').innerText = `₹ ${wallet.toFixed(2)}`;
+            document.getElementById('main-points').innerText = points;
+            document.getElementById('m-points').innerText = points + " Pts";
+        }
+
+        // COPY LINK
+        function copyReferLink() {
+            navigator.clipboard.writeText('https://vipbharat.github.io/kalyan-casino-game/download.html');
+            alert('✅ Link Copied!\n\nAapka Referral Link copy ho gaya hai. Doston ko share karein aur unlimited kamayein!');
+        }
+
+        // MODALS
+        function openSpinModal() { document.getElementById('spin-modal').style.display = 'flex'; setTier(100); }
+        function closeModals() { if(!isSpinning) document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
+
+        // --- MAIL LOGIC ---
+        function openMailModal() {
+            // Set Day and Date dynamically
+            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const d = new Date();
+            document.getElementById('live-date-text').innerText = `${days[d.getDay()]}, ${d.toLocaleDateString('en-IN')}`;
+            document.getElementById('mail-modal').style.display = 'flex';
+        }
+
+        function claimMail() {
+            if(mailClaimedToday) {
+                alert("Bhai, aaj ka bonus mil chuka hai. Kal wapas aana!");
+                return;
+            }
+            
+            // Random amount between 0.10 and 4.90 (e.g., 10 paise, 50 paise, 1.50 Rs)
+            let bonus = parseFloat((Math.random() * 4.8 + 0.1).toFixed(2));
+            mailClaimedToday = true;
+            
+            document.getElementById('claim-btn').innerText = `CLAIMED ₹${bonus}`;
+            document.getElementById('claim-btn').style.background = "gray";
+
+            // Fly coin and add to wallet
+            flyCoin(bonus, document.getElementById('claim-btn'));
+            setTimeout(closeModals, 1000);
+        }
+
+        // --- SPIN LOGIC ---
+        function setTier(pts) {
+            if(isSpinning) return;
+            currentTier = pts;
+            document.getElementById('m-cost').innerText = pts + " Pts";
+            
+            document.querySelectorAll('.tier-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${pts}`).classList.add('active');
+            
+            renderWheel("?");
+        }
+
+        function renderWheel(winVal) {
+            const svg = document.getElementById('wheel-svg');
+            const vals = [winVal, ...config[currentTier].display];
+            const colors = config[currentTier].colors;
+            let h = '';
+            for(let i=0; i<8; i++) {
+                const ang = i * 45;
+                h += `<g transform="rotate(${ang}, 100, 100)">
+                    <path d="M100,100 L100,0 A100,100 0 0,1 170.7,29.3 Z" fill="${colors[i]}" stroke="#fff" stroke-width="0.5" />
+                    <text x="110" y="45" transform="rotate(22.5, 110, 45)" class="slice-text">₹${vals[i]}</text>
+                </g>`;
+            }
+            svg.innerHTML = h;
+        }
+
+        function doSpin() {
+            if(isSpinning || points < currentTier) { alert("Points nahi hain!"); return; }
+            points -= currentTier; updateUI();
+            isSpinning = true; document.getElementById('btn-spin').disabled = true;
+
+            const range = config[currentTier].win;
+            const finalWin = Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
+            renderWheel(finalWin);
+
+            rotation += (360 * 8) + (360 - (rotation % 360)); 
+            document.getElementById('wheel').style.transform = `rotate(${rotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false; document.getElementById('btn-spin').disabled = false;
+                flyCoin(finalWin, document.getElementById('wheel'));
+            }, 6500); 
+        }
+
+        // --- FLYING COIN ANIMATION ---
+        function flyCoin(amt, src) {
+            const c = document.createElement('div');
+            c.className = 'flying-coin'; c.innerText = '💰';
+            const r = src.getBoundingClientRect();
+            
+            // Start from center of button/wheel
+            c.style.left = (r.left + r.width/2 - 15) + 'px'; 
+            c.style.top = (r.top + r.height/2 - 15) + 'px';
+            document.body.appendChild(c);
+            
+            const target = document.getElementById('main-wallet').getBoundingClientRect();
+            
+            setTimeout(() => { 
+                // Move to Wallet
+                c.style.left = target.left + 'px'; 
+                c.style.top = target.top + 'px'; 
+                c.style.opacity = '0'; 
+                c.style.transform = 'scale(0.5)';
+            }, 50);
+
+            setTimeout(() => { 
+                c.remove(); 
+                wallet += amt; 
+                updateUI(); 
+                // Wallet Glow Effect
+                const w = document.getElementById('main-wallet');
+                w.classList.add('glow-up'); 
+                setTimeout(()=> w.classList.remove('glow-up'), 1000); 
+            }, 800);
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
