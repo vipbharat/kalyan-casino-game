@@ -69,6 +69,8 @@
 <audio id="bgMusic" src="https://assets.mixkit.co/active_storage/sfx/135/135-preview.mp3" loop></audio>
 <audio id="betSound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
 <audio id="cardSound" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
+<audio id="dragonSound" src="https://assets.mixkit.co/active_storage/sfx/1804/1804-preview.mp3"></audio>
+<audio id="tigerSound" src="https://assets.mixkit.co/active_storage/sfx/2196/2196-preview.mp3"></audio>
 
 <div class="top-bar">
     <div><div style="font-size:12px; color:var(--gold); font-weight:900;">KALYAN ULTRA VIP</div><div style="font-size:10px; color:#0f0; font-weight:bold; letter-spacing:1px;"><span id="online-count">1,248</span> VIP ONLINE</div></div>
@@ -76,7 +78,7 @@
 </div>
 <div class="admin-msg-bar"><marquee id="admin-note">WELCOME TO KALYAN ULTRA VIP - HIGH ROLLER TABLES. PLAY RESPONSIBLY!</marquee></div>
 <div class="history-bar" id="history-row"></div>
-<div class="timer-sec" id="timer">WAITING</div>
+<div class="timer-sec" id="timer">WAITING FOR SERVER...</div>
 
 <div class="table">
     <div id="card-d" class="card"><div class="card-back" id="back-d"></div><div id="d-v"></div></div>
@@ -136,28 +138,31 @@
     let myBets={dragon:0, tiger:0, tie:0}, pool={dragon:0, tiger:0, tie:0};
     let botInterval;
     let isAudioInit = false;
+    let isDealing = false;
     
-    // 🔥 DONO KE LIYE EKDUM ALAG AUR NAYI AWAAZ (Tiger Roar & Dragon Fire) 🔥
-    var tigerAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2196/2196-preview.mp3'); // Asli Sher/Tiger Roar
-    var dragonAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/1804/1804-preview.mp3'); // Dragon aag wali dahad
-    
-    function unlockAudio() { 
+    // 🔥 NEW FOOLPROOF AUDIO LOGIC 🔥
+    function unlockAudio() {
         if(!isAudioInit) {
-            tigerAudio.play().then(()=>tigerAudio.pause()).catch(e=>{}); 
-            dragonAudio.play().then(()=>dragonAudio.pause()).catch(e=>{}); 
-            let bgm = document.getElementById('bgMusic');
-            bgm.volume = 0.25;
-            bgm.play().catch(e=>{});
+            let ids = ['bgMusic', 'betSound', 'cardSound', 'dragonSound', 'tigerSound'];
+            ids.forEach(id => {
+                let el = document.getElementById(id);
+                if(el) {
+                    el.play().catch(e=>{});
+                    if(id !== 'bgMusic') { el.pause(); el.currentTime = 0; }
+                }
+            });
+            document.getElementById('bgMusic').volume = 0.25;
             isAudioInit = true;
         }
     }
 
-    function playSound(audioObj, vol) { 
-        try { 
-            let clone = audioObj.cloneNode(); 
-            clone.volume = vol; 
-            clone.play().catch(e=>{}); 
-        } catch(e){} 
+    function playSound(id, vol) {
+        try {
+            let s = document.getElementById(id);
+            s.currentTime = 0;
+            s.volume = vol;
+            s.play().catch(e=>{});
+        } catch(e){}
     }
 
     setInterval(() => { document.getElementById('online-count').innerText = Math.floor(Math.random() * 50) + 1200; }, 4000);
@@ -218,7 +223,7 @@
         document.getElementById('my-bet-' + side).innerText = "MY BET: ₹" + myBets[side].toLocaleString();
         
         spawnChip(side, currentChip, currentChipColor); 
-        playSound(document.getElementById('betSound'), 1.0);
+        playSound('betSound', 1.0);
     };
 
     function spawnChip(side, amt, color) {
@@ -278,7 +283,7 @@
             botBetted = true;
         }
 
-        if(botBetted) playSound(document.getElementById('betSound'), 0.05); 
+        if(botBetted) playSound('betSound', 0.05); 
     }
 
     db.ref('Game/DragonTiger/Status').on('value', snap => {
@@ -288,12 +293,15 @@
         let timerEl = document.getElementById('timer');
         
         if(status.state === 'betting') {
+            
             if(!isBettingOpen) {
                 isBettingOpen = true;
+                isDealing = false;
                 resetUI();
                 clearInterval(botInterval);
                 botInterval = setInterval(botBetAction, 700); 
             }
+            
             timerEl.innerText = status.timer + "s";
             
             if(status.timer <= 5) {
@@ -304,13 +312,18 @@
                 timerEl.style.textShadow = "0 0 15px var(--gold)";
             }
         } 
-        else if (status.state === 'result' && isBettingOpen) {
-            isBettingOpen = false;
-            clearInterval(botInterval);
-            timerEl.innerText = "STOP!";
-            timerEl.style.color = "#fff";
-            timerEl.style.textShadow = "0 0 15px #fff";
-            showResult(status.winner);
+        else if (status.state === 'result') {
+            
+            if(isBettingOpen && !isDealing) {
+                isBettingOpen = false;
+                isDealing = true;
+                clearInterval(botInterval);
+                timerEl.innerText = "STOP!";
+                timerEl.style.color = "#fff";
+                timerEl.style.textShadow = "0 0 15px #fff";
+                
+                if(status.winner) showResult(status.winner);
+            }
         }
     });
 
@@ -326,7 +339,7 @@
     }
 
     function showResult(win) {
-        playSound(document.getElementById('cardSound'), 1.0);
+        playSound('cardSound', 1.0);
         
         document.getElementById('back-d').style.display='none'; 
         document.getElementById('back-t').style.display='none';
@@ -363,13 +376,13 @@
             cD_Elem.style.transform = "scale(1)"; 
             cT_Elem.style.transform = "scale(1)";
             
-            // 🔥 YAHAN ALAG-ALAG AWAAZ AAYEGI 🔥
+            // 🔥 NAYA AUDIO SYSTEM YAHAN CHALEGA 🔥
             if(win === 'dragon') { 
-                dragonAudio.play().catch(e=>{}); 
+                playSound('dragonSound', 1.0);
                 document.getElementById('box-dragon').classList.add('glow-win'); 
             }
             else if(win === 'tiger') { 
-                tigerAudio.play().catch(e=>{}); 
+                playSound('tigerSound', 1.0);
                 document.getElementById('box-tiger').classList.add('glow-win'); 
             }
             else document.getElementById('box-tie').classList.add('glow-win');
@@ -416,7 +429,7 @@
         currentChipColor = window.getComputedStyle(el).backgroundImage; 
         document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected')); 
         el.classList.add('selected'); 
-        playSound(document.getElementById('betSound'), 0.5); 
+        playSound('betSound', 0.5); 
     }
 </script>
 </body>
