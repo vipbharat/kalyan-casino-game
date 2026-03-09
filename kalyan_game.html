@@ -8,7 +8,10 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         :root { --gold: #ffd700; --bg-dark: #0a0a0a; --neon-red: #ff3333; --neon-green: #00ff88; }
-        body { margin: 0; background: radial-gradient(circle at center, #220000, #000); font-family: 'Arial Black', sans-serif; overflow: hidden; color: white; user-select: none; height: 100vh; display: flex; flex-direction: column; }
+        
+        /* 🔥 FIX 1: Mobile Address Bar / Height Issue Fixed 🔥 */
+        html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+        body { background: radial-gradient(circle at center, #220000, #000); font-family: 'Arial Black', sans-serif; color: white; user-select: none; display: flex; flex-direction: column; position: absolute; top: 0; bottom: 0; left: 0; right: 0; }
         
         .top-bar { display: flex; justify-content: space-between; padding: 8px 12px; background: rgba(0,0,0,0.85); border-bottom: 2px solid var(--gold); align-items: center; box-shadow: 0 2px 15px rgba(255,215,0,0.3); z-index: 100; flex-shrink: 0;}
         .logo-hd { font-size: 15px; font-weight: 900; color: var(--gold); letter-spacing: 1px; text-shadow: 0 0 10px var(--gold); }
@@ -17,26 +20,27 @@
         .bal-box { background: linear-gradient(to bottom, #333, #111); border: 1.5px solid var(--gold); padding: 4px 12px; border-radius: 15px; color: var(--neon-green); font-size: 13px; font-weight: bold; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); }
         .my-bet-box { background: linear-gradient(to bottom, #600, #300); border: 1.5px solid var(--neon-red); padding: 4px 12px; border-radius: 15px; color: #fff; font-size: 13px; font-weight: bold; box-shadow: 0 0 10px rgba(255, 0, 0, 0.4); }
         
-        .timer-sec { font-size: 38px; color: #fff; text-align: center; margin: 5px 0; font-weight: 900; text-shadow: 0 0 20px var(--neon-red); transition: 0.3s; flex-shrink: 0;}
+        .timer-sec { font-size: 38px; color: #fff; text-align: center; margin: 3px 0; font-weight: 900; text-shadow: 0 0 20px var(--neon-red); transition: 0.3s; flex-shrink: 0;}
         
-        .joker-reveal { text-align: center; min-height: 95px; display: flex; align-items: center; justify-content: center; flex-direction: column; margin-bottom: 5px; flex-shrink: 0;}
-        .joker-pata { width: 65px; height: 90px; background: transparent; border: 3px solid var(--gold); border-radius: 8px; display: none; box-shadow: 0 0 30px var(--gold); z-index: 100; position: relative; transform: scale(1.2); }
+        .joker-reveal { text-align: center; min-height: 90px; display: flex; align-items: center; justify-content: center; flex-direction: column; margin-bottom: 5px; flex-shrink: 0;}
+        .joker-pata { width: 60px; height: 85px; background: transparent; border: 3px solid var(--gold); border-radius: 8px; display: none; box-shadow: 0 0 30px var(--gold); z-index: 100; position: relative; transform: scale(1.2); }
         
-        /* 🔥 FIX: Grid Overlap aur Patte Chupne ka ilaj 🔥 */
+        /* 🔥 FIX 2 & 3: Grid Spacing aur Extra Bottom Padding 🔥 */
         .cards-grid { 
             display: grid; 
             grid-template-columns: repeat(4, 1fr); 
-            gap: 24px 8px; /* Taki green tag aur patte na takrayein */
-            padding: 15px 10px 30px 10px; 
+            gap: 20px 6px; 
+            padding: 10px 8px 40px 8px; /* Neeche 40px ki extra jagah di hai */
             justify-items: center; 
             flex-grow: 1; 
-            overflow-y: auto; /* Agar patte zyada hon toh scroll ho jayein, chhupe na */
+            overflow-y: auto; 
             align-content: start;
         }
         
-        .card-bet-box { width: 68px; height: 96px; background: rgba(255,255,255,0.05); border: 2.5px solid #555; border-radius: 8px; position: relative; cursor: pointer; transition: 0.2s; box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 5px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+        /* Patton ka size thoda perfect kiya hai */
+        .card-bet-box { width: 64px; height: 90px; background: rgba(255,255,255,0.05); border: 2.5px solid #555; border-radius: 8px; position: relative; cursor: pointer; transition: 0.2s; box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 5px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
         .card-bet-box:active { transform: scale(0.92); border-color: var(--gold); }
-        .box-win { border-color: var(--neon-green) !important; box-shadow: 0 0 25px var(--neon-green), inset 0 0 15px var(--neon-green) !important; transform: scale(1.05); }
+        .box-win { border-color: var(--neon-green) !important; box-shadow: 0 0 25px var(--neon-green), inset 0 0 15px var(--neon-green) !important; transform: scale(1.05); z-index: 10;}
         
         .guna-tag { position: absolute; bottom: -8px; right: -5px; background: #000; color: var(--gold); font-size: 11px; padding: 2px 6px; border-radius: 6px; font-weight: 900; border: 2px solid var(--gold); z-index: 20; box-shadow: 0 2px 5px #000; }
         .pool-on-card { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--neon-green); color: #000; font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 900; z-index: 30; border: 2px solid #000; box-shadow: 0 2px 5px rgba(0,0,0,0.8); white-space: nowrap; }
@@ -45,13 +49,12 @@
 
         .chip-animate { position: fixed; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #fff; z-index: 50; font-size: 8px; font-weight: 900; color: white; display: flex; align-items: center; justify-content: center; pointer-events: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 2px 2px 6px rgba(0,0,0,0.8); }
         
-        /* 🔥 FIX: Neeche ke hisse ko shrink hone se roka 🔥 */
         .bot-players-row { display: flex; justify-content: space-around; background: rgba(0,0,0,0.8); padding: 8px 0; border-top: 2px solid var(--gold); box-shadow: 0 -5px 15px rgba(0,0,0,0.5); z-index: 100; flex-shrink: 0;}
         .bot-p { text-align: center; width: 65px; font-size: 10px; font-family: Arial, sans-serif; font-weight: bold;}
         .bot-avatar { width: 26px; height: 26px; background: linear-gradient(45deg, #444, #222); border: 2px solid var(--gold); border-radius: 50%; margin: 0 auto 2px; line-height: 24px; font-size: 12px; color: #fff; box-shadow: 0 0 8px var(--gold); }
         
-        .chip-footer { display: flex; justify-content: center; gap: 8px; padding: 15px 0 25px 0; border-top: 3px solid var(--gold); background: linear-gradient(to top, #000, #1a1a1a); z-index: 100; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); flex-shrink: 0;}
-        .c-btn { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; border: 3px solid rgba(255,255,255,0.5); cursor: pointer; font-size: 11px; color: white; text-shadow: 1px 1px 2px #000; box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 10px rgba(0,0,0,0.5); transition: 0.2s;}
+        .chip-footer { display: flex; justify-content: center; gap: 8px; padding: 12px 0 20px 0; border-top: 3px solid var(--gold); background: linear-gradient(to top, #000, #1a1a1a); z-index: 100; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); flex-shrink: 0;}
+        .c-btn { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; border: 3px solid rgba(255,255,255,0.5); cursor: pointer; font-size: 11px; color: white; text-shadow: 1px 1px 2px #000; box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 10px rgba(0,0,0,0.5); transition: 0.2s;}
         
         .c10 { background: radial-gradient(circle, #fff, #ccc); color:#000; text-shadow:none; }
         .c100 { background: radial-gradient(circle, #4fc3f7, #0288d1); }
@@ -120,10 +123,10 @@
 
         function getCssCard(val, suit) {
             let sS = suit==='S'?'♠':suit==='H'?'♥':suit==='D'?'♦':'♣'; let col = (suit==='H'||suit==='D')?'#ff1a1a':'#000';
-            return `<div style="background:#fff; width:100%; height:100%; border-radius:6px; box-shadow:0 0 10px rgba(0,0,0,0.5); display:flex; flex-direction:column; justify-content:space-between; padding:4px; box-sizing:border-box; color:${col}; font-family:Arial, sans-serif;">
-                <div style="font-size:14px; font-weight:900; line-height:1; text-align:left;">${val}<br><span style="font-size:14px;">${sS}</span></div>
-                <div style="font-size:32px; text-align:center; margin-top:-5px;">${sS}</div>
-                <div style="font-size:14px; font-weight:900; line-height:1; text-align:left; transform:rotate(180deg); margin-top:-5px;">${val}<br><span style="font-size:14px;">${sS}</span></div>
+            return `<div style="background:#fff; width:100%; height:100%; border-radius:5px; box-shadow:0 0 10px rgba(0,0,0,0.5); display:flex; flex-direction:column; justify-content:space-between; padding:3px; box-sizing:border-box; color:${col}; font-family:Arial, sans-serif;">
+                <div style="font-size:13px; font-weight:900; line-height:1; text-align:left;">${val}<br><span style="font-size:13px;">${sS}</span></div>
+                <div style="font-size:28px; text-align:center; margin-top:-5px;">${sS}</div>
+                <div style="font-size:13px; font-weight:900; line-height:1; text-align:left; transform:rotate(180deg); margin-top:-5px;">${val}<br><span style="font-size:13px;">${sS}</span></div>
             </div>`;
         }
 
@@ -177,7 +180,6 @@
             flyChip('left', v, curChip>=1000?(curChip/1000)+'K':curChip, curChipClass);
         }
 
-        // 🔥 FIX: Bots ke lagaye paise ab Patte par dikhenge 🔥
         function botAction() {
             if(!isBettingOpen) return; let nB = Math.floor(Math.random()*3)+1;
             for(let i=0; i<nB; i++) {
@@ -187,7 +189,6 @@
                     let cCls = a===10?'c10':a===100?'c100':a===500?'c500':a===1000?'c1k':'c5k'; 
                     flyChip('right', rC.v, a>=1000?(a/1000)+'K':a, cCls); 
                     
-                    // Card ka total amount update karo visually
                     let pEl = document.getElementById(`pool-${rC.v}`);
                     let currAmt = parseInt(pEl.innerText.replace(/\D/g, '')) || 0;
                     pEl.innerText = "₹" + (currAmt + a).toLocaleString();
@@ -215,7 +216,6 @@
             }
         });
 
-        // Sync Real Player Bets
         db.ref('Game/KalyanMatka/Bets').on('value', s => {
             let allB = s.val() || {};
             for(let u in allB) { 
@@ -256,7 +256,7 @@
                 document.getElementById(`my-${c.v}`).style.display = "none"; 
                 document.getElementById(`my-${c.v}`).innerText = "₹0"; 
                 document.getElementById(`box-${c.v}`).classList.remove('box-win'); 
-                document.getElementById(`pool-${c.v}`).innerText = "₹0"; // Reset Pool Visual
+                document.getElementById(`pool-${c.v}`).innerText = "₹0";
             });
         }
 
