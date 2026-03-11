@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kalyan VIP - Live Flying Chips</title>
+    <title>Kalyan VIP Matka - Pro Recovery Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -63,10 +63,9 @@
         .chip.selected { transform: scale(1.1); border: 3px solid #fff; box-shadow: 0 0 15px #fff; }
         .c10 { background: #3498db; } .c50 { background: #9b59b6; } .c100 { background: #2ecc71; } .c500 { background: #e74c3c; } .c1000 { background: #f1c40f; color: #000; }
         
-        /* 🔥 FIX: UPDATED CHIP STYLE (REAL CASINO RING) 🔥 */
         .placed-chip { 
             position: fixed; width: 22px; height: 22px; border-radius: 50%; 
-            border: 3px dashed rgba(255,255,255,0.5); /* Casino Ring Style */
+            border: 3px dashed rgba(255,255,255,0.5);
             pointer-events: none; z-index: 100; 
             display: flex; align-items: center; justify-content: center; 
             font-size: 8px; font-weight: 900; color: white; 
@@ -177,7 +176,6 @@
             {v:'J', m:11, s:'🃏', sp:true}, {v:'Q', m:12, s:'🃏', sp:true}, {v:'K', m:30, s:'🃏', sp:true}
         ];
 
-        // 🔥 Chip Color/Style Map for Anim 🔥
         const chipConfig = {
             10: {c: '#3498db', tc: '#fff'},
             50: {c: '#9b59b6', tc: '#fff'},
@@ -217,26 +215,70 @@
                 userBalance = depBal + winBal + bonBal; 
                 document.getElementById('wallet-bal').innerText = userBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             });
+
+            // 🔥 1. AUTO BET RECOVERY 🔥
+            db.ref(`Game/KalyanMatka/Bets/${currentUserId}`).once('value', snap => {
+                let saved = snap.val();
+                if(saved) {
+                    setTimeout(() => {
+                        Object.keys(saved).forEach(targetId => {
+                            let val = saved[targetId];
+                            if(val > 0) {
+                                myTotalBet += val;
+                                userBets[targetId] = val;
+
+                                document.getElementById('my-bet-btn').innerText = "Total Bet: ₹" + myTotalBet.toLocaleString();
+
+                                let myTag = document.getElementById(`my-${targetId}`);
+                                if(myTag) {
+                                    myTag.style.display = 'block';
+                                    myTag.querySelector('span').innerText = val.toLocaleString();
+                                }
+
+                                let targetBox = document.getElementById(`box-${targetId}`);
+                                if(targetBox) {
+                                    let rect = targetBox.getBoundingClientRect();
+                                    let staticChip = document.createElement('div');
+                                    staticChip.className = 'placed-chip';
+                                    staticChip.style.background = '#e74c3c'; 
+                                    staticChip.innerText = val >= 1000 ? (val/1000)+'K' : val;
+                                    staticChip.style.left = (rect.left + rect.width/2 - 11) + 'px';
+                                    staticChip.style.top = (rect.top + rect.height/2 - 11) + 'px';
+                                    document.body.appendChild(staticChip);
+                                }
+                            }
+                        });
+                    }, 500);
+                }
+            });
         }
 
-        // 🔥 LIVE CHIP ANIMATION LOGIC 🔥
+        // 🔥 2. PERMANENT HISTORY LOADER 🔥
+        db.ref('Game/KalyanMatka/History').once('value', snap => {
+            let hist = snap.val();
+            if(hist && Array.isArray(hist)) {
+                [...hist].reverse().forEach(winVal => {
+                    // Server bhejta hai 'A', '2', etc. Humein card data se milana hai
+                    let winCard = cardsData.find(c => c.v == winVal) || cardsData[0];
+                    updateHistory(winCard);
+                });
+            }
+        });
+
         let botBetsInterval;
         function startBotChipsAnimation() {
             if (botBetsInterval) clearInterval(botBetsInterval);
             
-            // Dhada-dhad effect: creates 2-4 chips every 500ms
             botBetsInterval = setInterval(() => {
                 if (!canBet) return;
                 
                 const boxes = [...document.querySelectorAll('.card-box'), ...document.querySelectorAll('.color-box')];
-                const numChipsPerTick = Math.floor(Math.random() * 3) + 2; // 2 to 4 chips
+                const numChipsPerTick = Math.floor(Math.random() * 3) + 2; 
                 
                 for (let i = 0; i < numChipsPerTick; i++) {
                     const target = boxes[Math.floor(Math.random() * boxes.length)];
                     const values = [10, 50, 100, 500];
                     const randVal = values[Math.floor(Math.random() * values.length)];
-                    
-                    // Call placeBet with isUser=false to trigger flying from Online point
                     placeBet(target, null, randVal, chipConfig[randVal].c, false);
                 }
             }, 500); 
@@ -246,7 +288,7 @@
             clearInterval(botBetsInterval);
         }
 
-        // 🔥 GAME SERVER SYNC 🔥
+        // GAME SERVER SYNC 
         db.ref('Game/KalyanMatka/Status').on('value', (s) => {
             let data = s.val(); if(!data) return;
             
@@ -258,14 +300,14 @@
                 
                 if(lastState !== 'betting') {
                     resetGameUI();
-                    startBotChipsAnimation(); // Start Anim
+                    startBotChipsAnimation(); 
                 }
                 lastState = 'betting';
                 
             } 
             else if(data.state === 'result') {
                 canBet = false;
-                stopBotChipsAnimation(); // Stop Anim
+                stopBotChipsAnimation(); 
                 document.getElementById('main-timer').style.display = 'none';
                 document.getElementById('result-container').style.display = 'flex';
                 document.getElementById('wait-timer').innerText = "Next Round in: " + (data.waitCount || 0);
@@ -330,18 +372,14 @@
             chip.style.backgroundColor = color;
             chip.innerText = val >= 1000 ? '1K' : val;
             
-            // 🔥 Fix Text Color for Contrast 🔥
             const cConf = chipConfig[val];
             if(cConf) chip.style.color = cConf.tc;
             
-            // 🔥 ORIGIN LOGIC 🔥
             let sX, sY;
             if(isUser) {
-                // Flying from bottom center (user placed)
                 sX = window.innerWidth/2;
                 sY = window.innerHeight;
             } else {
-                // 🔥 Flying from "Online" point in top corner 🔥
                 const originRect = document.getElementById('online-origin').getBoundingClientRect();
                 sX = originRect.left + (originRect.width / 2);
                 sY = originRect.top + (originRect.height / 2);
@@ -354,7 +392,7 @@
             setTimeout(() => {
                 chip.style.left = (dest.left + dest.width/2 + (Math.random()*30-15)) + 'px';
                 chip.style.top = (dest.top + dest.height/2 + (Math.random()*20-10)) + 'px';
-                if(isUser) playCoinSound(); // Only play sound for real user bets, too noisy otherwise
+                if(isUser) playCoinSound(); 
             }, 30);
         }
 
@@ -385,10 +423,8 @@
                 }
             }
             
-            // Trigger animation
             createChip(el, val, color, isUser);
             
-            // Overwrite visual pool immediately (fake chips add to visual total)
             let poolSpan = el.querySelector('.total-pool span');
             let currentPoolVal = parseInt(poolSpan.innerText.replace(/,/g, '')) || 0;
             poolSpan.innerText = (currentPoolVal + val).toLocaleString();
