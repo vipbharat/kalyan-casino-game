@@ -3,60 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kalyan VIP - Zoo Roulette (Dashboard Connected)</title>
+    <title>Kalyan VIP - Zoo Roulette (With Red/Black)</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
-        body { background: radial-gradient(circle at 50% 50%, #1a0f00 0%, #000 100%); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { background: #000; color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 2px solid #ffd700; background: rgba(0,0,0,0.9); height: 7vh; }
-        .logo { font-size: 18px; font-weight: 900; color: #ffd700; }
-        .online-box { background: rgba(57, 255, 20, 0.2); border: 1.5px solid #39ff14; color: #39ff14; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; }
+        /* Headers */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #333; }
+        .logo { font-size: 18px; font-weight: 900; color: #ffd700; text-shadow: 0 0 5px rgba(255,215,0,0.5); }
+        .online-box { background: rgba(0, 255, 0, 0.1); border: 1px solid #39ff14; color: #39ff14; padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; }
 
-        .history-strip { width: 100%; height: 45px; background: rgba(0,0,0,0.8); display: flex; align-items: center; gap: 10px; padding: 0 15px; border-bottom: 1px solid #444; }
+        .sub-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; border-bottom: 1px solid #333;}
+        .wallet-box { border: 1px solid #ffd700; color: #ffd700; padding: 2px 10px; border-radius: 6px; font-weight: 800; font-size: 13px;}
+        .bot-fund { color: #888; font-size: 11px; font-weight: 800; }
+        .bot-fund span { color: #e040fb; }
+
+        .history-strip { width: 100%; height: 35px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-bottom: 1px solid #222; }
         .h-tag { font-size: 10px; font-weight: 900; color: #ffd700; }
-        .h-list { display: flex; gap: 8px; flex: 1; overflow: hidden; }
-        .h-item { min-width: 32px; height: 32px; background: #fff; color: #000; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; border: 2px solid #ffd700; }
+        .h-list { display: flex; gap: 4px; flex: 1; overflow: hidden; }
+        .h-item { min-width: 24px; height: 24px; background: #111; color: #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid #444; }
 
-        .sub-header { display: flex; justify-content: space-between; align-items: center; padding: 5px 15px; background: rgba(34, 34, 34, 0.9); font-size: 13px; border-bottom: 1px solid #444;}
-        .wallet-box { color: #ffd700; font-weight: 800; font-size: 16px;}
+        /* 🔥 MAIN GAME BOARD 🔥 */
+        .board-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 5px 10px; position: relative; }
+        
+        .game-board { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            grid-template-rows: repeat(7, 1fr); 
+            gap: 2px; 
+            width: 100%; 
+            max-width: 450px; 
+            aspect-ratio: 1; 
+            border: 2px solid #ffd700; 
+            border-radius: 12px; 
+            padding: 4px; 
+            position: relative; 
+            background: #0a0a0a;
+        }
 
-        .game-status-area { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 90px; position: relative; }
-        #main-timer { font-size: 50px; font-weight: 900; color: #ffd700; text-shadow: 0 0 20px #ffae00; line-height: 1;}
-        #status-text { font-size: 14px; font-weight: 800; color: #fff; text-transform: uppercase; margin-top: 5px; }
+        .track-item { background: rgba(255,255,255,0.05); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: 0.1s; }
+        .track-item.active { background: #fff; box-shadow: 0 0 15px #fff, inset 0 0 10px #fff; transform: scale(1.1); z-index: 10; border-radius: 6px;}
         
-        /* Zoo Grid */
-        .zoo-grid { width: 100%; max-width: 480px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 10px; margin: 0 auto; }
-        .animal-box { background: linear-gradient(145deg, #333, #111); border-radius: 12px; height: 85px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #444; position: relative; cursor: pointer; transition: all 0.1s; }
-        .animal-box.spinning { border-color: #ffd700; box-shadow: 0 0 15px #ffd700; transform: scale(1.05); background: linear-gradient(145deg, #555, #222); }
-        .animal-box.winning { border-color: #39ff14; box-shadow: 0 0 25px #39ff14; transform: scale(1.1); background: linear-gradient(145deg, #004d26, #000); }
+        .huge-timer { position: absolute; top: 0; left: 50%; transform: translate(-50%, -40%); font-size: 80px; font-weight: 900; color: #39ff14; text-shadow: 0 0 30px #39ff14, 0 0 10px #000; z-index: 50; pointer-events: none; }
         
-        .animal-icon { font-size: 30px; margin-bottom: 2px; }
-        .multi-tag { font-size: 10px; background: #ffd700; color: #000; padding: 1px 6px; border-radius: 5px; font-weight: 900; }
-        .pool-text { position: absolute; top: 3px; right: 5px; font-size: 9px; color: #888; font-weight: 700; }
-        .my-bet-tag { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); background: #00e5ff; color: #000; font-size: 10px; padding: 1px 8px; border-radius: 10px; font-weight: 900; display: none; z-index: 20; box-shadow: 0 0 5px #00e5ff; border: 1px solid #fff; white-space: nowrap;}
+        .center-bets { grid-area: 2 / 2 / 7 / 7; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px; }
+        
+        .bet-btn { background: #222; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #555; position: relative; cursor: pointer; transition: 0.1s; }
+        .bet-btn:active { transform: scale(0.95); }
+        .bet-btn.winning { box-shadow: 0 0 20px #39ff14; border-color: #39ff14 !important; background: #003300 !important; }
 
-        .footer-chips { height: 14vh; background: rgba(0,0,0,0.9); border-top: 2px solid #ffd700; display: flex; justify-content: space-evenly; align-items: center; padding-bottom: 5px; }
-        .chip { width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; cursor: pointer; border: 3px dashed rgba(255,255,255,0.4); }
-        .chip.selected { transform: scale(1.15); border: 3px solid #fff; box-shadow: 0 0 15px #fff; }
-        
-        /* Match Chip Colors with Car Game */
-        .c10 { background: radial-gradient(circle, #ffffff, #cccccc); color: #000; } 
-        .c100 { background: radial-gradient(circle, #4fc3f7, #0288d1); } 
-        .c500 { background: radial-gradient(circle, #81c784, #388e3c); } 
-        .c1k { background: radial-gradient(circle, #e57373, #d32f2f); } 
-        .c5k { background: radial-gradient(circle, #ba68c8, #7b1fa2); }
+        /* Button Colors */
+        .btn-monkey { border-color: #795548; background: linear-gradient(#3e2723, #111); }
+        .btn-panda { border-color: #cfd8dc; background: linear-gradient(#37474f, #111); }
+        .btn-peacock { border-color: #00bcd4; background: linear-gradient(#006064, #111); }
+        .btn-lion { border-color: #ff9800; background: linear-gradient(#e65100, #111); }
+        .btn-shark { border-color: #03a9f4; background: linear-gradient(#01579b, #111); }
+        .btn-eagle { border-color: #f44336; background: linear-gradient(#b71c1c, #111); }
+        .btn-parrot { border-color: #4caf50; background: linear-gradient(#1b5e20, #111); }
+        .btn-rabbit { border-color: #9c27b0; background: linear-gradient(#4a148c, #111); }
+        .btn-dove { border-color: #9e9e9e; background: linear-gradient(#424242, #111); }
 
-        .placed-chip { position: fixed; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid white; pointer-events: none; z-index: 100; font-size: 8px; font-weight: 900; color: white; display: flex; align-items: center; justify-content: center; transition: all 0.4s ease-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.8); }
+        .btn-icon { font-size: 30px; filter: drop-shadow(0 2px 2px #000); }
+        .btn-multi { border: 1px solid #ffd700; color: #ffd700; font-size: 9px; padding: 1px 8px; border-radius: 10px; font-weight: 900; margin-top: 2px; background: #000;}
+        .pool-text { position: absolute; top: 2px; right: 4px; font-size: 9px; color: #fff; font-weight: 800; background: rgba(0,0,0,0.5); padding: 0 4px; border-radius: 4px;}
+        .my-bet-tag { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); background: #ffd700; color: #000; font-size: 10px; padding: 1px 8px; border-radius: 4px; font-weight: 900; display: none; z-index: 20; white-space: nowrap;}
+
+        /* 🔥 RED AND BLACK COLOR BETS 🔥 */
+        .color-bets-container { display: flex; justify-content: space-between; gap: 10px; width: 100%; max-width: 450px; padding: 0 15px; margin: 0 auto 5px auto; }
+        .color-btn { flex: 1; height: 55px; border-radius: 8px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #555; transition: 0.1s; }
+        .color-btn:active { transform: scale(0.95); }
+        .red-box { background: linear-gradient(145deg, #b71c1c, #4a0000); border-color: #ff5252; box-shadow: inset 0 0 10px rgba(255,82,82,0.3);}
+        .black-box { background: linear-gradient(145deg, #424242, #111); border-color: #9e9e9e; box-shadow: inset 0 0 10px rgba(158,158,158,0.3);}
+        .color-btn.winning { border-color: #39ff14 !important; box-shadow: 0 0 20px #39ff14, inset 0 0 15px #39ff14; }
         
-        .popup-win { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 3rem; font-weight: 900; color: #39ff14; text-shadow: 0 0 20px #39ff14, 0 0 40px #000; z-index: 1000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: rgba(0,0,0,0.8); padding: 10px 30px; border-radius: 20px; border: 3px solid #39ff14; white-space: nowrap; }
-        .popup-win.show { transform: translate(-50%, -50%) scale(1); }
+        .color-title { font-size: 16px; font-weight: 900; letter-spacing: 1px; text-shadow: 0 2px 2px #000; margin-bottom: 2px; line-height: 1;}
+
+        /* Chips Bottom */
+        .footer-chips { height: 11vh; border-top: 1px solid #333; display: flex; justify-content: space-evenly; align-items: center; padding-bottom: 5px; }
+        .chip { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px; color: white; cursor: pointer; border: 2.5px solid rgba(255,255,255,0.5); transition: 0.2s;}
+        .chip.selected { transform: translateY(-5px) scale(1.1); border-color: #fff; box-shadow: 0 0 15px #fff; }
+        
+        .c10 { border-color: #2196f3; box-shadow: inset 0 0 10px #2196f3; } 
+        .c50 { border-color: #9c27b0; box-shadow: inset 0 0 10px #9c27b0; } 
+        .c100 { border-color: #4caf50; box-shadow: inset 0 0 10px #4caf50; } 
+        .c500 { border-color: #f44336; box-shadow: inset 0 0 10px #f44336; } 
+        .c1k { border-color: #ffd700; color: #ffd700; box-shadow: inset 0 0 10px #ffd700; }
+
+        .placed-chip { position: fixed; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid white; pointer-events: none; z-index: 100; font-size: 7px; font-weight: 900; color: white; display: flex; align-items: center; justify-content: center; transition: all 0.4s ease-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.8); }
     </style>
 </head>
 <body onclick="initAudio()">
+    <audio id="soundSpin" src="https://assets.mixkit.co/active_storage/sfx/2042/2042-preview.mp3"></audio>
+    <audio id="soundWin" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
+    <audio id="soundBet" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3"></audio>
+
     <div class="header">
-        <div class="logo">KALYAN ROYAL - ZOO</div>
-        <div class="online-box">● <span id="online-count">1250</span> Online</div>
+        <div class="logo">KALYAN VIP ZOO</div>
+        <div class="online-box">● <span id="online-count">245</span> Online</div>
+    </div>
+
+    <div class="sub-header">
+        <div class="wallet-box">💰 ₹<span id="wallet-bal">0.00</span></div>
+        <div class="bot-fund">Bot Fund: <span>₹00,000</span></div>
+        <div id="clock" style="font-size: 11px; font-weight: 800; color: #aaa;">00:00:00</div>
     </div>
 
     <div class="history-strip">
@@ -64,167 +114,184 @@
         <div class="h-list" id="history-list"></div>
     </div>
 
-    <div class="sub-header">
-        <div class="wallet-box">💰 ₹<span id="wallet-bal">0.00</span></div>
-        <div id="clock">00:00:00</div>
+    <div class="board-container">
+        <div class="huge-timer" id="main-timer">...</div>
+        
+        <div class="game-board" id="board">
+            <div class="center-bets" id="bet-container"></div>
+        </div>
     </div>
 
-    <div class="game-status-area">
-        <div id="main-timer">...</div>
-        <div id="status-text">CONNECTING...</div>
+    <div class="color-bets-container">
+        <div class="color-btn red-box" id="btn-RED" onclick="placeBet(this, 'RED', selectedChipVal, selectedChipColor, event)">
+            <div class="pool-text">₹<span id="total-RED">0</span></div>
+            <div class="color-title">RED</div>
+            <div class="btn-multi">1.95x</div>
+            <div class="my-bet-tag" id="my-RED">₹<span>0</span></div>
+        </div>
+        <div class="color-btn black-box" id="btn-BLACK" onclick="placeBet(this, 'BLACK', selectedChipVal, selectedChipColor, event)">
+            <div class="pool-text">₹<span id="total-BLACK">0</span></div>
+            <div class="color-title">BLACK</div>
+            <div class="btn-multi">1.95x</div>
+            <div class="my-bet-tag" id="my-BLACK">₹<span>0</span></div>
+        </div>
     </div>
-
-    <div class="zoo-grid" id="zoo-container"></div>
 
     <div class="footer-chips">
-        <div class="chip c10" onclick="selectChip(10, this, 'radial-gradient(circle, #ffffff, #cccccc)')">10</div>
-        <div class="chip selected c100" onclick="selectChip(100, this, 'radial-gradient(circle, #4fc3f7, #0288d1)')">100</div>
-        <div class="chip c500" onclick="selectChip(500, this, 'radial-gradient(circle, #81c784, #388e3c)')">500</div>
-        <div class="chip c1k" onclick="selectChip(1000, this, 'radial-gradient(circle, #e57373, #d32f2f)')">1K</div>
-        <div class="chip c5k" onclick="selectChip(5000, this, 'radial-gradient(circle, #ba68c8, #7b1fa2)')">5K</div>
+        <div class="chip selected c10" onclick="selectChip(10, this, '#2196f3')">10</div>
+        <div class="chip c50" onclick="selectChip(50, this, '#9c27b0')">50</div>
+        <div class="chip c100" onclick="selectChip(100, this, '#4caf50')">100</div>
+        <div class="chip c500" onclick="selectChip(500, this, '#f44336')">500</div>
+        <div class="chip c1k" onclick="selectChip(1000, this, '#ffd700')">1K</div>
     </div>
-
-    <div class="popup-win" id="winMsg">+₹0</div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
     <script>
-        // 1. Firebase Initialization
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
-        // 2. Exact User ID logic from your script
         const currentUserId = localStorage.getItem('userPhone') || localStorage.getItem('phone');
         
         let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
-        let selectedChipVal = 100;
-        let selectedChipColor = 'radial-gradient(circle, #4fc3f7, #0288d1)';
-        let canBet = false, isSpinningLocal = false, spinInterval;
-        let myBets = {};
+        let selectedChipVal = 10; let selectedChipColor = '#2196f3';
+        let isBettingOpen = false, isSpinningLocal = false, spinInterval;
+        let myBets = { 'RED': 0, 'BLACK': 0 };
 
-        const zooData = [
-            {id:'🐒', m:8, name:'monkey'}, {id:'🐼', m:8, name:'panda'}, {id:'🦚', m:8, name:'peacock'}, {id:'🦁', m:12, name:'lion'},
-            {id:'🦅', m:12, name:'eagle'}, {id:'🦈', m:24, name:'shark'}, {id:'🕊️', m:6, name:'dove'}, {id:'🐇', m:2, name:'rabbit'},
-            {id:'🦜', m:3, name:'parrot'}, {id:'📦', m:0, name:'box'}, {id:'🏺', m:0, name:'pot'}
+        // 🟢 RED = BEASTS, BLACK = BIRDS Logic 🟢
+        const redAnimals = ['🐒', '🐼', '🦁', '🐇'];
+        const blackAnimals = ['🦚', '🦅', '🦜', '🕊️'];
+
+        const betData = [
+            {id:'🐒', m:8, cls:'btn-monkey'}, {id:'🐼', m:8, cls:'btn-panda'}, {id:'🦚', m:8, cls:'btn-peacock'}, 
+            {id:'🦁', m:12, cls:'btn-lion'}, {id:'🦈', m:24, cls:'btn-shark'}, {id:'🦅', m:12, cls:'btn-eagle'}, 
+            {id:'🦜', m:3, cls:'btn-parrot'}, {id:'🐇', m:2, cls:'btn-rabbit'}, {id:'🕊️', m:6, cls:'btn-dove'}
         ];
-        const spinSequence = ['🐒', '🐼', '🦚', '🦁', '🦅', '🦈', '🕊️', '🐇', '🦜', '📦', '🏺'];
 
-        // Build Grid
-        const container = document.getElementById('zoo-container');
-        zooData.forEach(item => {
+        const betContainer = document.getElementById('bet-container');
+        betData.forEach(item => {
             myBets[item.id] = 0;
             const div = document.createElement('div');
-            div.className = 'animal-box';
-            div.id = `box-${item.id}`;
+            div.className = `bet-btn ${item.cls}`; div.id = `btn-${item.id}`;
             div.onclick = (e) => placeBet(div, item.id, selectedChipVal, selectedChipColor, e);
             div.innerHTML = `
                 <div class="pool-text">₹<span id="total-${item.id}">0</span></div>
-                <div class="animal-icon">${item.id}</div>
-                <div class="multi-tag">${item.m}x</div>
+                <div class="btn-icon">${item.id}</div>
+                <div class="btn-multi">${item.m}x</div>
                 <div class="my-bet-tag" id="my-${item.id}">₹<span>0</span></div>
             `;
-            container.appendChild(div);
+            betContainer.appendChild(div);
         });
 
-        // Audio Setup
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function initAudio() { if(audioCtx.state === 'suspended') audioCtx.resume(); }
-        function playCoinSound() {
-            if(audioCtx.state === 'suspended') return;
-            const n = audioCtx.currentTime; const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-            o.type = 'sine'; o.frequency.setValueAtTime(3000, n); o.frequency.exponentialRampToValueAtTime(800, n + 0.1);
-            g.gain.setValueAtTime(0.1, n); g.gain.exponentialRampToValueAtTime(0.01, n + 0.1);
-            o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(n + 0.1);
+        // Track Generation
+        const trackSequence = ['🦜','🦁','🐇','🦈','🐒','🐼','🕊️', '🦅','🦜','📦','🐼','🦁', '🕊️','🦚','🦈','🐇','🐒','🦅','🦜', '🦁','🐼','🏺','🦚','🦅'];
+        let trackElements = [];
+        const board = document.getElementById('board');
+        
+        for(let i=1; i<=7; i++) createTrackItem(trackSequence[trackElements.length], 1, i);
+        for(let i=2; i<=6; i++) createTrackItem(trackSequence[trackElements.length], i, 7);
+        for(let i=7; i>=1; i--) createTrackItem(trackSequence[trackElements.length], 7, i);
+        for(let i=6; i>=2; i--) createTrackItem(trackSequence[trackElements.length], i, 1);
+
+        function createTrackItem(emoji, row, col) {
+            let div = document.createElement('div');
+            div.className = 'track-item'; div.style.gridArea = `${row} / ${col}`; div.innerText = emoji;
+            board.appendChild(div); trackElements.push(div);
         }
 
-        // 🟢 WALLET REAL-TIME SYNC (Copied exact logic from Car Game) 🟢
+        let isAudioInit = false;
+        function initAudio() { isAudioInit = true; }
+        function playSound(obj, vol) { try { if(!isAudioInit) return; let c = obj.cloneNode(); c.volume = vol; c.play().catch(e=>{}); } catch(e){} }
+
         if (currentUserId) {
             db.ref(`users/${currentUserId}`).on('value', (s) => {
                 const d = s.val() || {}; 
-                depBal = parseFloat(d.balance||0); 
-                winBal = parseFloat(d.winning_balance||0); 
-                bonBal = parseFloat(d.bonus_balance||0);
+                depBal = parseFloat(d.balance||0); winBal = parseFloat(d.winning_balance||0); bonBal = parseFloat(d.bonus_balance||0);
                 userBalance = depBal + winBal + bonBal; 
                 document.getElementById('wallet-bal').innerText = userBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             });
         }
 
-        // 🚀 GAME SERVER SYNC 🚀
         let lastWinner = '';
         db.ref('Game/ZooRoulette/Status').on('value', (s) => {
             let st = s.val(); if(!st) return;
 
             if(st.state === 'betting') {
-                isSpinningLocal = false;
-                clearInterval(spinInterval);
+                clearInterval(spinInterval); isSpinningLocal = false;
                 document.getElementById('main-timer').innerText = st.timer;
-                document.getElementById('status-text').innerText = "BETS OPEN";
-                canBet = true;
-                if(st.timer === 15) resetUI();
+                document.getElementById('main-timer').style.display = 'block';
+                document.getElementById('main-timer').style.color = st.timer <= 5 ? "#ff3333" : "#39ff14";
+                
+                trackElements.forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.bet-btn, .color-btn').forEach(b => b.classList.remove('winning'));
+                
+                if(!isBettingOpen) { isBettingOpen = true; resetTable(); }
             } 
-            else if (st.state === 'spinning') {
-                if(canBet && !isSpinningLocal) {
-                    canBet = false;
-                    document.getElementById('main-timer').innerText = "🚥";
-                    document.getElementById('status-text').innerText = "SPINNING...";
-                    startTrackAnimation();
+            else if (st.state === 'spinning' || st.state === 'result') {
+                if(isBettingOpen && !isSpinningLocal) {
+                    isBettingOpen = false; isSpinningLocal = true;
+                    document.getElementById('main-timer').style.display = 'none'; 
+                    if(st.winner) runTrackSpin(st.winner);
                 }
-            }
-            else if (st.state === 'result') {
-                canBet = false;
-                document.getElementById('main-timer').innerText = "🎉";
-                document.getElementById('status-text').innerText = "RESULT";
-                if(st.winner) showFinalWinner(st.winner);
             }
         });
 
-        // Read Total Pool (Live Bet Show)
         db.ref('Game/ZooRoulette/Bets').on('value', s => {
             let allB = s.val() || {};
-            let tp = {'🐒':0, '🐼':0, '🦚':0, '🦁':0, '🦅':0, '🦈':0, '🕊️':0, '🐇':0, '🦜':0, '📦':0, '🏺':0};
+            let tp = {'🐒':0, '🐼':0, '🦚':0, '🦁':0, '🦅':0, '🦈':0, '🕊️':0, '🐇':0, '🦜':0, 'RED':0, 'BLACK':0};
             for(let u in allB) { if(!u.includes('bot')) for(let c in allB[u]) if(tp[c] !== undefined) tp[c] += allB[u][c]; }
-            for(let c in tp) document.getElementById(`total-${c}`).innerText = tp[c].toLocaleString();
+            for(let c in tp) {
+                let elem = document.getElementById(`total-${c}`);
+                if(elem) elem.innerText = tp[c].toLocaleString();
+            }
         });
 
-        function startTrackAnimation() {
-            if (isSpinningLocal) return; 
-            isSpinningLocal = true;
-            let currentIndex = 0;
-            spinInterval = setInterval(() => {
-                document.querySelectorAll('.animal-box').forEach(b => { b.classList.remove('spinning'); b.classList.remove('winning'); });
-                let currentAnimalId = spinSequence[currentIndex];
-                let activeBox = document.getElementById(`box-${currentAnimalId}`);
-                if (activeBox) activeBox.classList.add('spinning');
-                currentIndex = (currentIndex + 1) % spinSequence.length;
-                playCoinSound(); 
-            }, 150); 
+        function runTrackSpin(wId) {
+            let sSnd = document.getElementById('soundSpin'); sSnd.currentTime = 0; sSnd.loop = true; sSnd.volume = 0.8; sSnd.play().catch(e=>{});
+            let targetIndices = trackSequence.reduce((acc, el, i) => { if (el === wId) acc.push(i); return acc; }, []);
+            if(targetIndices.length === 0) targetIndices = [0]; 
+            let targetIdx = targetIndices[Math.floor(Math.random() * targetIndices.length)];
+            
+            let currentIdx = 0, totalSteps = 48 + targetIdx, step = 0, speed = 50;
+
+            function nextStep() {
+                trackElements.forEach(el => el.classList.remove('active'));
+                trackElements[currentIdx].classList.add('active');
+                if (step >= totalSteps) { sSnd.pause(); showWinner(wId); return; }
+                step++; currentIdx = (currentIdx + 1) % 24;
+                if(totalSteps - step < 10) speed += 30;
+                setTimeout(nextStep, speed);
+            }
+            nextStep();
         }
 
-        function showFinalWinner(winnerId) {
-            clearInterval(spinInterval); isSpinningLocal = false;
-            document.querySelectorAll('.animal-box').forEach(b => { b.classList.remove('spinning'); b.classList.remove('winning'); });
+        function showWinner(wId) {
+            playSound(document.getElementById('soundWin'), 1.0); 
             
-            const winBox = document.getElementById(`box-${winnerId}`);
-            if (winBox) winBox.classList.add('winning');
+            // Highlight Center Animal Box
+            let winBtn = document.getElementById(`btn-${wId}`);
+            if(winBtn) winBtn.classList.add('winning');
 
-            if (lastWinner !== winnerId) { lastWinner = winnerId; updateHistory(winnerId); }
+            // Highlight RED or BLACK Box
+            if(redAnimals.includes(wId)) document.getElementById('btn-RED').classList.add('winning');
+            if(blackAnimals.includes(wId)) document.getElementById('btn-BLACK').classList.add('winning');
 
-            // EXACT WINNING LOGIC (Add to Winnings)
-            if(myBets[winnerId] > 0 && currentUserId) {
-                let winObj = zooData.find(z => z.id === winnerId);
-                if(winObj) {
-                    let wAmt = myBets[winnerId] * winObj.m;
-                    if(wAmt > 0) {
-                        db.ref(`users/${currentUserId}/winning_balance`).set(winBal + wAmt);
-                        let p = document.getElementById('winMsg'); 
-                        p.innerText = "+₹" + wAmt.toLocaleString(); 
-                        p.classList.add('show');
-                    }
+            if (lastWinner !== wId) { lastWinner = wId; updateHistory(wId); }
+
+            // Calculate Winnings
+            if(currentUserId) {
+                let totalWin = 0;
+                let winObj = betData.find(z => z.id === wId);
+                if(winObj && myBets[wId] > 0) totalWin += myBets[wId] * winObj.m;
+                
+                if(redAnimals.includes(wId) && myBets['RED'] > 0) totalWin += myBets['RED'] * 1.95;
+                if(blackAnimals.includes(wId) && myBets['BLACK'] > 0) totalWin += myBets['BLACK'] * 1.95;
+
+                if(totalWin > 0) {
+                    db.ref(`users/${currentUserId}/winning_balance`).set(winBal + totalWin);
                 }
             }
-            setTimeout(() => { document.getElementById('winMsg').classList.remove('show'); }, 4000);
         }
 
         function updateHistory(winId) {
@@ -232,65 +299,54 @@
             const newItem = document.createElement('div');
             newItem.className = 'h-item'; newItem.innerText = winId;
             list.insertBefore(newItem, list.firstChild);
-            if(list.children.length > 7) list.removeChild(list.lastChild); 
+            if(list.children.length > 8) list.removeChild(list.lastChild); 
         }
 
-        function resetUI() {
-            document.querySelectorAll('.animal-box').forEach(b => { b.classList.remove('winning'); b.classList.remove('spinning'); });
-            document.querySelectorAll('.my-bet-tag').forEach(t => { t.style.display = 'none'; t.querySelector('span').innerText = '0'; });
-            document.querySelectorAll('.placed-chip').forEach(c => c.remove());
-            document.getElementById('winMsg').classList.remove('show');
-            zooData.forEach(z => myBets[z.id] = 0);
+        function resetTable() {
+            document.querySelectorAll('.chip-fly').forEach(c => c.remove()); 
+            
+            // Reset Animal Bets
+            betData.forEach(z => { myBets[z.id] = 0; document.getElementById(`my-${z.id}`).style.display = 'none'; document.getElementById(`my-${z.id}`).querySelector('span').innerText = '0'; });
+            
+            // Reset Color Bets
+            myBets['RED'] = 0; myBets['BLACK'] = 0;
+            document.getElementById(`my-RED`).style.display = 'none'; document.getElementById(`my-RED`).querySelector('span').innerText = '0';
+            document.getElementById(`my-BLACK`).style.display = 'none'; document.getElementById(`my-BLACK`).querySelector('span').innerText = '0';
+            
             lastWinner = '';
         }
 
-        // 💸 EXACT BET PLACEMENT LOGIC FROM CAR GAME 💸
         function placeBet(el, targetId, val, color, e) {
-            if (!canBet) return;
+            if (!isBettingOpen) return;
             if (!currentUserId) { alert("Login Error!"); return; } 
             if (userBalance < val) { alert("Insufficient Balance!"); return; }
             
-            // Deduct Logic (Deposit first, Winnings next)
+            playSound(document.getElementById('soundBet'), 1.0); 
+            
             let nDep = depBal, nWin = winBal, rem = val;
             if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
             db.ref('users/'+currentUserId).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
-            
-            // Increment in Database
             db.ref(`Game/ZooRoulette/Bets/${currentUserId}/${targetId}`).set(firebase.database.ServerValue.increment(val));
 
-            // Local UI Update
             myBets[targetId] += val;
             let myTag = document.getElementById(`my-${targetId}`);
-            myTag.style.display = 'block';
-            myTag.querySelector('span').innerText = myBets[targetId];
+            myTag.style.display = 'block'; myTag.querySelector('span').innerText = myBets[targetId];
 
-            // Chip Animation
-            const chip = document.createElement('div');
-            chip.className = 'placed-chip';
-            chip.style.background = color;
-            chip.innerText = val >= 1000 ? (val/1000)+'K' : val;
-            if(val === 10) chip.style.color = '#000';
-            chip.style.left = e.clientX + 'px'; chip.style.top = e.clientY + 'px';
-            document.body.appendChild(chip);
+            var fly = document.createElement('div'); fly.className = 'placed-chip'; fly.style.background = color; 
+            fly.innerText = val >= 1000 ? (val/1000)+'K' : val; 
+            fly.style.left = e.clientX + 'px'; fly.style.top = e.clientY + 'px'; document.body.appendChild(fly);
             
-            let dest = el.getBoundingClientRect();
-            setTimeout(() => {
-                chip.style.left = (dest.left + dest.width/2 + (Math.random()*30-15)) + 'px';
-                chip.style.top = (dest.top + dest.height/2 + (Math.random()*30-15)) + 'px';
-                playCoinSound();
-            }, 50);
+            var tB = el.getBoundingClientRect();
+            setTimeout(() => { fly.style.left = (tB.left + 15 + Math.random()*(tB.width-30))+'px'; fly.style.top = (tB.top + 15 + Math.random()*(tB.height-30))+'px'; }, 50);
         }
 
         function selectChip(v, el, color) { 
             selectedChipVal = v; selectedChipColor = color;
             document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected')); 
-            el.classList.add('selected'); 
+            el.classList.add('selected'); playSound(document.getElementById('soundBet'), 0.5);
         }
 
-        setInterval(() => { 
-            document.getElementById('online-count').innerText = Math.floor(Math.random() * 50) + 1200;
-            document.getElementById('clock').innerText = new Date().toLocaleTimeString(); 
-        }, 1000);
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
     </script>
 </body>
 </html>
