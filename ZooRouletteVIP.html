@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kalyan VIP Zoo - Colorful Pro Edition</title>
+    <title>Kalyan VIP Zoo - Pro Rules Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
         
-        /* 🔥 COLORFUL CASINO BACKGROUND 🔥 */
         body { 
             background: radial-gradient(circle at top, #4a00e0, #8e2de2, #000000 80%); 
             color: white; 
@@ -74,7 +73,6 @@
         .btn-icon { font-size: 32px; filter: drop-shadow(0 2px 3px #000); }
         .btn-multi { border: 1px solid #ffd700; color: #ffd700; font-size: 9px; padding: 1px 8px; border-radius: 10px; font-weight: 900; margin-top: 2px; background: #000;}
         
-        /* 🔥 UPGRADED POOL TEXT (Counting Badge) 🔥 */
         .pool-text { position: absolute; top: -6px; right: -6px; font-size: 10px; color: #000; font-weight: 900; background: #ffc107; padding: 2px 6px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.8); border: 1.5px solid #fff; z-index: 10;}
         
         .my-bet-tag { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); background: #00e5ff; color: #000; font-size: 10px; padding: 1px 8px; border-radius: 4px; font-weight: 900; display: none; z-index: 20; white-space: nowrap; box-shadow: 0 2px 4px #000;}
@@ -101,12 +99,17 @@
         .c1k { background: #ffd700; color: #000; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
 
         .placed-chip { position: fixed; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid white; pointer-events: none; z-index: 100; font-size: 8px; font-weight: 900; color: white; display: flex; align-items: center; justify-content: center; transition: all 0.4s ease-out; box-shadow: 2px 2px 6px rgba(0,0,0,0.8); }
+
+        /* 🔥 VIP ERROR ALERT TOAST 🔥 */
+        .toast-msg { position: fixed; top: 15%; left: 50%; transform: translateX(-50%); background: rgba(220, 38, 38, 0.95); color: white; padding: 10px 20px; border-radius: 8px; font-weight: 900; z-index: 9999; border: 2px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.6); display: none; white-space: nowrap; font-size: 13px; text-align: center;}
     </style>
 </head>
 <body onclick="initAudio()">
     <audio id="soundSpin" src="https://assets.mixkit.co/active_storage/sfx/2042/2042-preview.mp3"></audio>
     <audio id="soundWin" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
     <audio id="soundBet" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3"></audio>
+
+    <div class="toast-msg" id="toastMsg">⚠️ Warning</div>
 
     <div class="header">
         <div class="logo">KALYAN VIP ZOO</div>
@@ -167,7 +170,6 @@
         let isBettingOpen = false, isSpinningLocal = false, spinInterval, liveBettingInterval;
         let myBets = { 'ANIMALS': 0, 'BIRDS': 0 };
 
-        // 🟢 ANIMALS = Beasts, BIRDS = Birds Logic 🟢
         const animalList = ['🐒', '🐼', '🦁', '🐇'];
         const birdList = ['🦚', '🦅', '🦜', '🕊️'];
 
@@ -211,6 +213,13 @@
         function initAudio() { isAudioInit = true; }
         function playSound(obj, vol) { try { if(!isAudioInit) return; let c = obj.cloneNode(); c.volume = vol; c.play().catch(e=>{}); } catch(e){} }
 
+        function showToast(msg) {
+            let t = document.getElementById('toastMsg');
+            t.innerHTML = msg;
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 2500);
+        }
+
         if (currentUserId) {
             db.ref(`users/${currentUserId}`).on('value', (s) => {
                 const d = s.val() || {}; 
@@ -220,7 +229,6 @@
             });
         }
 
-        // 🔥 LIVE PLAYER CHIPS + LIVE COUNTING 🔥
         function startLivePlayerBets() {
             if (liveBettingInterval) clearInterval(liveBettingInterval);
             liveBettingInterval = setInterval(() => {
@@ -255,7 +263,6 @@
                     flyChip.style.left = (dest.left + 15 + Math.random() * (dest.width - 30)) + 'px';
                     flyChip.style.top = (dest.top + 15 + Math.random() * (dest.height - 30)) + 'px';
                     
-                    // 🟢 LIVE COUNTING: Chip girte hi box ka total badh jayega!
                     let poolSpan = targetBox.querySelector('.pool-text span');
                     if(poolSpan) {
                         let currentVal = parseInt(poolSpan.innerText.replace(/,/g, '')) || 0;
@@ -298,15 +305,12 @@
             }
         });
 
-        // Backend se real data aane par box update (Fake chips ke upar overwrite karega real value se)
         db.ref('Game/ZooRoulette/Bets').on('value', s => {
             let allB = s.val() || {};
             let tp = {'🐒':0, '🐼':0, '🦚':0, '🦁':0, '🦅':0, '🦈':0, '🕊️':0, '🐇':0, '🦜':0, 'ANIMALS':0, 'BIRDS':0};
             for(let u in allB) { if(!u.includes('bot')) for(let c in allB[u]) if(tp[c] !== undefined) tp[c] += allB[u][c]; }
-            
             for(let c in tp) {
                 let elem = document.getElementById(`total-${c}`);
-                // Agar real total 0 nahi hai, toh wahi dikhao
                 if(elem && tp[c] > 0) elem.innerText = tp[c].toLocaleString();
             }
         });
@@ -372,15 +376,26 @@
             document.getElementById(`my-ANIMALS`).style.display = 'none'; document.getElementById(`my-ANIMALS`).querySelector('span').innerText = '0';
             document.getElementById(`my-BIRDS`).style.display = 'none'; document.getElementById(`my-BIRDS`).querySelector('span').innerText = '0';
             
-            // Total pool ko wapas zero karna round shuru hone par
             document.querySelectorAll('.pool-text span').forEach(s => s.innerText = '0');
             lastWinner = '';
         }
 
+        // 💸 BET PLACEMENT WITH NEW LIMIT LOGIC 💸
         function placeBet(el, targetId, val, color, e) {
             if (!isBettingOpen) return;
-            if (!currentUserId) { alert("Login Error!"); return; } 
-            if (userBalance < val) { alert("Insufficient Balance!"); return; }
+            if (!currentUserId) { showToast("⚠️ Login Error!"); return; } 
+            if (userBalance < val) { showToast("⚠️ Insufficient Balance!"); return; }
+            
+            // 🔥 LIMIT LOGIC: Max 4 bets + 1 Shark allowed 🔥
+            let activeBets = Object.keys(myBets).filter(k => myBets[k] > 0);
+            if (myBets[targetId] === 0) { // Agar naya dabbe par click kar raha hai
+                let nonSharkBetsCount = activeBets.filter(k => k !== '🦈').length;
+                
+                if (targetId !== '🦈' && nonSharkBetsCount >= 4) {
+                    showToast("⚠️ Aap sirf 4 jagah aur Shark (🦈) par bet laga sakte hain!");
+                    return; // Bet rok do
+                }
+            }
             
             playSound(document.getElementById('soundBet'), 1.0); 
             
