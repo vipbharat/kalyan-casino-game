@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ANDAR BAHAR PRO VIP</title>
+    <title>ANDAR BAHAR PRO VIP - Auto Recovery</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
@@ -12,14 +12,15 @@
         body { margin: 0; font-family: 'Arial Black', sans-serif; overflow: hidden; color: white; user-select: none; padding-bottom: 120px; background: linear-gradient(135deg, #1a0000, #330000, #1a0033, #001a33); background-size: 400% 400%; animation: gradientBG 15s ease infinite; }
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
-        .top-bar { display: flex; justify-content: space-between; padding: 10px 15px; background: rgba(0,0,0,0.8); border-bottom: 2px solid var(--gold); align-items: center; box-shadow: 0 2px 15px rgba(255, 215, 0, 0.3); backdrop-filter: blur(5px); }
+        .top-bar { display: flex; justify-content: space-between; padding: 10px 15px; background: rgba(0,0,0,0.8); border-bottom: 2px solid var(--gold); align-items: center; box-shadow: 0 2px 15px rgba(255, 215, 0, 0.3); backdrop-filter: blur(5px); z-index: 1000; position: relative;}
         .top-left { font-size: 11px; color: var(--gold); line-height: 1.5; text-shadow: 0 0 5px var(--gold); }
         .bal-box { background: linear-gradient(to bottom, #333, #111); border: 1.5px solid var(--gold); padding: 5px 15px; border-radius: 25px; color: #0f0; font-size: 15px; font-weight: bold; box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); }
         
-        .admin-note-bar { background: linear-gradient(to right, #600, #a00, #600); color: #fff; font-size: 12px; height: 25px; line-height: 25px; overflow: hidden; white-space: nowrap; border-bottom: 1.5px solid var(--gold); font-weight: bold; text-shadow: 1px 1px 2px #000; }
+        .admin-note-bar { background: linear-gradient(to right, #600, #a00, #600); color: #fff; font-size: 12px; height: 25px; line-height: 25px; overflow: hidden; white-space: nowrap; border-bottom: 1.5px solid var(--gold); font-weight: bold; text-shadow: 1px 1px 2px #000; position: relative; z-index: 100;}
 
-        .record-panel { position: absolute; right: 10px; top: 75px; display: flex; flex-direction: column; gap: 5px; z-index: 100; background: rgba(0,0,0,0.7); padding: 8px; border-radius: 15px; border: 1px solid var(--gold); box-shadow: 0 0 10px rgba(255,215,0,0.2); }
-        .record-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid #fff; color: white; box-shadow: 0 0 8px #000 inset; }
+        /* HISTORY PANEL */
+        .record-panel { position: absolute; right: 10px; top: 75px; display: flex; flex-direction: column; gap: 5px; z-index: 100; background: rgba(0,0,0,0.7); padding: 8px; border-radius: 15px; border: 1px solid var(--gold); box-shadow: 0 0 10px rgba(255,215,0,0.2); max-height: 250px; overflow-y: hidden;}
+        .record-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid #fff; color: white; box-shadow: 0 0 8px #000 inset; flex-shrink: 0;}
 
         .joker-section { text-align: center; margin-top: 15px; position: relative; }
         .joker-title { font-size: 12px; color: var(--gold); letter-spacing: 2px; text-shadow: 0 0 10px var(--gold); margin-bottom: 5px; }
@@ -49,7 +50,10 @@
         .pool-amt { display: block; color: #fff; text-align: center; font-size: 16px; padding: 5px; font-weight: bold; text-shadow: 0 0 5px #fff; }
         .my-box-bet { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #000; background: var(--gold); padding: 4px 10px; border-radius: 20px; border: 2px solid #fff; z-index: 30; display: none; font-weight: 900; box-shadow: 0 2px 5px rgba(0,0,0,0.8); white-space: nowrap; }
         
-        .chip { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #fff; position: absolute; z-index: 20; font-size: 8px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.8); transition: 0.3s ease-out; }
+        .chip { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #fff; position: absolute; z-index: 20; font-size: 8px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 5px rgba(0,0,0,0.8); transition: 0.3s ease-out; pointer-events: none;}
+
+        /* 🔥 RECOVERY CHIP CSS 🔥 */
+        .recovery-chip { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 28px; height: 28px; border-radius: 50%; border: 2.5px dashed #fff; background: #e74c3c; z-index: 25; font-size: 9px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; box-shadow: 0 0 15px #e74c3c, 2px 2px 5px rgba(0,0,0,0.8); pointer-events: none; }
 
         .live-players { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 8px 0; background: rgba(0,0,0,0.9); position: fixed; bottom: 85px; width: 100%; border-top: 2px solid var(--gold); box-shadow: 0 -5px 15px rgba(0,0,0,0.5); z-index: 1050;}
         .player { text-align: center; transition: 0.5s; }
@@ -120,13 +124,13 @@
 <div id="win-overlay">WINNER</div>
 
 <div class="bet-grid">
-    <div class="box andar-box" onclick="placeBet('andar')">
+    <div class="box andar-box" id="box-andar" onclick="placeBet('andar')">
         <div class="box-title-bg"><span class="a-title">ANDAR (A)</span></div>
         <span class="pool-amt">₹<span id="p-andar">0</span></span>
         <div class="my-box-bet" id="my-andar">₹0</div>
         <div id="chips-andar"></div>
     </div>
-    <div class="box bahar-box" onclick="placeBet('bahar')">
+    <div class="box bahar-box" id="box-bahar" onclick="placeBet('bahar')">
         <div class="box-title-bg"><span class="b-title">BAHAR (B)</span></div>
         <span class="pool-amt">₹<span id="p-bahar">0</span></span>
         <div class="my-box-bet" id="my-bahar">₹0</div>
@@ -164,7 +168,7 @@
     }
 
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
@@ -218,7 +222,47 @@
             totalBal = Math.max(0, depBal + winBal + bonBal);
             document.getElementById('balance').innerText = totalBal.toFixed(2); 
         });
+
+        // 🔥 1. AUTO BET RECOVERY 🔥
+        db.ref(`Game/AndarBahar/Bets/${phone}`).once('value', snap => {
+            let saved = snap.val();
+            if(saved) {
+                setTimeout(() => {
+                    ['andar', 'bahar'].forEach(side => {
+                        let val = saved[side];
+                        if(val > 0) {
+                            myBets[side] = val;
+                            let myTag = document.getElementById('my-' + side);
+                            myTag.innerText = "MY BET: ₹" + val.toLocaleString();
+                            myTag.style.display = 'block';
+
+                            let box = document.getElementById('box-' + side);
+                            if(box) {
+                                let rc = document.createElement('div');
+                                rc.className = 'recovery-chip';
+                                rc.innerText = val >= 1000 ? (val/1000)+'K' : val;
+                                box.appendChild(rc);
+                            }
+                        }
+                    });
+                }, 500);
+            }
+        });
     }
+
+    // 🔥 2. PERMANENT HISTORY LOADER 🔥
+    db.ref('Game/AndarBahar/History').once('value', snap => {
+        let hist = snap.val();
+        if(hist && Array.isArray(hist)) {
+            let hHtml = '';
+            [...hist].reverse().forEach(win => {
+                let char = win === 'andar' ? 'A' : 'B';
+                let col = win === 'andar' ? 'var(--andar)' : 'var(--bahar)';
+                hHtml += `<div class="record-dot" style="background:${col};">${char}</div>`;
+            });
+            document.getElementById('record-board').innerHTML = hHtml;
+        }
+    });
 
     window.placeBet = function(side) {
         if(!isBettingOpen) return;
@@ -282,8 +326,6 @@
             
             if(randomBot.bal >= amt) {
                 randomBot.bal -= amt;
-                pool[s] += amt;
-                document.getElementById('p-'+s).innerText = pool[s].toLocaleString();
                 spawnChip(s, amt);
                 botBetted = true;
             }
@@ -304,6 +346,7 @@
         </div>`;
     }
 
+    // SERVER SYNC
     db.ref('Game/AndarBahar/Status').on('value', snap => {
         let st = snap.val(); if(!st) return;
         let tEl = document.getElementById('timer');
@@ -334,9 +377,21 @@
         }
     });
 
-    // 🔥 PATTE KHULNE KI SPEED SLOW KAR DI GAYI HAI 🔥
+    // POOL SYNC
+    db.ref('Game/AndarBahar/Bets').on('value', snap => {
+        let allB = snap.val() || {};
+        pool = {andar:0, bahar:0};
+        for(let u in allB) { 
+            if(!u.includes('bot')) {
+                pool.andar += (allB[u].andar || 0);
+                pool.bahar += (allB[u].bahar || 0);
+            }
+        }
+        document.getElementById('p-andar').innerText = pool.andar.toLocaleString();
+        document.getElementById('p-bahar').innerText = pool.bahar.toLocaleString();
+    });
+
     async function showAnimation(win, jVal) {
-        // Steps 8 se 14 tak range me rakhe hain taaki slow speed (800ms) par bhi 20 sec limit me game finish ho jaye
         let steps = Math.floor(Math.random() * 7) + 8; 
         
         if(win === 'andar' && steps % 2 === 0) steps++; 
@@ -379,16 +434,20 @@
                 ov.innerText = side.toUpperCase() + " WINS!"; 
                 ov.style.display = 'block';
 
+                // Live Record Update
                 let hHtml = document.getElementById('record-board').innerHTML;
                 let cDot = `<div class="record-dot" style="background:${side === 'andar' ? 'var(--andar)' : 'var(--bahar)'};">${side === 'andar' ? 'A' : 'B'}</div>`;
-                document.getElementById('record-board').innerHTML = cDot + hHtml;
+                
+                let tempDiv = document.createElement('div');
+                tempDiv.innerHTML = cDot + hHtml;
+                if(tempDiv.children.length > 10) tempDiv.removeChild(tempDiv.lastChild);
+                document.getElementById('record-board').innerHTML = tempDiv.innerHTML;
 
                 let winAmt = (side === 'andar') ? myBets.andar * 1.95 : myBets.bahar * 1.95;
                 if(winAmt > 0 && phone) { db.ref('users/'+phone+'/winning_balance').set(winBal + winAmt); }
                 return;
             }
             
-            // 🔥 Yahan Time 450ms se badhakar 800ms (almost 1 second) kar diya hai
             await new Promise(r => setTimeout(r, 800)); 
         }
     }
@@ -405,7 +464,8 @@
         document.getElementById('back-b').style.display = 'block';
         
         document.querySelectorAll('.chip').forEach(c => c.remove());
-        document.querySelectorAll('.my-box-bet').forEach(m => m.style.display = 'none');
+        document.querySelectorAll('.recovery-chip').forEach(c => c.remove());
+        document.querySelectorAll('.my-box-bet').forEach(m => { m.style.display = 'none'; m.innerText = '₹0'; });
         
         pool = {andar:0, bahar:0}; myBets = {andar:0, bahar:0}; 
         document.getElementById('p-andar').innerText = "0"; 
