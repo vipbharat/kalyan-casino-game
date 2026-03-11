@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kalyan VIP - Fixed UI</title>
+    <title>Kalyan VIP - Dashboard Wallet Connected</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -20,9 +20,9 @@
         .h-item { min-width: 28px; height: 28px; background: #fff; color: #000; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; border: 2px solid #ffd700; box-shadow: 0 0 5px rgba(255,215,0,0.5); }
 
         .sub-header { display: flex; justify-content: space-between; align-items: center; padding: 5px 15px; background: rgba(17, 17, 17, 0.9); font-size: 13px; border-bottom: 1px solid #333;}
-        .wallet-box { color: #ffd700; font-weight: 800; display: flex; align-items: center; gap: 5px; }
+        .wallet-box { color: #ffd700; font-weight: 800; display: flex; align-items: center; gap: 5px; font-size: 15px;}
 
-        /* 🔥 FIX: GAME STATUS AREA (NO OVERLAP) 🔥 */
+        /* GAME STATUS AREA */
         .game-status-area { 
             height: 120px; display: flex; flex-direction: column; align-items: center; 
             justify-content: center; width: 100%; margin-top: 5px;
@@ -121,17 +121,17 @@
     <div class="matka-grid" id="grid-container"></div>
 
     <div class="color-betting-area">
-        <div class="color-box box-red" onclick="placeBet(this, 'RED', selectedChipVal, selectedChipColor, true)">
-            <div class="total-pool">₹<span>0</span></div>
+        <div class="color-box box-red" id="box-RED" onclick="placeBet(this, 'RED', selectedChipVal, selectedChipColor, true)">
+            <div class="total-pool">₹<span id="total-RED">0</span></div>
             <span class="color-name">RED</span>
             <span class="color-multi">1.95x</span>
-            <div class="my-bet-tag">₹<span>0</span></div>
+            <div class="my-bet-tag" id="my-RED">₹<span>0</span></div>
         </div>
-        <div class="color-box box-black" onclick="placeBet(this, 'BLACK', selectedChipVal, selectedChipColor, true)">
-            <div class="total-pool">₹<span>0</span></div>
+        <div class="color-box box-black" id="box-BLACK" onclick="placeBet(this, 'BLACK', selectedChipVal, selectedChipColor, true)">
+            <div class="total-pool">₹<span id="total-BLACK">0</span></div>
             <span class="color-name">BLACK</span>
             <span class="color-multi">1.95x</span>
-            <div class="my-bet-tag">₹<span>0</span></div>
+            <div class="my-bet-tag" id="my-BLACK">₹<span>0</span></div>
         </div>
     </div>
 
@@ -143,11 +143,19 @@
         <div class="chip c1000" onclick="selectChip(1000, this, '#f1c40f')">1K</div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
     <script>
-        const FIREBASE_URL = "https://kalyan-casino-default-rtdb.firebaseio.com";
-        const PLAYER_ID = "player_" + Math.floor(Math.random() * 99999); 
+        // 1. Firebase Initialization
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // 2. Exact Dashboard User ID Logic
+        const currentUserId = localStorage.getItem('userPhone') || localStorage.getItem('phone');
         
-        let walletBalance = 0.00; 
+        let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
         let myTotalBet = 0; 
         let canBet = false; 
         let lastState = ''; 
@@ -180,59 +188,64 @@
         cardsData.forEach(c => {
             const div = document.createElement('div');
             div.className = `card-box ${c.sp ? 'card-special' : ''}`;
+            div.id = `box-${c.v}`;
             div.onclick = () => placeBet(div, c.v, selectedChipVal, selectedChipColor, true);
-            div.innerHTML = `<div class="total-pool">₹<span>0</span></div><div class="c-val ${c.r?'c-red':''}">${c.v}</div><div style="font-size:14px">${c.s}</div><div style="font-size:9px; background:#000; color:#ffd700; padding:1px 4px; border-radius:4px; font-weight:bold;">${c.m}x</div><div class="my-bet-tag">₹<span>0</span></div>`;
+            div.innerHTML = `<div class="total-pool">₹<span id="total-${c.v}">0</span></div><div class="c-val ${c.r?'c-red':''}">${c.v}</div><div style="font-size:14px">${c.s}</div><div style="font-size:9px; background:#000; color:#ffd700; padding:1px 4px; border-radius:4px; font-weight:bold;">${c.m}x</div><div class="my-bet-tag" id="my-${c.v}">₹<span>0</span></div>`;
             grid.appendChild(div);
         });
 
-        // 🚀 SERVER SYNC LOOP
-        setInterval(async () => {
-            try {
-                let res = await fetch(`${FIREBASE_URL}/Game/KalyanMatka/Status.json`);
-                let data = await res.json();
-                if(!data) return;
+        // 🟢 WALLET REAL-TIME SYNC 🟢
+        if (currentUserId) {
+            db.ref(`users/${currentUserId}`).on('value', (s) => {
+                const d = s.val() || {}; 
+                depBal = parseFloat(d.balance||0); winBal = parseFloat(d.winning_balance||0); bonBal = parseFloat(d.bonus_balance||0);
+                userBalance = depBal + winBal + bonBal; 
+                document.getElementById('wallet-bal').innerText = userBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            });
+        }
+
+        // 🚀 GAME SERVER SYNC (Using Firebase SDK instead of Fetch)
+        db.ref('Game/KalyanMatka/Status').on('value', (s) => {
+            let data = s.val(); if(!data) return;
+            
+            if(data.state === 'betting') {
+                document.getElementById('main-timer').style.display = 'block';
+                document.getElementById('result-container').style.display = 'none'; 
+                document.getElementById('main-timer').innerText = data.timer;
+                canBet = true;
                 
-                if(data.state === 'betting') {
-                    document.getElementById('main-timer').style.display = 'block';
-                    document.getElementById('result-container').style.display = 'none'; 
-                    document.getElementById('main-timer').innerText = data.timer;
-                    canBet = true;
-                    
-                    if(lastState !== 'betting') resetGameUI();
-                    lastState = 'betting';
-                    
-                } 
-                else if(data.state === 'result') {
-                    canBet = false;
-                    document.getElementById('main-timer').style.display = 'none';
-                    document.getElementById('result-container').style.display = 'flex';
-                    document.getElementById('wait-timer').innerText = "Next Round in: " + (data.waitCount || 0);
+                if(lastState !== 'betting') resetGameUI();
+                lastState = 'betting';
+                
+            } 
+            else if(data.state === 'result') {
+                canBet = false;
+                document.getElementById('main-timer').style.display = 'none';
+                document.getElementById('result-container').style.display = 'flex';
+                document.getElementById('wait-timer').innerText = "Next Round in: " + (data.waitCount || 0);
 
-                    let winCard = cardsData.find(c => c.v == data.winner) || cardsData[0];
-                    document.getElementById('res-val').innerText = winCard.v;
-                    document.getElementById('res-val').style.color = winCard.r ? '#e74c3c' : '#000';
-                    document.getElementById('res-suit').innerText = winCard.s;
+                let winCard = cardsData.find(c => c.v == data.winner) || cardsData[0];
+                document.getElementById('res-val').innerText = winCard.v;
+                document.getElementById('res-val').style.color = winCard.r ? '#e74c3c' : '#000';
+                document.getElementById('res-suit').innerText = winCard.s;
 
-                    if(lastState === 'betting') {
-                        updateHistory(winCard);
-                        processPayout(data.winner);
-                        lastState = 'result';
-                    } else if (lastState === '') {
-                        lastState = 'result';
-                    }
+                if(lastState === 'betting') {
+                    updateHistory(winCard);
+                    processPayout(data.winner);
+                    lastState = 'result';
+                } else if (lastState === '') {
+                    lastState = 'result';
                 }
-            } catch(e) {}
-        }, 1000);
+            }
+        });
 
         function resetGameUI() {
-            myTotalBet = 0;
-            userBets = {}; 
+            myTotalBet = 0; userBets = {}; 
             document.getElementById('my-bet-btn').innerText = "Total Bet: ₹0";
             document.querySelectorAll('.placed-chip').forEach(c => c.remove());
             document.querySelectorAll('.total-pool span').forEach(s => s.innerText = '0');
-            document.querySelectorAll('.my-bet-tag').forEach(tag => {
-                tag.style.display = 'none'; tag.querySelector('span').innerText = '0';
-            });
+            document.querySelectorAll('.my-bet-tag').forEach(tag => { tag.style.display = 'none'; tag.querySelector('span').innerText = '0'; });
+            document.getElementById('win-calc-alert').style.display = 'none';
         }
 
         function processPayout(winnerValue) {
@@ -243,12 +256,12 @@
             let colorWin = (userBets[winColor] || 0) * 1.95;
             let grossWin = cardWin + colorWin;
             
-            if (grossWin > 0) {
+            if (grossWin > 0 && currentUserId) {
                 let adminFee = grossWin * 0.05; 
                 let netWin = grossWin - adminFee;
                 
-                walletBalance += netWin;
-                document.getElementById('wallet-bal').innerText = walletBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                // Add to Firebase Winning Balance!
+                db.ref(`users/${currentUserId}/winning_balance`).set(winBal + netWin);
                 
                 document.getElementById('w-gross').innerText = "₹" + grossWin.toLocaleString();
                 document.getElementById('w-fee').innerText = "-₹" + adminFee.toLocaleString();
@@ -289,35 +302,35 @@
             }, 30);
         }
 
-        async function placeBet(el, betTarget, val, color, isUser) {
+        // 💸 BET PLACEMENT LOGIC CONNECTED TO FIREBASE 💸
+        function placeBet(el, betTarget, val, color, isUser) {
             if(!canBet) return;
             
             if(isUser) {
-                if(walletBalance < val) {
+                if(!currentUserId) { alert("Login Error!"); return; } 
+                if(userBalance < val) {
                     const alertBox = document.getElementById('low-bal-alert');
                     alertBox.style.display = 'block'; setTimeout(() => alertBox.style.display = 'none', 2000);
                     return; 
                 }
                 
-                walletBalance -= val; 
+                // Paisa Database se Katna (DepBal se pehle, phir WinBal se)
+                let nDep = depBal, nWin = winBal, rem = val;
+                if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
+                db.ref('users/'+currentUserId).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
+                
+                // Add Bet to Game Node
+                db.ref(`Game/KalyanMatka/Bets/${currentUserId}/${betTarget}`).set(firebase.database.ServerValue.increment(val));
+
                 myTotalBet += val;
                 userBets[betTarget] = (userBets[betTarget] || 0) + val;
-
-                document.getElementById('wallet-bal').innerText = walletBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                 document.getElementById('my-bet-btn').innerText = "Total Bet: ₹" + myTotalBet.toLocaleString();
 
-                let myTag = el.querySelector('.my-bet-tag');
+                let myTag = document.getElementById(`my-${betTarget}`);
                 if(myTag) {
                     myTag.style.display = 'block';
                     myTag.querySelector('span').innerText = userBets[betTarget].toLocaleString();
                 }
-
-                try {
-                    let currentBetOnServer = await fetch(`${FIREBASE_URL}/Game/KalyanMatka/Bets/${PLAYER_ID}/${betTarget}.json`).then(r => r.json()) || 0;
-                    await fetch(`${FIREBASE_URL}/Game/KalyanMatka/Bets/${PLAYER_ID}/${betTarget}.json`, { 
-                        method: 'PUT', body: (currentBetOnServer + val).toString() 
-                    });
-                } catch(e) {}
             }
             
             createChip(el, val, color, isUser);
@@ -325,15 +338,6 @@
             let currentPoolVal = parseInt(poolSpan.innerText.replace(/,/g, '')) || 0;
             poolSpan.innerText = (currentPoolVal + val).toLocaleString();
         }
-
-        setInterval(() => {
-            if(!canBet) return;
-            const boxes = [...document.querySelectorAll('.card-box'), ...document.querySelectorAll('.color-box')];
-            const target = boxes[Math.floor(Math.random()*boxes.length)];
-            const config = [{v:10, c:'#3498db'}, {v:50, c:'#9b59b6'}, {v:100, c:'#2ecc71'}, {v:500, c:'#e74c3c'}];
-            const rand = config[Math.floor(Math.random()*config.length)];
-            placeBet(target, null, rand.v, rand.c, false);
-        }, 300);
 
         function selectChip(v, el, color) { 
             selectedChipVal = v; selectedChipColor = color;
