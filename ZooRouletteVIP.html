@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kalyan VIP Zoo - Pro Rules Edition</title>
+    <title>Kalyan VIP Zoo - Pro Rules + Recovery</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
@@ -220,12 +220,68 @@
             setTimeout(() => { t.style.display = 'none'; }, 2500);
         }
 
+        function updateHistory(winId) {
+            const list = document.getElementById('history-list');
+            const newItem = document.createElement('div');
+            newItem.className = 'h-item'; newItem.innerText = winId;
+            list.insertBefore(newItem, list.firstChild);
+            if(list.children.length > 8) list.removeChild(list.lastChild); 
+        }
+
         if (currentUserId) {
             db.ref(`users/${currentUserId}`).on('value', (s) => {
                 const d = s.val() || {}; 
                 depBal = parseFloat(d.balance||0); winBal = parseFloat(d.winning_balance||0); bonBal = parseFloat(d.bonus_balance||0);
                 userBalance = depBal + winBal + bonBal; 
                 document.getElementById('wallet-bal').innerText = userBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            });
+        }
+
+        // 🔥 1. PERMANENT HISTORY LOADER (Naye player ke aate hi pichla record dikhega) 🔥
+        db.ref('Game/ZooRoulette/History').once('value', (snapshot) => {
+            let pastRecords = snapshot.val();
+            if (pastRecords && Array.isArray(pastRecords)) {
+                // Reverse zaroori hai taaki list sahi order mein bane (Newest pehle aaye)
+                [...pastRecords].reverse().forEach(win => {
+                    updateHistory(win); 
+                });
+            }
+        });
+
+        // 🔥 2. AUTO BET RECOVERY (Agar player Back aakar wapas aaye) 🔥
+        if (currentUserId) {
+            db.ref(`Game/ZooRoulette/Bets/${currentUserId}`).once('value', (snapshot) => {
+                let savedBets = snapshot.val();
+                if (savedBets) {
+                    setTimeout(() => { // Thoda ruk kar taaki board load ho jaye
+                        Object.keys(savedBets).forEach(targetId => {
+                            let val = savedBets[targetId];
+                            if (val > 0 && myBets[targetId] !== undefined) {
+                                myBets[targetId] = val; // Local amount update
+                                
+                                // My Bet Tag wapas on karo
+                                let myTag = document.getElementById(`my-${targetId}`);
+                                if (myTag) {
+                                    myTag.style.display = 'block';
+                                    myTag.querySelector('span').innerText = val;
+                                }
+
+                                // Ek Recovery Chip dabbe par daal do (Red color ki taaki clear dikhe)
+                                let targetBox = document.getElementById(`btn-${targetId}`);
+                                if (targetBox) {
+                                    let rect = targetBox.getBoundingClientRect();
+                                    let staticChip = document.createElement('div');
+                                    staticChip.className = 'placed-chip';
+                                    staticChip.style.background = '#e74c3c'; 
+                                    staticChip.innerText = val >= 1000 ? (val/1000)+'K' : val;
+                                    staticChip.style.left = (rect.left + rect.width/2 - 11) + 'px';
+                                    staticChip.style.top = (rect.top + rect.height/2 - 11) + 'px';
+                                    document.body.appendChild(staticChip);
+                                }
+                            }
+                        });
+                    }, 600); 
+                }
             });
         }
 
@@ -359,14 +415,6 @@
             }
         }
 
-        function updateHistory(winId) {
-            const list = document.getElementById('history-list');
-            const newItem = document.createElement('div');
-            newItem.className = 'h-item'; newItem.innerText = winId;
-            list.insertBefore(newItem, list.firstChild);
-            if(list.children.length > 8) list.removeChild(list.lastChild); 
-        }
-
         function resetTable() {
             document.querySelectorAll('.placed-chip').forEach(c => c.remove()); 
             
@@ -380,20 +428,18 @@
             lastWinner = '';
         }
 
-        // 💸 BET PLACEMENT WITH NEW LIMIT LOGIC 💸
         function placeBet(el, targetId, val, color, e) {
             if (!isBettingOpen) return;
             if (!currentUserId) { showToast("⚠️ Login Error!"); return; } 
             if (userBalance < val) { showToast("⚠️ Insufficient Balance!"); return; }
             
-            // 🔥 LIMIT LOGIC: Max 4 bets + 1 Shark allowed 🔥
+            // Limit Logic
             let activeBets = Object.keys(myBets).filter(k => myBets[k] > 0);
-            if (myBets[targetId] === 0) { // Agar naya dabbe par click kar raha hai
+            if (myBets[targetId] === 0) { 
                 let nonSharkBetsCount = activeBets.filter(k => k !== '🦈').length;
-                
                 if (targetId !== '🦈' && nonSharkBetsCount >= 4) {
                     showToast("⚠️ Aap sirf 4 jagah aur Shark (🦈) par bet laga sakte hain!");
-                    return; // Bet rok do
+                    return; 
                 }
             }
             
