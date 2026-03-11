@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Casino VIP Pro - SERVER SYNC</title>
+    <title>Car Casino VIP Pro - History & Recovery</title>
     <style>
         :root { --bg: #1a002b; --gold: #ffd700; --neon-green: #00ff88; --text: #ffffff; --neon-red: #ff3333; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #2b0040, #0a0014); color: var(--text); font-family: 'Arial Black', sans-serif; overflow: hidden; user-select: none; }
@@ -57,6 +57,10 @@
         .box-win { box-shadow: 0 0 25px var(--neon-green), inset 0 0 20px var(--neon-green) !important; border-color: var(--neon-green) !important; transform: scale(1.05); }
         .icon-win { filter: drop-shadow(0 0 15px var(--neon-green)); transform: scale(1.8); z-index: 20; color: var(--neon-green) !important; }
 
+        /* 🔥 HISTORY RECORD BAR (NECT TO GRID) 🔥 */
+        .history-bar { margin: 8px 10px 0; padding: 5px; display: flex; gap: 4px; overflow: hidden; justify-content: flex-end; border-bottom: 2px solid var(--gold); background: rgba(0,0,0,0.5); border-radius: 4px; }
+        .h-item { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; box-shadow: 0 0 5px #000; border: 1.5px solid #fff; flex-shrink: 0; background: #000; }
+        
         .live-players { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 5px 0; background: rgba(0,0,0,0.95); position: fixed; bottom: 75px; width: 100%; border-top: 2px solid var(--gold); box-shadow: 0 -5px 15px rgba(0,0,0,0.5); z-index: 1050; }
         .player { text-align: center; transition: 0.5s; }
         .p-avatar { width: 24px; height: 24px; background: linear-gradient(45deg, #444, #222); border: 2px solid var(--gold); border-radius: 50%; margin: 0 auto; line-height: 22px; font-size: 10px; color: #fff; box-shadow: 0 0 8px var(--gold); }
@@ -74,6 +78,9 @@
 
         .chip-fly { position: absolute; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #fff; z-index: 50; font-size: 8px; font-weight: 900; display: flex; justify-content: center; align-items: center; color: white; transition: all 0.4s ease-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.8); pointer-events: none; }
         
+        /* 🔥 RECOVERY CHIP CSS 🔥 */
+        .recovery-chip { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; border: 2px dashed #fff; background: #e74c3c; z-index: 25; font-size: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; box-shadow: 0 0 10px #e74c3c, 2px 2px 5px rgba(0,0,0,0.8); pointer-events: none; }
+
         .popup { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 3.5rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold), 0 0 40px #000; z-index: 1000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: rgba(0,0,0,0.8); padding: 10px 30px; border-radius: 20px; border: 3px solid var(--gold); white-space: nowrap; }
         .popup.show { transform: translate(-50%, -50%) scale(1); }
     </style>
@@ -159,6 +166,9 @@
         </div>
     </div>
 
+    <div class="history-bar" id="history-row">
+        </div>
+
     <div class="live-players" id="player-row"></div>
 
     <div class="chip-rack">
@@ -177,7 +187,8 @@
 
 <script>
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
-    firebase.initializeApp(firebaseConfig); const db = firebase.database();
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); 
+    const db = firebase.database();
 
     const currentUserId = localStorage.getItem('userPhone') || localStorage.getItem('phone');
     let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
@@ -236,7 +247,46 @@
             const d = s.val() || {}; depBal = parseFloat(d.balance||0); winBal = parseFloat(d.winning_balance||0); bonBal = parseFloat(d.bonus_balance||0);
             userBalance = depBal + winBal + bonBal; document.getElementById('balanceDisplay').innerText = "₹" + userBalance.toFixed(2);
         });
+
+        // 🔥 1. AUTO BET RECOVERY 🔥
+        db.ref(`Game/CarRoulette/Bets/${currentUserId}`).once('value', snap => {
+            let saved = snap.val();
+            if(saved) {
+                setTimeout(() => {
+                    Object.keys(saved).forEach(carId => {
+                        let val = saved[carId];
+                        if(val > 0 && myBets[carId] !== undefined) {
+                            myBets[carId] = val;
+                            document.getElementById('my-'+carId).innerText = "MY BET: ₹" + val.toLocaleString();
+                            document.getElementById('my-'+carId).style.display = "block";
+
+                            let box = document.getElementById(carId);
+                            if(box) {
+                                let rc = document.createElement('div');
+                                rc.className = 'recovery-chip';
+                                rc.innerText = val >= 1000 ? (val/1000)+'K' : val;
+                                box.appendChild(rc);
+                            }
+                        }
+                    });
+                }, 500);
+            }
+        });
     }
+
+    // 🔥 2. PERMANENT HISTORY LOADER 🔥
+    db.ref('Game/CarRoulette/History').once('value', snap => {
+        let hist = snap.val();
+        if(hist && Array.isArray(hist)) {
+            let hHtml = '';
+            [...hist].reverse().forEach(winCar => {
+                let icon = wheelIcons[winCar] || '🚗';
+                let colClass = wheelClasses[winCar] || '';
+                hHtml += `<div class="h-item"><span class="${colClass}">${icon}</span></div>`;
+            });
+            document.getElementById('history-row').innerHTML = hHtml;
+        }
+    });
 
     window.chooseChip = function(amt, el) { selectedChip = parseInt(amt); document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); playSound(document.getElementById('soundBet'), 0.5); };
     function getChipColor(amt) { if(amt===10) return 'radial-gradient(circle, #fff, #ccc)'; if(amt===100) return 'radial-gradient(circle, #4fc3f7, #0288d1)'; if(amt===500) return 'radial-gradient(circle, #81c784, #388e3c)'; if(amt===1000) return 'radial-gradient(circle, #e57373, #d32f2f)'; if(amt===5000) return 'radial-gradient(circle, #ba68c8, #7b1fa2)'; return 'radial-gradient(circle, #ffd54f, #f57f17)'; }
@@ -273,7 +323,6 @@
         if(bBet) playSound(document.getElementById('soundBet'), 0.05); 
     }
 
-    // 🔥 SERVER LISTENER 🔥
     db.ref('Game/CarRoulette/Status').on('value', (s) => {
         let st = s.val(); if(!st) return;
 
@@ -296,7 +345,6 @@
         }
     });
 
-    // To sync total pool visually
     db.ref('Game/CarRoulette/Bets').on('value', s => {
         let allB = s.val() || {};
         let tp = {porsche:0, ferrari:0, lambo:0, maserati:0, bmw:0, mercedes:0, audi:0, jaguar:0};
@@ -319,6 +367,17 @@
         document.getElementById('msgText').innerText = "WINNER!"; document.getElementById('timeText').innerText = wId.toUpperCase();
         document.getElementById(wId).classList.add('box-win'); document.getElementById('wheel-icon-'+iIdx).classList.add('icon-win');
 
+        // Update Live History
+        let icon = wheelIcons[wId] || '🚗';
+        let colClass = wheelClasses[wId] || '';
+        let hHtml = document.getElementById('history-row').innerHTML;
+        let newBead = `<div class="h-item"><span class="${colClass}">${icon}</span></div>`;
+        
+        let tempDiv = document.createElement('div');
+        tempDiv.innerHTML = newBead + hHtml;
+        if(tempDiv.children.length > 15) tempDiv.removeChild(tempDiv.lastChild);
+        document.getElementById('history-row').innerHTML = tempDiv.innerHTML;
+
         if(myBets[wId] > 0 && currentUserId) {
             var wAmt = myBets[wId] * carData[wId];
             db.ref(`users/${currentUserId}/winning_balance`).set(winBal + wAmt);
@@ -328,7 +387,9 @@
     }
 
     function resetTable() {
-        document.querySelectorAll('.chip-fly').forEach(c => c.remove()); document.getElementById('winMsg').classList.remove('show');
+        document.querySelectorAll('.chip-fly').forEach(c => c.remove()); 
+        document.querySelectorAll('.recovery-chip').forEach(c => c.remove());
+        document.getElementById('winMsg').classList.remove('show');
         for(var k in carData) {
             myBets[k] = 0; document.getElementById('total-'+k).innerText = "₹0"; document.getElementById('my-'+k).innerText = "MY BET: ₹0";
             document.getElementById('my-'+k).style.display = "none"; document.getElementById(k).classList.remove('box-win');
