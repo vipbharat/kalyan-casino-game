@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan Pro - Withdraw</title>
+    <title>Kalyan Pro - Withdraw VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { background: #0b0b0b; color: #fff; font-family: sans-serif; margin: 0; padding: 20px; text-align: center; }
@@ -75,7 +75,7 @@
             databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
             projectId: "kalyan-casino"
         };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
@@ -84,33 +84,32 @@
         let currentTotalBal = 0;
         let isLocked = false;
 
+        // BOT CONFIG
+        const botToken = "8728052311:AAGa9hj7yZ2skBT5krMYsHshazsi03LCOJM";
+        const chatId = "7061035346";
+
         if(!userPhone) {
             alert("Please login first!");
             window.location.href = "index.html";
         }
 
-        // 1. Balance Sync (Ab dono balance fetch honge aur total dikhega)
         db.ref('users/' + userPhone).on('value', (snap) => {
             const data = snap.val() || {};
             currentWinBal = parseFloat(data.winning_balance || 0);
             currentDepBal = parseFloat(data.balance || 0);
             currentTotalBal = currentWinBal + currentDepBal;
-            
             document.getElementById('p-bal').innerText = "₹ " + currentTotalBal.toFixed(2);
         });
 
-        // 2. Fetch & Lock Details 
         db.ref('users/' + userPhone + '/payment_details').on('value', (snap) => {
             if(snap.exists()) {
                 let d = snap.val();
                 document.getElementById('w-acc').value = d.accNo;
                 document.getElementById('w-ifsc').value = d.ifsc;
                 document.getElementById('w-upi').value = d.upi;
-
                 document.getElementById('w-acc').disabled = true;
                 document.getElementById('w-ifsc').disabled = true;
                 document.getElementById('w-upi').disabled = true;
-
                 let saveBtn = document.getElementById('btn-save');
                 saveBtn.innerText = "DETAILS SECURELY LOCKED";
                 saveBtn.className = "btn-main btn-locked";
@@ -119,107 +118,60 @@
             }
         });
 
-        // 3. Save Details Function
         function saveDetails() {
             let acc = document.getElementById('w-acc').value.trim();
             let ifsc = document.getElementById('w-ifsc').value.trim().toUpperCase();
             let upi = document.getElementById('w-upi').value.trim();
-
-            if(!acc || !ifsc || !upi) {
-                alert("Please fill Account Number, IFSC, and UPI ID!");
-                return;
-            }
-
+            if(!acc || !ifsc || !upi) { alert("Sari details bharein!"); return; }
             if(confirm("Confirm details? Ek baar save hone par aap ise change nahi kar payenge.")) {
-                db.ref('users/' + userPhone + '/payment_details').set({
-                    accNo: acc,
-                    ifsc: ifsc,
-                    upi: upi
-                }).then(() => {
+                db.ref('users/' + userPhone + '/payment_details').set({ accNo: acc, ifsc: ifsc, upi: upi }).then(() => {
                     alert("Details Saved and Locked!");
                 });
             }
         }
 
-        // 4. Request Withdrawal (Smart Money Cut Logic)
         function submitWithdraw() {
-            if(!isLocked) {
-                alert("Pehle apni Bank Details save aur lock karein!");
-                return;
-            }
-
+            if(!isLocked) { alert("Pehle apni Bank Details save aur lock karein!"); return; }
             let amt = parseFloat(document.getElementById('w-amount').value);
-            
-            if(!amt || amt < 500) {
-                alert("Minimum withdrawal ₹500 hai!");
-                return;
-            }
-
-            if(amt > currentTotalBal) {
-                alert("Aapke paas sufficient balance nahi hai!");
-                return;
-            }
+            if(!amt || amt < 500) { alert("Minimum withdrawal ₹500 hai!"); return; }
+            if(amt > currentTotalBal) { alert("Aapke paas sufficient balance nahi hai!"); return; }
 
             let btn = document.getElementById('btn-with');
             btn.disabled = true;
-            btn.innerText = "PROCESSING...";
+            btn.innerText = "SENDING...";
 
             let acc = document.getElementById('w-acc').value;
             let ifsc = document.getElementById('w-ifsc').value;
             let upi = document.getElementById('w-upi').value;
-            let dateStr = new Date().toLocaleString('en-GB');
+            let dateStr = new Date().toLocaleString('en-IN');
 
-            // --- SMART BALANCE CUT LOGIC ---
             let newWin = currentWinBal;
             let newDep = currentDepBal;
             let remainingCut = amt;
 
-            // Pehle Winning se paise katenge
-            if(newWin >= remainingCut) {
-                newWin -= remainingCut;
-            } else {
-                // Agar winning kam pada toh deposit se katenge
-                remainingCut -= newWin;
-                newWin = 0;
-                newDep -= remainingCut;
-            }
+            if(newWin >= remainingCut) { newWin -= remainingCut; } 
+            else { remainingCut -= newWin; newWin = 0; newDep -= remainingCut; }
 
-            // STEP A: Update both balances in Database
-            db.ref('users/' + userPhone).update({
-                winning_balance: newWin,
-                balance: newDep
-            }).then(() => {
-                
-                // STEP B: Send to Admin Panel
+            db.ref('users/' + userPhone).update({ winning_balance: newWin, balance: newDep }).then(() => {
                 let reqId = db.ref('withdraw_requests').push().key;
                 db.ref('withdraw_requests/' + reqId).set({
-                    id: userPhone,
-                    amount: amt,
-                    accNo: acc,
-                    ifsc: ifsc,
-                    upi: upi,
-                    status: "Pending",
-                    type: "Withdrawal",
-                    date: dateStr,
-                    timestamp: Date.now()
+                    id: userPhone, amount: amt, accNo: acc, ifsc: ifsc, upi: upi, status: "Pending", type: "Withdrawal", date: dateStr, timestamp: Date.now()
                 });
 
-                // STEP C: Add to History
                 db.ref('user_history/' + userPhone + '/' + reqId).set({
-                    amount: amt,
-                    type: "Withdrawal",
-                    status: "Pending",
-                    date: dateStr,
-                    timestamp: Date.now()
+                    amount: amt, type: "Withdrawal", status: "Pending", date: dateStr, timestamp: Date.now()
                 }).then(() => {
-                    alert("Withdrawal Successful! Balance Deducted.");
-                    window.location.href = "history.html"; // Player ko history page par bhejo
+                    
+                    // 🔥 TELEGRAM WITHDRAW ALERT 🔥
+                    const msg = `💸 *NEW WITHDRAW REQUEST* 💸%0A%0A👤 *Player:* ${userPhone}%0A💰 *Amount:* ₹${amt}%0A🏦 *Bank:* ${acc}%0A🆔 *IFSC:* ${ifsc}%0A📲 *UPI:* ${upi}%0A🕒 *Time:* ${dateStr}%0A%0A👉 *Check Admin Panel to Pay!*`;
+                    fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${msg}&parse_mode=Markdown`)
+                    .then(() => {
+                        alert("Withdrawal Request Successful! 10-15 min mein balance aa jayega.");
+                        window.location.href = "history.html";
+                    }).catch(() => {
+                        window.location.href = "history.html";
+                    });
                 });
-
-            }).catch(() => {
-                alert("Network Error!");
-                btn.disabled = false;
-                btn.innerText = "REQUEST WITHDRAWAL";
             });
         }
     </script>
