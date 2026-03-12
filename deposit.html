@@ -153,7 +153,7 @@
                 genBtn.innerText = `🔲 GENERATE QR FOR ₹${amount}`;
                 payBtn.style.display = "block";
                 payBtn.innerText = `💳 PAY ₹${amount} VIA UPI APP`;
-                lockQR(); // Amount change hone par QR lock hoga
+                lockQR();
             } else {
                 genBtn.style.display = "none";
                 payBtn.style.display = "none";
@@ -169,20 +169,15 @@
             document.getElementById('payee-name-display').innerText = `Select Amount to Pay: ${payeeNameStr}`;
         }
 
-        // 🚀 DYNAMIC QR GENERATOR & TIMER LOGIC 🚀
         function generateDynamicQR() {
             let amount = parseFloat(document.getElementById('dep-amount').value);
-            
             if(amount > 0 && baseUpiUrl !== "") {
                 let finalUpiLink = baseUpiUrl + `&am=${amount}`;
-                
                 let qrImg = document.getElementById('display-qr');
                 qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(finalUpiLink)}`;
-                
                 qrImg.style.filter = "none";
                 document.getElementById('qr-lock-overlay').style.display = "none";
                 document.getElementById('payee-name-display').innerText = `Scan to Pay ₹${amount} to ${payeeNameStr}`;
-                
                 startTimer(300); 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
@@ -222,12 +217,11 @@
             }, 1000);
         }
 
-        // 🚀 DIRECT PAY APP LOGIC (Safe for APK) 🚀
         function payDirectly() {
             let amount = parseFloat(document.getElementById('dep-amount').value);
             if(amount > 0 && baseUpiUrl !== "") {
                 let finalUpiLink = baseUpiUrl + `&am=${amount}`;
-                window.location.href = finalUpiLink; // Naya tab nahi khulega, black screen fixed
+                window.location.href = finalUpiLink; 
             } else {
                 alert("⚠️ Kripya pehle sahi amount select karein!");
             }
@@ -261,7 +255,7 @@
             document.getElementById('ss-label').style.borderColor = "#00ff88";
         }
 
-        // 🚀 SECURITY BYPASS LOGIC (TELEGRAM FIRST) 🚀
+        // 🔥 YAHAN HUA ASLI JADU (Saving direct to user_history) 🔥
         function submitDeposit() {
             const amt = document.getElementById('dep-amount').value;
             const utr = document.getElementById('dep-utr').value;
@@ -272,24 +266,37 @@
             btn.innerText = "PROCESSING...";
             btn.disabled = true;
 
-            const botToken = "8728052311:AAGa9hj7yZ2skBT5krMYsHshazsi03LCOJM";
-            const chatId = "7061035346";
             const time = new Date().toLocaleString('en-IN');
 
-            const msg = `🚨 *NEW DEPOSIT* 🚨%0A👤 Player: ${phone}%0A💰 Amount: ₹${amt}%0A🧾 UTR: ${utr}%0A🕒 Time: ${time}%0A👉 *Admin Panel Check Karein!*`;
-            
-            fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${msg}&parse_mode=Markdown`)
-            .then(() => {
-                alert("✅ Request Sent Successfully! 5-10 minute mein aapka balance update ho jayega.");
-                window.location.href = "dashboard.html";
-            }).catch(() => {
-                alert("✅ Request Sent Successfully!");
-                window.location.href = "dashboard.html";
-            });
+            // 1. Database mein Deposit aur Withdrawal dono ek hi jagah (user_history) save honge
+            db.ref('user_history/' + phone).push({
+                type: 'DEPOSIT',
+                amount: amt,
+                utr: utr,
+                status: 'PENDING',
+                date: time,
+                timestamp: Date.now()
+            }).then(() => {
+                
+                // 2. Telegram par alert bhejna
+                const botToken = "8728052311:AAGa9hj7yZ2skBT5krMYsHshazsi03LCOJM";
+                const chatId = "7061035346";
+                const msg = `🚨 *NEW DEPOSIT* 🚨%0A👤 Player: ${phone}%0A💰 Amount: ₹${amt}%0A🧾 UTR: ${utr}%0A🕒 Time: ${time}%0A👉 *Admin Panel se PENDING clear karein!*`;
+                
+                fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${msg}&parse_mode=Markdown`)
+                .then(() => {
+                    alert("✅ Request Sent! Check your History.");
+                    window.location.href = "history.html";
+                }).catch(() => {
+                    alert("✅ Request Sent! Check your History.");
+                    window.location.href = "history.html";
+                });
 
-            db.ref('requests').push({ phone, amount: amt, utr, type: 'DEPOSIT', status: 'PENDING', time })
-            .catch(err => {
-                console.log("Firebase Security Active - Data bypassed and sent to Telegram.");
+            }).catch(err => {
+                // Agar kabhi error aaya toh bata dega
+                alert("Error: " + err.message);
+                btn.innerText = "SUBMIT REQUEST";
+                btn.disabled = false;
             });
         }
     </script>
