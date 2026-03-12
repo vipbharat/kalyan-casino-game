@@ -11,7 +11,7 @@
         body { 
             background: radial-gradient(circle at top, #2a2a35, var(--bg-dark) 80%); 
             color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; padding-bottom: 80px; overflow-y: auto; 
+            margin: 0; padding-bottom: 80px; overflow-y: auto; overflow-x: hidden;
         }
 
         /* 👑 Header Glassmorphism */
@@ -110,21 +110,12 @@
         }
         .game-card h4 { margin: 10px 0 8px; font-size: 14px; color: #fff; font-weight: 800; letter-spacing: 0.5px; }
 
-        /* 🔥 HOT Badge with Color Changing Text Animation 🔥 */
+        /* 🔥 HOT Badge */
         .hot-badge {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: linear-gradient(135deg, #ff0000, #ff4d4d);
-            padding: 3px 8px;
-            border-radius: 20px;
-            font-size: 9px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 0 10px rgba(255, 0, 0, 0.6);
-            z-index: 10;
-            animation: textRainbow 1.5s linear infinite;
+            position: absolute; top: 5px; right: 5px; background: linear-gradient(135deg, #ff0000, #ff4d4d);
+            padding: 3px 8px; border-radius: 20px; font-size: 9px; font-weight: 900;
+            text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 10px rgba(255, 0, 0, 0.6);
+            z-index: 10; animation: textRainbow 1.5s linear infinite;
         }
 
         @keyframes textRainbow {
@@ -138,25 +129,14 @@
         
         /* 🔥 NEW Vibrant RED Play Button 🔥 */
         .play-now { 
-            background: linear-gradient(135deg, #ff004c, #ff0022); 
-            color: #fff; 
-            border: 1px solid #ff88a0; 
-            padding: 10px; 
-            border-radius: 8px; 
-            font-weight: 900; 
-            width: 100%; 
-            font-size: 14px; 
-            cursor: pointer; 
+            background: linear-gradient(135deg, #ff004c, #ff0022); color: #fff; 
+            border: 1px solid #ff88a0; padding: 10px; border-radius: 8px; font-weight: 900; 
+            width: 100%; font-size: 14px; cursor: pointer; 
             box-shadow: 0 4px 0 #990011, 0 5px 15px rgba(255, 0, 76, 0.5);
-            transition: all 0.1s; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
+            transition: all 0.1s; text-transform: uppercase; letter-spacing: 1px;
             text-shadow: 1px 1px 2px #000;
         }
-        .play-now:active { 
-            box-shadow: 0 0 0 #990011, 0 0 5px rgba(255, 0, 76, 0.5); 
-            transform: translateY(4px); 
-        }
+        .play-now:active { box-shadow: 0 0 0 #990011, 0 0 5px rgba(255, 0, 76, 0.5); transform: translateY(4px); }
 
         /* 🌟 Featured Kalyan Banner */
         .featured-game {
@@ -171,6 +151,41 @@
             transform: rotate(45deg); animation: shine 3s infinite; pointer-events: none;
         }
         @keyframes shine { 0% { left: -100%; } 100% { left: 100%; } }
+
+        /* =========================================
+           🔥 JACKPOT WINNER POPUP CSS (NEW) 🔥
+           ========================================= */
+        #jackpot-toast {
+            position: fixed;
+            bottom: 110px;
+            left: -120%; /* Screen ke bahar se chalta hua aayega */
+            background: linear-gradient(135deg, #050505, #1a1a2e);
+            padding: 10px 20px;
+            border-radius: 0 40px 40px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 10000;
+            width: max-content;
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2.5px solid #ffd700;
+            border-left: none;
+            box-shadow: 10px 0 20px #ffd700, 10px 0 40px #ff00ff;
+            animation: firePulse 1.2s infinite alternate;
+        }
+        .toast-visible { left: 0 !important; }
+        @keyframes firePulse {
+            from { box-shadow: 6px 0 15px #ffd700, 6px 0 25px #ff00ff; border-color: #ffd700; }
+            to { box-shadow: 12px 0 35px #ffae00, 12px 0 55px #ff00de; border-color: #ffae00; }
+        }
+        .jackpot-header {
+            font-size: 10px; font-weight: 900; color: #ff00ff;
+            text-shadow: 0 0 10px #ff00ff; letter-spacing: 1.2px; text-transform: uppercase;
+        }
+        #jackpot-text { font-size: 14px; color: #fff; font-weight: bold; margin-top: 1px; }
+        .win-amt { color: #00ff88; font-weight: 900; text-shadow: 0 0 5px #00ff88; }
+        .user-id { color: #ffd700; }
+        /* ========================================= */
 
     </style>
 </head>
@@ -282,6 +297,13 @@
         </div>
     </div>
 
+    <div id="jackpot-toast" class="toast-hidden">
+        <div style="font-size: 30px; animation: bounce 2s infinite;">🎰</div>
+        <div>
+            <div class="jackpot-header" id="game-name">DRAGON TIGER 🔴</div>
+            <div id="jackpot-text">Loading...</div>
+        </div>
+    </div>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
@@ -325,6 +347,35 @@
         }
 
         function nav(page) { window.location.href = page + ".html"; }
+
+        // =========================================
+        // 🔥 JACKPOT WINNER LOGIC (NEW) 🔥
+        // =========================================
+        const gamesList = ["Dragon Tiger", "Andar Bahar", "Zoo Roulette", "Car Roulette", "Kalyan VIP", "7 Up Down"];
+        const idPrefix = ["User_", "VIP_", "Player_", "Gamer_", "ID_", "Bharat_", "Pro_"];
+        
+        const toast = document.getElementById("jackpot-toast");
+        const gameLabel = document.getElementById("game-name");
+        const toastTxt = document.getElementById("jackpot-text");
+
+        function generateWinner() {
+            let randomGame = gamesList[Math.floor(Math.random() * gamesList.length)];
+            let prefix = idPrefix[Math.floor(Math.random() * idPrefix.length)];
+            let randomID = prefix + Math.floor(Math.random() * 500); 
+            let randomAmount = (Math.floor(Math.random() * 71) + 10) * 500; 
+
+            gameLabel.innerText = `${randomGame} 🔴`;
+            toastTxt.innerHTML = `<span class="user-id">${randomID}</span> <span class="win-amt">₹${randomAmount.toLocaleString()}</span> win`;
+
+            toast.classList.add("toast-visible");
+
+            setTimeout(() => { toast.classList.remove("toast-visible"); }, 4500);
+        }
+
+        setInterval(generateWinner, 8500);
+        setTimeout(generateWinner, 2000);
+        // =========================================
+
     </script>
 </body>
 </html>
