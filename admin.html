@@ -306,7 +306,7 @@
         db.ref('admin_settings/notification').on('value', snap => document.getElementById('notif').value = snap.val() || "");
     }
 
-    // --- QUICK WALLET LOGIC ---
+    // 🚀 QUICK WALLET LOGIC + VIP AUTO-SUCCESS TRACKER 🚀
     window.quickWallet = function(type) {
         const phone = document.getElementById('quick-phone').value;
         const amt = parseFloat(document.getElementById('quick-amount').value);
@@ -322,6 +322,25 @@
                 alert(`₹${amt} Successfully ${type === 'add' ? 'Added to' : 'Deducted from'} ${phone}`);
                 document.getElementById('quick-phone').value = "";
                 document.getElementById('quick-amount').value = "";
+
+                // 🔥 YAHAN HUA ASLI JADU (Auto-Success Logic) 🔥
+                if(type === 'add') {
+                    db.ref('requests').orderByChild('phone').equalTo(phone).once('value', (reqSnap) => {
+                        if(reqSnap.exists()) {
+                            reqSnap.forEach((child) => {
+                                let reqData = child.val();
+                                // Pending requests ko dhoondh kar Success karo
+                                if(reqData.status === "PENDING" || reqData.status === "Pending") {
+                                    db.ref('requests/' + child.key).update({ 
+                                        status: "SUCCESS" 
+                                    });
+                                    console.log("VIP Tracker: History updated to SUCCESS for " + phone);
+                                }
+                            });
+                        }
+                    });
+                }
+                
             }).catch(e => alert("Error: Make sure Firebase Auth Rules are correct."));
         });
     };
