@@ -39,7 +39,7 @@
         
         /* Amount Colors */
         .amt { font-weight: bold; font-size: 18px; text-align: right; }
-        .plus { color: #28a745; } /* Green for Deposit/Bonus */
+        .plus { color: #28a745; } /* Green for Deposit */
         .minus { color: #dc3545; } /* Red for Withdrawal */
 
         /* Status Badge */
@@ -60,6 +60,9 @@
 
         .empty-msg { text-align: center; color: #666; margin-top: 60px; font-size: 14px; }
         .empty-msg i { font-size: 40px; color: #333; margin-bottom: 15px; }
+        
+        /* VIP Limit Notice */
+        .limit-notice { text-align: center; font-size: 11px; color: #666; margin-top: 20px; font-style: italic; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -71,9 +74,11 @@
 
     <div id="history-content" class="history-container">
         <div class="empty-msg">
-            <i class="fa-solid fa-spinner fa-spin"></i><br>Loading History...
+            <i class="fa-solid fa-spinner fa-spin"></i><br>Loading VIP History...
         </div>
     </div>
+    
+    <div id="limit-note" class="limit-notice" style="display: none;">Showing Latest 10 Transactions Only</div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -84,10 +89,13 @@
             databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
             projectId: "kalyan-casino"
         };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         
         let userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+        
+        let allDeposits = [];
+        let allWithdrawals = [];
 
         if(!userPhone) {
             document.getElementById('history-content').innerHTML = `
@@ -95,56 +103,97 @@
                     <i class="fa-solid fa-lock"></i><br>Please Login to view history.
                 </div>`;
         } else {
-            // Fetching all data from user_history folder
-            db.ref(`user_history/${userPhone}`).on('value', (snap) => {
+            // Function to merge and display top 10
+            function renderTop10History() {
+                // Dono array ko jodo
+                let combinedHistory = allDeposits.concat(allWithdrawals);
+                
+                // Time ke hisaab se sort karo (Sabse naya sabse upar)
+                combinedHistory.sort((a, b) => b.sortTime - a.sortTime);
+                
+                // 🔥 VIP LOGIC: Sirf Top 10 nikal lo, 11va automatically screen se delete ho jayega 🔥
+                let top10 = combinedHistory.slice(0, 10);
+                
                 let html = "";
-                if(snap.exists()) {
-                    let transactions = [];
-                    
-                    // Saara data array mein daalna
-                    snap.forEach((child) => {
-                        transactions.push(child.val());
-                    });
-                    
-                    // Latest sabse upar dikhane ke liye reverse karna
-                    transactions.reverse();
-
-                    transactions.forEach((d) => {
-                        let type = (d.type || "Transaction").toUpperCase(); 
-                        let rawStatus = (d.status || "Pending").toLowerCase();
-                        let displayStatus = (d.status || "Pending").toUpperCase();
-                        
-                        // Status Card Color Logic
-                        let statusClass = "pending"; 
-                        if(rawStatus === "success" || rawStatus === "approved") {
-                            statusClass = "success";
-                        } else if(rawStatus === "rejected" || rawStatus === "failed" || rawStatus === "cancelled" || rawStatus === "cancel") {
-                            statusClass = "rejected";
-                        }
-
-                        // Amount Sign & Color Logic (+ or -)
-                        let isWithdraw = type.includes("WITHDRAW");
-                        let colorClass = isWithdraw ? "minus" : "plus";
-                        let sign = isWithdraw ? "-" : "+";
-
-                        html += `
-                        <div class="card ${statusClass}">
-                            <div class="info">
-                                <b>${type}</b>
-                                <small><i class="fa-regular fa-calendar"></i> ${d.date}</small><br>
-                                <span class="status-badge">${displayStatus}</span>
-                            </div>
-                            <div class="amt ${colorClass}">${sign} ₹${d.amount}</div>
-                        </div>`;
-                    });
-                    
-                    document.getElementById('history-content').innerHTML = html;
-                } else {
+                
+                if(top10.length === 0) {
                     document.getElementById('history-content').innerHTML = `
                         <div class="empty-msg">
                             <i class="fa-solid fa-receipt"></i><br>No Transactions Found
                         </div>`;
+                    document.getElementById('limit-note').style.display = "none";
+                    return;
                 }
+
+                if(combinedHistory.length > 0) {
+                    document.getElementById('limit-note').style.display = "block";
+                }
+
+                top10.forEach((d) => {
+                    let type = (d.type || "Transaction").toUpperCase(); 
+                    let rawStatus = (d.status || "Pending").toLowerCase();
+                    let displayStatus = (d.status || "Pending").toUpperCase();
+                    
+                    // Status Card Color Logic
+                    let statusClass = "pending"; 
+                    if(rawStatus.includes("success") || rawStatus.includes("approved") || rawStatus.includes("done")) {
+                        statusClass = "success";
+                    } else if(rawStatus.includes("rejected") || rawStatus.includes("failed") || rawStatus.includes("cancel")) {
+                        statusClass = "rejected";
+                    }
+
+                    // Amount Sign & Color Logic (+ or -)
+                    let isWithdraw = type.includes("WITHDRAW");
+                    let colorClass = isWithdraw ? "minus" : "plus";
+                    let sign = isWithdraw ? "-" : "+";
+                    let displayTime = d.date || d.time || "Recent";
+
+                    html += `
+                    <div class="card ${statusClass}">
+                        <div class="info">
+                            <b>${isWithdraw ? '⬆️ ' + type : '⬇️ ' + type}</b>
+                            <small><i class="fa-regular fa-calendar"></i> ${displayTime}</small><br>
+                            <span class="status-badge">${displayStatus}</span>
+                        </div>
+                        <div class="amt ${colorClass}">${sign} ₹${d.amount}</div>
+                    </div>`;
+                });
+                
+                document.getElementById('history-content').innerHTML = html;
+            }
+
+            // 1. Fetch DEPOSITS (from 'requests' folder)
+            db.ref('requests').on('value', (snap) => {
+                allDeposits = [];
+                if(snap.exists()) {
+                    snap.forEach((child) => {
+                        let d = child.val();
+                        if(d.phone === userPhone) {
+                            allDeposits.push({
+                                ...d,
+                                type: "DEPOSIT",
+                                sortTime: Date.parse(d.time) || Date.now()
+                            });
+                        }
+                    });
+                }
+                renderTop10History();
+            });
+
+            // 2. Fetch WITHDRAWALS (from 'user_history' folder)
+            db.ref(`user_history/${userPhone}`).on('value', (snap) => {
+                allWithdrawals = [];
+                if(snap.exists()) {
+                    snap.forEach((child) => {
+                        let w = child.val();
+                        allWithdrawals.push({
+                            ...w,
+                            type: w.type || "WITHDRAWAL",
+                            sortTime: w.timestamp || Date.parse(w.date || w.time) || Date.now()
+                        });
+                    });
+                }
+                renderTop10History();
             });
         }
     </script>
