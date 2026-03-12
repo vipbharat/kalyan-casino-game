@@ -114,7 +114,7 @@
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "Unknown User";
 
-        let baseUpiUrl = ""; // Global variable for UPI Link
+        let baseUpiUrl = ""; 
 
         // QR & UPI Sync
         db.ref('admin_settings/payment').on('value', (snap) => {
@@ -123,7 +123,6 @@
                 const names = ["Bharat Pay", "VIP Services", "Kalyan Digital", "Game Hub", "Super Payments"];
                 const name = names[Math.floor(Math.random() * names.length)];
                 
-                // Base URL without amount
                 baseUpiUrl = `upi://pay?pa=${data.upi_id}&pn=${encodeURIComponent(name)}&cu=INR`;
                 
                 document.getElementById('display-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(baseUpiUrl)}`;
@@ -140,7 +139,6 @@
             if(btnElement) btnElement.classList.add('active');
         }
 
-        // Amount Input Handle (Bonus + Direct Pay Button)
         function handleAmountInput(val) {
             let amount = parseFloat(val);
             let payBtn = document.getElementById('direct-pay-btn');
@@ -155,13 +153,18 @@
             }
         }
 
-        // 🚀 DIRECT PAY FUNCTION 🚀
+        // 🚀 PRO DIRECT PAY FUNCTION (Bypass Browser Block) 🚀
         function payDirectly() {
             let amount = parseFloat(document.getElementById('dep-amount').value);
             if(amount > 0 && baseUpiUrl !== "") {
-                // Link me amount jodh kar app open karwao
                 let finalUpiLink = baseUpiUrl + `&am=${amount}`;
-                window.location.href = finalUpiLink;
+                
+                // Naya tarika: Anchor tag banakar auto-click karwana (Ye Chrome ko block nahi karne dega)
+                let a = document.createElement('a');
+                a.href = finalUpiLink;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
             } else {
                 alert("Please wait, loading payment details...");
             }
