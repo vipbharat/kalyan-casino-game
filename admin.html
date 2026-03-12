@@ -199,7 +199,7 @@
     </div>
 
 <script>
-    // 🔥 FINAL UPDATED FIREBASE CONFIG (With authDomain) 🔥
+    // 🔥 FINAL UPDATED FIREBASE CONFIG 🔥
     const firebaseConfig = { 
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
         authDomain: "kalyan-casino.firebaseapp.com", 
@@ -306,7 +306,7 @@
         db.ref('admin_settings/notification').on('value', snap => document.getElementById('notif').value = snap.val() || "");
     }
 
-    // 🚀 QUICK WALLET LOGIC + VIP AUTO-SUCCESS TRACKER 🚀
+    // 🚀 QUICK WALLET LOGIC WITH AUTO-SUCCESS FOR DEPOSITS 🚀
     window.quickWallet = function(type) {
         const phone = document.getElementById('quick-phone').value;
         const amt = parseFloat(document.getElementById('quick-amount').value);
@@ -323,18 +323,35 @@
                 document.getElementById('quick-phone').value = "";
                 document.getElementById('quick-amount').value = "";
 
-                // 🔥 YAHAN HUA ASLI JADU (Auto-Success Logic) 🔥
+                // 🔥 VIP TRACKER: Agar Admin ne paise 'add' kiye hain toh Pending Deposit ko Success kar do
                 if(type === 'add') {
+                    
+                    // Naye system se user_history mein check karega
+                    db.ref(`user_history/${phone}`).once('value', (histSnap) => {
+                        if(histSnap.exists()) {
+                            histSnap.forEach((child) => {
+                                let reqData = child.val();
+                                let reqType = (reqData.type || "").toUpperCase();
+                                let reqStatus = (reqData.status || "").toUpperCase();
+                                
+                                // Agar Deposit PENDING me pada hai, use SUCCESS kar do
+                                if(reqType === "DEPOSIT" && reqStatus === "PENDING") {
+                                    db.ref(`user_history/${phone}/${child.key}`).update({ 
+                                        status: "SUCCESS" 
+                                    });
+                                    console.log("Auto-Success: user_history updated to SUCCESS for " + phone);
+                                }
+                            });
+                        }
+                    });
+
+                    // Purane system (requests folder) ke liye bhi ek check, taaki koi purani request atki na reh jaye
                     db.ref('requests').orderByChild('phone').equalTo(phone).once('value', (reqSnap) => {
                         if(reqSnap.exists()) {
                             reqSnap.forEach((child) => {
-                                let reqData = child.val();
-                                // Pending requests ko dhoondh kar Success karo
-                                if(reqData.status === "PENDING" || reqData.status === "Pending") {
-                                    db.ref('requests/' + child.key).update({ 
-                                        status: "SUCCESS" 
-                                    });
-                                    console.log("VIP Tracker: History updated to SUCCESS for " + phone);
+                                let oldReqData = child.val();
+                                if((oldReqData.status || "").toUpperCase() === "PENDING") {
+                                    db.ref('requests/' + child.key).update({ status: "SUCCESS" });
                                 }
                             });
                         }
