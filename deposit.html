@@ -250,15 +250,19 @@
         }
 
         function ssSelected() { 
-            document.getElementById('ss-label').innerHTML = "✅ SCREENSHOT ADDED"; 
-            document.getElementById('ss-label').style.color = "#00ff88";
-            document.getElementById('ss-label').style.borderColor = "#00ff88";
+            const fileInput = document.getElementById('file-input');
+            if (fileInput.files.length > 0) {
+                document.getElementById('ss-label').innerHTML = "✅ SCREENSHOT ADDED"; 
+                document.getElementById('ss-label').style.color = "#00ff88";
+                document.getElementById('ss-label').style.borderColor = "#00ff88";
+            }
         }
 
-        // 🔥 YAHAN HUA ASLI JADU (Saving direct to user_history) 🔥
+        // 🔥 YAHAN HUA ASLI JADU (Saving direct to user_history with Screenshot) 🔥
         function submitDeposit() {
             const amt = document.getElementById('dep-amount').value;
             const utr = document.getElementById('dep-utr').value;
+            const fileInput = document.getElementById('file-input'); // 📸 Photo input pakda
             const btn = document.getElementById('submitBtn');
 
             if(!amt || !utr) { alert("Please enter Amount and 12-Digit UTR Number!"); return; }
@@ -268,7 +272,7 @@
 
             const time = new Date().toLocaleString('en-IN');
 
-            // 1. Database mein Deposit aur Withdrawal dono ek hi jagah (user_history) save honge
+            // 1. Database mein save karna
             db.ref('user_history/' + phone).push({
                 type: 'DEPOSIT',
                 amount: amt,
@@ -278,22 +282,48 @@
                 timestamp: Date.now()
             }).then(() => {
                 
-                // 2. Telegram par alert bhejna
+                // 2. Telegram par alert aur Screenshot bhejna
                 const botToken = "8728052311:AAGa9hj7yZ2skBT5krMYsHshazsi03LCOJM";
                 const chatId = "7061035346";
-                const msg = `🚨 *NEW DEPOSIT* 🚨%0A👤 Player: ${phone}%0A💰 Amount: ₹${amt}%0A🧾 UTR: ${utr}%0A🕒 Time: ${time}%0A👉 *Admin Panel se PENDING clear karein!*`;
+                const captionText = `🚨 *NEW DEPOSIT* 🚨\n👤 Player: ${phone}\n💰 Amount: ₹${amt}\n🧾 UTR: ${utr}\n🕒 Time: ${time}\n👉 *Admin Panel se PENDING clear karein!*`;
                 
-                fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${msg}&parse_mode=Markdown`)
-                .then(() => {
-                    alert("✅ Request Sent! Check your History.");
-                    window.location.href = "history.html";
-                }).catch(() => {
-                    alert("✅ Request Sent! Check your History.");
-                    window.location.href = "history.html";
-                });
+                // Agar player ne screenshot upload kiya hai
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const formData = new FormData();
+                    formData.append('chat_id', chatId);
+                    formData.append('photo', file);
+                    formData.append('caption', captionText);
+                    formData.append('parse_mode', 'Markdown');
+
+                    // 📸 sendPhoto API ka istemal
+                    fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(() => {
+                        alert("✅ Request & Screenshot Sent! Check your History.");
+                        window.location.href = "history.html";
+                    }).catch(() => {
+                        alert("✅ Request Sent! Check your History.");
+                        window.location.href = "history.html";
+                    });
+
+                } else {
+                    // Agar bina photo ke submit kiya hai (Sirf text)
+                    const msgUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(captionText)}&parse_mode=Markdown`;
+                    
+                    fetch(msgUrl)
+                    .then(() => {
+                        alert("✅ Request Sent! Check your History.");
+                        window.location.href = "history.html";
+                    }).catch(() => {
+                        alert("✅ Request Sent! Check your History.");
+                        window.location.href = "history.html";
+                    });
+                }
 
             }).catch(err => {
-                // Agar kabhi error aaya toh bata dega
                 alert("Error: " + err.message);
                 btn.innerText = "SUBMIT REQUEST";
                 btn.disabled = false;
