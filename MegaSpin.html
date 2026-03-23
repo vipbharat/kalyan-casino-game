@@ -29,7 +29,8 @@
 
         .whl-box{position:relative;width:320px;height:320px;background:#fd0;border-radius:50%;margin:10px auto;box-shadow:0 0 30px #fd08}
         .ptr{position:absolute;top:-10px;border-left:15px solid transparent;border-right:15px solid transparent;border-top:35px solid #fff;z-index:10;filter:drop-shadow(0 3px 3px #000)}
-        canvas.whl{border-radius:50%;transition:transform 5s cubic-bezier(.1,.7,.1,1);border:4px solid #222;background:#111;}
+        /* 🔥 Transition set to 7 seconds 🔥 */
+        canvas.whl{border-radius:50%;transition:transform 7s cubic-bezier(.1,.7,.1,1);border:4px solid #222;background:#111;}
         .tmr{position:absolute;width:65px;height:65px;background:radial-gradient(circle,#222,#000);border:3px solid #fd0;border-radius:50%;font-size:28px;color:#0f0;font-weight:bold;z-index:5;box-shadow:0 0 15px #000, inset 0 0 10px #0f05}
         
         .bets{background:rgba(0,0,0,0.5);backdrop-filter:blur(5px);padding:10px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;border-top:2px solid #444}
@@ -85,7 +86,7 @@
     <div class="whl-box flex">
         <div class="ptr"></div>
         <canvas class="whl" id="c" width="310" height="310"></canvas>
-        <div class="tmr flex" id="t">15</div>
+        <div class="tmr flex" id="t">25</div>
     </div>
     
     <div class="bets">
@@ -288,30 +289,34 @@
         }
 
         function checkPayout(prizeIndex, betsSnapshot) {
-            let wonPrize = pr[prizeIndex];
-            let wonColor = bg[prizeIndex];
-            let wonId = colorIdMap[wonColor];
-            let finalWinAmt = 0;
+            try {
+                let wonPrize = pr[prizeIndex];
+                let wonColor = bg[prizeIndex];
+                let wonId = colorIdMap[wonColor];
+                let finalWinAmt = 0;
 
-            if (wonPrize === "00") {
-            } else if (wonPrize === "50% Minus") {
-                let totalUserBet = betsSnapshot.r + betsSnapshot.b + betsSnapshot.g + betsSnapshot.p + betsSnapshot.o;
-                if (totalUserBet > 0) finalWinAmt = totalUserBet * 0.5;
-            } else {
-                if (wonId && betsSnapshot[wonId] > 0) {
-                    let multiplier = parseInt(wonPrize.split("Ka ")[1]) / 100; 
-                    finalWinAmt = betsSnapshot[wonId] * multiplier;
+                if (wonPrize === "00") {
+                } else if (wonPrize === "50% Minus") {
+                    let totalUserBet = (betsSnapshot.r||0) + (betsSnapshot.b||0) + (betsSnapshot.g||0) + (betsSnapshot.p||0) + (betsSnapshot.o||0);
+                    if (totalUserBet > 0) finalWinAmt = totalUserBet * 0.5;
+                } else {
+                    if (wonId && (betsSnapshot[wonId]||0) > 0) {
+                        let multiplier = parseInt(wonPrize.split("Ka ")[1]) / 100; 
+                        finalWinAmt = betsSnapshot[wonId] * multiplier;
+                    }
                 }
-            }
 
-            if(finalWinAmt > 0) {
-                db.ref(`users/${userID}/winning_balance`).set(winBal + finalWinAmt);
-                let p = document.getElementById('win-popup'); 
-                p.innerText = "+₹" + finalWinAmt.toLocaleString(); 
-                p.classList.add('show');
-                setTimeout(() => p.classList.remove('show'), 2000);
-            }
-            if(wonId) document.getElementById('box-'+wonId).classList.add('win-glow'); 
+                if(finalWinAmt > 0) {
+                    let currentWinBal = parseFloat(winBal) || 0;
+                    db.ref(`users/${userID}/winning_balance`).set(currentWinBal + finalWinAmt);
+                    
+                    let p = document.getElementById('win-popup'); 
+                    p.innerText = "+₹" + finalWinAmt.toLocaleString(); 
+                    p.classList.add('show');
+                    setTimeout(() => p.classList.remove('show'), 2000);
+                }
+                if(wonId) document.getElementById('box-'+wonId).classList.add('win-glow'); 
+            } catch (e) { console.error("Payout error:", e); }
         }
 
         function listenServer() {
@@ -341,15 +346,35 @@
                     const sliceAngle = 360 / 28;
                     const stopAngle = (360 - (prizeIndex * sliceAngle)) - (sliceAngle / 2) - 270;
                     let d = rot + (360 * 5) + stopAngle; 
+                    
+                    document.getElementById('c').style.transition = "transform 7s cubic-bezier(0.1, 0.7, 0.1, 1)";
                     document.getElementById('c').style.transform = `rotate(${d}deg)`;
                     
                     setTimeout(()=>{
                         s_spin.pause(); s_win.play().catch(e=>{}); 
-                        let won = pr[prizeIndex];
-                        msg.innerHTML = "Result:<br><span style='color:#0f0;font-size:36px;'>" + won + "</span>";
-                        rot = d;
                         checkPayout(prizeIndex, snapshotBets); 
-                    }, 4500); 
+                    }, 7500); 
+                }
+                else if (state === 'waiting') {
+                    canBet = false;
+                    tmr.innerText = Math.abs(t);
+                    tmr.style.color = "#0f0";
+                    tmr.style.textShadow = "none";
+                    
+                    let prizeIndex = status.winIndex || 0;
+                    
+                    if (!isSpinning) {
+                        isSpinning = true;
+                        const sliceAngle = 360 / 28;
+                        const stopAngle = (360 - (prizeIndex * sliceAngle)) - (sliceAngle / 2) - 270;
+                        let d = rot + (360 * 5) + stopAngle; 
+                        document.getElementById('c').style.transition = "none"; 
+                        document.getElementById('c').style.transform = `rotate(${d}deg)`;
+                        rot = d;
+                    }
+                    
+                    msg.innerHTML = "Result:<br><span style='color:#0f0;font-size:36px;'>" + pr[prizeIndex] + "</span><br><span style='font-size:16px;color:#ccc'>Next Round: " + Math.abs(t) + "s</span>";
+                    msg.style.display = "block";
                 }
             });
         }
