@@ -13,6 +13,11 @@
         
         #bg-canvas {position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;}
 
+        /* Start Screen (Music ke liye zaroori) */
+        #startScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg, #111, #333);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer;}
+        .btn-start{background:#fd0;color:#000;padding:15px 40px;font-size:24px;font-weight:bold;border-radius:30px;box-shadow:0 0 30px #fd0;animation:pulse 1s infinite alternate;}
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
+
         .head{padding:10px 15px;background:rgba(0,0,0,0.8);border-bottom:2px solid #fd0;justify-content:space-between;box-shadow:0 4px 10px #000; display:flex;}
         
         .wal{ position:relative;background:linear-gradient(90deg, #FFDF00, #FFF, #D4AF37, #FFDF00); background-size:300% 100%;color:#000;padding:8px 20px;border-radius:25px;font-weight:900; font-size:18px;box-shadow:0 0 20px #FFDF00, inset 0 0 10px #FFF;border:2px solid #FFF; animation:shine 2s infinite linear;text-shadow:1px 1px 0px rgba(255,255,255,0.8); }
@@ -50,6 +55,11 @@
 <body>
 
     <canvas id="bg-canvas"></canvas>
+
+    <div id="startScreen" onclick="startGame()">
+        <h1 style="color:#fd0; font-size:40px; text-shadow:0 0 20px #fd0;">MEGA SPIN</h1>
+        <div class="btn-start">TAP TO ENTER</div>
+    </div>
 
     <div class="head">
         <div style="text-align:left;">
@@ -104,6 +114,24 @@
         let userID = localStorage.getItem('userPhone') || "user_1"; 
         let depBal = 0, winBal = 0, bonBal = 0, totalBal = 0;
 
+        // 🎵 AUDIO SETUP WAPAS AA GAYA 🎵
+        const bg_music = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+        bg_music.loop = true; bg_music.volume = 0.5; 
+        const s_bet = new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg');
+        const s_spin = new Audio('https://actions.google.com/sounds/v1/mechanics/ratchet_wrench.ogg'); 
+        const s_win = new Audio('https://actions.google.com/sounds/v1/cartoon/clown_horn.ogg');
+        
+        let gameStarted = false;
+        function startGame() {
+            if(gameStarted) return;
+            gameStarted = true;
+            document.getElementById('startScreen').style.display = 'none'; 
+            bg_music.play().catch(e => console.log(e)); // Play background music
+            syncWallet(); 
+            listenServer(); 
+            startBots();
+        }
+
         function syncWallet() {
             db.ref(`users/${userID}`).on('value', (snap) => {
                 const data = snap.val() || {};
@@ -111,7 +139,6 @@
                 totalBal = depBal + winBal + bonBal; document.getElementById('user-balance').innerText = "₹" + totalBal.toFixed(2);
             });
         }
-        syncWallet();
 
         setInterval(() => { document.getElementById('onlineCount').innerText = Math.floor(Math.random() * 201) + 400; }, 3000);
 
@@ -125,11 +152,12 @@
 
         function setChip(amt) {
             currentChip = amt;
+            s_bet.currentTime = 0; s_bet.play().catch(e=>{}); // Click sound
             document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
             document.getElementById('ch-'+amt).classList.add('active');
         }
 
-        // 🔥 32 SLICES WHEEL MATH (Up to 5000 + Five 250s) 🔥
+        // 🔥 32 SLICES WHEEL MATH 🔥
         const ctx=document.getElementById('c').getContext('2d'), tmr=document.getElementById('t'), msg=document.getElementById('msg');
         const cols=["#C0392B","#2980B9","#27AE60","#8E44AD","#D35400"];
         let pr=[], bg=[], tc=[];
@@ -161,7 +189,6 @@
             }
         } draw();
 
-        // 🔥 THROW CHIP (WITH 1K & 5K TEXT SUPPORT) 🔥
         function throwChip(c_id, amt, isPlayer) {
             let box = document.getElementById('box-'+c_id);
             let rect = box.getBoundingClientRect();
@@ -196,7 +223,6 @@
             }, 450);
         }
 
-        // 🔥 BOTS BETTING LOGIC WAPAS AA GAYA 🔥
         function startBots() {
             setInterval(() => {
                 if(!canBet) return;
@@ -210,7 +236,6 @@
             }, 350); 
         }
 
-        // 🔥 ANTI-HEDGING RULE: MAX 3 BETS 🔥
         function bet(c){
             if(!canBet) return;
             
@@ -225,6 +250,8 @@
             }
 
             if(totalBal >= currentChip){ 
+                s_bet.currentTime = 0; s_bet.play().catch(e=>{}); // Click sound on bet
+                
                 let remain = currentChip;
                 let newDep = depBal, newWin = winBal;
                 if(newDep >= remain) { newDep -= remain; } else { remain -= newDep; newDep = 0; newWin -= remain; }
@@ -297,6 +324,9 @@
                     let snapshotBets = { ...yBets };
                     msg.innerHTML="Bets Closed!<br><span style='font-size:18px;color:#ccc'>Spinning...</span>"; msg.style.display="block";
                     
+                    // 🎵 Play Wheel Spin Sound 🎵
+                    s_spin.currentTime = 0; s_spin.play().catch(e=>{}); s_spin.loop = true; 
+                    
                     let prizeIndex = status.winIndex || 0;
                     
                     const sliceAngle = 360 / 32; 
@@ -310,6 +340,8 @@
                     document.getElementById('c').style.transform = `rotate(${d}deg)`;
                     
                     setTimeout(()=>{
+                        // 🎵 Stop Spin Sound, Play Win Sound 🎵
+                        s_spin.pause(); s_win.play().catch(e=>{}); 
                         checkPayout(prizeIndex, snapshotBets); 
                         rot = d; 
                     }, 7500); 
@@ -328,10 +360,6 @@
                 }
             });
         }
-        
-        // Start listening to server and launch bots
-        listenServer();
-        startBots();
         
         const canvasBg = document.getElementById('bg-canvas'); const ctxBg = canvasBg.getContext('2d');
         canvasBg.width = window.innerWidth; canvasBg.height = window.innerHeight;
