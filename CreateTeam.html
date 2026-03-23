@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalyan 11 - Create Team VIP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; color: #fff; margin: 0; background: #050510; user-select: none; overflow-x: hidden; }
+        
+        /* 🏏 Header */
+        .head { padding: 12px 15px; background: linear-gradient(135deg, #1a0033, #4a00e0); border-bottom: 2px solid #ffd700; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .head-title { color: #fff; font-weight: 900; font-size: 22px; text-shadow: 0 0 10px rgba(255,215,0,0.8); letter-spacing: 1px; }
+        .head-title span { color: #ffd700; }
+        .wal { background: rgba(0,0,0,0.6); border: 1.5px solid #00ff88; color: #00ff88; padding: 6px 15px; border-radius: 20px; font-weight: 900; box-shadow: 0 0 10px rgba(0,255,136,0.3); }
+
+        /* View Containers */
+        .view-container { display: none; padding-bottom: 90px; }
+        .active-view { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 👥 Team Creation Header */
+        .create-header { background: #111; padding: 15px; position: sticky; top: 55px; z-index: 90; border-bottom: 1px solid #333; }
+        .section-nav { display:flex; align-items:center; gap:10px; color:#aaa; font-size:14px; cursor:pointer; font-weight:bold; margin-bottom: 15px; }
+        .section-nav i { color: #ffd700; }
+
+        .progress-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #1a1a24; padding: 10px; border-radius: 10px; border: 1px solid #333;}
+        .prog-box { text-align: center; }
+        .prog-val { font-size: 20px; font-weight: 900; color: #ffd700; }
+        .prog-lbl { font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; font-weight: bold;}
+        
+        .role-filters { display: flex; justify-content: space-between; background: #222; border-radius: 8px; padding: 5px; }
+        .role-tab { flex: 1; text-align: center; padding: 8px 0; font-size: 13px; font-weight: bold; color: #aaa; border-radius: 6px; cursor: pointer; transition: 0.2s;}
+        .role-tab.active { background: linear-gradient(90deg, #4a00e0, #8e2de2); color: #fff; box-shadow: 0 0 10px rgba(74, 0, 224, 0.5); }
+
+        /* 👤 Player List */
+        .player-item { display: flex; align-items: center; padding: 12px 10px; border-bottom: 1px solid #222; background: #1a1a24; margin-bottom: 8px; border-radius: 10px; transition: 0.2s; border: 1px solid transparent; cursor: pointer; margin: 0 10px 8px 10px;}
+        .player-item.selected { background: rgba(0, 255, 136, 0.05); border: 1px solid #00ff88; box-shadow: 0 0 10px rgba(0,255,136,0.1); }
+        .p-avatar { width: 45px; height: 45px; border-radius: 50%; background: #333; margin-right: 12px; display: flex; justify-content: center; align-items: center; font-size: 20px; border: 1px solid #555;}
+        .p-info { flex: 1; }
+        .p-name { font-size: 15px; font-weight: 900; color: #fff; letter-spacing: 0.5px;}
+        .p-team { font-size: 11px; color: #aaa; margin-top: 4px; font-weight: bold;}
+        .p-credits { font-size: 15px; font-weight: 900; color: #ffd700; margin-right: 15px; }
+        
+        .add-btn { width: 32px; height: 32px; border-radius: 50%; background: #333; color: #fff; border: 2px solid #555; display: flex; justify-content: center; align-items: center; font-size: 18px; transition: 0.3s; }
+        .player-item.selected .add-btn { background: #00ff88; color: #000; border-color: #00ff88; transform: rotate(45deg); box-shadow: 0 0 10px #00ff88;}
+
+        /* 🧢 C, VC & IP Selection */
+        .cvc-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 12px; background: #1a1a24; margin-bottom: 10px; border-radius: 10px; border: 1px solid #333; margin: 0 15px 10px 15px;}
+        .cvc-btn { width: 35px; height: 35px; border-radius: 50%; background: #222; border: 2px solid #555; color: #888; font-weight: 900; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; font-size: 13px;}
+        .cvc-btn.c-active { background: linear-gradient(135deg, #ffd700, #ffa500); color: #000; border-color: #ffd700; box-shadow: 0 0 15px rgba(255,215,0,0.6); }
+        .cvc-btn.vc-active { background: linear-gradient(135deg, #00d2d3, #0097e6); color: #000; border-color: #00d2d3; box-shadow: 0 0 15px rgba(0,210,211,0.6); }
+        .cvc-btn.ip-active { background: linear-gradient(135deg, #ff007f, #ff00ff); color: #fff; border-color: #ff007f; box-shadow: 0 0 15px rgba(255,0,127,0.6); }
+
+        /* 📌 Bottom Action Bar */
+        .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10,10,15,0.98); padding: 15px 20px; box-sizing: border-box; border-top: 2px solid #333; display: flex; justify-content: space-between; align-items: center; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.8);}
+        .btn-primary { background: linear-gradient(90deg, #ff007f, #ff8c00); color: #fff; border: 1px solid #ff88a0; padding: 12px 30px; border-radius: 25px; font-weight: 900; letter-spacing: 1px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,0,127,0.4); text-transform: uppercase;}
+        .btn-primary:active { transform: scale(0.95); }
+        .btn-primary:disabled { background: #333; color: #777; box-shadow: none; cursor: not-allowed; border-color: #444;}
+
+        /* Toast Message */
+        #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #00ff88; color: #000; padding: 12px 25px; border-radius: 25px; font-weight: 900; font-size: 14px; box-shadow: 0 4px 20px rgba(0,255,136,0.6); opacity: 0; transition: 0.3s; pointer-events: none; z-index: 1000; border: 2px solid #fff; white-space: nowrap;}
+        #toast.show { opacity: 1; bottom: 110px; }
+    </style>
+</head>
+<body>
+
+    <div class="head">
+        <div class="head-title">KALYAN <span>11</span></div>
+        <div class="wal">🪙 ₹<span id="user-balance">0</span></div>
+    </div>
+
+    <div id="view-create" class="view-container active-view">
+        <div class="create-header">
+            <div class="section-nav" onclick="window.location.href='Matches.html'">
+                <i class="fa-solid fa-arrow-left"></i> Back to Matches
+            </div>
+            
+            <div class="progress-row">
+                <div class="prog-box">
+                    <div class="prog-lbl">Players</div>
+                    <div class="prog-val"><span id="p-count">0</span><span style="font-size:12px; color:#aaa;">/11</span></div>
+                </div>
+                <div class="prog-box">
+                    <div class="prog-lbl">IND</div>
+                    <div style="font-size:18px; font-weight:900; color:#66b3ff;" id="ind-count">0</div>
+                </div>
+                <div class="prog-box">
+                    <div class="prog-lbl">PAK</div>
+                    <div style="font-size:18px; font-weight:900; color:#85e085;" id="pak-count">0</div>
+                </div>
+                <div class="prog-box">
+                    <div class="prog-lbl">Credits</div>
+                    <div class="prog-val" id="c-left">100.0</div>
+                </div>
+            </div>
+
+            <div class="role-filters">
+                <div class="role-tab active" onclick="filterRole('WK', this)">WK (0)</div>
+                <div class="role-tab" onclick="filterRole('BAT', this)">BAT (0)</div>
+                <div class="role-tab" onclick="filterRole('AR', this)">AR (0)</div>
+                <div class="role-tab" onclick="filterRole('BOWL', this)">BOWL (0)</div>
+            </div>
+        </div>
+
+        <div id="player-list" style="margin-top: 10px;">
+            </div>
+
+        <div class="bottom-bar">
+            <div>
+                <div style="font-size:11px; color:#aaa; font-weight:bold; text-transform:uppercase;">Team Status</div>
+                <div style="color:#00ff88; font-weight:900; font-size:16px;"><span id="bot-p-count">0</span> / 11 Selected</div>
+            </div>
+            <button class="btn-primary" id="btn-next" disabled onclick="goToCVC()">NEXT <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <div id="view-cvc" class="view-container">
+        <div style="padding: 15px;">
+            <div class="section-nav" onclick="goBackToPlayers()">
+                <i class="fa-solid fa-arrow-left"></i> Back to Players
+            </div>
+            <h3 style="margin-top:0; color:#fff; font-size: 18px;">Choose C, VC & Impact Player</h3>
+            
+            <div style="background:rgba(255,215,0,0.1); border:1px dashed #ffd700; padding:10px; border-radius:10px; margin-bottom:20px; font-size:12px; text-align:center; color:#ffd700; font-weight:bold; line-height: 1.5;">
+                <i class="fa-solid fa-crown"></i> C (2X Pts) | <i class="fa-solid fa-star"></i> VC (1.5X Pts) | <i class="fa-solid fa-bolt" style="color:#ff007f;"></i> IP (1.25X Pts)
+            </div>
+        </div>
+
+        <div id="cvc-list">
+            </div>
+
+        <div class="bottom-bar">
+            <button class="btn-primary" style="width:100%; font-size: 16px;" id="btn-save" disabled onclick="saveTeamAndGoToContests()">SAVE & VIEW CONTESTS</button>
+        </div>
+    </div>
+
+    <div id="toast">Message</div>
+
+    <script>
+        // Balance Load Karna
+        if(!localStorage.getItem('k11_bal')) localStorage.setItem('k11_bal', 10000);
+        document.getElementById('user-balance').innerText = Number(localStorage.getItem('k11_bal')).toLocaleString();
+
+        // 🏏 Players Data (Total 22 Players - IND vs PAK)
+        const allPlayers = [
+            { id: 1, name: "R. Pant", role: "WK", team: "IND", cr: 9.0 },
+            { id: 2, name: "M. Rizwan", role: "WK", team: "PAK", cr: 9.5 },
+            { id: 3, name: "V. Kohli", role: "BAT", team: "IND", cr: 10.5 },
+            { id: 4, name: "R. Sharma", role: "BAT", team: "IND", cr: 10.0 },
+            { id: 5, name: "S. Yadav", role: "BAT", team: "IND", cr: 9.5 },
+            { id: 6, name: "B. Azam", role: "BAT", team: "PAK", cr: 10.5 },
+            { id: 7, name: "F. Zaman", role: "BAT", team: "PAK", cr: 9.0 },
+            { id: 8, name: "S. Gill", role: "BAT", team: "IND", cr: 8.5 },
+            { id: 9, name: "H. Pandya", role: "AR", team: "IND", cr: 9.5 },
+            { id: 10, name: "R. Jadeja", role: "AR", team: "IND", cr: 9.0 },
+            { id: 11, name: "S. Khan", role: "AR", team: "PAK", cr: 9.0 },
+            { id: 12, name: "I. Ahmed", role: "AR", team: "PAK", cr: 8.5 },
+            { id: 13, name: "J. Bumrah", role: "BOWL", team: "IND", cr: 9.5 },
+            { id: 14, name: "M. Siraj", role: "BOWL", team: "IND", cr: 9.0 },
+            { id: 15, name: "S. Afridi", role: "BOWL", team: "PAK", cr: 9.5 },
+            { id: 16, name: "H. Rauf", role: "BOWL", team: "PAK", cr: 9.0 },
+            { id: 17, name: "N. Shah", role: "BOWL", team: "PAK", cr: 8.5 },
+            { id: 18, name: "K. Yadav", role: "BOWL", team: "IND", cr: 8.5 },
+            { id: 19, name: "A. Singh", role: "BOWL", team: "IND", cr: 8.0 },
+            { id: 20, name: "I. Wasim", role: "AR", team: "PAK", cr: 8.5 },
+            { id: 21, name: "S. Samson", role: "WK", team: "IND", cr: 8.5 },
+            { id: 22, name: "A. Ali", role: "BOWL", team: "PAK", cr: 8.0 }
+        ];
+
+        let selectedPlayers = [];
+        let creditsLeft = 100.0;
+        let currentRole = 'WK';
+        let capId = null;
+        let vcapId = null;
+        let ipId = null; // ⚡ Impact Player ID Track Karne ke liye
+
+        function showToast(msg) {
+            let t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        function filterRole(role, element) {
+            document.querySelectorAll('.role-tab').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            currentRole = role;
+            renderPlayers();
+        }
+
+        function renderPlayers() {
+            const list = document.getElementById('player-list');
+            list.innerHTML = "";
+            
+            const filtered = allPlayers.filter(p => p.role === currentRole);
+            
+            filtered.forEach(p => {
+                const isSel = selectedPlayers.find(sp => sp.id === p.id);
+                const teamColor = p.team === 'IND' ? '#66b3ff' : '#85e085';
+                
+                list.innerHTML += `
+                    <div class="player-item ${isSel ? 'selected' : ''}" onclick="togglePlayer(${p.id})">
+                        <div class="p-avatar">${p.role === 'BAT' ? '🏏' : p.role === 'BOWL' ? '⚾' : p.role === 'WK' ? '🧤' : '⚔️'}</div>
+                        <div class="p-info">
+                            <div class="p-name">${p.name}</div>
+                            <div class="p-team" style="color: ${teamColor}">${p.team} | Sel by ${Math.floor(Math.random()*40 + 40)}%</div>
+                        </div>
+                        <div class="p-credits">${p.cr.toFixed(1)}</div>
+                        <div class="add-btn"><i class="fa-solid fa-plus"></i></div>
+                    </div>
+                `;
+            });
+        }
+
+        function togglePlayer(id) {
+            const player = allPlayers.find(p => p.id === id);
+            const index = selectedPlayers.findIndex(p => p.id === id);
+
+            if (index > -1) {
+                selectedPlayers.splice(index, 1);
+                creditsLeft += player.cr;
+                if(capId === id) capId = null;
+                if(vcapId === id) vcapId = null;
+                if(ipId === id) ipId = null;
+            } else {
+                if (selectedPlayers.length >= 11) return showToast("⚠️ Max 11 players allowed!");
+                if (creditsLeft - player.cr < 0) return showToast("⚠️ Not enough credits!");
+                
+                let indC = selectedPlayers.filter(p => p.team === 'IND').length;
+                let pakC = selectedPlayers.filter(p => p.team === 'PAK').length;
+                if (player.team === 'IND' && indC >= 7) return showToast("⚠️ Max 7 players from one team!");
+                if (player.team === 'PAK' && pakC >= 7) return showToast("⚠️ Max 7 players from one team!");
+
+                selectedPlayers.push(player);
+                creditsLeft -= player.cr;
+            }
+            updateHeader();
+            updateRoleCounts();
+            renderPlayers();
+        }
+
+        function updateRoleCounts() {
+            let wkC = selectedPlayers.filter(p => p.role === 'WK').length;
+            let batC = selectedPlayers.filter(p => p.role === 'BAT').length;
+            let arC = selectedPlayers.filter(p => p.role === 'AR').length;
+            let bowlC = selectedPlayers.filter(p => p.role === 'BOWL').length;
+
+            let tabs = document.querySelectorAll('.role-tab');
+            tabs[0].innerText = `WK (${wkC})`;
+            tabs[1].innerText = `BAT (${batC})`;
+            tabs[2].innerText = `AR (${arC})`;
+            tabs[3].innerText = `BOWL (${bowlC})`;
+        }
+
+        function updateHeader() {
+            let indCount = selectedPlayers.filter(p => p.team === 'IND').length;
+            let pakCount = selectedPlayers.filter(p => p.team === 'PAK').length;
+            
+            document.getElementById('p-count').innerText = selectedPlayers.length;
+            document.getElementById('bot-p-count').innerText = selectedPlayers.length;
+            document.getElementById('ind-count').innerText = indCount;
+            document.getElementById('pak-count').innerText = pakCount;
+            document.getElementById('c-left').innerText = creditsLeft.toFixed(1);
+
+            document.getElementById('btn-next').disabled = selectedPlayers.length !== 11;
+        }
+
+        // 11 Player Select karke NEXT dabana
+        function goToCVC() {
+            document.getElementById('view-create').classList.remove('active-view');
+            document.getElementById('view-cvc').classList.add('active-view');
+            window.scrollTo(0,0);
+            
+            const list = document.getElementById('cvc-list');
+            list.innerHTML = "";
+            
+            selectedPlayers.forEach(p => {
+                list.innerHTML += `
+                    <div class="cvc-item">
+                        <div style="display:flex; align-items:center;">
+                            <div class="p-avatar" style="width:35px; height:35px; font-size:14px; border:none; background:#333;">${p.role === 'BAT' ? '🏏' : p.role === 'BOWL' ? '⚾' : p.role === 'WK' ? '🧤' : '⚔️'}</div>
+                            <div>
+                                <div class="p-name" style="font-size:13px;">${p.name}</div>
+                                <div class="p-team">${p.team} - ${p.role}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <div class="cvc-btn ${capId === p.id ? 'c-active' : ''}" onclick="setRole('C', ${p.id})">C</div>
+                            <div class="cvc-btn ${vcapId === p.id ? 'vc-active' : ''}" onclick="setRole('VC', ${p.id})">VC</div>
+                            <div class="cvc-btn ${ipId === p.id ? 'ip-active' : ''}" onclick="setRole('IP', ${p.id})">IP</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Ek Player sirf ek hi Role le sakta hai (C, VC ya IP)
+        function setRole(type, id) {
+            if (type === 'C') {
+                if (vcapId === id) vcapId = null; 
+                if (ipId === id) ipId = null;
+                capId = id;
+            } else if (type === 'VC') {
+                if (capId === id) capId = null;
+                if (ipId === id) ipId = null;
+                vcapId = id;
+            } else if (type === 'IP') {
+                if (capId === id) capId = null;
+                if (vcapId === id) vcapId = null;
+                ipId = id;
+            }
+            goToCVC(); 
+            
+            // Teeno (C, VC, IP) select hone par hi SAVE button on hoga
+            document.getElementById('btn-save').disabled = !(capId && vcapId && ipId);
+        }
+
+        function goBackToPlayers() {
+            document.getElementById('view-cvc').classList.remove('active-view');
+            document.getElementById('view-create').classList.add('active-view');
+        }
+
+        function saveTeamAndGoToContests() {
+            localStorage.setItem('k11_team_saved', 'yes');
+            window.location.href = "Contests.html";
+        }
+
+        renderPlayers();
+    </script>
+</body>
+</html>
