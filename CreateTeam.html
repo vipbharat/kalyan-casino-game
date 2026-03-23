@@ -5,69 +5,49 @@
     <title>Kalyan 11 - Create Team VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; color: #fff; margin: 0; background: #050510; user-select: none; overflow-x: hidden; }
-        
-        /* 🏏 Header */
         .head { padding: 12px 15px; background: linear-gradient(135deg, #1a0033, #4a00e0); border-bottom: 2px solid #ffd700; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .head-title { color: #fff; font-weight: 900; font-size: 22px; text-shadow: 0 0 10px rgba(255,215,0,0.8); letter-spacing: 1px; }
+        .head-title { color: #fff; font-weight: 900; font-size: 22px; text-shadow: 0 0 10px rgba(255,215,0,0.8); }
         .head-title span { color: #ffd700; }
         .wal { background: rgba(0,0,0,0.6); border: 1.5px solid #00ff88; color: #00ff88; padding: 6px 15px; border-radius: 20px; font-weight: 900; box-shadow: 0 0 10px rgba(0,255,136,0.3); }
-
-        /* View Containers */
         .view-container { display: none; padding-bottom: 90px; }
         .active-view { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* 👥 Team Creation Header */
         .create-header { background: #111; padding: 15px; position: sticky; top: 55px; z-index: 90; border-bottom: 1px solid #333; }
         .section-nav { display:flex; align-items:center; gap:10px; color:#aaa; font-size:14px; cursor:pointer; font-weight:bold; margin-bottom: 15px; }
         .section-nav i { color: #ffd700; }
-
-        /* 3 Boxes only (Credits removed) */
         .progress-row { display: flex; justify-content: space-around; align-items: center; margin-bottom: 15px; background: #1a1a24; padding: 10px; border-radius: 10px; border: 1px solid #333;}
         .prog-box { text-align: center; }
         .prog-val { font-size: 22px; font-weight: 900; color: #ffd700; }
-        .prog-lbl { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 2px; font-weight: bold;}
-        
+        .prog-lbl { font-size: 11px; color: #888; text-transform: uppercase; font-weight: bold;}
         .role-filters { display: flex; justify-content: space-between; background: #222; border-radius: 8px; padding: 5px; }
         .role-tab { flex: 1; text-align: center; padding: 8px 0; font-size: 13px; font-weight: bold; color: #aaa; border-radius: 6px; cursor: pointer; transition: 0.2s;}
         .role-tab.active { background: linear-gradient(90deg, #4a00e0, #8e2de2); color: #fff; box-shadow: 0 0 10px rgba(74, 0, 224, 0.5); }
-
-        /* ⚔️ Aamne Samne Layout (Split View) */
         .battle-ground { display: flex; justify-content: space-between; padding: 10px; gap: 8px; position: relative; margin-top: 5px;}
-        /* Center VS Line */
         .battle-ground::after { content: ''; position: absolute; left: 50%; top: 10px; bottom: 10px; width: 2px; background: linear-gradient(to bottom, transparent, #ff004c, transparent); transform: translateX(-50%); z-index: 0;}
-        
         .team-col { flex: 1; display: flex; flex-direction: column; gap: 8px; z-index: 1;}
-        .team-header { text-align: center; font-weight: 900; font-size: 14px; padding: 8px 0; border-radius: 8px; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-transform: uppercase;}
-        
-        /* Compact Player Card for Split View */
-        .player-item { display: flex; align-items: center; justify-content: space-between; padding: 8px; background: #1a1a24; border-radius: 8px; transition: 0.2s; border: 1px solid #222; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5);}
+        .team-header { text-align: center; font-weight: 900; font-size: 14px; padding: 8px 0; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-transform: uppercase;}
+        .player-item { display: flex; align-items: center; justify-content: space-between; padding: 8px; background: #1a1a24; border-radius: 8px; transition: 0.2s; border: 1px solid #222; cursor: pointer;}
         .player-item.selected { background: rgba(0, 255, 136, 0.1); border: 1px solid #00ff88; box-shadow: 0 0 10px rgba(0,255,136,0.2); }
         .p-avatar { width: 30px; height: 30px; border-radius: 50%; background: #333; display: flex; justify-content: center; align-items: center; font-size: 14px; border: 1px solid #555;}
         .p-info { flex: 1; margin-left: 8px; white-space: nowrap; overflow: hidden;}
         .p-name { font-size: 12px; font-weight: 900; color: #fff; text-overflow: ellipsis; overflow: hidden;}
         .p-sel { font-size: 9px; color: #aaa; margin-top: 2px; font-weight: bold;}
-        
         .add-btn { width: 24px; height: 24px; border-radius: 50%; background: #333; color: #fff; border: 1px solid #555; display: flex; justify-content: center; align-items: center; font-size: 12px; transition: 0.3s; flex-shrink: 0; margin-left: 5px;}
         .player-item.selected .add-btn { background: #00ff88; color: #000; border-color: #00ff88; transform: rotate(45deg); box-shadow: 0 0 8px #00ff88;}
-
-        /* 🧢 C, VC & IP Selection */
         .cvc-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 12px; background: #1a1a24; margin-bottom: 10px; border-radius: 10px; border: 1px solid #333; margin: 0 15px 10px 15px;}
         .cvc-btn { width: 35px; height: 35px; border-radius: 50%; background: #222; border: 2px solid #555; color: #888; font-weight: 900; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; font-size: 13px;}
         .cvc-btn.c-active { background: linear-gradient(135deg, #ffd700, #ffa500); color: #000; border-color: #ffd700; box-shadow: 0 0 15px rgba(255,215,0,0.6); }
         .cvc-btn.vc-active { background: linear-gradient(135deg, #00d2d3, #0097e6); color: #000; border-color: #00d2d3; box-shadow: 0 0 15px rgba(0,210,211,0.6); }
         .cvc-btn.ip-active { background: linear-gradient(135deg, #ff007f, #ff00ff); color: #fff; border-color: #ff007f; box-shadow: 0 0 15px rgba(255,0,127,0.6); }
-
-        /* 📌 Bottom Action Bar */
-        .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10,10,15,0.98); padding: 15px 20px; box-sizing: border-box; border-top: 2px solid #333; display: flex; justify-content: space-between; align-items: center; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.8);}
-        .btn-primary { background: linear-gradient(90deg, #ff007f, #ff8c00); color: #fff; border: 1px solid #ff88a0; padding: 12px 30px; border-radius: 25px; font-weight: 900; letter-spacing: 1px; cursor: pointer; box-shadow: 0 4px 15px rgba(255,0,127,0.4); text-transform: uppercase;}
-        .btn-primary:active { transform: scale(0.95); }
-        .btn-primary:disabled { background: #333; color: #777; box-shadow: none; cursor: not-allowed; border-color: #444;}
-
-        /* Toast Message */
-        #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #00ff88; color: #000; padding: 12px 25px; border-radius: 25px; font-weight: 900; font-size: 14px; box-shadow: 0 4px 20px rgba(0,255,136,0.6); opacity: 0; transition: 0.3s; pointer-events: none; z-index: 1000; border: 2px solid #fff; white-space: nowrap;}
+        .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(10,10,15,0.98); padding: 15px 20px; box-sizing: border-box; border-top: 2px solid #333; display: flex; justify-content: space-between; align-items: center; z-index: 100;}
+        .btn-primary { background: linear-gradient(90deg, #ff007f, #ff8c00); color: #fff; border: 1px solid #ff88a0; padding: 12px 30px; border-radius: 25px; font-weight: 900; cursor: pointer; }
+        .btn-primary:disabled { background: #333; color: #777; border-color: #444;}
+        #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #00ff88; color: #000; padding: 12px 25px; border-radius: 25px; font-weight: 900; font-size: 14px; opacity: 0; transition: 0.3s; z-index: 1000; white-space: nowrap;}
         #toast.show { opacity: 1; bottom: 110px; }
     </style>
 </head>
@@ -75,30 +55,17 @@
 
     <div class="head">
         <div class="head-title">KALYAN <span>11</span></div>
-        <div class="wal">🪙 ₹<span id="user-balance">0</span></div>
+        <div class="wal">🪙 ₹<span id="user-balance">0.00</span></div>
     </div>
 
     <div id="view-create" class="view-container active-view">
         <div class="create-header">
-            <div class="section-nav" onclick="window.location.href='Matches.html'">
-                <i class="fa-solid fa-arrow-left"></i> Back to Matches
-            </div>
-            
+            <div class="section-nav" onclick="window.location.href='Matches.html'"><i class="fa-solid fa-arrow-left"></i> Back to Matches</div>
             <div class="progress-row">
-                <div class="prog-box">
-                    <div class="prog-lbl">Players</div>
-                    <div class="prog-val"><span id="p-count">0</span><span style="font-size:12px; color:#aaa;">/11</span></div>
-                </div>
-                <div class="prog-box">
-                    <div class="prog-lbl">INDIA</div>
-                    <div style="font-size:22px; font-weight:900; color:#66b3ff;" id="ind-count">0</div>
-                </div>
-                <div class="prog-box">
-                    <div class="prog-lbl">PAKISTAN</div>
-                    <div style="font-size:22px; font-weight:900; color:#85e085;" id="pak-count">0</div>
-                </div>
+                <div class="prog-box"><div class="prog-lbl">Players</div><div class="prog-val"><span id="p-count">0</span><span style="font-size:12px; color:#aaa;">/11</span></div></div>
+                <div class="prog-box"><div class="prog-lbl">INDIA</div><div style="font-size:22px; font-weight:900; color:#66b3ff;" id="ind-count">0</div></div>
+                <div class="prog-box"><div class="prog-lbl">PAKISTAN</div><div style="font-size:22px; font-weight:900; color:#85e085;" id="pak-count">0</div></div>
             </div>
-
             <div class="role-filters">
                 <div class="role-tab active" onclick="filterRole('WK', this)">WK (0)</div>
                 <div class="role-tab" onclick="filterRole('BAT', this)">BAT (0)</div>
@@ -110,245 +77,132 @@
         <div class="battle-ground">
             <div class="team-col">
                 <div class="team-header" style="background: rgba(102, 179, 255, 0.1); color: #66b3ff; border: 1px solid #66b3ff;">INDIA</div>
-                <div id="ind-list">
-                    </div>
+                <div id="ind-list"></div>
             </div>
-            
             <div class="team-col">
                 <div class="team-header" style="background: rgba(133, 224, 133, 0.1); color: #85e085; border: 1px solid #85e085;">PAKISTAN</div>
-                <div id="pak-list">
-                    </div>
+                <div id="pak-list"></div>
             </div>
         </div>
 
         <div class="bottom-bar">
-            <div>
-                <div style="font-size:11px; color:#aaa; font-weight:bold; text-transform:uppercase;">Team Status</div>
-                <div style="color:#00ff88; font-weight:900; font-size:16px;"><span id="bot-p-count">0</span> / 11 Selected</div>
-            </div>
+            <div><div style="font-size:11px; color:#aaa; font-weight:bold;">Team Status</div><div style="color:#00ff88; font-weight:900; font-size:16px;"><span id="bot-p-count">0</span> / 11 Selected</div></div>
             <button class="btn-primary" id="btn-next" disabled onclick="goToCVC()">NEXT <i class="fa-solid fa-arrow-right"></i></button>
         </div>
     </div>
 
     <div id="view-cvc" class="view-container">
         <div style="padding: 15px;">
-            <div class="section-nav" onclick="goBackToPlayers()">
-                <i class="fa-solid fa-arrow-left"></i> Back to Players
-            </div>
-            <h3 style="margin-top:0; color:#fff; font-size: 18px;">Choose C, VC & Impact Player</h3>
-            
-            <div style="background:rgba(255,215,0,0.1); border:1px dashed #ffd700; padding:10px; border-radius:10px; margin-bottom:20px; font-size:12px; text-align:center; color:#ffd700; font-weight:bold; line-height: 1.5;">
+            <div class="section-nav" onclick="goBackToPlayers()"><i class="fa-solid fa-arrow-left"></i> Back to Players</div>
+            <h3 style="margin-top:0; color:#fff; font-size: 18px;">Choose C, VC & IP</h3>
+            <div style="background:rgba(255,215,0,0.1); border:1px dashed #ffd700; padding:10px; border-radius:10px; margin-bottom:20px; font-size:12px; text-align:center; color:#ffd700; font-weight:bold;">
                 <i class="fa-solid fa-crown"></i> C (2X Pts) | <i class="fa-solid fa-star"></i> VC (1.5X Pts) | <i class="fa-solid fa-bolt" style="color:#ff007f;"></i> IP (1.25X Pts)
             </div>
         </div>
-
-        <div id="cvc-list">
-            </div>
-
+        <div id="cvc-list"></div>
         <div class="bottom-bar">
-            <button class="btn-primary" style="width:100%; font-size: 16px;" id="btn-save" disabled onclick="saveTeamAndGoToContests()">SAVE & VIEW CONTESTS</button>
+            <button class="btn-primary" style="width:100%;" id="btn-save" disabled onclick="saveTeamAndGoToContests()">SAVE & VIEW CONTESTS</button>
         </div>
     </div>
 
     <div id="toast">Message</div>
 
     <script>
-        // Balance Load Karna
-        if(!localStorage.getItem('k11_bal')) localStorage.setItem('k11_bal', 10000);
-        document.getElementById('user-balance').innerText = Number(localStorage.getItem('k11_bal')).toLocaleString();
+        // 🔥 Asli Firebase Connection
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
-        // 🏏 Players Data (Credits hata diye gaye hain)
+        let totalBal = 0;
+        if(phone) {
+            db.ref('users/'+phone).on('value', s => { 
+                let d = s.val() || {};
+                let depBal = parseFloat(d.balance || 0); let winBal = parseFloat(d.winning_balance || 0); let bonBal = parseFloat(d.bonus_balance || 0);
+                totalBal = Math.max(0, depBal + winBal + bonBal);
+                document.getElementById('user-balance').innerText = totalBal.toFixed(2); 
+            });
+        }
+
         const allPlayers = [
-            { id: 1, name: "R. Pant", role: "WK", team: "IND" },
-            { id: 2, name: "M. Rizwan", role: "WK", team: "PAK" },
-            { id: 3, name: "V. Kohli", role: "BAT", team: "IND" },
-            { id: 4, name: "R. Sharma", role: "BAT", team: "IND" },
-            { id: 5, name: "S. Yadav", role: "BAT", team: "IND" },
-            { id: 6, name: "B. Azam", role: "BAT", team: "PAK" },
-            { id: 7, name: "F. Zaman", role: "BAT", team: "PAK" },
-            { id: 8, name: "S. Gill", role: "BAT", team: "IND" },
-            { id: 9, name: "H. Pandya", role: "AR", team: "IND" },
-            { id: 10, name: "R. Jadeja", role: "AR", team: "IND" },
-            { id: 11, name: "S. Khan", role: "AR", team: "PAK" },
-            { id: 12, name: "I. Ahmed", role: "AR", team: "PAK" },
-            { id: 13, name: "J. Bumrah", role: "BOWL", team: "IND" },
-            { id: 14, name: "M. Siraj", role: "BOWL", team: "IND" },
-            { id: 15, name: "S. Afridi", role: "BOWL", team: "PAK" },
-            { id: 16, name: "H. Rauf", role: "BOWL", team: "PAK" },
-            { id: 17, name: "N. Shah", role: "BOWL", team: "PAK" },
-            { id: 18, name: "K. Yadav", role: "BOWL", team: "IND" },
-            { id: 19, name: "A. Singh", role: "BOWL", team: "IND" },
-            { id: 20, name: "I. Wasim", role: "AR", team: "PAK" },
-            { id: 21, name: "S. Samson", role: "WK", team: "IND" },
-            { id: 22, name: "A. Ali", role: "BOWL", team: "PAK" }
+            { id: 1, name: "R. Pant", role: "WK", team: "IND" }, { id: 2, name: "M. Rizwan", role: "WK", team: "PAK" },
+            { id: 3, name: "V. Kohli", role: "BAT", team: "IND" }, { id: 6, name: "B. Azam", role: "BAT", team: "PAK" },
+            { id: 4, name: "R. Sharma", role: "BAT", team: "IND" }, { id: 7, name: "F. Zaman", role: "BAT", team: "PAK" },
+            { id: 9, name: "H. Pandya", role: "AR", team: "IND" }, { id: 11, name: "S. Khan", role: "AR", team: "PAK" },
+            { id: 13, name: "J. Bumrah", role: "BOWL", team: "IND" }, { id: 15, name: "S. Afridi", role: "BOWL", team: "PAK" },
+            { id: 14, name: "M. Siraj", role: "BOWL", team: "IND" }, { id: 16, name: "H. Rauf", role: "BOWL", team: "PAK" },
+            { id: 18, name: "K. Yadav", role: "BOWL", team: "IND" }, { id: 17, name: "N. Shah", role: "BOWL", team: "PAK" }
         ];
-
-        // Random Selection Percentage add kar rahe hain har player ke liye UI me dikhane ke liye
         allPlayers.forEach(p => p.selPercent = Math.floor(Math.random() * 60 + 30));
 
-        let selectedPlayers = [];
-        let currentRole = 'WK';
-        let capId = null;
-        let vcapId = null;
-        let ipId = null; 
+        let selectedPlayers = []; let currentRole = 'WK'; let capId = null; let vcapId = null; let ipId = null; 
 
-        function showToast(msg) {
-            let t = document.getElementById('toast');
-            t.innerText = msg;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2500);
-        }
+        function showToast(msg) { let t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
 
-        function filterRole(role, element) {
-            document.querySelectorAll('.role-tab').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
-            currentRole = role;
-            renderPlayers();
-        }
+        function filterRole(role, element) { document.querySelectorAll('.role-tab').forEach(el => el.classList.remove('active')); element.classList.add('active'); currentRole = role; renderPlayers(); }
 
-        // Aamne-Samne Layout me Players Render Karna
         function renderPlayers() {
-            const indList = document.getElementById('ind-list');
-            const pakList = document.getElementById('pak-list');
-            indList.innerHTML = "";
-            pakList.innerHTML = "";
-            
+            const indList = document.getElementById('ind-list'); const pakList = document.getElementById('pak-list');
+            indList.innerHTML = ""; pakList.innerHTML = "";
             const filtered = allPlayers.filter(p => p.role === currentRole);
             
             filtered.forEach(p => {
                 const isSel = selectedPlayers.find(sp => sp.id === p.id);
                 const icon = p.role === 'BAT' ? '🏏' : p.role === 'BOWL' ? '⚾' : p.role === 'WK' ? '🧤' : '⚔️';
-                
-                const cardHTML = `
-                    <div class="player-item ${isSel ? 'selected' : ''}" onclick="togglePlayer(${p.id})">
-                        <div class="p-avatar">${icon}</div>
-                        <div class="p-info">
-                            <div class="p-name">${p.name}</div>
-                            <div class="p-sel">Sel ${p.selPercent}%</div>
-                        </div>
-                        <div class="add-btn"><i class="fa-solid fa-plus"></i></div>
-                    </div>
-                `;
-
-                if (p.team === 'IND') {
-                    indList.innerHTML += cardHTML;
-                } else {
-                    pakList.innerHTML += cardHTML;
-                }
+                const cardHTML = `<div class="player-item ${isSel ? 'selected' : ''}" onclick="togglePlayer(${p.id})"><div class="p-avatar">${icon}</div><div class="p-info"><div class="p-name">${p.name}</div><div class="p-sel">Sel ${p.selPercent}%</div></div><div class="add-btn"><i class="fa-solid fa-plus"></i></div></div>`;
+                if (p.team === 'IND') indList.innerHTML += cardHTML; else pakList.innerHTML += cardHTML;
             });
         }
 
-        // Player ko Team mein jodna ya hatana (Bina Credit check ke)
         function togglePlayer(id) {
-            const player = allPlayers.find(p => p.id === id);
-            const index = selectedPlayers.findIndex(p => p.id === id);
-
+            const player = allPlayers.find(p => p.id === id); const index = selectedPlayers.findIndex(p => p.id === id);
             if (index > -1) {
-                // Remove
                 selectedPlayers.splice(index, 1);
-                if(capId === id) capId = null;
-                if(vcapId === id) vcapId = null;
-                if(ipId === id) ipId = null;
+                if(capId === id) capId = null; if(vcapId === id) vcapId = null; if(ipId === id) ipId = null;
             } else {
-                // Add Validations
                 if (selectedPlayers.length >= 11) return showToast("⚠️ Max 11 players allowed!");
-                
-                let indC = selectedPlayers.filter(p => p.team === 'IND').length;
-                let pakC = selectedPlayers.filter(p => p.team === 'PAK').length;
+                let indC = selectedPlayers.filter(p => p.team === 'IND').length; let pakC = selectedPlayers.filter(p => p.team === 'PAK').length;
                 if (player.team === 'IND' && indC >= 7) return showToast("⚠️ Max 7 players from one team!");
                 if (player.team === 'PAK' && pakC >= 7) return showToast("⚠️ Max 7 players from one team!");
-
                 selectedPlayers.push(player);
             }
-            updateHeader();
-            updateRoleCounts();
-            renderPlayers();
+            updateHeader(); updateRoleCounts(); renderPlayers();
         }
 
         function updateRoleCounts() {
-            let wkC = selectedPlayers.filter(p => p.role === 'WK').length;
-            let batC = selectedPlayers.filter(p => p.role === 'BAT').length;
-            let arC = selectedPlayers.filter(p => p.role === 'AR').length;
-            let bowlC = selectedPlayers.filter(p => p.role === 'BOWL').length;
-
+            let wkC = selectedPlayers.filter(p => p.role === 'WK').length; let batC = selectedPlayers.filter(p => p.role === 'BAT').length;
+            let arC = selectedPlayers.filter(p => p.role === 'AR').length; let bowlC = selectedPlayers.filter(p => p.role === 'BOWL').length;
             let tabs = document.querySelectorAll('.role-tab');
-            tabs[0].innerText = `WK (${wkC})`;
-            tabs[1].innerText = `BAT (${batC})`;
-            tabs[2].innerText = `AR (${arC})`;
-            tabs[3].innerText = `BOWL (${bowlC})`;
+            tabs[0].innerText = `WK (${wkC})`; tabs[1].innerText = `BAT (${batC})`; tabs[2].innerText = `AR (${arC})`; tabs[3].innerText = `BOWL (${bowlC})`;
         }
 
         function updateHeader() {
-            let indCount = selectedPlayers.filter(p => p.team === 'IND').length;
-            let pakCount = selectedPlayers.filter(p => p.team === 'PAK').length;
-            
-            document.getElementById('p-count').innerText = selectedPlayers.length;
-            document.getElementById('bot-p-count').innerText = selectedPlayers.length;
-            document.getElementById('ind-count').innerText = indCount;
-            document.getElementById('pak-count').innerText = pakCount;
-
+            document.getElementById('p-count').innerText = selectedPlayers.length; document.getElementById('bot-p-count').innerText = selectedPlayers.length;
+            document.getElementById('ind-count').innerText = selectedPlayers.filter(p => p.team === 'IND').length; document.getElementById('pak-count').innerText = selectedPlayers.filter(p => p.team === 'PAK').length;
             document.getElementById('btn-next').disabled = selectedPlayers.length !== 11;
         }
 
-        // 11 Player Select karke NEXT dabana
         function goToCVC() {
-            document.getElementById('view-create').classList.remove('active-view');
-            document.getElementById('view-cvc').classList.add('active-view');
-            window.scrollTo(0,0);
-            
-            const list = document.getElementById('cvc-list');
-            list.innerHTML = "";
-            
+            document.getElementById('view-create').classList.remove('active-view'); document.getElementById('view-cvc').classList.add('active-view'); window.scrollTo(0,0);
+            const list = document.getElementById('cvc-list'); list.innerHTML = "";
             selectedPlayers.forEach(p => {
-                list.innerHTML += `
-                    <div class="cvc-item">
-                        <div style="display:flex; align-items:center;">
-                            <div class="p-avatar" style="width:35px; height:35px; font-size:14px; border:none; background:#333;">${p.role === 'BAT' ? '🏏' : p.role === 'BOWL' ? '⚾' : p.role === 'WK' ? '🧤' : '⚔️'}</div>
-                            <div>
-                                <div class="p-name" style="font-size:13px;">${p.name}</div>
-                                <div class="p-team" style="font-size:11px; color:#aaa; margin-top:2px;">${p.team} - ${p.role}</div>
-                            </div>
-                        </div>
-                        <div style="display:flex; gap:8px;">
-                            <div class="cvc-btn ${capId === p.id ? 'c-active' : ''}" onclick="setRole('C', ${p.id})">C</div>
-                            <div class="cvc-btn ${vcapId === p.id ? 'vc-active' : ''}" onclick="setRole('VC', ${p.id})">VC</div>
-                            <div class="cvc-btn ${ipId === p.id ? 'ip-active' : ''}" onclick="setRole('IP', ${p.id})">IP</div>
-                        </div>
-                    </div>
-                `;
+                list.innerHTML += `<div class="cvc-item"><div style="display:flex; align-items:center;"><div class="p-avatar" style="width:35px; height:35px; font-size:14px; border:none; background:#333;">${p.role === 'BAT' ? '🏏' : p.role === 'BOWL' ? '⚾' : p.role === 'WK' ? '🧤' : '⚔️'}</div><div><div class="p-name" style="font-size:13px;">${p.name}</div><div class="p-team" style="font-size:11px; color:#aaa; margin-top:2px;">${p.team} - ${p.role}</div></div></div><div style="display:flex; gap:8px;"><div class="cvc-btn ${capId === p.id ? 'c-active' : ''}" onclick="setRole('C', ${p.id})">C</div><div class="cvc-btn ${vcapId === p.id ? 'vc-active' : ''}" onclick="setRole('VC', ${p.id})">VC</div><div class="cvc-btn ${ipId === p.id ? 'ip-active' : ''}" onclick="setRole('IP', ${p.id})">IP</div></div></div>`;
             });
         }
 
-        // Ek Player sirf ek hi Role le sakta hai
         function setRole(type, id) {
-            if (type === 'C') {
-                if (vcapId === id) vcapId = null; 
-                if (ipId === id) ipId = null;
-                capId = id;
-            } else if (type === 'VC') {
-                if (capId === id) capId = null;
-                if (ipId === id) ipId = null;
-                vcapId = id;
-            } else if (type === 'IP') {
-                if (capId === id) capId = null;
-                if (vcapId === id) vcapId = null;
-                ipId = id;
-            }
-            goToCVC(); 
-            
-            document.getElementById('btn-save').disabled = !(capId && vcapId && ipId);
+            if (type === 'C') { if (vcapId === id) vcapId = null; if (ipId === id) ipId = null; capId = id; } 
+            else if (type === 'VC') { if (capId === id) capId = null; if (ipId === id) ipId = null; vcapId = id; } 
+            else if (type === 'IP') { if (capId === id) capId = null; if (vcapId === id) vcapId = null; ipId = id; }
+            goToCVC(); document.getElementById('btn-save').disabled = !(capId && vcapId && ipId);
         }
 
-        function goBackToPlayers() {
-            document.getElementById('view-cvc').classList.remove('active-view');
-            document.getElementById('view-create').classList.add('active-view');
-        }
+        function goBackToPlayers() { document.getElementById('view-cvc').classList.remove('active-view'); document.getElementById('view-create').classList.add('active-view'); }
 
         function saveTeamAndGoToContests() {
             localStorage.setItem('k11_team_saved', 'yes');
             window.location.href = "Contests.html";
         }
-
         renderPlayers();
     </script>
 </body>
