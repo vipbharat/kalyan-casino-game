@@ -87,10 +87,10 @@
         <div class="bx chip-bx">
             <div style="font-size:12px;color:#fd0;margin-top:2px;">Select Chip</div>
             <div class="chips-grid">
-                <div class="chip active" id="ch-10" style="background:#7f8c8d;color:#fff;" onclick="setChip(10)">10</div>
-                <div class="chip" id="ch-50" style="background:#2980b9;color:#fff;" onclick="setChip(50)">50</div>
-                <div class="chip" id="ch-100" style="background:#8e44ad;color:#fff;" onclick="setChip(100)">100</div>
-                <div class="chip" id="ch-500" style="background:#f1c40f;color:#000;" onclick="setChip(500)">500</div>
+                <div class="chip active" id="ch-100" style="background:#7f8c8d;color:#fff;" onclick="setChip(100)">100</div>
+                <div class="chip" id="ch-500" style="background:#2980b9;color:#fff;" onclick="setChip(500)">500</div>
+                <div class="chip" id="ch-1000" style="background:#8e44ad;color:#fff;" onclick="setChip(1000)">1K</div>
+                <div class="chip" id="ch-5000" style="background:#f1c40f;color:#000;" onclick="setChip(5000)">5K</div>
             </div>
         </div>
     </div>
@@ -119,8 +119,8 @@
         let yBets = {r:0,b:0,g:0,p:0,o:0}; 
         let tBets = {r:0,b:0,g:0,p:0,o:0}; 
         
-        let currentChip = 10;
-        let chipColors = {10: '#7f8c8d', 50: '#2980b9', 100: '#8e44ad', 500: '#f1c40f'};
+        let currentChip = 100;
+        let chipColors = {100: '#7f8c8d', 500: '#2980b9', 1000: '#8e44ad', 5000: '#f1c40f'};
         let colorIdMap = { "#C0392B": "r", "#2980B9": "b", "#27AE60": "g", "#8E44AD": "p", "#D35400": "o" };
 
         function setChip(amt) {
@@ -135,7 +135,6 @@
         let pr=[], bg=[], tc=[];
         let m = 200; 
         
-        // Loop ab 32 tak chalega
         for(let i=0;i<32;i++){
             if(i===0){ pr.push("00"); bg.push("#111"); tc.push("#FFF"); }
             else if(i===16){ pr.push("50% Minus"); bg.push("#FFD700"); tc.push("#000"); }
@@ -144,45 +143,71 @@
                 bg.push(cols[colIdx]); 
                 tc.push("#FFF");
                 
-                // Exactly in 5 perfect spaced indices
                 if(i===3 || i===9 || i===15 || i===21 || i===27) {
                     pr.push("100 Ka 250");
                 } else {
                     pr.push("100 Ka " + m);
-                    m += 200; // Yeh continuously badhega 5000 tak!
+                    m += 200; 
                 }
             }
         }
         
         function draw(){
-            let cx=155, a=Math.PI*2/32; // Slice angle for 32 slices
+            let cx=155, a=Math.PI*2/32; 
             for(let i=0;i<32;i++){
                 ctx.beginPath(); ctx.fillStyle=bg[i]; ctx.moveTo(cx,cx); ctx.arc(cx,cx,cx,i*a,(i+1)*a); ctx.fill(); 
                 ctx.strokeStyle="#222"; ctx.stroke(); ctx.save(); ctx.translate(cx,cx); ctx.rotate(i*a+a/2);
-                ctx.textAlign="right"; ctx.fillStyle=tc[i]; ctx.font="bold 10px Arial"; ctx.fillText(pr[i],cx-6,3); ctx.restore(); // Thoda font adjust kiya 32 slices ke liye
+                ctx.textAlign="right"; ctx.fillStyle=tc[i]; ctx.font="bold 10px Arial"; ctx.fillText(pr[i],cx-6,3); ctx.restore();
             }
         } draw();
 
+        // 🔥 THROW CHIP (WITH 1K & 5K TEXT SUPPORT) 🔥
         function throwChip(c_id, amt, isPlayer) {
             let box = document.getElementById('box-'+c_id);
             let rect = box.getBoundingClientRect();
             let chip = document.createElement('div');
             chip.className = 'flying-chip';
             chip.style.background = chipColors[amt] || '#fff';
-            chip.innerText = amt;
+            
+            if(amt >= 1000) { chip.innerText = (amt/1000) + 'K'; if(amt === 5000) chip.style.color = '#000'; } 
+            else { chip.innerText = amt; }
+
             if (isPlayer) { chip.style.left = '50vw'; chip.style.top = '95vh'; } 
             else { chip.style.left = (Math.random() > 0.5) ? '-50px' : (window.innerWidth + 50) + 'px'; chip.style.top = (Math.random() * (window.innerHeight/2)) + 'px'; }
+            
             document.body.appendChild(chip);
+            
             setTimeout(() => {
                 chip.style.left = (rect.left + Math.random() * (rect.width - 24)) + 'px';
                 chip.style.top = (rect.top + Math.random() * (rect.height - 30) + 20) + 'px';
                 chip.style.transform = `rotate(${Math.random()*360}deg)`; 
             }, 50);
-            setTimeout(() => { chip.remove(); 
-                let mChip = document.createElement('div'); mChip.className = 'mini-chip'; mChip.style.background = chipColors[amt] || '#fff'; mChip.innerText = amt;
+            
+            setTimeout(() => { 
+                chip.remove(); 
+                let mChip = document.createElement('div'); mChip.className = 'mini-chip'; 
+                mChip.style.background = chipColors[amt] || '#fff'; 
+                
+                if(amt >= 1000) { mChip.innerText = (amt/1000) + 'K'; if(amt === 5000) mChip.style.color = '#000'; } 
+                else { mChip.innerText = amt; }
+
                 mChip.style.left = Math.floor(Math.random() * 50 + 15) + '%'; mChip.style.top = Math.floor(Math.random() * 40 + 20) + '%';
                 box.appendChild(mChip);
             }, 450);
+        }
+
+        // 🔥 BOTS BETTING LOGIC WAPAS AA GAYA 🔥
+        function startBots() {
+            setInterval(() => {
+                if(!canBet) return;
+                let clrs = ['r','b','g','p','o']; 
+                let bAmt = [100, 100, 500, 500, 1000, 5000]; 
+                let ranColor = clrs[Math.floor(Math.random() * clrs.length)]; 
+                let ranAmt = bAmt[Math.floor(Math.random() * bAmt.length)];
+                tBets[ranColor] += ranAmt; 
+                document.getElementById('t-'+ranColor).innerText = tBets[ranColor];
+                throwChip(ranColor, ranAmt, false); 
+            }, 350); 
         }
 
         // 🔥 ANTI-HEDGING RULE: MAX 3 BETS 🔥
@@ -274,7 +299,7 @@
                     
                     let prizeIndex = status.winIndex || 0;
                     
-                    const sliceAngle = 360 / 32; // Updated to 32 slices
+                    const sliceAngle = 360 / 32; 
                     const targetAngle = 270 - ((prizeIndex + 0.5) * sliceAngle);
                     let currentMod = rot % 360; if (currentMod < 0) currentMod += 360;
                     let normalizedTarget = targetAngle % 360; if (normalizedTarget < 0) normalizedTarget += 360;
@@ -294,7 +319,7 @@
                     let prizeIndex = status.winIndex || 0;
                     
                     if (!isSpinning) {
-                        isSpinning = true; const sliceAngle = 360 / 32; const targetAngle = 270 - ((prizeIndex + 0.5) * sliceAngle); // Updated to 32
+                        isSpinning = true; const sliceAngle = 360 / 32; const targetAngle = 270 - ((prizeIndex + 0.5) * sliceAngle); 
                         let d = rot + (targetAngle - (rot % 360)); document.getElementById('c').style.transition = "none"; 
                         document.getElementById('c').style.transform = `rotate(${d}deg)`; rot = d;
                     }
@@ -303,7 +328,10 @@
                 }
             });
         }
+        
+        // Start listening to server and launch bots
         listenServer();
+        startBots();
         
         const canvasBg = document.getElementById('bg-canvas'); const ctxBg = canvasBg.getContext('2d');
         canvasBg.width = window.innerWidth; canvasBg.height = window.innerHeight;
