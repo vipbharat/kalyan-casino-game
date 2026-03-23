@@ -1,5 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalyan VIP - LIVE Server Wheel</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
+    <style>
+        body{font-family:Arial,sans-serif;color:#fff;text-align:center;margin:0;user-select:none;overflow:hidden;background:#050510;}
+        .flex{display:flex;justify-content:center;align-items:center}
+        
+        #bg-canvas {position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;}
+
+        #startScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg, #111, #333);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer;}
+        .btn-start{background:#fd0;color:#000;padding:15px 40px;font-size:24px;font-weight:bold;border-radius:30px;box-shadow:0 0 30px #fd0;animation:pulse 1s infinite alternate;}
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
+
+        .head{padding:10px 15px;background:rgba(0,0,0,0.5);backdrop-filter:blur(5px);justify-content:space-between;border-bottom:2px solid #fd0;box-shadow:0 4px 10px #000; display:flex;}
+        
+        .wal{
+            position:relative;background:linear-gradient(90deg, #FFDF00, #FFF, #D4AF37, #FFDF00);
+            background-size:300% 100%;color:#000;padding:8px 20px;border-radius:25px;font-weight:900;
+            font-size:18px;box-shadow:0 0 20px #FFDF00, inset 0 0 10px #FFF;border:2px solid #FFF;
+            animation:shine 2s infinite linear;text-shadow:1px 1px 0px rgba(255,255,255,0.8);
+        }
+        @keyframes shine { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+
+        .whl-box{position:relative;width:320px;height:320px;background:#fd0;border-radius:50%;margin:10px auto;box-shadow:0 0 30px #fd08}
+        .ptr{position:absolute;top:-10px;border-left:15px solid transparent;border-right:15px solid transparent;border-top:35px solid #fff;z-index:10;filter:drop-shadow(0 3px 3px #000)}
+        canvas.whl{border-radius:50%;transition:transform 5s cubic-bezier(.1,.7,.1,1);border:4px solid #222;background:#111;}
+        .tmr{position:absolute;width:65px;height:65px;background:radial-gradient(circle,#222,#000);border:3px solid #fd0;border-radius:50%;font-size:28px;color:#0f0;font-weight:bold;z-index:5;box-shadow:0 0 15px #000, inset 0 0 10px #0f05}
+        
+        .bets{background:rgba(0,0,0,0.5);backdrop-filter:blur(5px);padding:10px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;border-top:2px solid #444}
+        
+        .bx{position:relative;width:30%;min-width:95px;height:105px;border-radius:10px;font-weight:bold;font-size:18px;cursor:pointer;border:2px solid #fff;display:flex;flex-direction:column;justify-content:center;align-items:center;box-shadow:0 4px 8px #000; overflow:hidden;}
+        .bx:active{transform:scale(.95); box-shadow:0 0 15px #fff;}
+        .win-glow { transform:scale(1.05); background: rgba(255,255,255,0.4) !important; box-shadow: 0 0 30px #fff !important; border-color:#0f0; z-index:50; }
+        
+        .bx-text{position:relative; z-index:10; text-shadow:1px 1px 2px #000, 0 0 5px #000;}
+        .t-amt{background:rgba(255,255,255,0.2);padding:2px 5px;border-radius:3px;font-size:12px;margin-top:2px;color:#fff;}
+        .y-amt{background:#000c;padding:3px 6px;border-radius:5px;font-size:13px;margin-top:4px;color:#0f0; border:1px solid #0f0;}
+        
+        .chip-bx{background:rgba(34, 34, 34, 0.8);border-color:#fd0;cursor:default;}
+        .chip-bx:active{transform:none;}
+        .chips-grid{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:5px;}
+        .chip{width:35px;height:35px;border-radius:50%;border:2px dashed #fff;display:flex;justify-content:center;align-items:center;font-size:11px;font-weight:bold;cursor:pointer;box-shadow:0 2px 5px #000;}
+        .chip.active{transform:scale(1.15); border:2px solid #0f0; box-shadow:0 0 15px #0f0; z-index:5;}
+        
+        .flying-chip {
+            position: fixed; width: 24px; height: 24px; border-radius: 50%; border: 1px dashed #fff;
+            z-index: 999; box-shadow: 2px 2px 6px #000; display: flex; justify-content: center; align-items: center;
+            font-size: 8px; font-weight: bold; color: #fff; text-shadow: 1px 1px 1px #000;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); pointer-events: none;
+        }
+
+        .mini-chip{position:absolute;width:24px;height:24px;border-radius:50%;border:1px dashed #fff;z-index:2;box-shadow:1px 1px 4px #000; display:flex;justify-content:center;align-items:center;font-size:8px;font-weight:bold;color:#fff;text-shadow:1px 1px 1px #000;}
+
+        #msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:26px;font-weight:bold;background:#000f;padding:20px 40px;border:3px solid #fd0;border-radius:15px;display:none;z-index:999;white-space:nowrap;box-shadow:0 0 30px #fd0; text-align:center;}
+        
+        .win-popup { pointer-events: none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: #00ff88; font-weight: 900; text-shadow: 0 0 20px #00ff88, 0 0 10px #000; z-index: 1000; opacity: 0; transition: 0.5s; }
+        .win-popup.show { opacity: 1; transform: translate(-50%, -100%); }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div id="startScreen" onclick="startGame()">
+        <h1 style="color:#fd0; font-size:40px; text-shadow:0 0 20px #fd0;">MEGA SPIN</h1>
+        <div class="btn-start">TAP TO ENTER</div>
+    </div>
+
+    <div class="head">
+        <div style="text-align:left;">
+            <div style="color:#fd0;font-size:22px;font-weight:bold;text-shadow:2px 2px 4px #000;">Kalyan VIP</div>
+            <div style="color:#0f0;font-size:12px;margin-top:2px;font-weight:bold;">🟢 Online: <span id="onlineCount">450</span></div>
+        </div>
+        <div class="wal">🪙 <span id="user-balance">₹0.00</span></div>
+    </div>
+    
+    <div id="win-popup" class="win-popup">+₹0</div>
+    
+    <div class="whl-box flex">
+        <div class="ptr"></div>
+        <canvas class="whl" id="c" width="310" height="310"></canvas>
+        <div class="tmr flex" id="t">15</div>
+    </div>
+    
+    <div class="bets">
+        <div class="bx" id="box-r" style="background:rgba(192, 57, 43, 0.85)" onclick="bet('r')">
+            <div class="bx-text">Red<div class="t-amt">Board: <span id="t-r">0</span></div><div class="y-amt">You: <span id="y-r">0</span></div></div>
+        </div>
+        <div class="bx" id="box-b" style="background:rgba(41, 128, 185, 0.85)" onclick="bet('b')">
+            <div class="bx-text">Blue<div class="t-amt">Board: <span id="t-b">0</span></div><div class="y-amt">You: <span id="y-b">0</span></div></div>
+        </div>
+        <div class="bx" id="box-g" style="background:rgba(39, 174, 96, 0.85)" onclick="bet('g')">
+            <div class="bx-text">Green<div class="t-amt">Board: <span id="t-g">0</span></div><div class="y-amt">You: <span id="y-g">0</span></div></div>
+        </div>
+        <div class="bx" id="box-p" style="background:rgba(142, 68, 173, 0.85)" onclick="bet('p')">
+            <div class="bx-text">Purple<div class="t-amt">Board: <span id="t-p">0</span></div><div class="y-amt">You: <span id="y-p">0</span></div></div>
+        </div>
+        <div class="bx" id="box-o" style="background:rgba(211, 84, 0, 0.85)" onclick="bet('o')">
+            <div class="bx-text">Orange<div class="t-amt">Board: <span id="t-o">0</span></div><div class="y-amt">You: <span id="y-o">0</span></div></div>
+        </div>
+        
+        <div class="bx chip-bx">
+            <div style="font-size:12px;color:#fd0;margin-top:2px;">Select Chip</div>
+            <div class="chips-grid">
+                <div class="chip active" id="ch-100" style="background:#7f8c8d;color:#fff;" onclick="setChip(100)">100</div>
+                <div class="chip" id="ch-500" style="background:#2980b9;color:#fff;" onclick="setChip(500)">500</div>
+                <div class="chip" id="ch-1000" style="background:#8e44ad;color:#fff;" onclick="setChip(1000)">1K</div>
+                <div class="chip" id="ch-5000" style="background:#f1c40f;color:#000;" onclick="setChip(5000)">5K</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="msg"></div>
+
     <script>
-        // === FIREBASE LIVE SETUP ===
         const firebaseConfig = {
             apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
             databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
@@ -22,7 +141,6 @@
             });
         }
 
-        // 3D Background
         const canvasBg = document.getElementById('bg-canvas');
         const ctxBg = canvasBg.getContext('2d');
         let w = canvasBg.width = window.innerWidth;
@@ -42,7 +160,6 @@
         }
         animate3D();
 
-        // Music & Sounds
         const bg_music = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
         bg_music.loop = true; bg_music.volume = 0.6; 
         const s_bet = new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg');
@@ -56,7 +173,6 @@
             document.getElementById('startScreen').style.display = 'none'; 
             bg_music.play().catch(e => console.log(e)); 
             syncWallet(); 
-            
             listenServer(); 
             startBots();
         }
@@ -78,7 +194,6 @@
             document.getElementById('ch-'+amt).classList.add('active');
         }
 
-        // Draw Wheel Logic
         const ctx=document.getElementById('c').getContext('2d'), tmr=document.getElementById('t'), msg=document.getElementById('msg');
         const cols=["#C0392B","#2980B9","#27AE60","#8E44AD","#D35400"];
         let pr=[], bg=[], tc=[], m=200;
@@ -123,20 +238,17 @@
             else { chip.style.left = (Math.random() > 0.5) ? '-50px' : (window.innerWidth + 50) + 'px'; chip.style.top = (Math.random() * (window.innerHeight/2)) + 'px'; }
             
             document.body.appendChild(chip);
-            
             setTimeout(() => {
                 chip.style.left = (rect.left + Math.random() * (rect.width - 24)) + 'px';
                 chip.style.top = (rect.top + Math.random() * (rect.height - 30) + 20) + 'px';
                 chip.style.transform = `rotate(${Math.random()*360}deg)`; 
             }, 50);
-            
             setTimeout(() => { chip.remove(); dropVisualChip(c_id, amt); }, 450);
         }
 
         function bet(c){
             if(!canBet) return;
             if(totalBal >= currentChip){ 
-                
                 let remain = currentChip;
                 let newDep = depBal, newWin = winBal;
                 if(newDep >= remain) { newDep -= remain; } 
@@ -144,14 +256,12 @@
                 
                 db.ref(`users/${userID}/balance`).set(newDep);
                 db.ref(`users/${userID}/winning_balance`).set(newWin);
-                
                 db.ref(`Game/MegaSpin/Bets/${userID}`).child(c).set(firebase.database.ServerValue.increment(currentChip));
                 
                 yBets[c]+=currentChip; tBets[c]+=currentChip; 
                 s_bet.currentTime = 0; s_bet.play().catch(e=>{}); 
                 document.getElementById('y-'+c).innerText=yBets[c]; 
                 document.getElementById('t-'+c).innerText=tBets[c]; 
-                
                 throwChip(c, currentChip, true); 
             } else alert("Balance kam hai! Recharge Karein.");
         }
@@ -177,7 +287,6 @@
             msg.style.display = "none";
         }
 
-        // 🔥 NAYA PAYOUT LOGIC: Ab ye 'snapshot' se amount lega 🔥
         function checkPayout(prizeIndex, betsSnapshot) {
             let wonPrize = pr[prizeIndex];
             let wonColor = bg[prizeIndex];
@@ -185,7 +294,6 @@
             let finalWinAmt = 0;
 
             if (wonPrize === "00") {
-                // Kuch nahi milega
             } else if (wonPrize === "50% Minus") {
                 let totalUserBet = betsSnapshot.r + betsSnapshot.b + betsSnapshot.g + betsSnapshot.p + betsSnapshot.o;
                 if (totalUserBet > 0) finalWinAmt = totalUserBet * 0.5;
@@ -197,7 +305,6 @@
             }
 
             if(finalWinAmt > 0) {
-                // Seedha current winBal (live fetch) mein jode ga
                 db.ref(`users/${userID}/winning_balance`).set(winBal + finalWinAmt);
                 let p = document.getElementById('win-popup'); 
                 p.innerText = "+₹" + finalWinAmt.toLocaleString(); 
@@ -216,34 +323,16 @@
                 let state = status.state; 
 
                 if (state === 'betting') {
-                    if (isSpinning) {
-                        isSpinning = false;
-                        startNewRound();
-                    }
-                    
-                    canBet = true;
-                    msg.style.display = "none";
-                    tmr.innerText = t;
-                    
-                    if (t <= 5) {
-                        tmr.style.color = "#F33";
-                        tmr.style.textShadow = "0 0 10px red";
-                    } else {
-                        tmr.style.color = "#0f0";
-                        tmr.style.textShadow = "none";
-                    }
+                    if (isSpinning) { isSpinning = false; startNewRound(); }
+                    canBet = true; msg.style.display = "none"; tmr.innerText = t;
+                    if (t <= 5) { tmr.style.color = "#F33"; tmr.style.textShadow = "0 0 10px red"; } 
+                    else { tmr.style.color = "#0f0"; tmr.style.textShadow = "none"; }
                 } 
                 else if (state === 'spinning' && !isSpinning) {
-                    canBet = false;
-                    isSpinning = true;
-                    tmr.innerText = "00";
-                    
-                    // 🔥 SNAPSHOT: Wheel ghumte hi bets ki copy save ho jayegi 🔥
+                    canBet = false; isSpinning = true; tmr.innerText = "00";
                     let snapshotBets = { ...yBets };
-                    
                     msg.innerHTML="Bets Closed!<br><span style='font-size:18px;color:#ccc'>Spinning...</span>"; 
                     msg.style.display="block";
-                    
                     s_spin.currentTime = 0; s_spin.play().catch(e=>{}); s_spin.loop = true; 
                     
                     let prizeIndex = status.winIndex;
@@ -251,7 +340,6 @@
                     
                     const sliceAngle = 360 / 28;
                     const stopAngle = (360 - (prizeIndex * sliceAngle)) - (sliceAngle / 2) - 270;
-                    
                     let d = rot + (360 * 5) + stopAngle; 
                     document.getElementById('c').style.transform = `rotate(${d}deg)`;
                     
@@ -260,11 +348,11 @@
                         let won = pr[prizeIndex];
                         msg.innerHTML = "Result:<br><span style='color:#0f0;font-size:36px;'>" + won + "</span>";
                         rot = d;
-                        
-                        // Copy ki hui bets ka hisaab lagana
                         checkPayout(prizeIndex, snapshotBets); 
                     }, 4500); 
                 }
             });
         }
     </script>
+</body>
+</html>
