@@ -69,7 +69,7 @@
     <canvas id="bg-canvas"></canvas>
 
     <div id="startScreen" onclick="startGame()">
-        <h1 style="color:#fd0; font-size:40px; text-shadow:0 0 20px #fd0;">KALYAN VIP</h1>
+        <h1 style="color:#fd0; font-size:40px; text-shadow:0 0 20px #fd0;">MEGA SPIN</h1>
         <div class="btn-start">TAP TO ENTER</div>
     </div>
 
@@ -131,12 +131,6 @@
         
         let userID = localStorage.getItem('userPhone') || "user_1"; 
         let depBal = 0, winBal = 0, bonBal = 0, totalBal = 0;
-        
-        // Admin Force Result Variable
-        let adminForcedResult = null;
-        db.ref('admin_controls/spin_wheel/forced_index').on('value', snap => {
-            adminForcedResult = snap.val(); 
-        });
 
         function syncWallet() {
             db.ref(`users/${userID}`).on('value', (snap) => {
@@ -182,14 +176,15 @@
             gameStarted = true;
             document.getElementById('startScreen').style.display = 'none'; 
             bg_music.play().catch(e => console.log(e)); 
-            syncWallet(); // Sync Wallet Start
-            startTimer();
+            syncWallet(); 
+            
+            listenServer(); // 🔥 PURANA startTimer() HATA KAR NAYA SERVER LISTENER LAGA DIYA 🔥
             startBots();
         }
 
         setInterval(() => { document.getElementById('onlineCount').innerText = Math.floor(Math.random() * 201) + 400; }, 3000);
 
-        let canBet=true, time=15, rot=0; 
+        let canBet=false, rot=0, isSpinning = false; 
         let yBets = {r:0,b:0,g:0,p:0,o:0}; 
         let tBets = {r:0,b:0,g:0,p:0,o:0}; 
         
@@ -264,7 +259,6 @@
             if(!canBet) return;
             if(totalBal >= currentChip){ 
                 
-                // Smart Deduction: Pehle Deposit se kato, warna winning se
                 let remain = currentChip;
                 let newDep = depBal, newWin = winBal;
                 if(newDep >= remain) { newDep -= remain; } 
@@ -272,6 +266,9 @@
                 
                 db.ref(`users/${userID}/balance`).set(newDep);
                 db.ref(`users/${userID}/winning_balance`).set(newWin);
+                
+                // 🔥 SERVER KO BET BHEJNA 🔥
+                db.ref(`Game/MegaSpin/Bets/${userID}`).child(c).set(firebase.database.ServerValue.increment(currentChip));
                 
                 yBets[c]+=currentChip; tBets[c]+=currentChip; 
                 s_bet.currentTime = 0; s_bet.play().catch(e=>{}); 
@@ -294,18 +291,15 @@
 
         function startNewRound() {
             yBets = {r:0,b:0,g:0,p:0,o:0}; tBets = {r:0,b:0,g:0,p:0,o:0}; 
-            let clrs = ['r','b','g','p','o'];
-            clrs.forEach(c => {
+            ['r','b','g','p','o'].forEach(c => {
                 document.getElementById('y-'+c).innerText = '0';
                 document.getElementById('t-'+c).innerText = '0';
                 document.getElementById('box-'+c).classList.remove('win-glow');
                 document.getElementById('box-'+c).querySelectorAll('.mini-chip').forEach(e => e.remove());
             });
-            time = 15; canBet = true; 
-            msg.style.display = "none"; tmr.style.color = "#0f0"; tmr.innerText = time;
+            msg.style.display = "none";
         }
 
-        // === LIVE WINNING CALCULATION ===
         function checkPayout(prizeIndex) {
             let wonPrize = pr[prizeIndex];
             let wonColor = bg[prizeIndex];
@@ -313,55 +307,68 @@
             let finalWinAmt = 0;
 
             if (wonPrize === "00") {
-                // Sabka Loss - Kuch nahi milega
             } else if (wonPrize === "50% Minus") {
-                // Total lagaye hue paise ka 50% wapas
                 let totalUserBet = yBets.r + yBets.b + yBets.g + yBets.p + yBets.o;
                 if (totalUserBet > 0) finalWinAmt = totalUserBet * 0.5;
             } else {
-                // Color Match & Multiplier
                 if (wonId && yBets[wonId] > 0) {
-                    let multiplier = parseInt(wonPrize.split("Ka ")[1]) / 100; // e.g., 200/100 = 2
+                    let multiplier = parseInt(wonPrize.split("Ka ")[1]) / 100; 
                     finalWinAmt = yBets[wonId] * multiplier;
                 }
             }
 
-            // Database Update
             if(finalWinAmt > 0) {
                 db.ref(`users/${userID}/winning_balance`).set(winBal + finalWinAmt);
-                
-                // Show Popup
                 let p = document.getElementById('win-popup'); 
                 p.innerText = "+₹" + finalWinAmt.toLocaleString(); 
                 p.classList.add('show');
                 setTimeout(() => p.classList.remove('show'), 2000);
             }
-            
-            if(wonId) document.getElementById('box-'+wonId).classList.add('win-glow'); // Highlight winning box
+            if(wonId) document.getElementById('box-'+wonId).classList.add('win-glow'); 
         }
 
-        function startTimer() {
-            setInterval(()=>{
-                if(!canBet) return; 
-                time--; tmr.innerText=time>0?time:"00";
-                if(time<=5) tmr.style.color="#F33";
-                
-                if(time<=0){
-                    canBet=false; 
-                    msg.innerHTML="Bets Closed!<br><span style='font-size:18px;color:#ccc'>Waiting for Server...</span>"; 
-                    msg.style.display="block";
-                    
-                    s_spin.currentTime = 0; s_spin.play().catch(e=>{}); s_spin.loop=true; 
-                    
-                    // Server Admin Logic
-                    let prizeIndex;
-                    if(adminForcedResult !== null && adminForcedResult >= 0 && adminForcedResult <= 27) {
-                        prizeIndex = adminForcedResult; 
-                    } else {
-                        prizeIndex = Math.floor(Math.random() * 28); // Random fallback
+        // 🔥 NAYA SERVER LISTENER (YAHI MAIN JAADU HAI) 🔥
+        function listenServer() {
+            db.ref('Game/MegaSpin/Status').on('value', (snap) => {
+                let status = snap.val();
+                if (!status) return;
+
+                let t = status.timer;
+                let state = status.state; 
+
+                // 1. BETTING CHALU HAI
+                if (state === 'betting') {
+                    if (isSpinning) {
+                        isSpinning = false;
+                        startNewRound();
                     }
                     
-                    // Angle calculation based on Server result
+                    canBet = true;
+                    msg.style.display = "none";
+                    tmr.innerText = t;
+                    
+                    if (t <= 5) {
+                        tmr.style.color = "#F33";
+                        tmr.style.textShadow = "0 0 10px red";
+                    } else {
+                        tmr.style.color = "#0f0";
+                        tmr.style.textShadow = "none";
+                    }
+                } 
+                // 2. BETTING BAND, WHEEL GHOOMEGA
+                else if (state === 'spinning' && !isSpinning) {
+                    canBet = false;
+                    isSpinning = true;
+                    tmr.innerText = "00";
+                    
+                    msg.innerHTML="Bets Closed!<br><span style='font-size:18px;color:#ccc'>Spinning...</span>"; 
+                    msg.style.display="block";
+                    
+                    s_spin.currentTime = 0; s_spin.play().catch(e=>{}); s_spin.loop = true; 
+                    
+                    // Server ne jo number bheja hai, us par wheel ghumega
+                    let prizeIndex = status.winIndex || 0;
+                    
                     const sliceAngle = 360 / 28;
                     const stopAngle = (360 - (prizeIndex * sliceAngle)) - (sliceAngle / 2) - 270;
                     
@@ -374,12 +381,10 @@
                         msg.innerHTML = "Result:<br><span style='color:#0f0;font-size:36px;'>" + won + "</span>";
                         rot = d;
                         
-                        checkPayout(prizeIndex); // Paise add karo!
-                        
-                        setTimeout(startNewRound, 4000); 
-                    }, 5000); 
+                        checkPayout(prizeIndex); 
+                    }, 4500); 
                 }
-            }, 1000);
+            });
         }
     </script>
 </body>
