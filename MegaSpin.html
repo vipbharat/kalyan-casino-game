@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan VIP - New Music & Flying Chips</title>
+    <title>Kalyan VIP - LIVE Server Wheel</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
     <style>
         body{font-family:Arial,sans-serif;color:#fff;text-align:center;margin:0;user-select:none;overflow:hidden;background:#050510;}
         .flex{display:flex;justify-content:center;align-items:center}
@@ -32,6 +36,7 @@
         
         .bx{position:relative;width:30%;min-width:95px;height:105px;border-radius:10px;font-weight:bold;font-size:18px;cursor:pointer;border:2px solid #fff;display:flex;flex-direction:column;justify-content:center;align-items:center;box-shadow:0 4px 8px #000; overflow:hidden;}
         .bx:active{transform:scale(.95); box-shadow:0 0 15px #fff;}
+        .win-glow { transform:scale(1.05); background: rgba(255,255,255,0.4) !important; box-shadow: 0 0 30px #fff !important; border-color:#0f0; z-index:50; }
         
         .bx-text{position:relative; z-index:10; text-shadow:1px 1px 2px #000, 0 0 5px #000;}
         .t-amt{background:rgba(255,255,255,0.2);padding:2px 5px;border-radius:3px;font-size:12px;margin-top:2px;color:#fff;}
@@ -53,6 +58,10 @@
         .mini-chip{position:absolute;width:24px;height:24px;border-radius:50%;border:1px dashed #fff;z-index:2;box-shadow:1px 1px 4px #000; display:flex;justify-content:center;align-items:center;font-size:8px;font-weight:bold;color:#fff;text-shadow:1px 1px 1px #000;}
 
         #msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:26px;font-weight:bold;background:#000f;padding:20px 40px;border:3px solid #fd0;border-radius:15px;display:none;z-index:999;white-space:nowrap;box-shadow:0 0 30px #fd0; text-align:center;}
+        
+        /* Win Popup Animation */
+        .win-popup { pointer-events: none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: #00ff88; font-weight: 900; text-shadow: 0 0 20px #00ff88, 0 0 10px #000; z-index: 1000; opacity: 0; transition: 0.5s; }
+        .win-popup.show { opacity: 1; transform: translate(-50%, -100%); }
     </style>
 </head>
 <body>
@@ -69,8 +78,10 @@
             <div style="color:#fd0;font-size:22px;font-weight:bold;text-shadow:2px 2px 4px #000;">Kalyan VIP</div>
             <div style="color:#0f0;font-size:12px;margin-top:2px;font-weight:bold;">🟢 Online: <span id="onlineCount">450</span></div>
         </div>
-        <div class="wal">🪙 ₹<span id="bal">5000</span></div>
+        <div class="wal">🪙 <span id="user-balance">₹0.00</span></div>
     </div>
+    
+    <div id="win-popup" class="win-popup">+₹0</div>
     
     <div class="whl-box flex">
         <div class="ptr"></div>
@@ -109,19 +120,44 @@
     <div id="msg"></div>
 
     <script>
+        // === FIREBASE LIVE SETUP ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
+            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
+            projectId: "kalyan-casino"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        
+        let userID = localStorage.getItem('userPhone') || "user_1"; 
+        let depBal = 0, winBal = 0, bonBal = 0, totalBal = 0;
+        
+        // Admin Force Result Variable
+        let adminForcedResult = null;
+        db.ref('admin_controls/spin_wheel/forced_index').on('value', snap => {
+            adminForcedResult = snap.val(); 
+        });
+
+        function syncWallet() {
+            db.ref(`users/${userID}`).on('value', (snap) => {
+                const data = snap.val() || {};
+                depBal = parseFloat(data.balance || 0);
+                winBal = parseFloat(data.winning_balance || 0);
+                bonBal = parseFloat(data.bonus_balance || 0);
+                totalBal = depBal + winBal + bonBal; 
+                document.getElementById('user-balance').innerText = "₹" + totalBal.toFixed(2);
+            });
+        }
+
+        // 3D Background
         const canvasBg = document.getElementById('bg-canvas');
         const ctxBg = canvasBg.getContext('2d');
         let w = canvasBg.width = window.innerWidth;
         let h = canvasBg.height = window.innerHeight;
         let particles = [];
-        
-        for(let i=0; i<150; i++) {
-            particles.push({ x: (Math.random() - 0.5) * w * 2, y: (Math.random() - 0.5) * h * 2, z: Math.random() * 1000 });
-        }
-        
+        for(let i=0; i<150; i++) { particles.push({ x: (Math.random() - 0.5) * w * 2, y: (Math.random() - 0.5) * h * 2, z: Math.random() * 1000 }); }
         function animate3D() {
-            ctxBg.fillStyle = 'rgba(5, 5, 15, 0.5)';
-            ctxBg.fillRect(0, 0, w, h);
+            ctxBg.fillStyle = 'rgba(5, 5, 15, 0.5)'; ctxBg.fillRect(0, 0, w, h);
             for(let p of particles) {
                 p.z -= 4; 
                 if(p.z <= 0) { p.z = 1000; p.x = (Math.random() - 0.5) * w * 2; p.y = (Math.random() - 0.5) * h * 2; }
@@ -132,12 +168,10 @@
             requestAnimationFrame(animate3D);
         }
         animate3D();
-        window.onresize = () => { w = canvasBg.width = window.innerWidth; h = canvasBg.height = window.innerHeight; };
 
-        // NAYA BACKGROUND MUSIC (Upbeat Track)
+        // Music & Sounds
         const bg_music = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
         bg_music.loop = true; bg_music.volume = 0.6; 
-        
         const s_bet = new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg');
         const s_spin = new Audio('https://actions.google.com/sounds/v1/mechanics/ratchet_wrench.ogg'); 
         const s_win = new Audio('https://actions.google.com/sounds/v1/cartoon/clown_horn.ogg');
@@ -148,20 +182,20 @@
             gameStarted = true;
             document.getElementById('startScreen').style.display = 'none'; 
             bg_music.play().catch(e => console.log(e)); 
+            syncWallet(); // Sync Wallet Start
             startTimer();
             startBots();
         }
 
-        setInterval(() => {
-            document.getElementById('onlineCount').innerText = Math.floor(Math.random() * 201) + 400;
-        }, 3000);
+        setInterval(() => { document.getElementById('onlineCount').innerText = Math.floor(Math.random() * 201) + 400; }, 3000);
 
-        let bal=5000, canBet=true, time=15, rot=0; 
+        let canBet=true, time=15, rot=0; 
         let yBets = {r:0,b:0,g:0,p:0,o:0}; 
         let tBets = {r:0,b:0,g:0,p:0,o:0}; 
         
         let currentChip = 100;
         let chipColors = {100: '#7f8c8d', 500: '#2980b9', 1000: '#8e44ad', 5000: '#f1c40f'};
+        let colorIdMap = { "#C0392B": "r", "#2980B9": "b", "#27AE60": "g", "#8E44AD": "p", "#D35400": "o" };
 
         function setChip(amt) {
             currentChip = amt;
@@ -170,6 +204,7 @@
             document.getElementById('ch-'+amt).classList.add('active');
         }
 
+        // Draw Wheel Logic
         const ctx=document.getElementById('c').getContext('2d'), tmr=document.getElementById('t'), msg=document.getElementById('msg');
         const cols=["#C0392B","#2980B9","#27AE60","#8E44AD","#D35400"];
         let pr=[], bg=[], tc=[], m=200;
@@ -204,71 +239,56 @@
         function throwChip(c_id, amt, isPlayer) {
             let box = document.getElementById('box-'+c_id);
             let rect = box.getBoundingClientRect();
-            
             let chip = document.createElement('div');
             chip.className = 'flying-chip';
             chip.style.background = chipColors[amt] || '#fff';
             if(amt >= 1000) { chip.innerText = (amt/1000) + 'K'; if(amt === 5000) chip.style.color = '#000'; } 
             else { chip.innerText = amt; }
             
-            if (isPlayer) {
-                chip.style.left = '50vw'; chip.style.top = '95vh';
-            } else {
-                let fromLeft = Math.random() > 0.5;
-                chip.style.left = fromLeft ? '-50px' : (window.innerWidth + 50) + 'px';
-                chip.style.top = (Math.random() * (window.innerHeight/2)) + 'px';
-            }
+            if (isPlayer) { chip.style.left = '50vw'; chip.style.top = '95vh'; } 
+            else { chip.style.left = (Math.random() > 0.5) ? '-50px' : (window.innerWidth + 50) + 'px'; chip.style.top = (Math.random() * (window.innerHeight/2)) + 'px'; }
             
             document.body.appendChild(chip);
             
             setTimeout(() => {
-                let targetX = rect.left + Math.random() * (rect.width - 24);
-                let targetY = rect.top + Math.random() * (rect.height - 30) + 20;
-                chip.style.left = targetX + 'px';
-                chip.style.top = targetY + 'px';
+                chip.style.left = (rect.left + Math.random() * (rect.width - 24)) + 'px';
+                chip.style.top = (rect.top + Math.random() * (rect.height - 30) + 20) + 'px';
                 chip.style.transform = `rotate(${Math.random()*360}deg)`; 
             }, 50);
             
-            setTimeout(() => {
-                chip.remove();
-                dropVisualChip(c_id, amt);
-            }, 450);
+            setTimeout(() => { chip.remove(); dropVisualChip(c_id, amt); }, 450);
         }
 
+        // === LIVE BETTING UPDATE ===
         function bet(c){
             if(!canBet) return;
-            if(bal>=currentChip){ 
-                bal-=currentChip; yBets[c]+=currentChip; tBets[c]+=currentChip; 
+            if(totalBal >= currentChip){ 
+                
+                // Smart Deduction: Pehle Deposit se kato, warna winning se
+                let remain = currentChip;
+                let newDep = depBal, newWin = winBal;
+                if(newDep >= remain) { newDep -= remain; } 
+                else { remain -= newDep; newDep = 0; newWin -= remain; }
+                
+                db.ref(`users/${userID}/balance`).set(newDep);
+                db.ref(`users/${userID}/winning_balance`).set(newWin);
+                
+                yBets[c]+=currentChip; tBets[c]+=currentChip; 
                 s_bet.currentTime = 0; s_bet.play().catch(e=>{}); 
-                document.getElementById('bal').innerText=bal; 
                 document.getElementById('y-'+c).innerText=yBets[c]; 
                 document.getElementById('t-'+c).innerText=tBets[c]; 
                 
                 throwChip(c, currentChip, true); 
-            } else alert("Balance kam hai!");
+            } else alert("Balance kam hai! Recharge Karein.");
         }
 
         function startBots() {
             setInterval(() => {
                 if(!canBet) return;
-                let clrs = ['r','b','g','p','o'];
-                let bAmt = [100, 100, 500, 500, 1000, 5000]; 
-                
-                let ranColor = clrs[Math.floor(Math.random() * clrs.length)];
-                let ranAmt = bAmt[Math.floor(Math.random() * bAmt.length)];
-                
-                tBets[ranColor] += ranAmt;
-                document.getElementById('t-'+ranColor).innerText = tBets[ranColor];
+                let clrs = ['r','b','g','p','o']; let bAmt = [100, 100, 500, 500, 1000, 5000]; 
+                let ranColor = clrs[Math.floor(Math.random() * clrs.length)]; let ranAmt = bAmt[Math.floor(Math.random() * bAmt.length)];
+                tBets[ranColor] += ranAmt; document.getElementById('t-'+ranColor).innerText = tBets[ranColor];
                 throwChip(ranColor, ranAmt, false); 
-                
-                if(Math.random() > 0.6) {
-                    setTimeout(()=>{
-                        let c2 = clrs[Math.floor(Math.random() * clrs.length)];
-                        tBets[c2] += ranAmt;
-                        document.getElementById('t-'+c2).innerText = tBets[c2];
-                        throwChip(c2, ranAmt, false);
-                    }, 200);
-                }
             }, 350); 
         }
 
@@ -278,11 +298,46 @@
             clrs.forEach(c => {
                 document.getElementById('y-'+c).innerText = '0';
                 document.getElementById('t-'+c).innerText = '0';
-                let box = document.getElementById('box-'+c);
-                box.querySelectorAll('.mini-chip').forEach(e => e.remove());
+                document.getElementById('box-'+c).classList.remove('win-glow');
+                document.getElementById('box-'+c).querySelectorAll('.mini-chip').forEach(e => e.remove());
             });
             time = 15; canBet = true; 
             msg.style.display = "none"; tmr.style.color = "#0f0"; tmr.innerText = time;
+        }
+
+        // === LIVE WINNING CALCULATION ===
+        function checkPayout(prizeIndex) {
+            let wonPrize = pr[prizeIndex];
+            let wonColor = bg[prizeIndex];
+            let wonId = colorIdMap[wonColor];
+            let finalWinAmt = 0;
+
+            if (wonPrize === "00") {
+                // Sabka Loss - Kuch nahi milega
+            } else if (wonPrize === "50% Minus") {
+                // Total lagaye hue paise ka 50% wapas
+                let totalUserBet = yBets.r + yBets.b + yBets.g + yBets.p + yBets.o;
+                if (totalUserBet > 0) finalWinAmt = totalUserBet * 0.5;
+            } else {
+                // Color Match & Multiplier
+                if (wonId && yBets[wonId] > 0) {
+                    let multiplier = parseInt(wonPrize.split("Ka ")[1]) / 100; // e.g., 200/100 = 2
+                    finalWinAmt = yBets[wonId] * multiplier;
+                }
+            }
+
+            // Database Update
+            if(finalWinAmt > 0) {
+                db.ref(`users/${userID}/winning_balance`).set(winBal + finalWinAmt);
+                
+                // Show Popup
+                let p = document.getElementById('win-popup'); 
+                p.innerText = "+₹" + finalWinAmt.toLocaleString(); 
+                p.classList.add('show');
+                setTimeout(() => p.classList.remove('show'), 2000);
+            }
+            
+            if(wonId) document.getElementById('box-'+wonId).classList.add('win-glow'); // Highlight winning box
         }
 
         function startTimer() {
@@ -293,20 +348,34 @@
                 
                 if(time<=0){
                     canBet=false; 
-                    msg.innerHTML="Bets Closed!<br><span style='font-size:18px;color:#ccc'>Wait 5s...</span>"; 
+                    msg.innerHTML="Bets Closed!<br><span style='font-size:18px;color:#ccc'>Waiting for Server...</span>"; 
                     msg.style.display="block";
                     
                     s_spin.currentTime = 0; s_spin.play().catch(e=>{}); s_spin.loop=true; 
                     
-                    let d = rot + 1800 + Math.floor(Math.random()*360);
+                    // Server Admin Logic
+                    let prizeIndex;
+                    if(adminForcedResult !== null && adminForcedResult >= 0 && adminForcedResult <= 27) {
+                        prizeIndex = adminForcedResult; 
+                    } else {
+                        prizeIndex = Math.floor(Math.random() * 28); // Random fallback
+                    }
+                    
+                    // Angle calculation based on Server result
+                    const sliceAngle = 360 / 28;
+                    const stopAngle = (360 - (prizeIndex * sliceAngle)) - (sliceAngle / 2) - 270;
+                    
+                    let d = rot + (360 * 5) + stopAngle; 
                     document.getElementById('c').style.transform = `rotate(${d}deg)`;
                     
                     setTimeout(()=>{
                         s_spin.pause(); s_win.play().catch(e=>{}); 
-                        let a = (360 - d%360 + 270)%360;
-                        let won = pr[Math.floor(a/(360/28))];
+                        let won = pr[prizeIndex];
                         msg.innerHTML = "Result:<br><span style='color:#0f0;font-size:36px;'>" + won + "</span>";
                         rot = d;
+                        
+                        checkPayout(prizeIndex); // Paise add karo!
+                        
                         setTimeout(startNewRound, 4000); 
                     }, 5000); 
                 }
