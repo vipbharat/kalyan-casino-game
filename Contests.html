@@ -8,36 +8,36 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    
+
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 40px; user-select: none; }
         .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #ffd700; position: sticky; top:0; z-index:100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; color: #ffd700; }
-        .match-title { font-weight: 900; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .sub-title { font-size: 11px; color: #00ff88; font-weight: bold; margin-top: 3px; }
         
+        .timer-box { background: #ff004c; color: #fff; font-size: 11px; font-weight: 900; padding: 3px 8px; border-radius: 4px; margin-top: 3px; display: inline-block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+
         .section-header { padding: 20px 15px 5px; color: #ffd700; font-size: 14px; text-transform: uppercase; font-weight: 900; display: flex; align-items: center; gap: 8px; }
-        .section-header i { color: #ff004c; font-size: 16px; }
-
-        /* Contest Card Styling */
-        .contest-card { background: linear-gradient(145deg, #1e1e2e, #111); margin: 10px 15px; border-radius: 12px; border: 1px solid #333; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.6); transition: 0.2s; }
-        .contest-card:active { transform: scale(0.98); border-color: #ffd700; }
+        
+        /* Row Styling */
+        .contest-card { background: #111; margin: 10px 15px; border-radius: 8px; border: 1px solid #333; overflow: hidden; display: flex; flex-direction: column; }
         .c-top { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .prize-label { font-size: 11px; color: #aaa; text-transform: uppercase; font-weight: bold; }
-        .prize-amt { font-size: 22px; font-weight: 900; color: #fff; display: block; margin-top: 2px; }
+        .prize-label { font-size: 11px; color: #aaa; }
+        .prize-amt { font-size: 18px; font-weight: bold; color: #fff; display: block; }
         
-        .join-btn { background: #00ff88; color: #000; padding: 10px 25px; border-radius: 6px; font-weight: 900; border:none; cursor: pointer; font-size: 15px; box-shadow: 0 0 10px rgba(0,255,136,0.3); transition: 0.2s; }
-        .join-btn.free { background: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .join-btn { background: #00ff88; color: #000; padding: 8px 20px; border-radius: 5px; font-weight: bold; border:none; cursor: pointer; font-size: 14px; transition: 0.3s; }
+        .join-btn.free { background: #fff; }
+        .join-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
         
-        .c-bar { height: 4px; background: #333; margin: 0 15px; border-radius: 2px; position: relative; }
-        .c-fill { height: 100%; background: #ff004c; border-radius: 2px; } 
+        /* 🔥 Progress Bar Design */
+        .progress-container { padding: 0 15px 10px; }
+        .progress-text { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 4px; }
+        .spots-left { color: #ff004c; font-weight: bold; }
+        .progress-bar { width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #ff004c; width: 5%; transition: width 1s ease-in-out; }
 
-        .c-footer { padding: 10px 15px; background: rgba(0,0,0,0.3); display: flex; justify-content: space-between; align-items: center; font-size: 11px; border-top: 1px solid #222; margin-top: 10px;}
-        .slots-info { color: #aaa; font-weight: bold; }
-        .slots-info span { color: #ff004c; }
-        .player-tag { background: #ffd700; color: #000; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 900; letter-spacing: 0.5px; }
-        .player-tag.mini { background: #ff004c; color: #fff; }
-        .player-tag.h2h { background: #00ff88; color: #000; }
+        .c-footer { padding: 10px 15px; background: #1a1a2e; display: flex; justify-content: space-between; font-size: 11px; color: #aaa; border-top: 1px dashed #333; }
+        .tag { background: #ffd700; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; }
     </style>
 </head>
 <body>
@@ -45,149 +45,151 @@
     <div class="header">
         <i class="fa-solid fa-arrow-left back-btn" onclick="window.location.href='Matches.html'"></i>
         <div>
-            <div id="match-name-header" class="match-title">Loading Match...</div>
-            <div class="sub-title"><i class="fa-solid fa-circle-check"></i> Select your contest</div>
+            <div style="font-weight: 900; font-size: 16px;">SELECT CONTEST</div>
+            <div class="timer-box" id="match-timer"><i class="fa-regular fa-clock"></i> Loading Time...</div>
         </div>
     </div>
 
     <div class="section-header"><i class="fa-solid fa-trophy"></i> Mega Contests</div>
     
-    <div class="contest-card">
+    <div class="contest-card" data-spots="5000">
         <div class="c-top">
-            <div>
-                <span class="prize-label">Prize Pool</span>
-                <span class="prize-amt">₹1,00,000</span>
-            </div>
+            <div><span class="prize-label">Prize Pool</span><span class="prize-amt">₹1,00,000</span></div>
             <button class="join-btn" onclick="join(49, 11)">₹49</button>
         </div>
-        <div class="c-bar"><div class="c-fill" style="width: 80%;"></div></div>
-        <div class="c-footer">
-            <div class="slots-info"><span>1,250</span> spots left</div>
-            <div class="player-tag">11 PLAYERS</div>
+        <div class="progress-container">
+            <div class="progress-text">
+                <span class="spots-left"><span class="dynamic-spots">5000</span> spots left</span>
+                <span>5000 Spots</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill"></div></div>
         </div>
+        <div class="c-footer"><div>Win Big!</div><div class="tag">11 PLAYERS</div></div>
     </div>
 
-    <div class="contest-card">
+    <div class="contest-card" data-spots="1500">
         <div class="c-top">
-            <div>
-                <span class="prize-label">Prize Pool</span>
-                <span class="prize-amt">₹10,000</span>
-            </div>
+            <div><span class="prize-label">Prize Pool</span><span class="prize-amt">₹10,000</span></div>
             <button class="join-btn" onclick="join(15, 11)">₹15</button>
         </div>
-        <div class="c-bar"><div class="c-fill" style="width: 45%;"></div></div>
-        <div class="c-footer">
-            <div class="slots-info"><span>450</span> spots left</div>
-            <div class="player-tag">11 PLAYERS</div>
+        <div class="progress-container">
+            <div class="progress-text">
+                <span class="spots-left"><span class="dynamic-spots">1500</span> spots left</span>
+                <span>1500 Spots</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill"></div></div>
         </div>
+        <div class="c-footer"><div>Guaranteed</div><div class="tag">11 PLAYERS</div></div>
     </div>
 
-    <div class="section-header"><i class="fa-solid fa-bolt"></i> Head To Head (H2H)</div>
+    <div class="section-header"><i class="fa-solid fa-user-ninja"></i> Head To Head (H2H)</div>
     
-    <div class="contest-card">
+    <div class="contest-card" data-spots="2">
         <div class="c-top">
-            <div>
-                <span class="prize-label">Winnings</span>
-                <span class="prize-amt">₹10,000</span>
+            <div><span class="prize-label">Winnings</span><span class="prize-amt">₹1,000</span></div>
+            <button class="join-btn" onclick="join(575, 11)">₹575</button>
+        </div>
+        <div class="progress-container">
+            <div class="progress-text">
+                <span class="spots-left"><span class="dynamic-spots">2</span> spots left</span>
+                <span>2 Spots</span>
             </div>
-            <button class="join-btn" onclick="join(5750, 11)">₹5,750</button>
+            <div class="progress-bar"><div class="progress-fill"></div></div>
         </div>
-        <div class="c-footer">
-            <div class="slots-info">2 Spots | 1 Winner</div>
-            <div class="player-tag h2h">11 PLAYERS</div>
-        </div>
-    </div>
-
-    <div class="contest-card">
-        <div class="c-top">
-            <div>
-                <span class="prize-label">Winnings</span>
-                <span class="prize-amt">₹100</span>
-            </div>
-            <button class="join-btn" onclick="join(59, 11)">₹59</button>
-        </div>
-        <div class="c-footer">
-            <div class="slots-info">2 Spots | 1 Winner</div>
-            <div class="player-tag h2h">11 PLAYERS</div>
-        </div>
-    </div>
-
-    <div class="section-header"><i class="fa-solid fa-fire"></i> Mini Teams (Fast Match)</div>
-    
-    <div class="contest-card">
-        <div class="c-top">
-            <div>
-                <span class="prize-label">Prize Pool</span>
-                <span class="prize-amt">₹5,000</span>
-            </div>
-            <button class="join-btn" onclick="join(250, 5)">₹250</button>
-        </div>
-        <div class="c-footer">
-            <div class="slots-info">25 Spots | 5 Winners</div>
-            <div class="player-tag mini">5 PLAYERS ONLY</div>
-        </div>
-    </div>
-
-    <div class="section-header"><i class="fa-solid fa-user-ninja"></i> Duo Battle (Batter vs Bowler)</div>
-
-    <div class="contest-card">
-        <div class="c-top">
-            <div>
-                <span class="prize-label">Winnings</span>
-                <span class="prize-amt">₹500</span>
-            </div>
-            <button class="join-btn" onclick="join(29, 2)">₹29</button>
-        </div>
-        <div class="c-footer">
-            <div class="slots-info">Expert Level</div>
-            <div class="player-tag mini">2 PLAYERS ONLY</div>
-        </div>
-    </div>
-
-    <div class="section-header"><i class="fa-solid fa-gamepad"></i> Practice Contests</div>
-
-    <div class="contest-card" style="border-color: #555;">
-        <div class="c-top">
-            <div>
-                <span class="prize-label">Skill Test</span>
-                <span class="prize-amt" style="color:#aaa;">Glory</span>
-            </div>
-            <button class="join-btn free" onclick="join(0, 11)">FREE</button>
-        </div>
-        <div class="c-footer">
-            <div class="slots-info">Unlimited Spots</div>
-            <div class="player-tag" style="background:#555; color:#fff;">11 PLAYERS</div>
-        </div>
+        <div class="c-footer"><div>Winner Takes All</div><div class="tag">H2H Battle</div></div>
     </div>
 
     <script>
-        // 1. Firebase Initialization (Apni details daalna agar alag ho)
+        // 1. Firebase Initialization
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
-        // 2. URL se Match ID nikalna
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId');
+        let matchStartTime = 0;
+        let isMatchStarted = false;
 
-        // 3. Database se Match ka Asli Naam uthana
+        // 2. Fetch Match Time from Firebase
         if(matchId) {
             db.ref('Game/Kalyan11/LiveMatches/' + matchId).once('value', snapshot => {
-                if(snapshot.exists()) {
-                    let mData = snapshot.val();
-                    let matchName = mData.name || (mData.team1 + " vs " + mData.team2);
-                    document.getElementById('match-name-header').innerText = matchName;
+                let mData = snapshot.val();
+                if(mData && mData.date) {
+                    matchStartTime = new Date(mData.date).getTime();
+                    startCountdown();
                 } else {
-                    document.getElementById('match-name-header').innerText = "Fantasy Match";
+                    document.getElementById('match-timer').innerText = "Live / Started";
+                    lockAllContests();
                 }
             });
         }
 
-        // 4. Join Button Dabane par agle page par bhejna
+        // 3. ⏱️ Live Timer & Fake Progress Logic
+        function startCountdown() {
+            setInterval(() => {
+                let now = new Date().getTime();
+                let distance = matchStartTime - now;
+
+                if (distance <= 0) {
+                    // Match Start Ho Gaya! Sab lock kar do!
+                    document.getElementById('match-timer').innerText = "MATCH STARTED 🔴";
+                    document.getElementById('match-timer').style.background = "#333";
+                    if(!isMatchStarted) lockAllContests();
+                    return;
+                }
+
+                // Time formatting (02h 15m 30s)
+                let h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                let m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                let s = Math.floor((distance % (1000 * 60)) / 1000);
+                document.getElementById('match-timer').innerHTML = `<i class="fa-regular fa-clock"></i> Starts in: ${h}h ${m}m ${s}s`;
+
+                // 🔥 FAKE SPOTS FILLING ALGORITHM
+                // Jaise time kam hoga, spots kam honge
+                let totalHoursLeft = distance / (1000 * 60 * 60);
+                let fillPercentage = 0;
+
+                if(totalHoursLeft > 24) fillPercentage = 20; // 24 ghante se upar: 20% full
+                else if(totalHoursLeft > 12) fillPercentage = 45; 
+                else if(totalHoursLeft > 2) fillPercentage = 75; 
+                else if(totalHoursLeft > 0.5) fillPercentage = 92; // Aadha ghanta: 92% full
+                else fillPercentage = 98; // Last minutes: 98% full
+
+                // Update all cards visually
+                document.querySelectorAll('.contest-card').forEach(card => {
+                    let totalSpots = parseInt(card.getAttribute('data-spots'));
+                    let filledSpots = Math.floor((fillPercentage / 100) * totalSpots);
+                    let spotsLeft = totalSpots - filledSpots;
+                    if(spotsLeft < 1 && totalSpots > 1) spotsLeft = 1; // Kam se kam 1 spot bacha rakho end tak
+
+                    let displayFill = (filledSpots / totalSpots) * 100;
+
+                    card.querySelector('.dynamic-spots').innerText = spotsLeft;
+                    card.querySelector('.progress-fill').style.width = displayFill + "%";
+                });
+
+            }, 1000);
+        }
+
+        // 4. 🛑 Lock Mechanism
+        function lockAllContests() {
+            isMatchStarted = true;
+            document.querySelectorAll('.contest-card').forEach(card => {
+                card.querySelector('.dynamic-spots').innerText = "0";
+                card.querySelector('.progress-fill').style.width = "100%";
+                
+                let btn = card.querySelector('.join-btn');
+                btn.innerHTML = "FULL / CLOSED";
+                btn.disabled = true;
+                btn.style.background = "#333";
+                btn.style.color = "#888";
+            });
+        }
+
+        // 5. Join Button Click
         function join(fee, maxPlayers) {
-            if(!matchId) { alert("Match Error! Wapas Home par jayein."); return; }
-            
-            // Fee aur Max Players URL ke zariye CreateTeam page ko bhej rahe hain
+            if(isMatchStarted) { alert("Match start ho chuka hai! Ab aap join nahi kar sakte."); return; }
+            if(!matchId) { alert("Match Error!"); return; }
             window.location.href = `CreateTeam.html?matchId=${matchId}&fee=${fee}&maxPlayers=${maxPlayers}`;
         }
     </script>
