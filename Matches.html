@@ -13,10 +13,10 @@
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 70px; user-select: none; }
         .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; text-align: center; font-weight: 900; font-size: 18px; color: #ffd700; border-bottom: 2px solid #ffd700; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         
-        .match-card { background: #111; margin: 15px; border-radius: 10px; border: 1px solid #333; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
+        .match-card { background: #111; margin: 15px; border-radius: 10px; border: 1px solid #333; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         .match-card:active { transform: scale(0.98); border-color: #ffd700; }
         
-        .series-name { font-size: 11px; color: #aaa; margin-bottom: 12px; border-bottom: 1px dashed #333; padding-bottom: 8px; }
+        .series-name { font-size: 11px; color: #aaa; margin-bottom: 12px; border-bottom: 1px dashed #333; padding-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .teams { display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 900; margin-bottom: 10px; }
         .vs { color: #ff004c; font-size: 12px; background: #222; padding: 4px 8px; border-radius: 50%; }
         
@@ -48,61 +48,69 @@
             const matches = snapshot.val();
 
             if(!matches) {
-                container.innerHTML = "<div class='no-match'>⚠️ No Matches Available Right Now!</div>"; 
+                container.innerHTML = "<div class='no-match'>⚠️ No Matches Available!</div>"; 
                 return;
             }
 
-            let matchCount = 0;
             const now = new Date().getTime();
+            const pastLimit = now - (24 * 60 * 60 * 1000); // 24 ghante purane matches hata do
             
-            // 🚀 SMART TIME FILTER LOGIC (7 DAYS / 1 WEEK)
-            const futureLimit = now + (7 * 24 * 60 * 60 * 1000); // Aaj se thik 7 din aage tak
-            const pastLimit = now - (12 * 60 * 60 * 1000);       // Aaj se 12 ghante pichhe tak (Live matches ke liye)
+            let matchesArray = [];
 
+            // 1. Pehle saare matches ko ek Array mein daalo
             Object.entries(matches).forEach(([id, m]) => {
                 let matchDateStr = m.date || m.dateTimeGMT;
                 let matchTime = matchDateStr ? new Date(matchDateStr).getTime() : now;
 
-                // 🟢 CONDITION: Agar match 7 din ke andar hai, tabhi list mein jodo
-                if (matchTime >= pastLimit && matchTime <= futureLimit) {
-                    matchCount++;
-                    
-                    let status = m.status || "Upcoming";
-                    let t1 = m.team1 ? String(m.team1).substring(0,3).toUpperCase() : "TM1";
-                    let t2 = m.team2 ? String(m.team2).substring(0,3).toUpperCase() : "TM2";
-                    
-                    // Display Time properly
-                    let displayTime = "Time TBA";
-                    if(matchDateStr) {
-                        let dateObj = new Date(matchDateStr);
-                        let options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-                        displayTime = "Starts: " + dateObj.toLocaleString('en-IN', options);
-                    }
-
-                    let badgeClass = status.toLowerCase().includes("upcoming") ? "upcoming" : "";
-                    let clickAction = `window.location.href='Contests.html?matchId=${id}'`;
-
-                    container.innerHTML += `
-                        <div class="match-card" onclick="${clickAction}">
-                            <div class="series-name">${m.name || 'T20 Cricket Match'}</div>
-                            <div class="teams">
-                                <div>${t1}</div>
-                                <div class="vs">V/S</div>
-                                <div>${t2}</div>
-                            </div>
-                            <div class="time-badge ${badgeClass}"><i class="fa-solid fa-bolt"></i> ${displayTime}</div>
-                        </div>
-                    `;
+                // Sirf wahi match lo jo nikal nahi gaye hain
+                if (matchTime >= pastLimit) {
+                    m.id = id;
+                    m.matchTime = matchTime;
+                    m.matchDateStr = matchDateStr;
+                    matchesArray.push(m);
                 }
             });
 
-            // Agar 7 din mein koi match nahi hai toh
-            if(matchCount === 0) {
+            // 2. 🟢 SMART SORTING: Jo sabse jaldi aane wala hai, use sabse upar rakho
+            matchesArray.sort((a, b) => a.matchTime - b.matchTime);
+
+            // Agar array khali hai
+            if(matchesArray.length === 0) {
                 container.innerHTML = `<div class="no-match">
                     <i class="fa-solid fa-calendar-xmark" style="font-size: 30px; color: #ff004c; margin-bottom: 10px;"></i><br>
-                    Abhi agle 1 hafte mein koi match nahi hai.<br>Kripya thodi der baad check karein!
+                    Koi naya match nahi mila! API check karein.
                 </div>`;
+                return;
             }
+
+            // 3. Screen par dikhao
+            matchesArray.forEach(m => {
+                let status = m.status || "Upcoming";
+                let t1 = m.team1 ? String(m.team1).substring(0,3).toUpperCase() : "TM1";
+                let t2 = m.team2 ? String(m.team2).substring(0,3).toUpperCase() : "TM2";
+                
+                let displayTime = "Time TBA";
+                if(m.matchDateStr) {
+                    let dateObj = new Date(m.matchDateStr);
+                    let options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                    displayTime = "Starts: " + dateObj.toLocaleString('en-IN', options);
+                }
+
+                let badgeClass = status.toLowerCase().includes("upcoming") ? "upcoming" : "";
+                let clickAction = `window.location.href='Contests.html?matchId=${m.id}'`;
+
+                container.innerHTML += `
+                    <div class="match-card" onclick="${clickAction}">
+                        <div class="series-name">${m.name || 'T20 Cricket Match'}</div>
+                        <div class="teams">
+                            <div>${t1}</div>
+                            <div class="vs">V/S</div>
+                            <div>${t2}</div>
+                        </div>
+                        <div class="time-badge ${badgeClass}"><i class="fa-solid fa-bolt"></i> ${displayTime}</div>
+                    </div>
+                `;
+            });
         });
     </script>
 </body>
