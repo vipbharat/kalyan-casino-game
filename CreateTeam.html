@@ -33,7 +33,6 @@
         .p-name { font-weight: bold; font-size: 14px; color: #fff; }
         .p-team { font-size: 11px; color: #aaa; margin-top: 3px; background: #222; padding: 2px 6px; border-radius: 4px; display: inline-block; }
         
-        /* 🔥 Tags Design */
         .probable-tag { font-size: 9px; font-weight: 900; background: #ff004c; color: #fff; padding: 2px 5px; border-radius: 3px; margin-left: 5px; }
         .playing-tag { font-size: 9px; font-weight: 900; background: #00ff88; color: #000; padding: 2px 5px; border-radius: 3px; margin-left: 5px; }
         
@@ -62,11 +61,11 @@
     <div class="status-bar">
         <div class="team-count">Team: <span id="main-count">0</span>/<span id="max-display">11</span></div>
         <div class="backup-count">Backups: <span id="backup-count">0</span>/4</div>
-        <div style="color: #aaa;">Fee: <span id="fee-display" style="color:#fff; font-weight:bold;">₹0</span></div>
+        <div style="color: #aaa;" id="fee-box">Fee: <span id="fee-display" style="color:#fff; font-weight:bold;">₹0</span></div>
     </div>
 
     <div class="tabs">
-        <div class="tab active" onclick="showTab('WK')">WK <i class="fa-solid fa-check-circle" style="color:#00ff88; display:none;" id="wk-done"></i></div>
+        <div class="tab active" onclick="showTab('WK')">WK</div>
         <div class="tab" onclick="showTab('BAT')">BAT</div>
         <div class="tab" onclick="showTab('AR')">AR</div>
         <div class="tab" onclick="showTab('BOWL')">BOWL</div>
@@ -81,22 +80,26 @@
     </div>
 
     <script>
-        // --- 1. FIREBASE SETUP ---
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
-        // --- 2. URL DATA & API KEY ---
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId');
+        const action = urlParams.get('action'); // 🟢 'draft' means sirf save karna hai
         const entryFee = parseInt(urlParams.get('fee')) || 0; 
         const maxPlayers = parseInt(urlParams.get('maxPlayers')) || 11; 
         const CRICKET_API_KEY = "eceba419-2e6c-4d23-8f6b-b7cf3edf5bd1"; 
 
         document.getElementById('max-allowed').innerText = maxPlayers;
         document.getElementById('max-display').innerText = maxPlayers;
-        document.getElementById('fee-display').innerText = entryFee === 0 ? "FREE" : `₹${entryFee}`;
+        
+        if(action === 'draft') {
+            document.getElementById('fee-box').style.display = "none"; // Draft me fee mat dikhao
+        } else {
+            document.getElementById('fee-display').innerText = entryFee === 0 ? "FREE" : `₹${entryFee}`;
+        }
 
         let allPlayers = []; 
         let mainTeam = []; 
@@ -111,11 +114,8 @@
             });
         }
 
-        // --- 3. FETCH SQUADS & PROBABLE FALLBACK ---
         async function fetchRealSquads() {
-            if(!matchId) { 
-                document.getElementById('player-container').innerHTML = "<div class='loader'>⚠️ Invalid Match!</div>"; return; 
-            }
+            if(!matchId) { document.getElementById('player-container').innerHTML = "<div class='loader'>⚠️ Invalid Match!</div>"; return; }
             try {
                 const response = await fetch(`https://api.cricapi.com/v1/match_squad?apikey=${CRICKET_API_KEY}&id=${matchId}`);
                 const data = await response.json();
@@ -130,20 +130,14 @@
                             if(roleStr.includes("keeper")) role = "WK";
                             else if(roleStr.includes("all")) role = "AR";
                             else if(roleStr.includes("bowl")) role = "BOWL";
-                            // 🔥 YAHAN REAL PLAYERS KO isPlaying = true diya hai
                             allPlayers.push({ id: p.id, name: p.name, role: role, team: tName, isProbable: false, isPlaying: true });
                         });
                     });
                     showTab('WK'); 
-                } else {
-                    generateProbableSquads();
-                }
-            } catch(e) {
-                generateProbableSquads();
-            }
+                } else { generateProbableSquads(); }
+            } catch(e) { generateProbableSquads(); }
         }
 
-        // 🔥 GENERATOR FUNCTION (Agar match 2 din baad ka hai)
         function generateProbableSquads() {
             db.ref('Game/Kalyan11/LiveMatches/' + matchId).once('value', s => {
                 let m = s.val();
@@ -163,7 +157,6 @@
 
         fetchRealSquads();
 
-        // --- 4. SHOW PLAYERS BY TAB ---
         function showTab(role) {
             currentTab = role;
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -171,22 +164,15 @@
 
             const container = document.getElementById('player-container');
             container.innerHTML = "";
-            
             let filteredPlayers = allPlayers.filter(p => p.role === role);
             
-            if(filteredPlayers.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding:20px; color:#888;">No players found here.</div>`;
-                return;
-            }
+            if(filteredPlayers.length === 0) { container.innerHTML = `<div style="text-align:center; padding:20px; color:#888;">No players found here.</div>`; return; }
 
             filteredPlayers.forEach((p) => {
-                let cardClass = "";
-                let iconHTML = `<i class="fa-solid fa-plus"></i>`;
-                
+                let cardClass = ""; let iconHTML = `<i class="fa-solid fa-plus"></i>`;
                 if(mainTeam.includes(p.name)) { cardClass = "selected-main"; iconHTML = `<i class="fa-solid fa-check"></i>`; }
                 else if(backupTeam.includes(p.name)) { cardClass = "selected-backup"; iconHTML = `B`; }
 
-                // 🔥 MAGIC TAGS: Red for Probable, Green for Playing
                 let statusTag = p.isProbable ? `<span class="probable-tag">PROBABLE</span>` : `<span class="playing-tag">PLAYING <i class="fa-solid fa-circle-check"></i></span>`;
 
                 container.innerHTML += `
@@ -204,32 +190,20 @@
             });
         }
 
-        // --- 5. PLAYER SELECTION LOGIC ---
         function togglePlayer(id, name) {
             let card = document.getElementById(`card-${id}`);
             let btn = document.getElementById(`btn-${id}`);
 
             if(mainTeam.includes(name)) {
                 mainTeam = mainTeam.filter(p => p !== name);
-                card.classList.remove('selected-main');
-                btn.innerHTML = `<i class="fa-solid fa-plus"></i>`;
+                card.classList.remove('selected-main'); btn.innerHTML = `<i class="fa-solid fa-plus"></i>`;
             } else if(backupTeam.includes(name)) {
                 backupTeam = backupTeam.filter(p => p !== name);
-                card.classList.remove('selected-backup');
-                btn.innerHTML = `<i class="fa-solid fa-plus"></i>`;
+                card.classList.remove('selected-backup'); btn.innerHTML = `<i class="fa-solid fa-plus"></i>`;
             } else {
-                if(mainTeam.length < maxPlayers) {
-                    mainTeam.push(name);
-                    card.classList.add('selected-main');
-                    btn.innerHTML = `<i class="fa-solid fa-check"></i>`;
-                } else if(backupTeam.length < 4) {
-                    backupTeam.push(name);
-                    card.classList.add('selected-backup');
-                    btn.innerHTML = `B`;
-                } else {
-                    alert(`⚠️ Limit Reached! ${maxPlayers} Players + 4 Backups pure ho gaye hain.`);
-                    return;
-                }
+                if(mainTeam.length < maxPlayers) { mainTeam.push(name); card.classList.add('selected-main'); btn.innerHTML = `<i class="fa-solid fa-check"></i>`; } 
+                else if(backupTeam.length < 4) { backupTeam.push(name); card.classList.add('selected-backup'); btn.innerHTML = `B`; } 
+                else { alert(`⚠️ Limit Reached!`); return; }
             }
             updateStatusAndButton();
         }
@@ -237,56 +211,73 @@
         function updateStatusAndButton() {
             document.getElementById('main-count').innerText = mainTeam.length;
             document.getElementById('backup-count').innerText = backupTeam.length;
-            
             let joinBtn = document.getElementById('join-btn');
             
             if(mainTeam.length < maxPlayers) {
-                joinBtn.disabled = true;
-                joinBtn.innerHTML = `SELECT ${maxPlayers - mainTeam.length} MORE`;
-                joinBtn.style.background = "#444";
-                joinBtn.style.color = "#888";
+                joinBtn.disabled = true; joinBtn.innerHTML = `SELECT ${maxPlayers - mainTeam.length} MORE`; joinBtn.style.background = "#444"; joinBtn.style.color = "#888";
             } else {
                 joinBtn.disabled = false;
-                let btnText = entryFee === 0 ? "JOIN FREE" : `PAY ₹${entryFee} & JOIN`;
-                if(backupTeam.length < 4) { btnText = "ADD BACKUPS OR " + btnText; }
-                joinBtn.innerHTML = btnText;
-                joinBtn.style.background = "#00ff88";
-                joinBtn.style.color = "#000";
+                
+                // 🟢 JADUU YAHAN HAI: Agar draft mode hai toh button badal do
+                if(action === 'draft') {
+                    joinBtn.innerHTML = "SAVE TEAM";
+                } else {
+                    let btnText = entryFee === 0 ? "JOIN FREE" : `PAY ₹${entryFee} & JOIN`;
+                    if(backupTeam.length < 4) { btnText = "ADD BACKUPS OR " + btnText; }
+                    joinBtn.innerHTML = btnText;
+                }
+                
+                joinBtn.style.background = "#00ff88"; joinBtn.style.color = "#000";
             }
         }
 
-        // --- 6. FINAL JOIN & DEDUCTION ---
+        // 🟢 FINAL JOIN & DEDUCTION OR DRAFT SAVE
         function joinContest() {
             if (!phone) { alert("Pehle login kijiye!"); return; }
-            if (userWalletBalance < entryFee) { alert(`❌ Wallet mein paise kam hain! Entry Fee ₹${entryFee} hai.`); return; }
-
             let btn = document.getElementById("join-btn");
             btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Processing..."; btn.disabled = true;
 
-            db.ref('users/' + phone).once('value', snapshot => {
-                let d = snapshot.val();
-                let depBal = parseFloat(d.balance || 0); let winBal = parseFloat(d.winning_balance || 0);
+            let myTeamData = {
+                players: mainTeam,
+                backups: backupTeam,
+                captain: mainTeam[0] || "Unknown", 
+                total_points: 0,
+                updatedAt: firebase.database.ServerValue.TIMESTAMP
+            };
 
-                if (depBal >= entryFee) { depBal -= entryFee; } 
-                else { let bachaHua = entryFee - depBal; depBal = 0; winBal -= bachaHua; }
-
-                let myTeamData = {
-                    players: mainTeam,
-                    backups: backupTeam,
-                    captain: mainTeam[0] || "Unknown", 
-                    total_points: 0,
-                    fee_paid: entryFee,
-                    joinedAt: firebase.database.ServerValue.TIMESTAMP
-                };
-
-                db.ref('users/' + phone).update({ balance: depBal, winning_balance: winBal })
-                .then(() => db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + phone).set(myTeamData))
+            // CASE 1: USER SIRF TEAM SAVE KAR RAHA HAI (No Payment)
+            if(action === 'draft') {
+                db.ref(`users/${phone}/MyDraftTeams/${matchId}`).set(myTeamData)
                 .then(() => {
-                    alert(`✅ MUBARAK HO! Aapne ₹${entryFee} wala contest join kar liya hai!`);
-                    window.location.href = "Matches.html"; 
+                    alert("✅ TEAM SAVED! Ab wapas jakar apna Contest chuniye aur Paise lagaiye.");
+                    window.location.href = `Contests.html?matchId=${matchId}`; // Wapas list par bhejo
                 })
                 .catch(err => { alert("Error: " + err.message); location.reload(); });
-            });
+            } 
+            // CASE 2: USER DIRECT PAISE DEKAR JOIN KAR RAHA HAI
+            else {
+                if (userWalletBalance < entryFee) { alert(`❌ Wallet mein paise kam hain! Entry Fee ₹${entryFee} hai.`); location.reload(); return; }
+
+                db.ref('users/' + phone).once('value', snapshot => {
+                    let d = snapshot.val();
+                    let depBal = parseFloat(d.balance || 0); let winBal = parseFloat(d.winning_balance || 0);
+
+                    if (depBal >= entryFee) { depBal -= entryFee; } 
+                    else { let bachaHua = entryFee - depBal; depBal = 0; winBal -= bachaHua; }
+
+                    myTeamData.fee_paid = entryFee;
+                    myTeamData.joinedAt = firebase.database.ServerValue.TIMESTAMP;
+
+                    db.ref('users/' + phone).update({ balance: depBal, winning_balance: winBal })
+                    .then(() => db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${phone}`).set(myTeamData))
+                    .then(() => db.ref(`users/${phone}/MyJoinedMatches/${matchId}`).set({ matchId: matchId, fee: entryFee, joinedAt: firebase.database.ServerValue.TIMESTAMP }))
+                    .then(() => {
+                        alert(`✅ MUBARAK HO! Aapne ₹${entryFee} wala contest join kar liya hai!`);
+                        window.location.href = "Matches.html"; 
+                    })
+                    .catch(err => { alert("Error: " + err.message); location.reload(); });
+                });
+            }
         }
     </script>
 </body>
