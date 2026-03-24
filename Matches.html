@@ -32,29 +32,30 @@
     </div>
 
     <div id="matches-list">
-        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Real Matches...</div>
+        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Top Upcoming Matches...</div>
     </div>
 
     <script>
-        // 🔥 YAHAN AAPKI NAYI API KEY LAGA DI HAI 🔥
+        // 🔥 AAPKI NAYI API KEY 🔥
         const CRICKET_API_KEY = "47946dec-cc2d-4959-95d7-4480d4af93e4"; 
         const container = document.getElementById('matches-list');
 
         function displayMatches(matchesArray) {
             const now = new Date().getTime();
-            const futureLimit = now + (7 * 24 * 60 * 60 * 1000); // Sirf 7 din aage tak
-            let finalMatches = [];
+            const pastLimit = now - (24 * 60 * 60 * 1000); // 24 ghante purane matches ignore karo
+            
+            let upcomingMatches = [];
 
+            // 1. Saare future matches nikal lo
             matchesArray.forEach(m => {
                 let matchTime = new Date(m.dateTimeGMT).getTime();
-                let statusStr = m.status ? m.status.toLowerCase() : "";
-                let isEnded = m.matchEnded || statusStr.includes("won") || statusStr.includes("abandoned") || statusStr.includes("stump");
                 
-                if(!isEnded && matchTime <= futureLimit) {
+                // Agar match aage hone wala hai ya kal hi shuru hua hai
+                if(matchTime >= pastLimit) {
                     let team1 = m.teams && m.teams[0] ? String(m.teams[0]).substring(0,3).toUpperCase() : (m.t1 ? String(m.t1).substring(0,3).toUpperCase() : "TM1");
                     let team2 = m.teams && m.teams[1] ? String(m.teams[1]).substring(0,3).toUpperCase() : (m.t2 ? String(m.t2).substring(0,3).toUpperCase() : "TM2");
 
-                    finalMatches.push({
+                    upcomingMatches.push({
                         id: m.id, name: m.name || m.series || 'T20 Match',
                         t1: team1, t2: team2, status: m.status || "Upcoming",
                         timeObj: new Date(m.dateTimeGMT), timeNum: matchTime
@@ -62,10 +63,14 @@
                 }
             });
 
-            finalMatches.sort((a, b) => a.timeNum - b.timeNum);
+            // 2. Matches ko Time ke hisaab se lagao (Jo jaldi hai wo upar)
+            upcomingMatches.sort((a, b) => a.timeNum - b.timeNum);
+
+            // 3. 🟢 MAGIC: Sirf top 15 matches lo taaki screen bhari lage par kachra na ho
+            let finalMatches = upcomingMatches.slice(0, 15);
 
             if(finalMatches.length === 0) {
-                container.innerHTML = `<div class="info-msg"><i class="fa-solid fa-calendar-xmark" style="font-size:30px; margin-bottom:10px;"></i><br>Abhi ke liye koi real match live nahi hai.</div>`;
+                container.innerHTML = `<div class="info-msg"><i class="fa-solid fa-calendar-xmark" style="font-size:30px; margin-bottom:10px;"></i><br>Abhi koi match nahi mila API mein.</div>`;
                 return;
             }
 
@@ -91,21 +96,20 @@
         }
 
         async function fetchRealMatches() {
-            // 🧠 SMART CACHE SYSTEM: Phone ki memory se data uthao (API bachane ke liye)
-            let cachedData = localStorage.getItem('kalyan_matches_data');
-            let cacheTime = localStorage.getItem('kalyan_matches_time');
+            // Smart Cache: Phone ki memory se data uthao (3 ghante tak valid)
+            let cachedData = localStorage.getItem('kalyan_all_matches_data');
+            let cacheTime = localStorage.getItem('kalyan_all_matches_time');
             let now = new Date().getTime();
 
-            // Agar 3 ghante (10800000 ms) se purana nahi hai, toh cache use karo
             if (cachedData && cacheTime && (now - cacheTime < 10800000)) {
-                console.log("Loading from Phone Cache... (API Saved!)");
+                console.log("Loading from Phone Cache...");
                 displayMatches(JSON.parse(cachedData));
                 return;
             }
 
-            // Nahi toh API se naya mangwao
             try {
-                const response = await fetch(`https://api.cricapi.com/v1/currentMatches?apikey=${CRICKET_API_KEY}&offset=0`);
+                // 🟢 API ENDPOINT BADAL DIYA: Ab saare upcoming matches mangwa rahe hain
+                const response = await fetch(`https://api.cricapi.com/v1/matches?apikey=${CRICKET_API_KEY}&offset=0`);
                 const data = await response.json();
                 
                 if (data.status !== "success") {
@@ -118,8 +122,8 @@
                 }
 
                 // Naya data cache mein save karo
-                localStorage.setItem('kalyan_matches_data', JSON.stringify(data.data));
-                localStorage.setItem('kalyan_matches_time', now);
+                localStorage.setItem('kalyan_all_matches_data', JSON.stringify(data.data));
+                localStorage.setItem('kalyan_all_matches_time', now);
                 
                 displayMatches(data.data);
 
