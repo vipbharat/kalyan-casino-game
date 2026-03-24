@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalyan 11 - Live Leaderboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 20px; user-select: none; }
+        .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #ffd700; position: sticky; top:0; z-index:100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; color: #ffd700; }
+        .title { font-weight: 900; font-size: 18px; text-transform: uppercase; }
+        .sub-title { font-size: 11px; color: #00ff88; font-weight: bold; margin-top: 3px; }
+        
+        .prize-pool-banner { background: #111; padding: 15px; text-align: center; border-bottom: 1px solid #333; }
+        .prize-pool-banner h2 { margin: 0; color: #ffd700; font-size: 24px; }
+        .prize-pool-banner p { margin: 5px 0 0; color: #aaa; font-size: 12px; }
+
+        /* Leaderboard List */
+        .leaderboard-container { padding: 15px; }
+        
+        .user-row { background: linear-gradient(145deg, #1e1e2e, #111); border: 1px solid #333; border-radius: 10px; padding: 12px 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+        
+        /* Rank 1 ko chamkana hai */
+        .user-row.rank-1 { border-color: #ffd700; background: linear-gradient(145deg, #332b00, #111); box-shadow: 0 0 15px rgba(255,215,0,0.2); }
+        .user-row.rank-2 { border-color: #c0c0c0; }
+        .user-row.rank-3 { border-color: #cd7f32; }
+        
+        /* Highlight my own team */
+        .user-row.my-team { border-left: 4px solid #00ff88; }
+
+        .rank-circle { width: 35px; height: 35px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; color: #aaa; border: 2px solid #555; }
+        .rank-1 .rank-circle { background: #ffd700; color: #000; border-color: #ffd700; }
+        .rank-2 .rank-circle { background: #c0c0c0; color: #000; border-color: #c0c0c0; }
+        .rank-3 .rank-circle { background: #cd7f32; color: #000; border-color: #cd7f32; }
+
+        .user-details { flex: 1; margin-left: 15px; }
+        .user-name { font-weight: bold; font-size: 15px; color: #fff; }
+        .my-tag { background: #00ff88; color: #000; font-size: 9px; padding: 2px 5px; border-radius: 3px; margin-left: 5px; font-weight: bold; }
+        
+        .points-box { text-align: right; }
+        .pts-value { font-size: 20px; font-weight: 900; color: #00ff88; }
+        .pts-label { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+
+        .loading-text { text-align: center; color: #ffd700; font-weight: bold; margin-top: 30px; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
+        <div>
+            <div class="title">LIVE LEADERBOARD</div>
+            <div class="sub-title"><i class="fa-solid fa-circle-dot fa-beat"></i> Points Updating Live...</div>
+        </div>
+    </div>
+
+    <div class="prize-pool-banner">
+        <p>Contest Standings</p>
+        <h2>🏆 WINNING ZONE</h2>
+    </div>
+
+    <div class="leaderboard-container" id="leaderboard-list">
+        <div class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Fetching Live Ranks...</div>
+    </div>
+
+    <script>
+        // 1. 🔥 Firebase Setup
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
+        
+        // Mera Number (Taaki main apni team pehchan saku)
+        const myPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+
+        // 2. 🌐 URL se Match ID nikalna
+        const urlParams = new URLSearchParams(window.location.search);
+        const matchId = urlParams.get('matchId') || "DEMO_MATCH";
+
+        // 3. 🏆 Asli Live Leaderboard System
+        // .on('value') ka matlab hai jaise hi database me 1 point bhi badhega, ye function apne aap chal jayega!
+        db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', snapshot => {
+            const listContainer = document.getElementById('leaderboard-list');
+            listContainer.innerHTML = ""; // Purana data hatao
+            
+            const teamsData = snapshot.val();
+
+            if (!teamsData) {
+                listContainer.innerHTML = `<div style="text-align:center; color:#888; margin-top:20px; font-weight:bold;">No teams joined yet! Be the first one.</div>`;
+                return;
+            }
+
+            // Database data ko array me convert karna taaki points ke hisaab se sort kar sakein
+            let teamsArray = [];
+            Object.keys(teamsData).forEach(userPhone => {
+                let teamInfo = teamsData[userPhone];
+                teamsArray.push({
+                    phone: userPhone,
+                    points: teamInfo.total_points || 0, // Agar points nahi hain toh 0 manenge
+                    captain: teamInfo.captain || "Unknown"
+                });
+            });
+
+            // 🔥 MAGIC: Sorting! Jiske points sabse zyada, wo number 1 par aayega
+            teamsArray.sort((a, b) => b.points - a.points);
+
+            // Ab ek-ek karke sabko screen par dikhana hai
+            teamsArray.forEach((team, index) => {
+                let rank = index + 1;
+                
+                // User ka number hide karna (Security ke liye: 9876543210 -> 9876**3210)
+                let hidePhone = team.phone.substring(0, 4) + "****" + team.phone.substring(8, 10);
+                
+                // Agar meri team hai toh 'My Team' ka tag lagana aur number poora dikhana
+                let isMyTeam = (team.phone === myPhone);
+                let displayName = isMyTeam ? "You (" + team.phone + ")" : hidePhone;
+                let myTagHTML = isMyTeam ? `<span class="my-tag">MY TEAM</span>` : "";
+                let highlightClass = isMyTeam ? "my-team" : "";
+
+                // HTML Card Banana
+                let cardHTML = `
+                    <div class="user-row rank-${rank} ${highlightClass}">
+                        <div class="rank-circle">${rank}</div>
+                        <div class="user-details">
+                            <div class="user-name">${displayName} ${myTagHTML}</div>
+                            <div style="font-size: 10px; color: #888; margin-top: 3px;">Capt: ${team.captain}</div>
+                        </div>
+                        <div class="points-box">
+                            <div class="pts-value">${team.points.toFixed(1)}</div>
+                            <div class="pts-label">Points</div>
+                        </div>
+                    </div>
+                `;
+                listContainer.innerHTML += cardHTML;
+            });
+        });
+    </script>
+</body>
+</html>
