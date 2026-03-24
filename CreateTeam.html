@@ -87,19 +87,13 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId');
-        const action = urlParams.get('action'); // 🟢 'draft' means sirf save karna hai
         const entryFee = parseInt(urlParams.get('fee')) || 0; 
         const maxPlayers = parseInt(urlParams.get('maxPlayers')) || 11; 
         const CRICKET_API_KEY = "eceba419-2e6c-4d23-8f6b-b7cf3edf5bd1"; 
 
         document.getElementById('max-allowed').innerText = maxPlayers;
         document.getElementById('max-display').innerText = maxPlayers;
-        
-        if(action === 'draft') {
-            document.getElementById('fee-box').style.display = "none"; // Draft me fee mat dikhao
-        } else {
-            document.getElementById('fee-display').innerText = entryFee === 0 ? "FREE" : `₹${entryFee}`;
-        }
+        document.getElementById('fee-display').innerText = entryFee === 0 ? "FREE" : `₹${entryFee}`;
 
         let allPlayers = []; 
         let mainTeam = []; 
@@ -125,11 +119,8 @@
                     data.data.forEach(team => {
                         let tName = team.teamName.substring(0,3).toUpperCase();
                         team.players.forEach(p => {
-                            let role = "BAT";
-                            let roleStr = p.role ? p.role.toLowerCase() : "";
-                            if(roleStr.includes("keeper")) role = "WK";
-                            else if(roleStr.includes("all")) role = "AR";
-                            else if(roleStr.includes("bowl")) role = "BOWL";
+                            let role = "BAT"; let roleStr = p.role ? p.role.toLowerCase() : "";
+                            if(roleStr.includes("keeper")) role = "WK"; else if(roleStr.includes("all")) role = "AR"; else if(roleStr.includes("bowl")) role = "BOWL";
                             allPlayers.push({ id: p.id, name: p.name, role: role, team: tName, isProbable: false, isPlaying: true });
                         });
                     });
@@ -143,10 +134,8 @@
                 let m = s.val();
                 let t1 = m && m.team1 ? m.team1.substring(0,3).toUpperCase() : "TM1";
                 let t2 = m && m.team2 ? m.team2.substring(0,3).toUpperCase() : "TM2";
-
                 allPlayers = [];
                 let roles = ["WK", "BAT", "BAT", "BAT", "BAT", "AR", "AR", "BOWL", "BOWL", "BOWL", "BOWL", "BAT", "AR", "BOWL", "WK"];
-
                 for(let i=0; i<15; i++) {
                     allPlayers.push({ id: t1+'_'+i, name: t1 + ' Star ' + (i+1), role: roles[i], team: t1, isProbable: true, isPlaying: false });
                     allPlayers.push({ id: t2+'_'+i, name: t2 + ' Star ' + (i+1), role: roles[i], team: t2, isProbable: true, isPlaying: false });
@@ -218,66 +207,48 @@
             } else {
                 joinBtn.disabled = false;
                 
-                // 🟢 JADUU YAHAN HAI: Agar draft mode hai toh button badal do
-                if(action === 'draft') {
-                    joinBtn.innerHTML = "SAVE TEAM";
-                } else {
-                    let btnText = entryFee === 0 ? "JOIN FREE" : `PAY ₹${entryFee} & JOIN`;
-                    if(backupTeam.length < 4) { btnText = "ADD BACKUPS OR " + btnText; }
-                    joinBtn.innerHTML = btnText;
-                }
+                // 🟢 DIRECT PAYMENT BUTTON
+                let btnText = entryFee === 0 ? "JOIN FREE" : `PAY ₹${entryFee} & JOIN`;
+                if(backupTeam.length < 4) { btnText = "ADD BACKUPS OR " + btnText; }
+                joinBtn.innerHTML = btnText;
                 
                 joinBtn.style.background = "#00ff88"; joinBtn.style.color = "#000";
             }
         }
 
-        // 🟢 FINAL JOIN & DEDUCTION OR DRAFT SAVE
+        // 🟢 DIRECT PAYMENT & SAVE TO CONTEST
         function joinContest() {
             if (!phone) { alert("Pehle login kijiye!"); return; }
+            if (userWalletBalance < entryFee) { alert(`❌ Wallet mein paise kam hain! Entry Fee ₹${entryFee} hai.`); location.reload(); return; }
+
             let btn = document.getElementById("join-btn");
             btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Processing..."; btn.disabled = true;
 
-            let myTeamData = {
-                players: mainTeam,
-                backups: backupTeam,
-                captain: mainTeam[0] || "Unknown", 
-                total_points: 0,
-                updatedAt: firebase.database.ServerValue.TIMESTAMP
-            };
+            db.ref('users/' + phone).once('value', snapshot => {
+                let d = snapshot.val();
+                let depBal = parseFloat(d.balance || 0); let winBal = parseFloat(d.winning_balance || 0);
 
-            // CASE 1: USER SIRF TEAM SAVE KAR RAHA HAI (No Payment)
-            if(action === 'draft') {
-                db.ref(`users/${phone}/MyDraftTeams/${matchId}`).set(myTeamData)
+                if (depBal >= entryFee) { depBal -= entryFee; } 
+                else { let bachaHua = entryFee - depBal; depBal = 0; winBal -= bachaHua; }
+
+                let myTeamData = {
+                    players: mainTeam,
+                    backups: backupTeam,
+                    captain: mainTeam[0] || "Unknown", 
+                    total_points: 0,
+                    fee_paid: entryFee,
+                    joinedAt: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                db.ref('users/' + phone).update({ balance: depBal, winning_balance: winBal })
+                .then(() => db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${phone}`).set(myTeamData))
+                .then(() => db.ref(`users/${phone}/MyJoinedMatches/${matchId}`).set({ matchId: matchId, fee: entryFee, joinedAt: firebase.database.ServerValue.TIMESTAMP }))
                 .then(() => {
-                    alert("✅ TEAM SAVED! Ab wapas jakar apna Contest chuniye aur Paise lagaiye.");
-                    window.location.href = `Contests.html?matchId=${matchId}`; // Wapas list par bhejo
+                    alert(`✅ MUBARAK HO! Aapne ₹${entryFee} wala contest join kar liya hai!`);
+                    window.location.href = "Matches.html"; 
                 })
                 .catch(err => { alert("Error: " + err.message); location.reload(); });
-            } 
-            // CASE 2: USER DIRECT PAISE DEKAR JOIN KAR RAHA HAI
-            else {
-                if (userWalletBalance < entryFee) { alert(`❌ Wallet mein paise kam hain! Entry Fee ₹${entryFee} hai.`); location.reload(); return; }
-
-                db.ref('users/' + phone).once('value', snapshot => {
-                    let d = snapshot.val();
-                    let depBal = parseFloat(d.balance || 0); let winBal = parseFloat(d.winning_balance || 0);
-
-                    if (depBal >= entryFee) { depBal -= entryFee; } 
-                    else { let bachaHua = entryFee - depBal; depBal = 0; winBal -= bachaHua; }
-
-                    myTeamData.fee_paid = entryFee;
-                    myTeamData.joinedAt = firebase.database.ServerValue.TIMESTAMP;
-
-                    db.ref('users/' + phone).update({ balance: depBal, winning_balance: winBal })
-                    .then(() => db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${phone}`).set(myTeamData))
-                    .then(() => db.ref(`users/${phone}/MyJoinedMatches/${matchId}`).set({ matchId: matchId, fee: entryFee, joinedAt: firebase.database.ServerValue.TIMESTAMP }))
-                    .then(() => {
-                        alert(`✅ MUBARAK HO! Aapne ₹${entryFee} wala contest join kar liya hai!`);
-                        window.location.href = "Matches.html"; 
-                    })
-                    .catch(err => { alert("Error: " + err.message); location.reload(); });
-                });
-            }
+            });
         }
     </script>
 </body>
