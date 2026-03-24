@@ -6,9 +6,6 @@
     <title>Kalyan 11 - Live Matches</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 70px; user-select: none; }
         .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; text-align: center; font-weight: 900; font-size: 18px; color: #ffd700; border-bottom: 2px solid #ffd700; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
@@ -22,9 +19,11 @@
         
         .time-badge { font-size: 11px; font-weight: bold; background: rgba(0,255,136,0.1); color: #00ff88; padding: 6px 12px; border-radius: 4px; display: inline-block; border: 1px solid #00ff88; }
         .time-badge.upcoming { background: rgba(255,215,0,0.1); color: #ffd700; border-color: #ffd700; }
+        .time-badge.ended { background: rgba(255,0,76,0.1); color: #ff004c; border-color: #ff004c; }
         
         .loader { text-align: center; margin-top: 50px; color: #ffd700; font-weight: bold; }
-        .no-match { text-align: center; margin-top: 50px; color: #aaa; font-size: 14px; padding: 20px; }
+        .error-msg { text-align: center; margin-top: 50px; color: #ff004c; font-size: 14px; padding: 20px; }
+        .info-msg { text-align: center; margin-top: 50px; color: #aaa; font-size: 14px; padding: 20px; }
     </style>
 </head>
 <body>
@@ -34,84 +33,101 @@
     </div>
 
     <div id="matches-list">
-        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Matches...</div>
+        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Real Matches...</div>
     </div>
 
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-        const db = firebase.database();
+        // 🚀 API KEY
+        const CRICKET_API_KEY = "eceba419-2e6c-4d23-8f6b-b7cf3edf5bd1";
+        const container = document.getElementById('matches-list');
 
-        db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
-            const container = document.getElementById('matches-list');
-            container.innerHTML = "";
-            const matches = snapshot.val();
-
-            if(!matches) {
-                container.innerHTML = "<div class='no-match'>⚠️ No Matches Available!</div>"; 
-                return;
-            }
-
-            const now = new Date().getTime();
-            const pastLimit = now - (24 * 60 * 60 * 1000); // 24 ghante purane matches hata do
-            
-            let matchesArray = [];
-
-            // 1. Pehle saare matches ko ek Array mein daalo
-            Object.entries(matches).forEach(([id, m]) => {
-                let matchDateStr = m.date || m.dateTimeGMT;
-                let matchTime = matchDateStr ? new Date(matchDateStr).getTime() : now;
-
-                // Sirf wahi match lo jo nikal nahi gaye hain
-                if (matchTime >= pastLimit) {
-                    m.id = id;
-                    m.matchTime = matchTime;
-                    m.matchDateStr = matchDateStr;
-                    matchesArray.push(m);
-                }
-            });
-
-            // 2. 🟢 SMART SORTING: Jo sabse jaldi aane wala hai, use sabse upar rakho
-            matchesArray.sort((a, b) => a.matchTime - b.matchTime);
-
-            // Agar array khali hai
-            if(matchesArray.length === 0) {
-                container.innerHTML = `<div class="no-match">
-                    <i class="fa-solid fa-calendar-xmark" style="font-size: 30px; color: #ff004c; margin-bottom: 10px;"></i><br>
-                    Koi naya match nahi mila! API check karein.
-                </div>`;
-                return;
-            }
-
-            // 3. Screen par dikhao
-            matchesArray.forEach(m => {
-                let status = m.status || "Upcoming";
-                let t1 = m.team1 ? String(m.team1).substring(0,3).toUpperCase() : "TM1";
-                let t2 = m.team2 ? String(m.team2).substring(0,3).toUpperCase() : "TM2";
+        async function fetchRealMatches() {
+            try {
+                // 🟢 VIP ENDPOINT: currentMatches (Sirf Aaj aur Aane wale asli matches dega)
+                const response = await fetch(`https://api.cricapi.com/v1/currentMatches?apikey=${CRICKET_API_KEY}&offset=0`);
+                const data = await response.json();
                 
-                let displayTime = "Time TBA";
-                if(m.matchDateStr) {
-                    let dateObj = new Date(m.matchDateStr);
-                    let options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-                    displayTime = "Starts: " + dateObj.toLocaleString('en-IN', options);
+                // Agar API limit khatam ho gayi (100 hits per day)
+                if (data.status !== "success") {
+                    container.innerHTML = `<div class="error-msg">⚠️ API Error: ${data.info || "Daily API Limit Reached. Kal wapas try karein."}</div>`;
+                    return;
                 }
 
-                let badgeClass = status.toLowerCase().includes("upcoming") ? "upcoming" : "";
-                let clickAction = `window.location.href='Contests.html?matchId=${m.id}'`;
+                let matchesArray = data.data || [];
+                
+                // Agar sach mein koi match nahi hai
+                if(matchesArray.length === 0) {
+                    container.innerHTML = `<div class="info-msg"><i class="fa-solid fa-calendar-xmark" style="font-size:30px; margin-bottom:10px;"></i><br>Abhi koi real match live nahi hai.</div>`;
+                    return;
+                }
 
-                container.innerHTML += `
-                    <div class="match-card" onclick="${clickAction}">
-                        <div class="series-name">${m.name || 'T20 Cricket Match'}</div>
-                        <div class="teams">
-                            <div>${t1}</div>
-                            <div class="vs">V/S</div>
-                            <div>${t2}</div>
+                const now = new Date().getTime();
+                const futureLimit = now + (7 * 24 * 60 * 60 * 1000); // Sirf 7 din aage tak
+                
+                let finalMatches = [];
+
+                matchesArray.forEach(m => {
+                    let matchTime = new Date(m.dateTimeGMT).getTime();
+                    let statusStr = m.status ? m.status.toLowerCase() : "";
+                    
+                    // Filter: Jo match khatam ho gaya (Match ended / won), usko mat dikhao
+                    let isEnded = m.matchEnded || statusStr.includes("won") || statusStr.includes("abandoned");
+                    
+                    if(!isEnded && matchTime <= futureLimit) {
+                        
+                        // Team names nikalne ka solid tarika
+                        let team1 = m.teams && m.teams[0] ? String(m.teams[0]).substring(0,3).toUpperCase() : (m.t1 ? String(m.t1).substring(0,3).toUpperCase() : "TM1");
+                        let team2 = m.teams && m.teams[1] ? String(m.teams[1]).substring(0,3).toUpperCase() : (m.t2 ? String(m.t2).substring(0,3).toUpperCase() : "TM2");
+
+                        finalMatches.push({
+                            id: m.id,
+                            name: m.name || m.series || 'T20 Match',
+                            t1: team1,
+                            t2: team2,
+                            status: m.status || "Upcoming",
+                            timeObj: new Date(m.dateTimeGMT),
+                            timeNum: matchTime
+                        });
+                    }
+                });
+
+                // Matches ko Time ke hisaab se lagao (Jo pehle aayega, wo upar dikhega)
+                finalMatches.sort((a, b) => a.timeNum - b.timeNum);
+
+                if(finalMatches.length === 0) {
+                    container.innerHTML = `<div class="info-msg">Abhi ke liye koi upcoming match nahi hai.</div>`;
+                    return;
+                }
+
+                // Screen par Print karo
+                container.innerHTML = "";
+                finalMatches.forEach(m => {
+                    let options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                    let displayTime = "Starts: " + m.timeObj.toLocaleString('en-IN', options);
+                    
+                    let badgeClass = m.status.toLowerCase().includes("upcoming") ? "upcoming" : "";
+                    let clickAction = `window.location.href='Contests.html?matchId=${m.id}'`;
+
+                    container.innerHTML += `
+                        <div class="match-card" onclick="${clickAction}">
+                            <div class="series-name">${m.name}</div>
+                            <div class="teams">
+                                <div>${m.t1}</div>
+                                <div class="vs">V/S</div>
+                                <div>${m.t2}</div>
+                            </div>
+                            <div class="time-badge ${badgeClass}"><i class="fa-solid fa-bolt"></i> ${displayTime}</div>
                         </div>
-                        <div class="time-badge ${badgeClass}"><i class="fa-solid fa-bolt"></i> ${displayTime}</div>
-                    </div>
-                `;
-            });
-        });
+                    `;
+                });
+
+            } catch (error) {
+                container.innerHTML = `<div class="error-msg">⚠️ Data lane mein problem aayi! Please check your internet.</div>`;
+            }
+        }
+
+        // Script start hote hi real matches fetch karo
+        fetchRealMatches();
     </script>
 </body>
 </html>
