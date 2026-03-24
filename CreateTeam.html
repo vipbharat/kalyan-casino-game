@@ -18,16 +18,13 @@
         .team-count { color: #00ff88; }
         .backup-count { color: #ffd700; }
 
-        /* Tabs for WK, BAT, AR, BOWL */
         .tabs { display: flex; background: #1a1a2e; border-bottom: 2px solid #333; position: sticky; top: 60px; z-index: 90; }
         .tab { flex: 1; text-align: center; padding: 12px 0; font-weight: bold; color: #aaa; cursor: pointer; transition: 0.2s; font-size: 14px; }
         .tab.active { color: #ffd700; border-bottom: 3px solid #ffd700; background: rgba(255,215,0,0.1); }
 
-        /* Player List */
         .player-list { padding: 10px; }
         .player-card { background: #111; border: 1px solid #333; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
         
-        /* Selection Colors */
         .player-card.selected-main { border-color: #00ff88; background: rgba(0,255,136,0.1); }
         .player-card.selected-backup { border-color: #ffd700; background: rgba(255,215,0,0.1); }
         
@@ -54,12 +51,12 @@
         <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
         <div>
             <div style="font-weight: 900; font-size: 16px;">CREATE TEAM</div>
-            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Pick 11 Players + 4 Backups</div>
+            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Pick <span id="max-allowed">11</span> Players + 4 Backups</div>
         </div>
     </div>
 
     <div class="status-bar">
-        <div class="team-count">Team: <span id="main-count">0</span>/<span id="max-allowed">11</span></div>
+        <div class="team-count">Team: <span id="main-count">0</span>/<span id="max-display">11</span></div>
         <div class="backup-count">Backups: <span id="backup-count">0</span>/4</div>
         <div style="color: #aaa;">Fee: <span id="fee-display" style="color:#fff; font-weight:bold;">₹0</span></div>
     </div>
@@ -72,38 +69,38 @@
     </div>
 
     <div class="player-list" id="player-container">
-        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Fetching Real Squads...</div>
+        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Fetching Real Match Players...</div>
     </div>
 
     <div class="footer">
-        <button id="join-btn" class="join-btn" onclick="joinContest()" disabled>SELECT 11 PLAYERS</button>
+        <button id="join-btn" class="join-btn" onclick="joinContest()" disabled>SELECT PLAYERS</button>
     </div>
 
     <script>
-        // 1. 🔥 Firebase Setup
+        // --- 1. FIREBASE SETUP ---
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
-        // 2. 🌐 URL Data & API
+        // --- 2. URL DATA & API KEY ---
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId');
         const entryFee = parseInt(urlParams.get('fee')) || 0; 
         const maxPlayers = parseInt(urlParams.get('maxPlayers')) || 11; 
-        const CRICKET_API_KEY = "eceba419-2e6c-4d23-8f6b-b7cf3edf5bd1"; // Aapki Key
+        const CRICKET_API_KEY = "eceba419-2e6c-4d23-8f6b-b7cf3edf5bd1"; 
 
         document.getElementById('max-allowed').innerText = maxPlayers;
+        document.getElementById('max-display').innerText = maxPlayers;
         document.getElementById('fee-display').innerText = entryFee === 0 ? "FREE" : `₹${entryFee}`;
 
-        // Variables
         let allPlayers = []; 
         let mainTeam = []; 
         let backupTeam = [];
         let currentTab = 'WK';
         let userWalletBalance = 0;
 
-        // Fetch Wallet Balance
+        // --- 3. GET WALLET BALANCE ---
         if(phone) {
             db.ref('users/'+phone).once('value', s => { 
                 let d = s.val() || {};
@@ -111,41 +108,40 @@
             });
         }
 
-        // 3. 🏏 FETCH REAL SQUADS FROM CRICAPI
+        // --- 4. FETCH SQUADS FROM API ---
         async function fetchRealSquads() {
-            if(!matchId) { alert("Match Error!"); return; }
-            
+            if(!matchId) { 
+                document.getElementById('player-container').innerHTML = "<div class='loader'>⚠️ Invalid Match! Go back to Home.</div>";
+                return; 
+            }
             try {
                 const response = await fetch(`https://api.cricapi.com/v1/match_squad?apikey=${CRICKET_API_KEY}&id=${matchId}`);
                 const data = await response.json();
                 
                 if(data.data && data.data.length > 0) {
                     allPlayers = [];
-                    // Extract players from both teams
                     data.data.forEach(team => {
                         let tName = team.teamName.substring(0,3).toUpperCase();
                         team.players.forEach(p => {
-                            // API Roles: Wicketkeeper, Batsman, Allrounder, Bowler
                             let role = "BAT";
-                            if(p.role.toLowerCase().includes("keeper")) role = "WK";
-                            else if(p.role.toLowerCase().includes("all")) role = "AR";
-                            else if(p.role.toLowerCase().includes("bowl")) role = "BOWL";
-                            
+                            let roleStr = p.role ? p.role.toLowerCase() : "";
+                            if(roleStr.includes("keeper")) role = "WK";
+                            else if(roleStr.includes("all")) role = "AR";
+                            else if(roleStr.includes("bowl")) role = "BOWL";
                             allPlayers.push({ id: p.id, name: p.name, role: role, team: tName });
                         });
                     });
-                    showTab('WK'); // Pehle WK dikhao
+                    showTab('WK'); 
                 } else {
-                    document.getElementById('player-container').innerHTML = "<div class='loader'>⚠️ Squads not announced yet for this match!</div>";
+                    document.getElementById('player-container').innerHTML = "<div class='loader'>⚠️ Teams not announced yet!</div>";
                 }
             } catch(e) {
-                document.getElementById('player-container').innerHTML = "<div class='loader'>Failed to load players. Refresh page.</div>";
+                document.getElementById('player-container').innerHTML = "<div class='loader'>⚠️ Failed to load players. Please try again.</div>";
             }
         }
+        fetchRealSquads();
 
-        fetchRealSquads(); // Load hote hi API call
-
-        // 4. 🎨 SHOW PLAYERS BY TAB
+        // --- 5. SHOW PLAYERS BY TAB ---
         function showTab(role) {
             currentTab = role;
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -157,7 +153,7 @@
             let filteredPlayers = allPlayers.filter(p => p.role === role);
             
             if(filteredPlayers.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding:20px; color:#888;">No players found in this category.</div>`;
+                container.innerHTML = `<div style="text-align:center; padding:20px; color:#888;">No players found here.</div>`;
                 return;
             }
 
@@ -165,7 +161,6 @@
                 let cardClass = "";
                 let iconHTML = `<i class="fa-solid fa-plus"></i>`;
                 
-                // Check color
                 if(mainTeam.includes(p.name)) { cardClass = "selected-main"; iconHTML = `<i class="fa-solid fa-check"></i>`; }
                 else if(backupTeam.includes(p.name)) { cardClass = "selected-backup"; iconHTML = `B`; }
 
@@ -184,43 +179,33 @@
             });
         }
 
-        // 5. 🛑 SMART SELECTION LOGIC (MAIN + BACKUP)
+        // --- 6. PLAYER SELECTION LOGIC ---
         function togglePlayer(id, name) {
             let card = document.getElementById(`card-${id}`);
             let btn = document.getElementById(`btn-${id}`);
 
-            // A. Agar Main Team mein hai, toh hata do
             if(mainTeam.includes(name)) {
                 mainTeam = mainTeam.filter(p => p !== name);
                 card.classList.remove('selected-main');
                 btn.innerHTML = `<i class="fa-solid fa-plus"></i>`;
-            } 
-            // B. Agar Backup Team mein hai, toh hata do
-            else if(backupTeam.includes(name)) {
+            } else if(backupTeam.includes(name)) {
                 backupTeam = backupTeam.filter(p => p !== name);
                 card.classList.remove('selected-backup');
                 btn.innerHTML = `<i class="fa-solid fa-plus"></i>`;
-            } 
-            // C. Agar Naya player select kiya...
-            else {
-                // Pehle Main Team bharo (11 players)
+            } else {
                 if(mainTeam.length < maxPlayers) {
                     mainTeam.push(name);
                     card.classList.add('selected-main');
                     btn.innerHTML = `<i class="fa-solid fa-check"></i>`;
-                } 
-                // Agar Main Team full hai, toh Backups bharo (Max 4)
-                else if(backupTeam.length < 4) {
+                } else if(backupTeam.length < 4) {
                     backupTeam.push(name);
                     card.classList.add('selected-backup');
-                    btn.innerHTML = `B`; // 'B' for Backup
-                } 
-                else {
-                    alert(`⚠️ Limit Reached! 11 Players + 4 Backups pure ho gaye hain.`);
+                    btn.innerHTML = `B`;
+                } else {
+                    alert(`⚠️ Limit Reached! ${maxPlayers} Players + 4 Backups pure ho gaye hain.`);
                     return;
                 }
             }
-
             updateStatusAndButton();
         }
 
@@ -230,26 +215,22 @@
             
             let joinBtn = document.getElementById('join-btn');
             
-            // Jab tak Main team puri nahi hoti
             if(mainTeam.length < maxPlayers) {
                 joinBtn.disabled = true;
-                joinBtn.innerHTML = `SELECT ${maxPlayers - mainTeam.length} MORE PLAYERS`;
+                joinBtn.innerHTML = `SELECT ${maxPlayers - mainTeam.length} MORE`;
                 joinBtn.style.background = "#444";
                 joinBtn.style.color = "#888";
-            } 
-            // Jab Main team puri ho jaye (Backups optional hain)
-            else {
+            } else {
                 joinBtn.disabled = false;
                 let btnText = entryFee === 0 ? "JOIN FREE" : `PAY ₹${entryFee} & JOIN`;
                 if(backupTeam.length < 4) { btnText = "ADD BACKUPS OR " + btnText; }
-                
                 joinBtn.innerHTML = btnText;
                 joinBtn.style.background = "#00ff88";
                 joinBtn.style.color = "#000";
             }
         }
 
-        // 6. 💸 FINAL JOIN & DEDUCTION
+        // --- 7. FINAL JOIN & DEDUCTION ---
         function joinContest() {
             if (!phone) { alert("Pehle login kijiye!"); return; }
             if (userWalletBalance < entryFee) { alert(`❌ Wallet mein paise kam hain! Entry Fee ₹${entryFee} hai.`); return; }
@@ -264,11 +245,10 @@
                 if (depBal >= entryFee) { depBal -= entryFee; } 
                 else { let bachaHua = entryFee - depBal; depBal = 0; winBal -= bachaHua; }
 
-                // Saving Both Teams
                 let myTeamData = {
                     players: mainTeam,
                     backups: backupTeam,
-                    captain: mainTeam[0] || "", 
+                    captain: mainTeam[0] || "Unknown", 
                     total_points: 0,
                     fee_paid: entryFee,
                     joinedAt: firebase.database.ServerValue.TIMESTAMP
