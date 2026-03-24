@@ -5,45 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kalyan 11 - Create Team</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 90px; user-select: none; }
         .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #ffd700; position: sticky; top:0; z-index:100; }
         .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; color: #ffd700; }
-        
         .status-bar { background: #111; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; font-weight: bold; font-size: 13px; }
         .team-count { color: #00ff88; }
         .backup-count { color: #ffd700; }
-
         .tabs { display: flex; background: #1a1a2e; border-bottom: 2px solid #333; position: sticky; top: 60px; z-index: 90; }
         .tab { flex: 1; text-align: center; padding: 12px 0; font-weight: bold; color: #aaa; cursor: pointer; transition: 0.2s; font-size: 14px; }
         .tab.active { color: #ffd700; border-bottom: 3px solid #ffd700; background: rgba(255,215,0,0.1); }
-
         .player-list { padding: 10px; }
         .player-card { background: #111; border: 1px solid #333; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
-        
         .player-card.selected-main { border-color: #00ff88; background: rgba(0,255,136,0.1); }
         .player-card.selected-backup { border-color: #ffd700; background: rgba(255,215,0,0.1); }
-        
         .p-info { display: flex; align-items: center; gap: 15px; }
         .p-img { width: 45px; height: 45px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 18px; color: #aaa; border: 2px solid #555; }
         .p-name { font-weight: bold; font-size: 14px; color: #fff; }
         .p-team { font-size: 11px; color: #aaa; margin-top: 3px; background: #222; padding: 2px 6px; border-radius: 4px; display: inline-block; }
-        
         .probable-tag { font-size: 9px; font-weight: 900; background: #ff004c; color: #fff; padding: 2px 5px; border-radius: 3px; margin-left: 5px; }
-        .playing-tag { font-size: 9px; font-weight: 900; background: #00ff88; color: #000; padding: 2px 5px; border-radius: 3px; margin-left: 5px; }
-        
         .select-btn { border: 2px solid #555; color: #aaa; width: 30px; height: 30px; border-radius: 50%; font-size: 16px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
         .selected-main .select-btn { background: #00ff88; border-color: #00ff88; color: #000; }
         .selected-backup .select-btn { background: #ffd700; border-color: #ffd700; color: #000; }
-        
         .footer { position: fixed; bottom: 0; width: 100%; background: #111; padding: 15px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #333; z-index: 100; }
         .join-btn { background: #00ff88; color: #000; padding: 12px 20px; border-radius: 8px; font-weight: 900; border:none; cursor: pointer; font-size: 15px; flex: 1; margin-left: 15px; transition: 0.2s; }
         .join-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
-
         .loader { text-align: center; margin-top: 50px; color: #ffd700; font-weight: bold; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
     </style>
@@ -61,7 +49,7 @@
     <div class="status-bar">
         <div class="team-count">Team: <span id="main-count">0</span>/<span id="max-display">11</span></div>
         <div class="backup-count">Backups: <span id="backup-count">0</span>/4</div>
-        <div style="color: #aaa;" id="fee-box">Fee: <span id="fee-display" style="color:#fff; font-weight:bold;">₹0</span></div>
+        <div style="color: #aaa;">Fee: <span id="fee-display" style="color:#fff; font-weight:bold;">₹0</span></div>
     </div>
 
     <div class="tabs">
@@ -117,30 +105,35 @@
                 if(data.data && data.data.length > 0) {
                     allPlayers = [];
                     data.data.forEach(team => {
-                        let tName = team.teamName.substring(0,3).toUpperCase();
-                        team.players.forEach(p => {
-                            let role = "BAT"; let roleStr = p.role ? p.role.toLowerCase() : "";
-                            if(roleStr.includes("keeper")) role = "WK"; else if(roleStr.includes("all")) role = "AR"; else if(roleStr.includes("bowl")) role = "BOWL";
-                            allPlayers.push({ id: p.id, name: p.name, role: role, team: tName, isProbable: false, isPlaying: true });
-                        });
+                        let tName = team.teamName ? team.teamName.substring(0,3).toUpperCase() : "TM";
+                        if(team.players) {
+                            team.players.forEach(p => {
+                                let role = "BAT"; let roleStr = p.role ? p.role.toLowerCase() : "";
+                                if(roleStr.includes("keeper")) role = "WK"; else if(roleStr.includes("all")) role = "AR"; else if(roleStr.includes("bowl")) role = "BOWL";
+                                allPlayers.push({ id: p.id, name: p.name, role: role, team: tName, isProbable: false });
+                            });
+                        }
                     });
-                    showTab('WK'); 
+                    if(allPlayers.length > 0) showTab('WK'); else generateProbableSquads();
                 } else { generateProbableSquads(); }
             } catch(e) { generateProbableSquads(); }
         }
 
+        // FAIL SAFE GENERATOR (Atakega nahi)
         function generateProbableSquads() {
-            db.ref('Game/Kalyan11/LiveMatches/' + matchId).once('value', s => {
-                let m = s.val();
-                let t1 = m && m.team1 ? m.team1.substring(0,3).toUpperCase() : "TM1";
-                let t2 = m && m.team2 ? m.team2.substring(0,3).toUpperCase() : "TM2";
+            db.ref('Game/Kalyan11/LiveMatches/' + matchId).once('value').then(s => {
+                let m = s.val() || {};
+                let t1 = m.team1 ? String(m.team1).substring(0,3).toUpperCase() : "TM1";
+                let t2 = m.team2 ? String(m.team2).substring(0,3).toUpperCase() : "TM2";
                 allPlayers = [];
                 let roles = ["WK", "BAT", "BAT", "BAT", "BAT", "AR", "AR", "BOWL", "BOWL", "BOWL", "BOWL", "BAT", "AR", "BOWL", "WK"];
                 for(let i=0; i<15; i++) {
-                    allPlayers.push({ id: t1+'_'+i, name: t1 + ' Star ' + (i+1), role: roles[i], team: t1, isProbable: true, isPlaying: false });
-                    allPlayers.push({ id: t2+'_'+i, name: t2 + ' Star ' + (i+1), role: roles[i], team: t2, isProbable: true, isPlaying: false });
+                    allPlayers.push({ id: t1+'_'+i, name: t1 + ' Star ' + (i+1), role: roles[i], team: t1, isProbable: true });
+                    allPlayers.push({ id: t2+'_'+i, name: t2 + ' Star ' + (i+1), role: roles[i], team: t2, isProbable: true });
                 }
                 showTab('WK');
+            }).catch(e => {
+                document.getElementById('player-container').innerHTML = "<div class='loader'>⚠️ Error! Please Refresh.</div>";
             });
         }
 
@@ -162,7 +155,7 @@
                 if(mainTeam.includes(p.name)) { cardClass = "selected-main"; iconHTML = `<i class="fa-solid fa-check"></i>`; }
                 else if(backupTeam.includes(p.name)) { cardClass = "selected-backup"; iconHTML = `B`; }
 
-                let statusTag = p.isProbable ? `<span class="probable-tag">PROBABLE</span>` : `<span class="playing-tag">PLAYING <i class="fa-solid fa-circle-check"></i></span>`;
+                let statusTag = p.isProbable ? `<span class="probable-tag">PROBABLE</span>` : ``;
 
                 container.innerHTML += `
                     <div class="player-card ${cardClass}" id="card-${p.id}" onclick="togglePlayer('${p.id}', '${p.name}')">
@@ -206,20 +199,16 @@
                 joinBtn.disabled = true; joinBtn.innerHTML = `SELECT ${maxPlayers - mainTeam.length} MORE`; joinBtn.style.background = "#444"; joinBtn.style.color = "#888";
             } else {
                 joinBtn.disabled = false;
-                
-                // 🟢 DIRECT PAYMENT BUTTON
                 let btnText = entryFee === 0 ? "JOIN FREE" : `PAY ₹${entryFee} & JOIN`;
                 if(backupTeam.length < 4) { btnText = "ADD BACKUPS OR " + btnText; }
                 joinBtn.innerHTML = btnText;
-                
                 joinBtn.style.background = "#00ff88"; joinBtn.style.color = "#000";
             }
         }
 
-        // 🟢 DIRECT PAYMENT & SAVE TO CONTEST
         function joinContest() {
             if (!phone) { alert("Pehle login kijiye!"); return; }
-            if (userWalletBalance < entryFee) { alert(`❌ Wallet mein paise kam hain! Entry Fee ₹${entryFee} hai.`); location.reload(); return; }
+            if (userWalletBalance < entryFee) { alert(`❌ Wallet mein paise kam hain! Fee ₹${entryFee} hai.`); location.reload(); return; }
 
             let btn = document.getElementById("join-btn");
             btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Processing..."; btn.disabled = true;
@@ -232,12 +221,8 @@
                 else { let bachaHua = entryFee - depBal; depBal = 0; winBal -= bachaHua; }
 
                 let myTeamData = {
-                    players: mainTeam,
-                    backups: backupTeam,
-                    captain: mainTeam[0] || "Unknown", 
-                    total_points: 0,
-                    fee_paid: entryFee,
-                    joinedAt: firebase.database.ServerValue.TIMESTAMP
+                    players: mainTeam, backups: backupTeam, captain: mainTeam[0] || "Unknown", 
+                    total_points: 0, fee_paid: entryFee, joinedAt: firebase.database.ServerValue.TIMESTAMP
                 };
 
                 db.ref('users/' + phone).update({ balance: depBal, winning_balance: winBal })
