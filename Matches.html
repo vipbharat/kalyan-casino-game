@@ -18,15 +18,18 @@
         .view-container { padding: 15px; }
         .match-card { background: linear-gradient(145deg, #1e1e2e, #111); border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); cursor: pointer; position: relative; overflow: hidden; transition: 0.2s;}
         .match-card:active { transform: scale(0.98); border-color: #ffd700; }
-        .tour-name { font-size: 11px; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; letter-spacing: 0.5px;}
+        .tour-name { font-size: 11px; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .teams-row { display: flex; justify-content: space-between; align-items: center; }
-        .team-flag { width: 45px; height: 45px; border-radius: 50%; background: #222; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; border: 2px solid #555; }
+        .team-flag { width: 45px; height: 45px; border-radius: 50%; background: #222; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; border: 2px solid #555; text-transform: uppercase;}
         .vs-text { color: #ff004c; font-weight: 900; font-style: italic; font-size: 18px; text-shadow: 0 0 10px rgba(255,0,76,0.5); }
         .time-badge { background: rgba(0,255,136,0.1); color: #00ff88; padding: 5px 12px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-top: 15px; display: inline-block; border: 1px solid #00ff88; }
+        .team-name { font-size: 14px; font-weight: bold; max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;}
         .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #0a0a14; border-top: 1px solid #222; display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; box-shadow: 0 -5px 10px rgba(0,0,0,0.5); }
         .nav-item { text-align: center; color: #666; font-size: 11px; font-weight: bold; cursor: pointer; flex: 1; transition: 0.2s; }
         .nav-item i { font-size: 20px; margin-bottom: 5px; display: block; }
         .nav-item.active { color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
+        .loader-text { text-align: center; color: #ffd700; font-weight: bold; margin-top: 30px; font-size: 14px; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
@@ -37,23 +40,12 @@
     </div>
 
     <div class="view-container">
-        <h3 style="margin-top:5px; color:#ffd700; font-size: 18px; text-transform: uppercase;"><i class="fa-solid fa-fire"></i> Hot Matches</h3>
+        <h3 style="margin-top:5px; color:#ffd700; font-size: 18px; text-transform: uppercase;"><i class="fa-solid fa-fire"></i> Live & Upcoming Matches</h3>
         
-        <div class="match-card" onclick="window.location.href='CreateTeam.html'">
-            <div class="tour-name">🏆 T20 WORLD CUP 2026 - FINAL</div>
-            <div class="teams-row">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <div class="team-flag" style="border-color:#66b3ff; color:#66b3ff;">IND</div>
-                    <b style="font-size:18px;">INDIA</b>
-                </div>
-                <div class="vs-text">VS</div>
-                <div style="display:flex; align-items:center; gap:10px; flex-direction:row-reverse;">
-                    <div class="team-flag" style="border-color:#85e085; color:#85e085;">PAK</div>
-                    <b style="font-size:18px;">PAKISTAN</b>
-                </div>
-            </div>
-            <div class="time-badge"><i class="fa-regular fa-clock"></i> Lineups Out • Starts in 45m</div>
+        <div id="live-matches-container">
+            <div class="loader-text"><i class="fa-solid fa-spinner fa-spin"></i> Fetching Live Matches from Ground...</div>
         </div>
+
     </div>
 
     <div class="bottom-nav">
@@ -72,6 +64,7 @@
 
         let totalBal = 0;
 
+        // Balance Check
         if(phone) {
             db.ref('users/'+phone).on('value', s => { 
                 let d = s.val() || {};
@@ -82,6 +75,53 @@
         } else {
             document.getElementById('user-balance').innerText = "LOGIN ERROR";
         }
+
+        // 🔥 Asli Live Matches Database Se Lana
+        db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
+            const container = document.getElementById('live-matches-container');
+            container.innerHTML = ""; // Purana loading text hata do
+            
+            const matchesData = snapshot.val();
+
+            if (!matchesData) {
+                container.innerHTML = `<div style="text-align:center; color:#888; margin-top:20px; font-weight:bold;">No Live Matches Right Now!</div>`;
+                return;
+            }
+
+            // Database se sabhi match ki list banana
+            Object.keys(matchesData).forEach(matchId => {
+                let match = matchesData[matchId];
+                
+                // Team ka chota naam banana (Peelhe 3 akshar)
+                let t1Name = match.team1 || "TM1";
+                let t2Name = match.team2 || "TM2";
+                let t1Short = t1Name.substring(0, 3);
+                let t2Short = t2Name.substring(0, 3);
+                
+                let statusInfo = match.status || "Upcoming Match";
+
+                let cardHTML = `
+                <div class="match-card" onclick="window.location.href='CreateTeam.html?matchId=${matchId}'">
+                    <div class="tour-name">🏆 ${match.name}</div>
+                    <div class="teams-row">
+                        <div style="display:flex; align-items:center; gap:10px; flex-direction:column;">
+                            <div class="team-flag" style="border-color:#66b3ff; color:#66b3ff;">${t1Short}</div>
+                            <div class="team-name" style="color:#66b3ff;">${t1Name}</div>
+                        </div>
+                        <div class="vs-text">VS</div>
+                        <div style="display:flex; align-items:center; gap:10px; flex-direction:column;">
+                            <div class="team-flag" style="border-color:#85e085; color:#85e085;">${t2Short}</div>
+                            <div class="team-name" style="color:#85e085;">${t2Name}</div>
+                        </div>
+                    </div>
+                    <div class="time-badge"><i class="fa-regular fa-clock"></i> ${statusInfo}</div>
+                </div>
+                `;
+
+                container.innerHTML += cardHTML;
+            });
+        });
+
     </script>
 </body>
 </html>
