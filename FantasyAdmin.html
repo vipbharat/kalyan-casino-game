@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan 11 - Match Controller</title>
+    <title>Kalyan 11 - Master Match Generator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -13,162 +13,143 @@
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding: 20px; }
         .header { background: linear-gradient(135deg, #1a0033, #00ff88); padding: 15px; text-align: center; font-weight: 900; font-size: 20px; border-radius: 10px; margin-bottom: 20px; color: #000; box-shadow: 0 0 15px rgba(0, 255, 136, 0.4); }
         
-        .btn-main { background: #ffd700; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; margin-bottom: 20px;}
-        .btn-main:active { transform: scale(0.95); }
+        .admin-box { background: #111; border: 1px solid #333; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.6); margin-bottom: 20px; }
+        .admin-box h3 { color: #ffd700; margin-top: 0; border-bottom: 1px dashed #444; padding-bottom: 10px; }
         
-        .match-row { background: #111; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .match-info { font-size: 14px; }
-        .match-title { font-weight: 900; color: #ffd700; font-size: 16px; margin-bottom: 5px; }
-        .match-time { color: #aaa; font-size: 12px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; color: #aaa; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 12px; box-sizing: border-box; background: #222; border: 1px solid #444; color: #fff; border-radius: 5px; font-size: 14px; }
+        textarea { height: 90px; resize: vertical; }
+        input:focus, textarea:focus { border-color: #00ff88; outline: none; }
         
-        .btn-live { background: #ff004c; color: #fff; border: none; padding: 10px 15px; font-weight: bold; border-radius: 5px; cursor: pointer; transition: 0.2s; }
-        .btn-live.success { background: #00ff88; color: #000; pointer-events: none; }
+        .row { display: flex; gap: 15px; }
+        .row .input-group { flex: 1; }
+
+        .btn-live { background: #ff004c; color: #fff; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; box-shadow: 0 4px 10px rgba(255, 0, 76, 0.3); }
+        .btn-live:hover { background: #00ff88; color: #000; }
         
-        #statusBox { text-align: center; font-weight: bold; margin-bottom: 15px; color: #00ff88; }
+        #statusBox { text-align: center; font-weight: bold; margin-top: 15px; font-size: 16px; }
+        .success { color: #00ff88; }
+        .error { color: #ff004c; }
     </style>
 </head>
 <body>
 
-    <div class="header">🏏 FANTASY MATCH CONTROLLER</div>
+    <div class="header">👑 KALYAN 11 MASTER GENERATOR</div>
 
-    <button class="btn-main" onclick="fetchMatchesFromAPI()">
-        <i class="fa-solid fa-satellite-dish"></i> 1. Find Real Matches
-    </button>
+    <div class="admin-box">
+        <h3>1. Match Details</h3>
+        <div class="input-group">
+            <label>Match Title (e.g., IPL T20 Match)</label>
+            <input type="text" id="matchName" placeholder="Enter Match Name">
+        </div>
+        
+        <div class="row">
+            <div class="input-group">
+                <label>Team 1 Name</label>
+                <input type="text" id="t1Name" placeholder="e.g., CSK">
+            </div>
+            <div class="input-group">
+                <label>Team 2 Name</label>
+                <input type="text" id="t2Name" placeholder="e.g., RCB">
+            </div>
+        </div>
 
+        <div class="input-group">
+            <label>Match Start Time</label>
+            <input type="datetime-local" id="matchTime">
+        </div>
+    </div>
+
+    <div class="admin-box">
+        <h3>2. Paste Squad (Comma Separated)</h3>
+        <p style="font-size: 11px; color: #aaa; margin-top: -10px;">Khiladiyon ke naam Google se copy karein aur comma (,) laga kar paste karein.</p>
+        
+        <div class="input-group">
+            <label>Team 1 Players (11-15 Khiladi)</label>
+            <textarea id="t1Players" placeholder="M S Dhoni, Ruturaj Gaikwad, Ravindra Jadeja, Deepak Chahar..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <label>Team 2 Players (11-15 Khiladi)</label>
+            <textarea id="t2Players" placeholder="Virat Kohli, Faf du Plessis, Glenn Maxwell, Mohammed Siraj..."></textarea>
+        </div>
+    </div>
+
+    <button class="btn-live" onclick="generateMyOwnMatch()">🔥 CREATE ASALI MATCH</button>
+    
     <div id="statusBox"></div>
-    <div id="apiMatchesList"></div>
 
     <script>
-        // 🔥 Aapka Firebase Connection
+        // 🔥 Aapka Firebase (Ab ye aapki khud ki API hai)
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
-        // 🔥 VIP API Key
-        const RAPID_API_KEY = "E5a57f16d8mshbfff1d06e203673p1032e5jsn6d2c4b2dfa43";
+        function generateMyOwnMatch() {
+            let mName = document.getElementById('matchName').value.trim();
+            let t1 = document.getElementById('t1Name').value.trim().toUpperCase();
+            let t2 = document.getElementById('t2Name').value.trim().toUpperCase();
+            let mTime = document.getElementById('matchTime').value;
+            let p1Text = document.getElementById('t1Players').value.trim();
+            let p2Text = document.getElementById('t2Players').value.trim();
+            let status = document.getElementById('statusBox');
 
-        // STEP 1: API se matches uthao (Sirf dekhne ke liye)
-        async function fetchMatchesFromAPI() {
-            document.getElementById('statusBox').innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Searching Matches...";
-            document.getElementById('apiMatchesList').innerHTML = "";
-            
-            try {
-                const options = { method: 'GET', headers: { 'X-RapidAPI-Key': RAPID_API_KEY, 'X-RapidAPI-Host': 'cricbuzz-cricket.p.rapidapi.com' } };
-                const response = await fetch('https://cricbuzz-cricket.p.rapidapi.com/matches/v1/upcoming', options);
-                const data = await response.json();
-                
-                let tempMatches = [];
-                if(data.typeMatches) {
-                    data.typeMatches.forEach(typeObj => {
-                        if(typeObj.seriesMatches) {
-                            typeObj.seriesMatches.forEach(seriesObj => {
-                                if(seriesObj.seriesAdWrapper && seriesObj.seriesAdWrapper.matches) {
-                                    seriesObj.seriesAdWrapper.matches.forEach(matchWrapper => {
-                                        let m = matchWrapper.matchInfo;
-                                        if(m && m.startDate) {
-                                            tempMatches.push({
-                                                id: m.matchId,
-                                                name: m.seriesName,
-                                                t1: m.team1 ? String(m.team1.teamSName).substring(0,3).toUpperCase() : "TM1",
-                                                t2: m.team2 ? String(m.team2.teamSName).substring(0,3).toUpperCase() : "TM2",
-                                                timeNum: parseInt(m.startDate)
-                                            });
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    });
-                }
-
-                tempMatches.sort((a, b) => a.timeNum - b.timeNum);
-                let topMatches = tempMatches.slice(0, 10);
-
-                if(topMatches.length > 0){
-                    document.getElementById('statusBox').innerHTML = `✅ Matches mil gaye! Jise app me dikhana hai usko LIVE karein.`;
-                } else {
-                    document.getElementById('statusBox').innerHTML = `⚠️ API Limit khatam. Kripya baad mein try karein.`;
-                }
-                
-                let listHTML = "";
-                topMatches.forEach(m => {
-                    let displayTime = new Date(m.timeNum).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                    listHTML += `
-                        <div class="match-row">
-                            <div class="match-info">
-                                <div class="match-title">${m.t1} vs ${m.t2}</div>
-                                <div class="match-time">${m.name} <br> 🕒 ${displayTime}</div>
-                            </div>
-                            <button id="btn_${m.id}" class="btn-live" onclick="makeMatchLive('${m.id}', '${m.t1}', '${m.t2}', '${m.name}', ${m.timeNum})">
-                                🔥 Make LIVE
-                            </button>
-                        </div>
-                    `;
-                });
-                document.getElementById('apiMatchesList').innerHTML = listHTML;
-
-            } catch (error) {
-                document.getElementById('statusBox').innerHTML = "⚠️ API Limit khtam ya Network error!";
+            if(!mName || !t1 || !t2 || !mTime || !p1Text || !p2Text) {
+                status.innerHTML = "⚠️ Kripya saare dabbe (boxes) bharein!";
+                status.className = "error";
+                return;
             }
-        }
 
-        // STEP 2: "Make LIVE" dabate hi Squad uthao aur Firebase me save karo (1-CLICK MAGIC)
-        async function makeMatchLive(matchId, t1, t2, matchName, matchTime) {
-            let btn = document.getElementById(`btn_${matchId}`);
-            btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Saving...";
-            
+            status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Aapka match ban raha hai...";
+            status.className = "success";
+
+            // 1. Players ko Comma se alag karna
+            let t1Array = p1Text.split(',').map(n => n.trim()).filter(n => n !== "");
+            let t2Array = p2Text.split(',').map(n => n.trim()).filter(n => n !== "");
+
+            // Match ID banana (Date ke hisaab se)
+            let matchId = "CUSTOM_" + new Date().getTime();
             let allPlayers = [];
 
-            try {
-                const options = { method: 'GET', headers: { 'X-RapidAPI-Key': RAPID_API_KEY, 'X-RapidAPI-Host': 'cricbuzz-cricket.p.rapidapi.com' } };
-                const response = await fetch(`https://cricbuzz-cricket.p.rapidapi.com/mcenter/v1/${matchId}/squads`, options);
-                const data = await response.json();
-                
-                if (data && data.squads && data.squads.length > 0) {
-                    data.squads.forEach(teamData => {
-                        let teamShortName = teamData.team.shortName;
-                        if(teamData.players) {
-                            teamData.players.forEach(p => {
-                                let roleStr = p.role ? p.role.toUpperCase() : "BAT";
-                                let finalRole = "BAT";
-                                if (roleStr.includes("WK") || roleStr.includes("KEEPER")) finalRole = "WK";
-                                else if (roleStr.includes("BOWL")) finalRole = "BOWL";
-                                else if (roleStr.includes("ALL")) finalRole = "AR";
+            // Team 1 Khiladi setup
+            t1Array.forEach((name, index) => {
+                let pRole = index === 0 ? "WK" : (index < 5 ? "BAT" : (index < 8 ? "AR" : "BOWL")); // Default roles
+                let creds = (Math.floor(Math.random() * 5) * 0.5) + 8.0; // 8.0 se 10.0 credits
+                allPlayers.push({ id: t1 + "_" + index, name: name, team: t1.substring(0,3), role: pRole, credits: creds });
+            });
 
-                                allPlayers.push({
-                                    id: p.id, name: p.name, team: teamShortName, role: finalRole,
-                                    credits: (Math.floor(Math.random() * 5) * 0.5) + 8.0
-                                });
-                            });
-                        }
-                    });
-                }
-            } catch(e) { console.log("Squad API fail, generating backup players..."); }
+            // Team 2 Khiladi setup
+            t2Array.forEach((name, index) => {
+                let pRole = index === 0 ? "WK" : (index < 5 ? "BAT" : (index < 8 ? "AR" : "BOWL"));
+                let creds = (Math.floor(Math.random() * 5) * 0.5) + 8.0;
+                allPlayers.push({ id: t2 + "_" + index, name: name, team: t2.substring(0,3), role: pRole, credits: creds });
+            });
 
-            // Agar API ne Squad nahi diya, toh Backup Players banao
-            if(allPlayers.length === 0) {
-                let roles = ['WK', 'BAT', 'BAT', 'BAT', 'BAT', 'AR', 'AR', 'BOWL', 'BOWL', 'BOWL', 'BOWL'];
-                for(let i=0; i<11; i++) {
-                    allPlayers.push({ id: t1+"_"+i, name: t1+" Player "+(i+1), team: t1, role: roles[i], credits: 8.5 });
-                    allPlayers.push({ id: t2+"_"+i, name: t2+" Player "+(i+1), team: t2, role: roles[i], credits: 8.5 });
-                }
-            }
-
-            // Database me Match Save Karo
-            let matchData = {
-                name: matchName, team1: t1, team2: t2, 
-                dateTimeGMT: new Date(matchTime).toISOString(), status: "Upcoming"
-            };
-
+            // Database ke liye object banana
             let playersData = {};
             allPlayers.forEach(p => { playersData[p.id] = p; });
 
-            // FIREBASE MAGIC 🚀
+            let matchData = {
+                name: mName, team1: t1, team2: t2, 
+                dateTimeGMT: new Date(mTime).toISOString(), status: "Upcoming", source: "CustomAdmin"
+            };
+
+            // 🚀 FIREBASE MEIN SAVE (Aapki Khud Ki API)
             db.ref('Game/Kalyan11/LiveMatches/' + matchId).set(matchData);
             db.ref('Game/Kalyan11/MatchPlayers/' + matchId).set(playersData)
             .then(() => {
-                btn.innerHTML = "✅ LIVE in App";
-                btn.className = "btn-live success";
+                status.innerHTML = "✅ BOMB! Match aur Players App me LIVE ho gaye hain!";
+                // Form saaf kar do
+                document.getElementById('matchName').value = "";
+                document.getElementById('t1Name').value = "";
+                document.getElementById('t2Name').value = "";
+                document.getElementById('t1Players').value = "";
+                document.getElementById('t2Players').value = "";
+            })
+            .catch(error => {
+                status.innerHTML = "⚠️ Firebase Error: " + error.message;
+                status.className = "error";
             });
         }
     </script>
