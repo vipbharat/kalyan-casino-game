@@ -3,88 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan 11 - Live Matches</title>
+    <title>Kalyan 11 - Auto Matches</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 70px; user-select: none; }
         .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; text-align: center; font-weight: 900; font-size: 18px; color: #ffd700; border-bottom: 2px solid #ffd700; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        
         .match-card { background: #111; margin: 15px; border-radius: 10px; border: 1px solid #333; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border-left: 4px solid #00ff88; }
-        .match-card:active { transform: scale(0.98); border-color: #ffd700; }
-        
         .series-name { font-size: 11px; color: #aaa; margin-bottom: 12px; border-bottom: 1px dashed #333; padding-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .teams { display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 900; margin-bottom: 10px; }
         .vs { color: #ff004c; font-size: 12px; background: #222; padding: 4px 8px; border-radius: 50%; }
-        
         .time-badge { font-size: 11px; font-weight: bold; background: rgba(0,255,136,0.1); color: #00ff88; padding: 6px 12px; border-radius: 4px; display: inline-block; border: 1px solid #00ff88; }
-        
         .loader { text-align: center; margin-top: 50px; color: #ffd700; font-weight: bold; }
         .error-msg { text-align: center; margin-top: 50px; color: #ff004c; font-size: 14px; padding: 20px; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        🏏 KALYAN 11 MATCHES
-    </div>
-
-    <div id="matches-list">
-        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Matches from Admin...</div>
-    </div>
+    <div class="header">🏏 KALYAN 11 MATCHES</div>
+    <div id="matches-list"><div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Auto-Fetching Matches...</div></div>
 
     <script>
-        // 🔥 Aapka apna Firebase Database
-        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-        const db = firebase.database();
-
+        // 🔥 Aapki API Key
+        const RAPID_API_KEY = "E5a57f16d8mshbfff1d06e203673p1032e5jsn6d2c4b2dfa43"; 
         const container = document.getElementById('matches-list');
 
-        // 🔥 Direct Admin Panel se Matches Load honge
-        db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
+        function displayMatches(matchesArray) {
             container.innerHTML = "";
-            
-            if(!snapshot.exists()) {
-                container.innerHTML = `<div class="error-msg"><i class="fa-solid fa-calendar-xmark" style="font-size:30px; margin-bottom:10px;"></i><br>Admin ne abhi koi match nahi dala hai.</div>`;
-                return;
-            }
-
-            let matchesArray = [];
-            snapshot.forEach(child => {
-                let m = child.val();
-                m.id = child.key;
-                matchesArray.push(m);
-            });
-
-            // Date ke hisaab se sort karo
-            matchesArray.sort((a, b) => new Date(a.dateTimeGMT).getTime() - new Date(b.dateTimeGMT).getTime());
-
             matchesArray.forEach(m => {
                 let options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-                let displayTime = "Starts: " + new Date(m.dateTimeGMT).toLocaleString('en-IN', options);
-                let clickAction = `window.location.href='Contests.html?matchId=${m.id}'`;
-
-                // Puraane 3-letter name banane ka logic
-                let t1 = m.team1.substring(0,3).toUpperCase();
-                let t2 = m.team2.substring(0,3).toUpperCase();
+                let displayTime = "Starts: " + new Date(m.timeNum).toLocaleString('en-IN', options);
+                let clickAction = `window.location.href='Contests.html?matchId=${m.id}&t1=${m.t1}&t2=${m.t2}'`;
 
                 container.innerHTML += `
                     <div class="match-card" onclick="${clickAction}">
                         <div class="series-name">${m.name}</div>
                         <div class="teams">
-                            <div>${t1}</div>
+                            <div>${m.t1}</div>
                             <div class="vs">V/S</div>
-                            <div>${t2}</div>
+                            <div>${m.t2}</div>
                         </div>
                         <div class="time-badge"><i class="fa-solid fa-bolt"></i> ${displayTime}</div>
                     </div>
                 `;
             });
-        });
+        }
+
+        async function fetchAutoMatches() {
+            let cachedData = localStorage.getItem('kalyan_auto_matches');
+            let cacheTime = localStorage.getItem('kalyan_auto_time');
+            let now = new Date().getTime();
+
+            // Cache for 3 hours to save API limit
+            if (cachedData && cacheTime && (now - cacheTime < 10800000)) {
+                displayMatches(JSON.parse(cachedData));
+                return;
+            }
+
+            try {
+                const options = { method: 'GET', headers: { 'X-RapidAPI-Key': RAPID_API_KEY, 'X-RapidAPI-Host': 'cricbuzz-cricket.p.rapidapi.com' } };
+                const response = await fetch('https://cricbuzz-cricket.p.rapidapi.com/matches/v1/upcoming', options);
+                const data = await response.json();
+                
+                let finalMatches = [];
+                if(data.typeMatches) {
+                    data.typeMatches.forEach(typeObj => {
+                        if(typeObj.seriesMatches) {
+                            typeObj.seriesMatches.forEach(seriesObj => {
+                                if(seriesObj.seriesAdWrapper && seriesObj.seriesAdWrapper.matches) {
+                                    seriesObj.seriesAdWrapper.matches.forEach(matchWrapper => {
+                                        let m = matchWrapper.matchInfo;
+                                        if(m && m.startDate) {
+                                            finalMatches.push({
+                                                id: m.matchId,
+                                                name: m.seriesName,
+                                                t1: m.team1 ? String(m.team1.teamSName).substring(0,3).toUpperCase() : "TM1",
+                                                t2: m.team2 ? String(m.team2.teamSName).substring(0,3).toUpperCase() : "TM2",
+                                                timeNum: parseInt(m.startDate)
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+
+                finalMatches.sort((a, b) => a.timeNum - b.timeNum);
+                let topMatches = finalMatches.slice(0, 15);
+
+                if(topMatches.length > 0) {
+                    localStorage.setItem('kalyan_auto_matches', JSON.stringify(topMatches));
+                    localStorage.setItem('kalyan_auto_time', now);
+                    displayMatches(topMatches);
+                } else {
+                    container.innerHTML = `<div class="error-msg">⚠️ No matches found.</div>`;
+                }
+            } catch (error) {
+                if(cachedData) { displayMatches(JSON.parse(cachedData)); } 
+                else { container.innerHTML = `<div class="error-msg">⚠️ Network Error!</div>`; }
+            }
+        }
+        fetchAutoMatches();
     </script>
 </body>
 </html>
