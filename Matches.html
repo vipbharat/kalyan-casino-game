@@ -6,6 +6,9 @@
     <title>Kalyan 11 - Live Matches</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 70px; user-select: none; }
         .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; text-align: center; font-weight: 900; font-size: 18px; color: #ffd700; border-bottom: 2px solid #ffd700; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
@@ -30,111 +33,58 @@
     </div>
 
     <div id="matches-list">
-        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Real Cricbuzz Matches...</div>
+        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Matches from Admin...</div>
     </div>
 
     <script>
-        // 🔥 YAHAN AAPKI ASALI VIP KEY LAGA DI GAYI HAI 🔥
-        const RAPID_API_KEY = "E5a57f16d8mshbfff1d06e203673p1032e5jsn6d2c4b2dfa43"; 
-        
+        // 🔥 Aapka apna Firebase Database
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
+
         const container = document.getElementById('matches-list');
 
-        function displayMatches(matchesArray) {
-            if(matchesArray.length === 0) {
-                container.innerHTML = `<div class="error-msg"><i class="fa-solid fa-calendar-xmark" style="font-size:30px; margin-bottom:10px;"></i><br>Abhi koi match nahi mila.</div>`;
+        // 🔥 Direct Admin Panel se Matches Load honge
+        db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
+            container.innerHTML = "";
+            
+            if(!snapshot.exists()) {
+                container.innerHTML = `<div class="error-msg"><i class="fa-solid fa-calendar-xmark" style="font-size:30px; margin-bottom:10px;"></i><br>Admin ne abhi koi match nahi dala hai.</div>`;
                 return;
             }
 
-            container.innerHTML = "";
+            let matchesArray = [];
+            snapshot.forEach(child => {
+                let m = child.val();
+                m.id = child.key;
+                matchesArray.push(m);
+            });
+
+            // Date ke hisaab se sort karo
+            matchesArray.sort((a, b) => new Date(a.dateTimeGMT).getTime() - new Date(b.dateTimeGMT).getTime());
+
             matchesArray.forEach(m => {
                 let options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-                let displayTime = "Starts: " + new Date(m.timeNum).toLocaleString('en-IN', options);
-                
-                // Click karne par purane Contests.html par bhejega, wahan se CreateTeam khulega
+                let displayTime = "Starts: " + new Date(m.dateTimeGMT).toLocaleString('en-IN', options);
                 let clickAction = `window.location.href='Contests.html?matchId=${m.id}'`;
+
+                // Puraane 3-letter name banane ka logic
+                let t1 = m.team1.substring(0,3).toUpperCase();
+                let t2 = m.team2.substring(0,3).toUpperCase();
 
                 container.innerHTML += `
                     <div class="match-card" onclick="${clickAction}">
                         <div class="series-name">${m.name}</div>
                         <div class="teams">
-                            <div>${m.t1}</div>
+                            <div>${t1}</div>
                             <div class="vs">V/S</div>
-                            <div>${m.t2}</div>
+                            <div>${t2}</div>
                         </div>
                         <div class="time-badge"><i class="fa-solid fa-bolt"></i> ${displayTime}</div>
                     </div>
                 `;
             });
-        }
-
-        async function fetchCricbuzzMatches() {
-            // Smart Cache: Phone ki memory se data uthao (Taki API ki limit bache)
-            let cachedData = localStorage.getItem('kalyan_cricbuzz_data');
-            let cacheTime = localStorage.getItem('kalyan_cricbuzz_time');
-            let now = new Date().getTime();
-
-            if (cachedData && cacheTime && (now - cacheTime < 10800000)) {
-                displayMatches(JSON.parse(cachedData));
-                return;
-            }
-
-            try {
-                const options = {
-                    method: 'GET',
-                    headers: {
-                        'X-RapidAPI-Key': RAPID_API_KEY,
-                        'X-RapidAPI-Host': 'cricbuzz-cricket.p.rapidapi.com'
-                    }
-                };
-
-                const response = await fetch('https://cricbuzz-cricket.p.rapidapi.com/matches/v1/upcoming', options);
-                const data = await response.json();
-                
-                let finalMatches = [];
-
-                if(data.typeMatches) {
-                    data.typeMatches.forEach(typeObj => {
-                        if(typeObj.seriesMatches) {
-                            typeObj.seriesMatches.forEach(seriesObj => {
-                                if(seriesObj.seriesAdWrapper && seriesObj.seriesAdWrapper.matches) {
-                                    seriesObj.seriesAdWrapper.matches.forEach(matchWrapper => {
-                                        let m = matchWrapper.matchInfo;
-                                        if(m && m.startDate) {
-                                            finalMatches.push({
-                                                id: m.matchId,
-                                                name: m.seriesName + ' - ' + m.matchDesc,
-                                                t1: m.team1 ? String(m.team1.teamSName).substring(0,3).toUpperCase() : "TM1",
-                                                t2: m.team2 ? String(m.team2.teamSName).substring(0,3).toUpperCase() : "TM2",
-                                                timeNum: parseInt(m.startDate)
-                                            });
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    });
-                }
-
-                // Time ke hisaab se sort karo aur top 20 matches le lo
-                finalMatches.sort((a, b) => a.timeNum - b.timeNum);
-                let topMatches = finalMatches.slice(0, 20);
-
-                if(topMatches.length > 0) {
-                    // Naya data cache mein save karo
-                    localStorage.setItem('kalyan_cricbuzz_data', JSON.stringify(topMatches));
-                    localStorage.setItem('kalyan_cricbuzz_time', now);
-                    displayMatches(topMatches);
-                } else {
-                    container.innerHTML = `<div class="error-msg">⚠️ API se data nahi aaya. Limit check karein.</div>`;
-                }
-
-            } catch (error) {
-                if(cachedData) { displayMatches(JSON.parse(cachedData)); } 
-                else { container.innerHTML = `<div class="error-msg">⚠️ Network Error! Kripya internet check karein.</div>`; }
-            }
-        }
-
-        fetchCricbuzzMatches();
+        });
     </script>
 </body>
 </html>
