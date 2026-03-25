@@ -59,6 +59,11 @@
             <label>Match Start Time</label>
             <input type="datetime-local" id="matchTime">
         </div>
+
+        <div class="input-group">
+            <label>Google Live Score Link (Optional)</label>
+            <input type="text" id="liveScoreLink" placeholder="Paste Google Search URL here (e.g., Malawi vs Ghana)">
+        </div>
     </div>
 
     <div class="admin-box">
@@ -81,7 +86,7 @@
     <div id="statusBox"></div>
 
     <script>
-        // 🔥 Aapka Firebase (Ab ye aapki khud ki API hai)
+        // 🔥 Aapka Firebase
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
@@ -91,12 +96,13 @@
             let t1 = document.getElementById('t1Name').value.trim().toUpperCase();
             let t2 = document.getElementById('t2Name').value.trim().toUpperCase();
             let mTime = document.getElementById('matchTime').value;
+            let liveLink = document.getElementById('liveScoreLink').value.trim(); // Naya Google Link
             let p1Text = document.getElementById('t1Players').value.trim();
             let p2Text = document.getElementById('t2Players').value.trim();
             let status = document.getElementById('statusBox');
 
             if(!mName || !t1 || !t2 || !mTime || !p1Text || !p2Text) {
-                status.innerHTML = "⚠️ Kripya saare dabbe (boxes) bharein!";
+                status.innerHTML = "⚠️ Kripya saare zaroori dabbe (boxes) bharein!";
                 status.className = "error";
                 return;
             }
@@ -108,14 +114,14 @@
             let t1Array = p1Text.split(',').map(n => n.trim()).filter(n => n !== "");
             let t2Array = p2Text.split(',').map(n => n.trim()).filter(n => n !== "");
 
-            // Match ID banana (Date ke hisaab se)
+            // Match ID banana
             let matchId = "CUSTOM_" + new Date().getTime();
             let allPlayers = [];
 
             // Team 1 Khiladi setup
             t1Array.forEach((name, index) => {
-                let pRole = index === 0 ? "WK" : (index < 5 ? "BAT" : (index < 8 ? "AR" : "BOWL")); // Default roles
-                let creds = (Math.floor(Math.random() * 5) * 0.5) + 8.0; // 8.0 se 10.0 credits
+                let pRole = index === 0 ? "WK" : (index < 5 ? "BAT" : (index < 8 ? "AR" : "BOWL")); 
+                let creds = (Math.floor(Math.random() * 5) * 0.5) + 8.0; 
                 allPlayers.push({ id: t1 + "_" + index, name: name, team: t1.substring(0,3), role: pRole, credits: creds });
             });
 
@@ -126,16 +132,17 @@
                 allPlayers.push({ id: t2 + "_" + index, name: name, team: t2.substring(0,3), role: pRole, credits: creds });
             });
 
-            // Database ke liye object banana
             let playersData = {};
             allPlayers.forEach(p => { playersData[p.id] = p; });
 
+            // 🔥 Yahan liveLink database mein save ho jayega
             let matchData = {
                 name: mName, team1: t1, team2: t2, 
-                dateTimeGMT: new Date(mTime).toISOString(), status: "Upcoming", source: "CustomAdmin"
+                dateTimeGMT: new Date(mTime).toISOString(), status: "Upcoming", source: "CustomAdmin",
+                googleLiveLink: liveLink 
             };
 
-            // 🚀 FIREBASE MEIN SAVE (Aapki Khud Ki API)
+            // Firebase Save
             db.ref('Game/Kalyan11/LiveMatches/' + matchId).set(matchData);
             db.ref('Game/Kalyan11/MatchPlayers/' + matchId).set(playersData)
             .then(() => {
@@ -144,6 +151,8 @@
                 document.getElementById('matchName').value = "";
                 document.getElementById('t1Name').value = "";
                 document.getElementById('t2Name').value = "";
+                document.getElementById('matchTime').value = "";
+                document.getElementById('liveScoreLink').value = "";
                 document.getElementById('t1Players').value = "";
                 document.getElementById('t2Players').value = "";
             })
