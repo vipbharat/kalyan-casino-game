@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalyan 11 - Choose C & VC</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 80px; }
+        .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #ffd700; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+        .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; color: #ffd700; }
+        .title { font-weight: 900; font-size: 16px; text-transform: uppercase; }
+        .sub-title { font-size: 11px; color: #aaa; margin-top: 3px; }
+        
+        .info-bar { background: #111; padding: 10px; text-align: center; font-size: 12px; color: #ffd700; border-bottom: 1px solid #333; }
+        .player-list { padding: 15px; }
+        .player-row { background: #111; border: 1px solid #333; padding: 12px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .p-name { font-weight: bold; font-size: 15px; }
+        .p-role { font-size: 11px; color: #aaa; }
+        
+        .cvc-btns { display: flex; gap: 10px; }
+        .cvc-btn { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #555; background: #222; color: #aaa; font-weight: 900; font-size: 12px; cursor: pointer; transition: 0.3s; }
+        .cvc-btn.active-c { background: #ffd700; color: #000; border-color: #ffd700; transform: scale(1.1); box-shadow: 0 0 10px rgba(255,215,0,0.5); }
+        .cvc-btn.active-vc { background: #c0c0c0; color: #000; border-color: #c0c0c0; transform: scale(1.1); box-shadow: 0 0 10px rgba(192,192,192,0.5); }
+
+        .footer { position: fixed; bottom: 0; width: 100%; background: #111; padding: 15px; box-sizing: border-box; display: flex; justify-content: center; border-top: 2px solid #ffd700; z-index: 100; }
+        .save-btn { background: #00ff88; color: #000; padding: 12px 40px; border-radius: 5px; font-weight: 900; font-size: 16px; border: none; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.3s; width: 100%; }
+        .save-btn.active { opacity: 1; pointer-events: auto; box-shadow: 0 0 15px rgba(0,255,136,0.4); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
+        <div>
+            <div class="title">CHOOSE C & VC</div>
+            <div class="sub-title">C gets 2X Points | VC gets 1.5X Points</div>
+        </div>
+    </div>
+    
+    <div class="info-bar">Choose your Captain and Vice-Captain wisely!</div>
+
+    <div class="player-list" id="teamContainer"></div>
+
+    <div class="footer">
+        <button class="save-btn" id="saveBtn" onclick="saveTeamToFirebase()">SAVE TEAM</button>
+    </div>
+
+    <script>
+        // 1. Firebase Setup
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const matchId = urlParams.get('matchId') || "DEMO_MATCH";
+        
+        // Dummy phone number set kar rahe hain testing ke liye (Aap isko asali login wale number se link kar dena)
+        if(!localStorage.getItem('userPhone')) { localStorage.setItem('userPhone', '9876543210'); }
+        const userPhone = localStorage.getItem('userPhone');
+
+        // Get 11 players selected in previous screen
+        const selectedPlayersRaw = localStorage.getItem('kalyan_selected_team');
+        let selectedPlayers = [];
+        if(selectedPlayersRaw) { selectedPlayers = JSON.parse(selectedPlayersRaw); }
+        else { document.getElementById('teamContainer').innerHTML = "<div style='text-align:center; color:red; margin-top:20px;'>No Players Selected! Go back and select 11 players.</div>"; }
+
+        let captain = null;
+        let viceCaptain = null;
+
+        function renderTeam() {
+            let container = document.getElementById('teamContainer');
+            container.innerHTML = "";
+            
+            selectedPlayers.forEach((playerId, index) => {
+                let isC = captain === playerId ? 'active-c' : '';
+                let isVC = viceCaptain === playerId ? 'active-vc' : '';
+                
+                container.innerHTML += `
+                    <div class="player-row">
+                        <div>
+                            <div class="p-name">Player ID: ${playerId}</div>
+                            <div class="p-role">Selected Player</div>
+                        </div>
+                        <div class="cvc-btns">
+                            <button class="cvc-btn ${isC}" onclick="setRole('${playerId}', 'C')">C</button>
+                            <button class="cvc-btn ${isVC}" onclick="setRole('${playerId}', 'VC')">VC</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function setRole(id, role) {
+            if (role === 'C') {
+                if(viceCaptain === id) viceCaptain = null;
+                captain = id;
+            } else if (role === 'VC') {
+                if(captain === id) captain = null;
+                viceCaptain = id;
+            }
+            
+            // Activate SAVE button if both selected
+            let saveBtn = document.getElementById('saveBtn');
+            if(captain && viceCaptain) { saveBtn.classList.add('active'); } 
+            else { saveBtn.classList.remove('active'); }
+            
+            renderTeam();
+        }
+
+        function saveTeamToFirebase() {
+            document.getElementById('saveBtn').innerText = "SAVING...";
+            
+            let teamData = {
+                players: selectedPlayers,
+                captain: captain,
+                viceCaptain: viceCaptain,
+                total_points: 0, // Shuru me 0 points
+                timestamp: new Date().getTime()
+            };
+
+            // Save in Firebase under this Match and User
+            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).set(teamData)
+            .then(() => {
+                alert("Team Saved Successfully! 🚀");
+                // Team save hone ke baad sidha Leaderboard par bhejo
+                window.location.href = "LiveLeaderboard.html?matchId=" + matchId;
+            })
+            .catch((error) => {
+                alert("Error saving team: " + error.message);
+                document.getElementById('saveBtn').innerText = "SAVE TEAM";
+            });
+        }
+
+        if(selectedPlayers.length > 0) { renderTeam(); }
+    </script>
+</body>
+</html>
