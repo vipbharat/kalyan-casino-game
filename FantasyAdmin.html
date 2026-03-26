@@ -11,13 +11,14 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding: 20px; }
         .header { background: linear-gradient(135deg, #ffd700, #ffaa00); padding: 15px; text-align: center; font-weight: 900; font-size: 20px; border-radius: 10px; margin-bottom: 20px; color: #000; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); text-transform: uppercase; }
-        .admin-box { background: #111; border: 2px solid #00ff88; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.6); position: relative; }
+        .admin-box { background: #111; border: 2px solid #00ff88; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.6); position: relative; margin-bottom: 20px;}
         .badge { background: #00ff88; color: #000; padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 20px; position: absolute; top: -12px; right: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);}
         .admin-box h3 { color: #fff; margin-top: 0; border-bottom: 1px dashed #444; padding-bottom: 10px; font-size: 18px; }
         .input-group { margin-bottom: 15px; }
         label { display: block; font-size: 13px; color: #ffd700; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 12px; box-sizing: border-box; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; font-size: 14px; }
-        input:focus { border-color: #00ff88; outline: none; }
+        input, textarea { width: 100%; padding: 12px; box-sizing: border-box; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; font-size: 14px; transition: 0.3s;}
+        input:focus, textarea:focus { border-color: #00ff88; outline: none; }
+        textarea { height: 80px; resize: vertical; }
         .row { display: flex; gap: 15px; }
         .row .input-group { flex: 1; }
         .btn-live { background: #00ff88; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 16px; text-transform: uppercase; margin-top: 10px;}
@@ -25,34 +26,67 @@
         #statusBox { text-align: center; font-weight: bold; margin-top: 15px; font-size: 15px; padding: 12px; border-radius: 8px; display: none; }
         .success { color: #00ff88; border: 1px solid #00ff88; background: #002211;}
         .error { color: #ff004c; border: 1px solid #ff004c; background: #220011;}
+        .help-text { font-size: 11px; color: #00ff88; margin-top: 4px; display: block; }
+        
+        .active-match-card { background: #222; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #ffaa00; }
+        .btn-edit { background: #ffaa00; color: #000; padding: 6px 12px; font-size: 12px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; margin-top: 8px; }
     </style>
 </head>
 <body>
 
     <div class="header"><i class="fa-solid fa-crown"></i> Kalyan Master Admin</div>
 
-    <div class="admin-box">
-        <div class="badge"><i class="fa-solid fa-bolt"></i> Super Fast Tracker</div>
-        <h3>Add Live Match + Link</h3>
-        <p style="font-size: 12px; color: #aaa; margin-top: -5px; margin-bottom: 15px;">Sirf details aur link dalo, baaki engine khud sambhalega!</p>
+    <div class="admin-box" id="formBox">
+        <div class="badge" id="formBadge"><i class="fa-solid fa-brain"></i> Smart Memory AI</div>
+        <h3 id="formTitle">Create VIP Match</h3>
         
         <div class="input-group">
-            <input type="text" id="mName" placeholder="Match Title (e.g., IND vs AUS T20)">
+            <label>Match Name</label>
+            <input type="text" id="mName" placeholder="e.g., IND vs PAK T20">
         </div>
+        
         <div class="row">
             <div class="input-group">
-                <input type="text" id="t1" placeholder="Team 1 (e.g., IND)">
+                <label>Team 1 (Short Name)</label>
+                <input type="text" id="t1" placeholder="e.g., IND">
             </div>
             <div class="input-group">
-                <input type="text" id="t2" placeholder="Team 2 (e.g., AUS)">
+                <label>Team 2 (Short Name)</label>
+                <input type="text" id="t2" placeholder="e.g., PAK">
             </div>
         </div>
+
         <div class="input-group">
-            <label><i class="fa-solid fa-link"></i> Cricbuzz / Google Live Score Link</label>
-            <input type="text" id="liveLink" placeholder="https://www.cricbuzz.com/...">
+            <label><i class="fa-solid fa-clock"></i> Match Date & Time</label>
+            <input type="datetime-local" id="matchDate">
         </div>
-        <button class="btn-live" onclick="createMatch()"><i class="fa-solid fa-rocket"></i> Launch Match</button>
+
+        <div class="input-group">
+            <label><i class="fa-solid fa-link"></i> Live Score Link</label>
+            <input type="text" id="liveLink" placeholder="Paste Cricbuzz/Google Link here...">
+        </div>
+
+        <div class="input-group">
+            <label><i class="fa-solid fa-users"></i> Team 1 Players</label>
+            <textarea id="t1Players" placeholder="Rohit Sharma, Virat Kohli..."></textarea>
+            <span class="help-text">Naya match banate waqt khali chhodne par purani team load hogi. Edit karte waqt yahan asali naam dikhenge.</span>
+        </div>
+
+        <div class="input-group">
+            <label><i class="fa-solid fa-users"></i> Team 2 Players</label>
+            <textarea id="t2Players" placeholder="Babar Azam, Shaheen Afridi..."></textarea>
+        </div>
+
+        <button class="btn-live" id="mainBtn" onclick="createOrUpdateMatch()"><i class="fa-solid fa-rocket"></i> Launch Auto-Match</button>
         <div id="statusBox"></div>
+    </div>
+
+    <div class="admin-box">
+        <h3><i class="fa-solid fa-pen-to-square"></i> Active Matches (Toss/Lineup Edit)</h3>
+        <p style="font-size: 11px; color: #aaa; margin-top: -5px;">Yahan se kisi bhi chalte match ka time ya khiladiyon ke naam badle jaa sakte hain.</p>
+        <div id="activeMatchesList">
+            <div style="text-align:center; color:#ffd700;"><i class="fa-solid fa-spinner fa-spin"></i> Checking active matches...</div>
+        </div>
     </div>
 
     <script>
@@ -60,49 +94,172 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
+        let currentEditingId = null; // Agar koi match edit ho raha hai toh uski ID yahan aayegi
+
         function showMsg(msg, type) {
             let sb = document.getElementById('statusBox');
             sb.style.display = "block"; sb.innerHTML = msg; sb.className = type;
             setTimeout(() => { sb.style.display = "none"; }, 5000);
         }
 
-        function createMatch() {
+        // 🔥 FETCH ACTIVE MATCHES AND SHOW EDIT BUTTONS
+        db.ref('Game/Kalyan11/LiveMatches').on('value', snap => {
+            let container = document.getElementById('activeMatchesList');
+            container.innerHTML = "";
+            let data = snap.val();
+            
+            if(!data) { container.innerHTML = "<div class='help-text'>Koi bhi active match nahi hai.</div>"; return; }
+            
+            let count = 0;
+            Object.keys(data).forEach(matchId => {
+                let m = data[matchId];
+                if(m.status !== "Completed") {
+                    count++;
+                    container.innerHTML += `
+                        <div class="active-match-card">
+                            <strong style="color:#fff;">${m.name}</strong> <span style="color:#aaa; font-size:12px;">(${m.team1} vs ${m.team2})</span><br>
+                            <button class="btn-edit" onclick="loadEditMatch('${matchId}')"><i class="fa-solid fa-pen"></i> Edit Players / Time</button>
+                        </div>
+                    `;
+                }
+            });
+            if(count === 0) container.innerHTML = "<div class='help-text'>Koi bhi active match nahi hai.</div>";
+        });
+
+        // 📝 LOAD MATCH DATA FOR EDITING
+        async function loadEditMatch(matchId) {
+            currentEditingId = matchId; // Pata chal gaya ki ab naya nahi banana hai, update karna hai
+            
+            showMsg("<i class='fa-solid fa-spinner fa-spin'></i> Match details laa raha hoon...", "success");
+            
+            let mSnap = await db.ref('Game/Kalyan11/LiveMatches/' + matchId).once('value');
+            let m = mSnap.val();
+            let pSnap = await db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value');
+            let p = pSnap.val();
+
+            // Box bharna
+            document.getElementById('mName').value = m.name;
+            document.getElementById('t1').value = m.team1;
+            document.getElementById('t2').value = m.team2;
+            document.getElementById('liveLink').value = m.googleLiveLink || "";
+            
+            // Time bharna
+            if(m.dateTimeGMT) {
+                let d = new Date(m.dateTimeGMT);
+                // HTML datetime-local ko "YYYY-MM-DDThh:mm" format chahiye
+                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                document.getElementById('matchDate').value = d.toISOString().slice(0,16);
+            }
+
+            // Khiladiyon ka text bharna
+            let t1Arr = [], t2Arr = [];
+            if(p) {
+                Object.values(p).forEach(player => {
+                    if(player.team === m.team1.substring(0,3)) t1Arr.push(player.name);
+                    else t2Arr.push(player.name);
+                });
+            }
+            document.getElementById('t1Players').value = t1Arr.join(', ');
+            document.getElementById('t2Players').value = t2Arr.join(', ');
+
+            // UI Badlo taaki pata chale Update mode hai
+            document.getElementById('formTitle').innerText = "Update Match (Toss / Lineup)";
+            document.getElementById('formTitle').style.color = "#ffaa00";
+            let mainBtn = document.getElementById('mainBtn');
+            mainBtn.innerHTML = "<i class='fa-solid fa-wrench'></i> Update Details";
+            mainBtn.style.background = "#ffaa00";
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' }); // Form ke upar scroll kar do
+            document.getElementById('statusBox').style.display = "none";
+        }
+
+        // 🚀 MAIN FUNCTION (CREATE OR UPDATE)
+        async function createOrUpdateMatch() {
             let mName = document.getElementById('mName').value.trim();
             let t1 = document.getElementById('t1').value.trim().toUpperCase();
             let t2 = document.getElementById('t2').value.trim().toUpperCase();
             let link = document.getElementById('liveLink').value.trim();
+            let mDate = document.getElementById('matchDate').value;
+            let p1Text = document.getElementById('t1Players').value.trim();
+            let p2Text = document.getElementById('t2Players').value.trim();
 
-            if(!mName || !t1 || !t2 || !link) return showMsg("⚠️ Saare dabbe bharna zaroori hai!", "error");
-            showMsg("<i class='fa-solid fa-spinner fa-spin'></i> Match app me jaa raha hai...", "success");
+            if(!mName || !t1 || !t2 || !link || !mDate) return showMsg("⚠️ Date, Link aur Teams ke naam bharna zaroori hai!", "error");
+            
+            showMsg("<i class='fa-solid fa-spinner fa-spin'></i> Data save ho raha hai...", "success");
 
-            let matchId = "MATCH_" + new Date().getTime();
+            // Agar Edit ho raha hai toh wahi ID use karo, warna nayi ID banao
+            let matchId = currentEditingId ? currentEditingId : "MATCH_" + new Date().getTime();
+            let finalDateISO = new Date(mDate).toISOString(); 
             let allPlayers = [];
 
-            // Dummy Players auto-generate taaki turant start ho
-            for(let i=1; i<=11; i++){
-                let pRole = i===1 ? "WK" : (i<6 ? "BAT" : (i<9 ? "AR" : "BOWL"));
-                allPlayers.push({ id: t1 + "_" + i, name: t1 + " Player " + i, team: t1.substring(0,3), role: pRole, credits: 8.5 });
-                allPlayers.push({ id: t2 + "_" + i, name: t2 + " Player " + i, team: t2.substring(0,3), role: pRole, credits: 8.5 });
+            try {
+                // Agar naya match ban raha hai (currentEditingId null hai), tabhi memory check karo
+                if(!currentEditingId) {
+                    if(p1Text === "") {
+                        let snap = await db.ref('Game/Kalyan11/SavedSquads/' + t1).once('value');
+                        if(snap.exists()) p1Text = snap.val();
+                    } else {
+                        await db.ref('Game/Kalyan11/SavedSquads/' + t1).set(p1Text);
+                    }
+                    if(p2Text === "") {
+                        let snap = await db.ref('Game/Kalyan11/SavedSquads/' + t2).once('value');
+                        if(snap.exists()) p2Text = snap.val();
+                    } else {
+                        await db.ref('Game/Kalyan11/SavedSquads/' + t2).set(p2Text);
+                    }
+                }
+
+                // Players Set Karo (Team 1)
+                let t1Array = p1Text ? p1Text.split(',').map(n => n.trim()).filter(n => n !== "") : [];
+                if(t1Array.length > 0) {
+                    t1Array.forEach((name, i) => {
+                        let pRole = i===0 ? "WK" : (i<5 ? "BAT" : (i<8 ? "AR" : "BOWL"));
+                        allPlayers.push({ id: t1 + "_" + (i+1), name: name, team: t1.substring(0,3), role: pRole, credits: 8.5 });
+                    });
+                } else {
+                    for(let i=1; i<=11; i++) allPlayers.push({ id: t1 + "_" + i, name: t1 + " Player " + i, team: t1.substring(0,3), role: i===1?"WK":"BAT", credits: 8.5 });
+                }
+
+                // Players Set Karo (Team 2)
+                let t2Array = p2Text ? p2Text.split(',').map(n => n.trim()).filter(n => n !== "") : [];
+                if(t2Array.length > 0) {
+                    t2Array.forEach((name, i) => {
+                        let pRole = i===0 ? "WK" : (i<5 ? "BAT" : (i<8 ? "AR" : "BOWL"));
+                        allPlayers.push({ id: t2 + "_" + (i+1), name: name, team: t2.substring(0,3), role: pRole, credits: 8.5 });
+                    });
+                } else {
+                    for(let i=1; i<=11; i++) allPlayers.push({ id: t2 + "_" + i, name: t2 + " Player " + i, team: t2.substring(0,3), role: i===1?"WK":"BAT", credits: 8.5 });
+                }
+
+                let playersData = {};
+                allPlayers.forEach(p => { playersData[p.id] = p; });
+
+                let matchData = { name: mName, team1: t1, team2: t2, dateTimeGMT: finalDateISO, status: "Live", googleLiveLink: link };
+
+                await db.ref('Game/Kalyan11/LiveMatches/' + matchId).set(matchData);
+                await db.ref('Game/Kalyan11/MatchPlayers/' + matchId).set(playersData);
+
+                if(currentEditingId) {
+                    showMsg("✅ Update Success! Lineup aur Time badal gaya.", "success");
+                } else {
+                    showMsg("✅ BOMB! Naya Match LIVE ho gaya!", "success");
+                }
+
+                // Wapas Naya Match banane wale mode me aa jao
+                currentEditingId = null;
+                document.getElementById('formTitle').innerText = "Create VIP Match";
+                document.getElementById('formTitle').style.color = "#fff";
+                let mainBtn = document.getElementById('mainBtn');
+                mainBtn.innerHTML = "<i class='fa-solid fa-rocket'></i> Launch Auto-Match";
+                mainBtn.style.background = "#00ff88";
+
+                // Dabbe saaf karo
+                document.getElementById('mName').value = ""; document.getElementById('liveLink').value = "";
+                document.getElementById('t1Players').value = ""; document.getElementById('t2Players').value = "";
+
+            } catch (error) {
+                showMsg("⚠️ Error: " + error.message, "error");
             }
-
-            let playersData = {};
-            allPlayers.forEach(p => { playersData[p.id] = p; });
-
-            let matchData = { 
-                name: mName, team1: t1, team2: t2, 
-                dateTimeGMT: new Date().toISOString(), 
-                status: "Live", // Status Live rahega taaki engine track kare
-                googleLiveLink: link 
-            };
-
-            db.ref('Game/Kalyan11/LiveMatches/' + matchId).set(matchData);
-            db.ref('Game/Kalyan11/MatchPlayers/' + matchId).set(playersData)
-            .then(() => {
-                showMsg("✅ BOMB! Match aur Tracker dono shuru ho gaye!", "success");
-                document.getElementById('mName').value = ""; document.getElementById('t1').value = "";
-                document.getElementById('t2').value = ""; document.getElementById('liveLink').value = "";
-            })
-            .catch(err => showMsg("⚠️ Error: " + err.message, "error"));
         }
     </script>
 </body>
