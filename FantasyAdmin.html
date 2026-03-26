@@ -42,18 +42,26 @@
         <h3>1. Launch Match To Engine</h3>
         <div class="input-group"><label>🔗 Engine Live URL</label><input type="text" id="engineUrl" placeholder="Paste link for engine to scrape..."></div>
         <div class="input-group"><label>Match Title</label><input type="text" id="matchName" placeholder="e.g., Final T20 Match"></div>
+        
+        <p style="font-size: 11px; color: #ffd700; margin-top:-5px;">💡 Tip: Team ka naam daalkar bahar click karein, purane khiladi apne aap aa jayenge!</p>
         <div class="row">
-            <div class="input-group"><label>Team 1 Name</label><input type="text" id="t1Name" placeholder="e.g., IND"></div>
-            <div class="input-group"><label>Team 2 Name</label><input type="text" id="t2Name" placeholder="e.g., AUS"></div>
+            <div class="input-group"><label>Team 1 Name</label><input type="text" id="t1Name" placeholder="e.g., IND" onblur="fetchSavedSquad('t1Name', 't1Players', 'msg1')"></div>
+            <div class="input-group"><label>Team 2 Name</label><input type="text" id="t2Name" placeholder="e.g., AUS" onblur="fetchSavedSquad('t2Name', 't2Players', 'msg2')"></div>
         </div>
         <div class="input-group"><label>Match Start Time</label><input type="datetime-local" id="matchTime"></div>
 
-        <h3 style="margin-top:20px;">2. Match Squads (Optional)</h3>
-        <p style="font-size: 11px; color: #00ff88; margin-top:-10px;">💡 Agar aapne Team Database me players save kiye hain, toh ye dabbe KHALI chhod dein. System apne aap Database se utha lega!</p>
-        <div class="input-group"><textarea id="t1Players" placeholder="Team 1 Players (Khali chhodenge toh DB se aayega)"></textarea></div>
-        <div class="input-group"><textarea id="t2Players" placeholder="Team 2 Players (Khali chhodenge toh DB se aayega)"></textarea></div>
+        <h3 style="margin-top:20px;">2. Match Squads</h3>
+        <p style="font-size: 11px; color: #00ff88; margin-top:-10px;">Yahan nayi team likhenge toh wo automatically Database me hamesha ke liye save ho jayegi.</p>
+        <div class="input-group">
+            <label>Team 1 Players <span id="msg1" style="color:#00ff88; font-size:11px; display:none; float:right;">✨ Database se aa gaye!</span></label>
+            <textarea id="t1Players" placeholder="Yahan khiladiyon ke naam aayenge..."></textarea>
+        </div>
+        <div class="input-group">
+            <label>Team 2 Players <span id="msg2" style="color:#00ff88; font-size:11px; display:none; float:right;">✨ Database se aa gaye!</span></label>
+            <textarea id="t2Players" placeholder="Yahan khiladiyon ke naam aayenge..."></textarea>
+        </div>
         
-        <button class="btn-live" onclick="launchSmartMatch()">🚀 LAUNCH MATCH TO ENGINE</button>
+        <button class="btn-live" onclick="launchSmartMatch()">🚀 LAUNCH MATCH & SAVE TO DATABASE</button>
         <div id="statusBox"></div>
     </div>
 
@@ -75,8 +83,21 @@
             return "BAT";
         }
 
-        // 🚀 ASYNC JADOO (Database se khiladi nikalna agar dabba khali ho)
-        async function launchSmartMatch() {
+        function fetchSavedSquad(inputId, textAreaId, msgId) {
+            let teamName = document.getElementById(inputId).value.trim().toUpperCase();
+            if(!teamName) return;
+
+            db.ref('Game/Kalyan11/SavedSquads/' + teamName).once('value', snap => {
+                if(snap.exists()) {
+                    document.getElementById(textAreaId).value = snap.val(); 
+                    let msg = document.getElementById(msgId);
+                    msg.style.display = "block"; 
+                    setTimeout(() => { msg.style.display = "none"; }, 4000);
+                }
+            });
+        }
+
+        function launchSmartMatch() {
             let eUrl = document.getElementById('engineUrl').value.trim();
             let mName = document.getElementById('matchName').value.trim();
             let t1 = document.getElementById('t1Name').value.trim().toUpperCase();
@@ -86,29 +107,16 @@
             let p2Text = document.getElementById('t2Players').value.trim();
             let status = document.getElementById('statusBox');
 
-            if(!eUrl || !mName || !t1 || !t2) {
-                status.innerHTML = "⚠️ Kripya upar ki saari details bharein!"; status.className = "error"; return;
+            if(!eUrl || !mName || !t1 || !t2 || !p1Text || !p2Text) {
+                status.innerHTML = "⚠️ Kripya upar ki saari details aur khiladi bharein!"; status.className = "error"; return;
             }
 
-            status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Engine aur Database check ho raha hai..."; status.className = "success";
+            status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Engine aur Database update ho raha hai..."; status.className = "success";
 
-            // 🔥 JADOO: Agar khiladiyon ka dabba khali hai, toh Database se uthao!
-            if (!p1Text) {
-                let snap1 = await db.ref('Game/Kalyan11/SavedSquads/' + t1).once('value');
-                if (snap1.exists()) p1Text = snap1.val();
-            }
-            if (!p2Text) {
-                let snap2 = await db.ref('Game/Kalyan11/SavedSquads/' + t2).once('value');
-                if (snap2.exists()) p2Text = snap2.val();
-            }
+            // 🔥 YAHAN HOTA HAI JADOO: Nayi team ko 'allteam' database me permanent save kar dena!
+            db.ref('Game/Kalyan11/SavedSquads/' + t1).set(p1Text);
+            db.ref('Game/Kalyan11/SavedSquads/' + t2).set(p2Text);
 
-            // Agar Database me bhi nahi mila aur dabbe me bhi nahi likha
-            if (!p1Text || !p2Text) {
-                status.innerHTML = "⚠️ Error: Khiladi nahi mile! Ya toh manually type karein ya pehle 'All Teams Database' me save karein.";
-                status.className = "error"; return;
-            }
-
-            // Aage ka normal processing
             let mId = "MATCH_" + Date.now();
             let pData = {};
             
@@ -117,7 +125,8 @@
 
             db.ref('Game/Kalyan11/LiveMatches/' + mId).set({ engineUrl: eUrl, name: mName, team1: t1, team2: t2, dateTimeGMT: new Date(mTime).toISOString(), status: "Upcoming" });
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => {
-                status.innerHTML = "✅ BOMB! Match App aur Engine me Launch ho gaya!";
+                status.innerHTML = "✅ BOMB! Match Live Ho Gaya Aur Nayi Teams Database Me Save Ho Gayi!";
+                
                 document.getElementById('engineUrl').value = ""; document.getElementById('matchName').value = "";
                 document.getElementById('t1Name').value = ""; document.getElementById('t2Name').value = "";
                 document.getElementById('t1Players').value = ""; document.getElementById('t2Players').value = "";
@@ -160,6 +169,11 @@
         function updateLineup(mId, t1, t2) {
             let p1Text = document.getElementById(`editT1_${mId}`).value.trim(); let p2Text = document.getElementById(`editT2_${mId}`).value.trim();
             if(!p1Text || !p2Text) { alert("Dono team ke khiladi daalein!"); return; }
+            
+            // Edit Lineup karne par bhi database me latest squad save ho jayega
+            db.ref('Game/Kalyan11/SavedSquads/' + t1).set(p1Text);
+            db.ref('Game/Kalyan11/SavedSquads/' + t2).set(p2Text);
+
             let pData = {};
             p1Text.split(',').forEach((name, i) => { let cn = name.trim(); if(cn) pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5 }; });
             p2Text.split(',').forEach((name, i) => { let cn = name.trim(); if(cn) pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5 }; });
