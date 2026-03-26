@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan 11 - Master Match Generator</title>
+    <title>Kalyan 11 - Ultimate Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -12,107 +12,283 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding: 20px; }
         .header { background: linear-gradient(135deg, #1a0033, #00ff88); padding: 15px; text-align: center; font-weight: 900; font-size: 20px; border-radius: 10px; margin-bottom: 20px; color: #000; box-shadow: 0 0 15px rgba(0, 255, 136, 0.4); }
-        .admin-box { background: #111; border: 1px solid #333; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.6); margin-bottom: 20px; }
-        .admin-box h3 { color: #ffd700; margin-top: 0; border-bottom: 1px dashed #444; padding-bottom: 10px; }
-        .input-group { margin-bottom: 15px; }
-        label { display: block; font-size: 13px; color: #aaa; margin-bottom: 5px; font-weight: bold; }
-        input, textarea { width: 100%; padding: 12px; box-sizing: border-box; background: #222; border: 1px solid #444; color: #fff; border-radius: 5px; font-size: 14px; }
-        textarea { height: 90px; resize: vertical; }
-        input:focus, textarea:focus { border-color: #00ff88; outline: none; }
-        .row { display: flex; gap: 15px; }
-        .row .input-group { flex: 1; }
-        .btn-live { background: #00ff88; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; margin-bottom: 15px; }
-        .btn-live:hover { background: #fff; }
-        .btn-delete { background: #ff004c; color: #fff; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 16px; border: 2px solid #fff; }
-        #statusBox { text-align: center; font-weight: bold; margin-top: 15px; font-size: 16px; }
-        .success { color: #00ff88; }
-        .error { color: #ff004c; }
+        
+        .section-title { color: #ffd700; border-bottom: 2px dashed #333; padding-bottom: 10px; margin-top: 30px; font-weight: 900; }
+        
+        .btn-main { background: #ffd700; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; margin-bottom: 10px;}
+        .btn-main:active { transform: scale(0.95); }
+        
+        .match-row { background: #111; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .match-info { font-size: 14px; width: 60%; }
+        .match-title { font-weight: 900; color: #00ff88; font-size: 16px; margin-bottom: 5px; }
+        .match-time { color: #aaa; font-size: 12px; }
+        
+        .btn-live { background: #ff004c; color: #fff; border: none; padding: 10px 15px; font-weight: bold; border-radius: 5px; cursor: pointer; }
+        
+        /* Dashboard Card Styles */
+        .dashboard-card { background: #1a1a2e; border: 1px solid #4a00e0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .dashboard-card h4 { margin: 0 0 10px 0; color: #fff; font-size: 18px; }
+        .input-group { margin-bottom: 10px; display: flex; gap: 10px; }
+        .input-group input { flex: 1; padding: 8px; background: #111; border: 1px solid #444; color: #fff; border-radius: 4px; }
+        .input-group button { background: #00ff88; color: #000; font-weight: bold; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        
+        .action-btns { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-edit { background: #ffd700; color: #000; border: none; padding: 8px 15px; font-weight: bold; border-radius: 4px; cursor: pointer; flex: 1; }
+        .btn-delete { background: #ff004c; color: #fff; border: none; padding: 8px 15px; font-weight: bold; border-radius: 4px; cursor: pointer; flex: 1; }
+        
+        /* Edit Lineup Box */
+        .edit-box { background: #111; padding: 10px; border: 1px dashed #ffd700; border-radius: 5px; margin-top: 10px; display: none; }
+        .edit-box textarea { width: 100%; height: 80px; background: #222; color: #fff; border: 1px solid #444; margin-bottom: 10px; padding: 5px; box-sizing: border-box; }
+        .btn-save-lineup { background: #00ff88; width: 100%; padding: 10px; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; color: #000; }
+
+        #statusBox { text-align: center; font-weight: bold; margin-bottom: 15px; color: #ffd700; }
     </style>
 </head>
 <body>
 
-    <div class="header">👑 KALYAN 11 MASTER GENERATOR</div>
+    <div class="header">👑 KALYAN 11 ULTIMATE ADMIN</div>
 
-    <div class="admin-box">
-        <h3>1. Match Details</h3>
-        <div class="input-group"><label>Match Title</label><input type="text" id="matchName" placeholder="e.g., IPL T20 Match"></div>
-        <div class="row">
-            <div class="input-group"><label>Team 1 Name</label><input type="text" id="t1Name" placeholder="e.g., CSK"></div>
-            <div class="input-group"><label>Team 2 Name</label><input type="text" id="t2Name" placeholder="e.g., RCB"></div>
-        </div>
-        <div class="input-group"><label>Match Start Time</label><input type="datetime-local" id="matchTime"></div>
-    </div>
-
-    <div class="admin-box">
-        <h3>2. Paste Squad (Comma Separated)</h3>
-        <div class="input-group"><label>Team 1 Players</label><textarea id="t1Players" placeholder="M S Dhoni, Ruturaj Gaikwad..."></textarea></div>
-        <div class="input-group"><label>Team 2 Players</label><textarea id="t2Players" placeholder="Virat Kohli, Faf du Plessis..."></textarea></div>
-    </div>
-
-    <button class="btn-live" onclick="generateMyOwnMatch()">🔥 CREATE ASALI MATCH</button>
-    <button class="btn-delete" onclick="deleteAllMatches()">🗑️ DELETE ALL OLD MATCHES</button>
-    
+    <button class="btn-main" onclick="fetchMatchesFromAPI()">
+        <i class="fa-solid fa-satellite-dish"></i> 1. Find New Matches
+    </button>
     <div id="statusBox"></div>
+    <div id="apiMatchesList"></div>
+
+    <div class="section-title">📊 YOUR LIVE MATCHES (Control Panel)</div>
+    <div id="dashboardList">
+        <div style="text-align: center; color: #aaa;">Loading Dashboard...</div>
+    </div>
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
-        // 🟢 Jhadu (Delete) Function
-        function deleteAllMatches() {
-            let confirmDelete = confirm("Kya aap pakka saare purane matches database se delete karna chahte hain?");
-            if(confirmDelete) {
-                document.getElementById('statusBox').innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Kachra saaf ho raha hai...";
-                db.ref('Game/Kalyan11/LiveMatches').remove();
-                db.ref('Game/Kalyan11/MatchPlayers').remove()
-                .then(() => {
-                    document.getElementById('statusBox').innerHTML = "✅ Database ekdum clean ho gaya! Ab naya match banaiye.";
-                    document.getElementById('statusBox').className = "success";
-                });
+        const RAPID_API_KEY = "E5a57f16d8mshbfff1d06e203673p1032e5jsn6d2c4b2dfa43";
+
+        // ==========================================
+        // 1. API SE NAYA MATCH DHOONDHNA (PURANA SYSTEM)
+        // ==========================================
+        async function fetchMatchesFromAPI() {
+            document.getElementById('statusBox').innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Searching Matches...";
+            document.getElementById('apiMatchesList').innerHTML = "";
+            
+            try {
+                const options = { method: 'GET', headers: { 'X-RapidAPI-Key': RAPID_API_KEY, 'X-RapidAPI-Host': 'cricbuzz-cricket.p.rapidapi.com' } };
+                const response = await fetch('https://cricbuzz-cricket.p.rapidapi.com/matches/v1/upcoming', options);
+                const data = await response.json();
+                
+                let tempMatches = [];
+                if(data.typeMatches) {
+                    data.typeMatches.forEach(typeObj => {
+                        if(typeObj.seriesMatches) {
+                            typeObj.seriesMatches.forEach(seriesObj => {
+                                if(seriesObj.seriesAdWrapper && seriesObj.seriesAdWrapper.matches) {
+                                    seriesObj.seriesAdWrapper.matches.forEach(matchWrapper => {
+                                        let m = matchWrapper.matchInfo;
+                                        if(m && m.startDate) {
+                                            tempMatches.push({
+                                                id: m.matchId, name: m.seriesName,
+                                                t1: m.team1 ? String(m.team1.teamSName).substring(0,3).toUpperCase() : "TM1",
+                                                t2: m.team2 ? String(m.team2.teamSName).substring(0,3).toUpperCase() : "TM2",
+                                                timeNum: parseInt(m.startDate)
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+                tempMatches.sort((a, b) => a.timeNum - b.timeNum);
+                renderApiMatches(tempMatches.slice(0, 10));
+
+            } catch (error) {
+                // Agar API fail ho jaye, toh Backup dikhayega
+                let now = new Date().getTime();
+                renderApiMatches([
+                    { id: "DEMO_1", name: "Asia Cup Blockbuster", t1: "IND", t2: "PAK", timeNum: now + (2 * 3600000) },
+                    { id: "DEMO_2", name: "IPL El Clasico", t1: "CSK", t2: "MI", timeNum: now + (24 * 3600000) }
+                ]);
             }
         }
 
-        // Generate Match Function
-        function generateMyOwnMatch() {
-            let mName = document.getElementById('matchName').value.trim();
-            let t1 = document.getElementById('t1Name').value.trim().toUpperCase();
-            let t2 = document.getElementById('t2Name').value.trim().toUpperCase();
-            let mTime = document.getElementById('matchTime').value;
-            let p1Text = document.getElementById('t1Players').value.trim();
-            let p2Text = document.getElementById('t2Players').value.trim();
-            let status = document.getElementById('statusBox');
+        function renderApiMatches(matches) {
+            document.getElementById('statusBox').innerHTML = `✅ Matches mil gaye! Kisko Live karna hai?`;
+            let listHTML = "";
+            matches.forEach(m => {
+                let dTime = new Date(m.timeNum).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                listHTML += `
+                    <div class="match-row">
+                        <div class="match-info">
+                            <div class="match-title">${m.t1} vs ${m.t2}</div>
+                            <div class="match-time">${m.name} <br> 🕒 ${dTime}</div>
+                        </div>
+                        <button id="btn_${m.id}" class="btn-live" onclick="makeMatchLive('${m.id}', '${m.t1}', '${m.t2}', '${m.name}', ${m.timeNum})">🔥 Make LIVE</button>
+                    </div>`;
+            });
+            document.getElementById('apiMatchesList').innerHTML = listHTML;
+        }
 
-            if(!mName || !t1 || !t2 || !mTime || !p1Text || !p2Text) {
-                status.innerHTML = "⚠️ Kripya saare dabbe (boxes) bharein!"; return;
+        async function makeMatchLive(matchId, t1, t2, matchName, matchTime) {
+            let btn = document.getElementById(`btn_${matchId}`);
+            btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Saving...";
+            
+            let allPlayers = [];
+            try {
+                const options = { method: 'GET', headers: { 'X-RapidAPI-Key': RAPID_API_KEY, 'X-RapidAPI-Host': 'cricbuzz-cricket.p.rapidapi.com' } };
+                const response = await fetch(`https://cricbuzz-cricket.p.rapidapi.com/mcenter/v1/${matchId}/squads`, options);
+                const data = await response.json();
+                
+                if (data && data.squads && data.squads.length > 0) {
+                    data.squads.forEach(teamData => {
+                        let teamShortName = teamData.team.shortName;
+                        if(teamData.players) {
+                            teamData.players.forEach(p => {
+                                let roleStr = p.role ? p.role.toUpperCase() : "BAT";
+                                let finalRole = "BAT";
+                                if (roleStr.includes("WK") || roleStr.includes("KEEPER")) finalRole = "WK";
+                                else if (roleStr.includes("BOWL")) finalRole = "BOWL";
+                                else if (roleStr.includes("ALL")) finalRole = "AR";
+
+                                allPlayers.push({
+                                    id: p.id, name: p.name, team: teamShortName, role: finalRole,
+                                    credits: (Math.floor(Math.random() * 5) * 0.5) + 8.0
+                                });
+                            });
+                        }
+                    });
+                }
+            } catch(e) { console.log("Squad fail, generating backup..."); }
+
+            if(allPlayers.length === 0) {
+                let roles = ['WK', 'BAT', 'BAT', 'BAT', 'BAT', 'AR', 'AR', 'BOWL', 'BOWL', 'BOWL', 'BOWL'];
+                for(let i=0; i<11; i++) {
+                    allPlayers.push({ id: t1+"_"+i, name: t1+" Player "+(i+1), team: t1, role: roles[i], credits: 8.5 });
+                    allPlayers.push({ id: t2+"_"+i, name: t2+" Player "+(i+1), team: t2, role: roles[i], credits: 8.5 });
+                }
             }
 
-            status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Match ban raha hai...";
+            let matchData = { name: matchName, team1: t1, team2: t2, dateTimeGMT: new Date(matchTime).toISOString(), status: "Upcoming", matchLink: "" };
+            let playersData = {};
+            allPlayers.forEach(p => { playersData[p.id] = p; });
+
+            db.ref('Game/Kalyan11/LiveMatches/' + matchId).set(matchData);
+            db.ref('Game/Kalyan11/MatchPlayers/' + matchId).set(playersData)
+            .then(() => {
+                btn.innerHTML = "✅ LIVE in App";
+                btn.style.background = "#00ff88"; btn.style.color = "#000";
+            });
+        }
+
+        // ==========================================
+        // 2. LIVE DASHBOARD (EDIT, DELETE, LINK)
+        // ==========================================
+        db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
+            let dashList = document.getElementById('dashboardList');
+            dashList.innerHTML = "";
+
+            if(!snapshot.exists()) {
+                dashList.innerHTML = "<div style='text-align:center; color:#aaa;'>Koi match live nahi hai.</div>";
+                return;
+            }
+
+            snapshot.forEach(child => {
+                let m = child.val();
+                let mId = child.key;
+                let currentLink = m.matchLink || "";
+
+                dashList.innerHTML += `
+                    <div class="dashboard-card" id="card_${mId}">
+                        <h4>${m.team1} vs ${m.team2}</h4>
+                        <div style="font-size:12px; color:#aaa; margin-bottom:10px;">${m.name}</div>
+                        
+                        <div class="input-group">
+                            <input type="text" id="link_${mId}" placeholder="Live Link ya Telegram Link daalein..." value="${currentLink}">
+                            <button onclick="saveLink('${mId}')">Save Link</button>
+                        </div>
+
+                        <div class="action-btns">
+                            <button class="btn-edit" onclick="openEditPlayers('${mId}', '${m.team1}', '${m.team2}')"><i class="fa-solid fa-users"></i> Edit Lineup</button>
+                            <button class="btn-delete" onclick="deleteMatch('${mId}')"><i class="fa-solid fa-trash"></i> Delete Match</button>
+                        </div>
+
+                        <div id="editBox_${mId}" class="edit-box">
+                            <div style="font-size:12px; margin-bottom:5px; color:#ffd700;">Khiladiyon ke naam comma (,) laga kar likhein:</div>
+                            <textarea id="t1Players_${mId}" placeholder="${m.team1} ke players..."></textarea>
+                            <textarea id="t2Players_${mId}" placeholder="${m.team2} ke players..."></textarea>
+                            <button class="btn-save-lineup" onclick="saveLineup('${mId}', '${m.team1}', '${m.team2}')">✅ Update Lineup</button>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+
+        // 🗑️ Delete Match
+        function deleteMatch(mId) {
+            if(confirm("Kya aap pakka is match ko delete karna chahte hain?")) {
+                db.ref('Game/Kalyan11/LiveMatches/' + mId).remove();
+                db.ref('Game/Kalyan11/MatchPlayers/' + mId).remove();
+            }
+        }
+
+        // 🔗 Save Link
+        function saveLink(mId) {
+            let newLink = document.getElementById(`link_${mId}`).value;
+            db.ref('Game/Kalyan11/LiveMatches/' + mId).update({ matchLink: newLink });
+            alert("Link Save Ho Gaya!");
+        }
+
+        // 👥 Open Edit Lineup Box (Khiladi change karne ke liye)
+        function openEditPlayers(mId, t1, t2) {
+            let box = document.getElementById(`editBox_${mId}`);
+            if(box.style.display === "block") { box.style.display = "none"; return; }
+            
+            box.style.display = "block";
+            document.getElementById(`t1Players_${mId}`).value = "Loading...";
+            document.getElementById(`t2Players_${mId}`).value = "Loading...";
+
+            // Purane Khiladi Database se uthao
+            db.ref('Game/Kalyan11/MatchPlayers/' + mId).once('value', snap => {
+                let t1Names = []; let t2Names = [];
+                if(snap.exists()){
+                    snap.forEach(child => {
+                        let p = child.val();
+                        if(p.team === t1 || p.team === t1.substring(0,3)) t1Names.push(p.name);
+                        else t2Names.push(p.name);
+                    });
+                }
+                document.getElementById(`t1Players_${mId}`).value = t1Names.join(", ");
+                document.getElementById(`t2Players_${mId}`).value = t2Names.join(", ");
+            });
+        }
+
+        // ✅ Save New Lineup
+        function saveLineup(mId, t1, t2) {
+            let p1Text = document.getElementById(`t1Players_${mId}`).value.trim();
+            let p2Text = document.getElementById(`t2Players_${mId}`).value.trim();
             
             let t1Array = p1Text.split(',').map(n => n.trim()).filter(n => n !== "");
             let t2Array = p2Text.split(',').map(n => n.trim()).filter(n => n !== "");
-            let matchId = "CUSTOM_" + new Date().getTime();
+            
             let allPlayers = [];
+            let roles = ['WK', 'BAT', 'BAT', 'BAT', 'BAT', 'AR', 'AR', 'BOWL', 'BOWL', 'BOWL', 'BOWL'];
 
             t1Array.forEach((name, index) => {
-                let pRole = index === 0 ? "WK" : (index < 5 ? "BAT" : (index < 8 ? "AR" : "BOWL"));
-                allPlayers.push({ id: t1 + "_" + index, name: name, team: t1.substring(0,3), role: pRole, credits: (Math.floor(Math.random() * 5) * 0.5) + 8.0 });
+                let pRole = index < 11 ? roles[index] : "BAT";
+                allPlayers.push({ id: t1 + "_" + index, name: name, team: t1.substring(0,3), role: pRole, credits: 8.5 });
             });
             t2Array.forEach((name, index) => {
-                let pRole = index === 0 ? "WK" : (index < 5 ? "BAT" : (index < 8 ? "AR" : "BOWL"));
-                allPlayers.push({ id: t2 + "_" + index, name: name, team: t2.substring(0,3), role: pRole, credits: (Math.floor(Math.random() * 5) * 0.5) + 8.0 });
+                let pRole = index < 11 ? roles[index] : "BAT";
+                allPlayers.push({ id: t2 + "_" + index, name: name, team: t2.substring(0,3), role: pRole, credits: 8.5 });
             });
 
             let playersData = {};
             allPlayers.forEach(p => { playersData[p.id] = p; });
 
-            let matchData = { name: mName, team1: t1, team2: t2, dateTimeGMT: new Date(mTime).toISOString(), status: "Upcoming", source: "CustomAdmin" };
-
-            db.ref('Game/Kalyan11/LiveMatches/' + matchId).set(matchData);
-            db.ref('Game/Kalyan11/MatchPlayers/' + matchId).set(playersData)
-            .then(() => {
-                status.innerHTML = "✅ BOMB! Match App me LIVE ho gaya hai!";
-                status.className = "success";
+            db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(playersData).then(() => {
+                alert("Lineup/Khiladi Update Ho Gaye!");
+                document.getElementById(`editBox_${mId}`).style.display = "none";
             });
         }
     </script>
