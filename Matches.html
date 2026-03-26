@@ -5,74 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kalyan 11 - Matches</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 70px; user-select: none; }
         .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; text-align: center; font-weight: 900; font-size: 18px; color: #ffd700; border-bottom: 2px solid #ffd700; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .match-card { background: #111; margin: 15px; border-radius: 10px; border: 1px solid #333; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border-left: 4px solid #00ff88; }
-        .series-name { font-size: 11px; color: #aaa; margin-bottom: 12px; border-bottom: 1px dashed #333; padding-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-        .teams { display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 900; margin-bottom: 10px; }
+        .match-card { background: #111; margin: 15px; border-radius: 12px; border: 1px solid #333; padding: 15px; text-align: center; cursor: pointer; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.5); border-left: 4px solid #00ff88; }
+        .series-name { font-size: 11px; color: #aaa; margin-bottom: 12px; border-bottom: 1px dashed #333; padding-bottom: 8px;}
+        .teams { display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 900; margin-bottom: 10px; color: #fff;}
         .vs { color: #ff004c; font-size: 12px; background: #222; padding: 4px 8px; border-radius: 50%; }
         .time-badge { font-size: 11px; font-weight: bold; background: rgba(0,255,136,0.1); color: #00ff88; padding: 6px 12px; border-radius: 4px; display: inline-block; border: 1px solid #00ff88; }
         .error-msg { text-align: center; margin-top: 50px; color: #ff004c; font-size: 14px; padding: 20px; font-weight: bold; }
-        .loading { text-align: center; margin-top: 50px; color: #ffd700; font-weight: bold; }
+        .loading { text-align: center; margin-top: 100px; color: #ffd700; font-weight: bold; font-size: 16px; }
+        .live-tag { position: absolute; top: 10px; right: 10px; background: #ff004c; color: #fff; font-size: 9px; padding: 3px 6px; border-radius: 4px; text-transform: uppercase; font-weight: bold; animation: blink 1s infinite;}
+        @keyframes blink { 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
 
-    <div class="header">🏏 KALYAN 11 MATCHES</div>
+    <div class="header"><i class="fa-solid fa-crown crown"></i> KALYAN 11 - MATCHES</div>
     
     <div id="matches-list">
-        <div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Firebase se matches dhoondh raha hoon...</div>
+        <div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Asali Matches load ho rahe hain...</div>
     </div>
 
     <script>
-        // 🔥 Aapka Firebase Setup
-        const firebaseConfig = { 
-            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
-            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
-            projectId: "kalyan-casino" 
-        };
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
-        // Direct Firebase se Match Lana
         db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
             const container = document.getElementById('matches-list');
             const data = snapshot.val();
             
             if (!data) {
-                container.innerHTML = `<div class="error-msg">⚠️ Abhi koi match nahi hai.<br><br>Kalyan Admin Panel se naya match banayein!</div>`;
+                container.innerHTML = `<div class="error-msg">⚠️ Abhi koi Live match nahi chal raha hai.<br><br>Kalyan Admin Panel se naya match banayein!</div>`;
                 return;
             }
 
-            container.innerHTML = ""; // Loading hatao
+            container.innerHTML = ""; 
+            let matchesFound = false;
             
-            // Screen par match dikhao
             Object.keys(data).forEach(matchId => {
                 let m = data[matchId];
                 
+                // 🛑 JADOO: Agar match engine dwara "Completed" mark ho gaya hai, toh use mat dikhao!
+                if(m.status === "Completed") return; 
+
+                matchesFound = true;
                 let matchDate = m.dateTimeGMT ? new Date(m.dateTimeGMT) : new Date();
-                let displayTime = "Starts: " + matchDate.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                let displayTime = "Started: " + matchDate.toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                 
-                // Click karne par Team banane wale page par bhejo
                 let clickAction = `window.location.href='Contests.html?matchId=${matchId}&t1=${m.team1}&t2=${m.team2}'`;
 
                 container.innerHTML += `
                     <div class="match-card" onclick="${clickAction}">
+                        <div class="live-tag"><i class="fa-solid fa-bolt"></i> LIVE TRACKING</div>
                         <div class="series-name">${m.name || "Live Cricket Match"}</div>
                         <div class="teams">
                             <div>${m.team1}</div>
                             <div class="vs">V/S</div>
                             <div>${m.team2}</div>
                         </div>
-                        <div class="time-badge"><i class="fa-solid fa-bolt"></i> ${displayTime}</div>
+                        <div class="time-badge"><i class="fa-solid fa-clock"></i> ${displayTime}</div>
                     </div>
                 `;
             });
+
+            if(!matchesFound) {
+                container.innerHTML = `<div class="error-msg">✅ Saare matches khatam ho chuke hain.<br><br>Naye matches ka wait karein!</div>`;
+            }
         });
     </script>
 </body>
