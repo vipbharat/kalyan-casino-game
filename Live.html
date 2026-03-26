@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalyan 11 - Brahmastra Live</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 70px; }
+        .header { background: linear-gradient(135deg, #1a0033, #00ff88); padding: 15px; text-align: center; font-weight: 900; font-size: 18px; color: #000; box-shadow: 0 4px 15px rgba(0,255,136,0.5); }
+        .match-card { background: #111; margin: 15px; border-radius: 10px; border: 1px solid #333; padding: 15px; text-align: center; cursor: pointer; border-left: 4px solid #00ff88; }
+        .teams { display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 900; margin-bottom: 10px; }
+        .vs { color: #ff004c; font-size: 12px; background: #222; padding: 4px 8px; border-radius: 50%; }
+        .time-badge { font-size: 12px; font-weight: bold; background: rgba(0,255,136,0.1); color: #00ff88; padding: 6px 12px; border-radius: 4px; border: 1px solid #00ff88; }
+        #scanner-log { background: #222; color: #00ff88; padding: 10px; font-family: monospace; font-size: 11px; margin: 15px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">🏏 KALYAN LIVE MATCHES</div>
+    
+    <div id="scanner-log">📡 Brahmastra Scanner Start... Firebase se jud raha hoon...</div>
+
+    <div id="matches-list"></div>
+
+    <script>
+        const log = document.getElementById('scanner-log');
+        
+        // 🔥 Aapka Firebase Setup
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
+            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
+            projectId: "kalyan-casino" 
+        };
+        
+        try {
+            if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+            const db = firebase.database();
+            log.innerHTML += "<br>✅ Firebase Connect Ho Gaya!";
+
+            db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
+                const container = document.getElementById('matches-list');
+                const data = snapshot.val();
+                
+                if (!data) {
+                    log.innerHTML = "⚠️ Firebase mein koi match nahi hai! Admin Panel se naya match banayein.";
+                    container.innerHTML = "";
+                    return;
+                }
+
+                log.innerHTML = "🎯 BOMB! Matches mil gaye!";
+                container.innerHTML = ""; 
+                
+                Object.keys(data).forEach(matchId => {
+                    let m = data[matchId];
+                    let displayTime = m.dateTimeGMT ? new Date(m.dateTimeGMT).toLocaleString() : "Live Now";
+                    let clickAction = `window.location.href='Contests.html?matchId=${matchId}&t1=${m.team1}&t2=${m.team2}'`;
+
+                    container.innerHTML += `
+                        <div class="match-card" onclick="${clickAction}">
+                            <div style="font-size: 11px; color:#aaa; margin-bottom:10px;">${m.name}</div>
+                            <div class="teams">
+                                <div>${m.team1}</div>
+                                <div class="vs">V/S</div>
+                                <div>${m.team2}</div>
+                            </div>
+                            <div class="time-badge">🏏 ${displayTime}</div>
+                        </div>
+                    `;
+                });
+            });
+        } catch(e) {
+            log.innerHTML = "❌ Error: " + e.message;
+        }
+    </script>
+</body>
+</html>
