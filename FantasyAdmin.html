@@ -29,11 +29,10 @@
 
     <div class="admin-box">
         <h3>1. Auto Fetch From Cricbuzz</h3>
-        <p style="font-size: 11px; color: #aaa; margin-top:-10px;">Cricbuzz ka link paste karte hi Vercel Engine khud saara data nikal layega.</p>
         
         <div class="input-group">
-            <label>🔗 Engine Live URL (Link Paste Karein)</label>
-            <input type="text" id="engineUrl" placeholder="Yahan link paste karein..." oninput="autoFetchPlayersFromLink()">
+            <label>🔗 Engine Live URL</label>
+            <input type="text" id="engineUrl" placeholder="Cricbuzz link paste karein..." oninput="autoFetchPlayersFromLink()">
         </div>
         
         <div id="statusBox"></div>
@@ -45,20 +44,26 @@
             <div class="input-group"><label>Team 2 Name</label><input type="text" id="t2Name" placeholder="Auto"></div>
         </div>
 
+        <div class="input-group">
+            <label>⏱️ Match Start Time (Zaroori Hai)</label>
+            <input type="datetime-local" id="matchTime">
+        </div>
+
         <h3 style="margin-top:20px;">2. Auto Fetched Squads</h3>
         <div class="input-group">
             <label>Team 1 Players</label>
-            <textarea id="t1Players" placeholder="Engine yahan khud naam likhega..."></textarea>
+            <textarea id="t1Players"></textarea>
         </div>
         <div class="input-group">
             <label>Team 2 Players</label>
-            <textarea id="t2Players" placeholder="Engine yahan khud naam likhega..."></textarea>
+            <textarea id="t2Players"></textarea>
         </div>
         
         <button class="btn-live" onclick="launchSmartMatch()">🚀 LAUNCH MATCH TO APP</button>
     </div>
 
     <script>
+        // Apni Firebase Config confirm kar lena
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
@@ -76,7 +81,6 @@
             status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Engine data nikal raha hai, please wait..."; status.className = "loading";
 
             try {
-                // TUMHARA VERCEL ENGINE YAHA CALL HO RAHA HAI
                 let response = await fetch(`https://kalyan-point-enginee-rjkh.vercel.app/api/scout`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -114,9 +118,13 @@
             let t2 = document.getElementById('t2Name').value.trim().toUpperCase();
             let p1Text = document.getElementById('t1Players').value.trim();
             let p2Text = document.getElementById('t2Players').value.trim();
+            let mTime = document.getElementById('matchTime').value; // Naya Time Variable
 
             if(!mName || !t1 || !t2 || !p1Text || !p2Text) {
                 alert("⚠️ Pehle link daal kar Engine se data fetch hone do!"); return;
+            }
+            if(!mTime) {
+                alert("⚠️ Kripya Match ka Time aur Date select karein!"); return;
             }
 
             let p1List = p1Text.split(/[,\n]+/).map(n => n.trim()).filter(n => n.length > 0);
@@ -128,7 +136,16 @@
             p1List.forEach((cn, i) => { pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
             p2List.forEach((cn, i) => { pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
 
-            db.ref('Game/Kalyan11/LiveMatches/' + mId).set({ engineUrl: eUrl || "", name: mName, team1: t1, team2: t2, status: "Upcoming" });
+            // Ab database me 'time' bhi save hoga
+            db.ref('Game/Kalyan11/LiveMatches/' + mId).set({ 
+                engineUrl: eUrl || "", 
+                name: mName, 
+                team1: t1, 
+                team2: t2, 
+                time: mTime, // Yahan time add ho gaya
+                status: "Upcoming" 
+            });
+            
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => {
                 alert("✅ BOMB! Match successfully App me launch ho gaya!");
                 window.location.reload();
