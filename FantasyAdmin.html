@@ -3,118 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan VIP - Master Admin Panel</title>
+    <title>Kalyan VIP - Auto Engine Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 20px; }
-        .container { background: #1e1e1e; padding: 20px; border-radius: 10px; max-width: 600px; margin: auto; border: 1px solid #333;}
-        h2 { color: #00ff88; text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px;}
+        body { font-family: 'Segoe UI', sans-serif; background: #050510; color: #fff; margin: 0; padding: 20px; }
+        .header { background: linear-gradient(135deg, #1a0033, #00ff88); padding: 15px; text-align: center; font-weight: 900; font-size: 20px; border-radius: 10px; margin-bottom: 20px; color: #000; box-shadow: 0 0 15px rgba(0,255,136,0.4); }
+        .admin-box { background: #111; border: 1px solid #333; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .admin-box h3 { color: #00ff88; margin-top: 0; border-bottom: 1px dashed #444; padding-bottom: 10px; }
         .input-group { margin-bottom: 15px; }
-        label { display: block; font-size: 14px; color: #aaa; margin-bottom: 5px; font-weight: bold; }
-        input, textarea { width: 100%; padding: 12px; box-sizing: border-box; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 5px; font-size: 14px; }
-        textarea { height: 100px; resize: vertical; }
+        label { display: block; font-size: 13px; color: #aaa; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 12px; box-sizing: border-box; background: #222; border: 1px solid #444; color: #fff; border-radius: 5px; font-size: 14px;}
+        textarea { height: 90px; resize: vertical; }
         .row { display: flex; gap: 15px; }
         .row .input-group { flex: 1; }
-        button { background: #00ff88; color: #000; font-weight: bold; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 16px; margin-top: 10px;}
-        .note { font-size: 12px; color: #ffeb3b; margin-top: -10px; margin-bottom: 10px; display: block; }
+        .btn-live { background: #00ff88; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; }
+        #statusBox { text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 14px; margin-top: 10px;}
+        .success { color: #00ff88; } .error { color: #ff004c; } .loading { color: #ffd700; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>🏏 MANUAL MATCH LAUNCHER</h2>
+    <div class="header">👑 KALYAN VIP AUTO ENGINE</div>
 
-    <div class="input-group">
-        <label>🔗 Cricbuzz Live Match Link (Engine Ke Liye)</label>
-        <input type="text" id="engineUrl" placeholder="Yahan link paste karein taaki engine points update kare...">
-    </div>
-
-    <div class="input-group">
-        <label>Match Title</label>
-        <input type="text" id="matchName" placeholder="Jaise: QTG vs KRK, PSL 2026">
-    </div>
-
-    <div class="row">
+    <div class="admin-box">
+        <h3>1. Auto Fetch From Cricbuzz</h3>
+        <p style="font-size: 11px; color: #aaa; margin-top:-10px;">Cricbuzz ka link paste karte hi Vercel Engine khud saara data nikal layega.</p>
+        
         <div class="input-group">
-            <label>Team 1 Name</label>
-            <input type="text" id="t1Name" placeholder="QTG">
+            <label>🔗 Engine Live URL (Link Paste Karein)</label>
+            <input type="text" id="engineUrl" placeholder="Yahan link paste karein..." oninput="autoFetchPlayersFromLink()">
+        </div>
+        
+        <div id="statusBox"></div>
+
+        <div class="input-group"><label>Match Title</label><input type="text" id="matchName" placeholder="Auto Fill Hoga..."></div>
+        
+        <div class="row">
+            <div class="input-group"><label>Team 1 Name</label><input type="text" id="t1Name" placeholder="Auto"></div>
+            <div class="input-group"><label>Team 2 Name</label><input type="text" id="t2Name" placeholder="Auto"></div>
+        </div>
+
+        <h3 style="margin-top:20px;">2. Auto Fetched Squads</h3>
+        <div class="input-group">
+            <label>Team 1 Players</label>
+            <textarea id="t1Players" placeholder="Engine yahan khud naam likhega..."></textarea>
         </div>
         <div class="input-group">
-            <label>Team 2 Name</label>
-            <input type="text" id="t2Name" placeholder="KRK">
+            <label>Team 2 Players</label>
+            <textarea id="t2Players" placeholder="Engine yahan khud naam likhega..."></textarea>
         </div>
+        
+        <button class="btn-live" onclick="launchSmartMatch()">🚀 LAUNCH MATCH TO APP</button>
     </div>
 
-    <div class="input-group">
-        <label>🧑‍🤝‍🧑 Team 1 Players (Manual Entry)</label>
-        <span class="note">Har khiladi ka naam Enter daba kar nayi line mein likhein ya Comma (,) lagayein.</span>
-        <textarea id="t1Players" placeholder="Khiladi 1&#10;Khiladi 2&#10;Khiladi 3..."></textarea>
-    </div>
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
 
-    <div class="input-group">
-        <label>🧑‍🤝‍🧑 Team 2 Players (Manual Entry)</label>
-        <span class="note">Har khiladi ka naam Enter daba kar nayi line mein likhein ya Comma (,) lagayein.</span>
-        <textarea id="t2Players" placeholder="Khiladi 1&#10;Khiladi 2&#10;Khiladi 3..."></textarea>
-    </div>
+        async function autoFetchPlayersFromLink() {
+            let urlInput = document.getElementById('engineUrl').value.trim();
+            let status = document.getElementById('statusBox');
+            if(!urlInput) return;
 
-    <button onclick="launchManualMatch()">🚀 LAUNCH MATCH TO APP</button>
-</div>
+            let matchIdMatch = urlInput.match(/\/(\d+)\//);
+            if(!matchIdMatch) matchIdMatch = urlInput.match(/\d{4,}/);
+            if(!matchIdMatch) { status.innerHTML = "⚠️ Link me Match ID nahi mili!"; status.className = "error"; return; }
+            
+            let apiMatchId = matchIdMatch[1] || matchIdMatch[0];
+            status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Engine data nikal raha hai, please wait..."; status.className = "loading";
 
-<script>
-    // Apni Firebase configuration yahan check kar lena
-    const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
-    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-    const db = firebase.database();
-
-    function getSmartRole(n) {
-        n = n.toLowerCase();
-        if (n.includes("bumrah") || n.includes("shami") || n.includes("siraj") || n.includes("amir") || n.includes("rashid") || n.includes("zampa")) return "BOWL";
-        if (n.includes("dhoni") || n.includes("pant") || n.includes("rizwan") || n.includes("de kock") || n.includes("buttler")) return "WK";
-        if (n.includes("jadeja") || n.includes("pandya") || n.includes("maxwell") || n.includes("shadab") || n.includes("narine")) return "AR";
-        return "BAT";
-    }
-
-    function processPlayers(text) {
-        if(!text) return [];
-        return text.split(/[,\n]+/).map(n => n.trim()).filter(n => n.length > 0);
-    }
-
-    function launchManualMatch() {
-        let eUrl = document.getElementById('engineUrl').value.trim();
-        let mName = document.getElementById('matchName').value.trim();
-        let t1 = document.getElementById('t1Name').value.trim().toUpperCase();
-        let t2 = document.getElementById('t2Name').value.trim().toUpperCase();
-        let p1Text = document.getElementById('t1Players').value.trim();
-        let p2Text = document.getElementById('t2Players').value.trim();
-
-        if(!eUrl || !mName || !t1 || !t2 || !p1Text || !p2Text) {
-            alert("⚠️ Kripya saari details (Link aur Khiladiyon ke naam) bharein!"); return;
+            try {
+                // TUMHARA VERCEL ENGINE YAHA CALL HO RAHA HAI
+                let response = await fetch(`https://kalyan-point-enginee-rjkh.vercel.app/api/scout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apiMatchId: apiMatchId })
+                });
+                let data = await response.json();
+                
+                if(data.success) {
+                    document.getElementById('t1Name').value = data.t1Name;
+                    document.getElementById('t2Name').value = data.t2Name;
+                    document.getElementById('t1Players').value = data.t1Players;
+                    document.getElementById('t2Players').value = data.t2Players;
+                    document.getElementById('matchName').value = `${data.t1Name} vs ${data.t2Name} Live Match`;
+                    status.innerHTML = "✅ Jadoo! Engine ne saara data nikal liya!"; status.className = "success";
+                } else {
+                    status.innerHTML = "⚠️ API Error: " + data.error; status.className = "error";
+                }
+            } catch(e) {
+                status.innerHTML = "⚠️ Engine Connection Error. Check server.js!"; status.className = "error";
+            }
         }
 
-        let p1List = processPlayers(p1Text);
-        let p2List = processPlayers(p2Text);
-        
-        let mId = "MATCH_" + Date.now();
-        let pData = {};
-        
-        p1List.forEach((cn, i) => { pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
-        p2List.forEach((cn, i) => { pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
+        function getSmartRole(n) {
+            n = n.toLowerCase();
+            if (n.includes("bumrah") || n.includes("shami") || n.includes("siraj") || n.includes("amir") || n.includes("rashid") || n.includes("zampa")) return "BOWL";
+            if (n.includes("dhoni") || n.includes("pant") || n.includes("rizwan") || n.includes("de kock") || n.includes("buttler")) return "WK";
+            if (n.includes("jadeja") || n.includes("pandya") || n.includes("maxwell") || n.includes("shadab") || n.includes("narine")) return "AR";
+            return "BAT";
+        }
 
-        // Link ko 'engineUrl' mein save kiya taaki live score chal sake
-        db.ref('Game/Kalyan11/LiveMatches/' + mId).set({ 
-            engineUrl: eUrl, 
-            name: mName, 
-            team1: t1, 
-            team2: t2, 
-            status: "Upcoming" 
-        });
+        function launchSmartMatch() {
+            let eUrl = document.getElementById('engineUrl').value.trim();
+            let mName = document.getElementById('matchName').value.trim();
+            let t1 = document.getElementById('t1Name').value.trim().toUpperCase();
+            let t2 = document.getElementById('t2Name').value.trim().toUpperCase();
+            let p1Text = document.getElementById('t1Players').value.trim();
+            let p2Text = document.getElementById('t2Players').value.trim();
 
-        db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => {
-            alert("✅ BOMB! Match App me live ho gaya hai!");
-            window.location.reload();
-        });
-    }
-</script>
+            if(!mName || !t1 || !t2 || !p1Text || !p2Text) {
+                alert("⚠️ Pehle link daal kar Engine se data fetch hone do!"); return;
+            }
+
+            let p1List = p1Text.split(/[,\n]+/).map(n => n.trim()).filter(n => n.length > 0);
+            let p2List = p2Text.split(/[,\n]+/).map(n => n.trim()).filter(n => n.length > 0);
+            
+            let mId = "MATCH_" + Date.now();
+            let pData = {};
+            
+            p1List.forEach((cn, i) => { pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
+            p2List.forEach((cn, i) => { pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
+
+            db.ref('Game/Kalyan11/LiveMatches/' + mId).set({ engineUrl: eUrl || "", name: mName, team1: t1, team2: t2, status: "Upcoming" });
+            db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => {
+                alert("✅ BOMB! Match successfully App me launch ho gaya!");
+                window.location.reload();
+            });
+        }
+    </script>
 </body>
 </html>
