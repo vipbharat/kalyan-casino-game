@@ -40,24 +40,26 @@
 
     <div class="admin-box">
         <h3>1. Launch Match To Engine</h3>
-        <div class="input-group"><label>🔗 Engine Live URL</label><input type="text" id="engineUrl" placeholder="Paste link for engine to scrape..."></div>
+        <div class="input-group">
+            <label>🔗 Engine Live URL (Cricbuzz Link Paste Karein)</label>
+            <input type="text" id="engineUrl" placeholder="Paste link for engine to scrape..." oninput="autoFetchPlayersFromLink()">
+        </div>
         <div class="input-group"><label>Match Title</label><input type="text" id="matchName" placeholder="e.g., Final T20 Match"></div>
         
-        <p style="font-size: 11px; color: #ffd700; margin-top:-5px;">💡 Tip: Team ka naam daalkar bahar click karein, purane khiladi apne aap aa jayenge!</p>
         <div class="row">
-            <div class="input-group"><label>Team 1 Name</label><input type="text" id="t1Name" placeholder="e.g., IND" onblur="fetchSavedSquad('t1Name', 't1Players', 'msg1')"></div>
-            <div class="input-group"><label>Team 2 Name</label><input type="text" id="t2Name" placeholder="e.g., AUS" onblur="fetchSavedSquad('t2Name', 't2Players', 'msg2')"></div>
+            <div class="input-group"><label>Team 1 Name</label><input type="text" id="t1Name" placeholder="e.g., IND"></div>
+            <div class="input-group"><label>Team 2 Name</label><input type="text" id="t2Name" placeholder="e.g., AUS"></div>
         </div>
         <div class="input-group"><label>Match Start Time</label><input type="datetime-local" id="matchTime"></div>
 
         <h3 style="margin-top:20px;">2. Match Squads</h3>
-        <p style="font-size: 11px; color: #00ff88; margin-top:-10px;">Yahan nayi team likhenge toh wo automatically Database me hamesha ke liye save ho jayegi.</p>
+        <p style="font-size: 11px; color: #00ff88; margin-top:-10px;">Link paste karte hi khiladi apne aap aa jayenge!</p>
         <div class="input-group">
-            <label>Team 1 Players <span id="msg1" style="color:#00ff88; font-size:11px; display:none; float:right;">✨ Database se aa gaye!</span></label>
+            <label>Team 1 Players</label>
             <textarea id="t1Players" placeholder="Yahan khiladiyon ke naam aayenge..."></textarea>
         </div>
         <div class="input-group">
-            <label>Team 2 Players <span id="msg2" style="color:#00ff88; font-size:11px; display:none; float:right;">✨ Database se aa gaye!</span></label>
+            <label>Team 2 Players</label>
             <textarea id="t2Players" placeholder="Yahan khiladiyon ke naam aayenge..."></textarea>
         </div>
         
@@ -75,26 +77,55 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
+        // 🔥 LINK SE KHILADI NIKALNE WALA JADOO FUNCTION
+        async function autoFetchPlayersFromLink() {
+            let urlInput = document.getElementById('engineUrl').value.trim();
+            let status = document.getElementById('statusBox');
+            if(!urlInput) return;
+
+            // Link me se Match ID dhoondhna
+            let matchIdMatch = urlInput.match(/\/(\d+)\//);
+            if(!matchIdMatch) matchIdMatch = urlInput.match(/\d{4,}/);
+            
+            if(!matchIdMatch) {
+                status.innerHTML = "⚠️ Link me Match ID nahi mili!"; status.className = "error";
+                return;
+            }
+            
+            let apiMatchId = matchIdMatch[1] || matchIdMatch[0];
+            status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Khiladiyon ka data nikal raha hoon..."; status.className = "success";
+
+            try {
+                // ⚠️ DHYAN DEIN: Jab Vercel par deploy ho jaye, tab yahan apna Vercel link daalna!
+                let response = await fetch(`https://TUMHARA_VERCEL_APP.vercel.app/api/scout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apiMatchId: apiMatchId })
+                });
+
+                let data = await response.json();
+
+                if(data.success) {
+                    document.getElementById('t1Name').value = data.t1Name;
+                    document.getElementById('t2Name').value = data.t2Name;
+                    document.getElementById('t1Players').value = data.t1Players;
+                    document.getElementById('t2Players').value = data.t2Players;
+                    document.getElementById('matchName').value = `${data.t1Name} vs ${data.t2Name} Live Match`;
+                    status.innerHTML = "✅ Khiladiyon ke naam auto-fill ho gaye!";
+                } else {
+                    status.innerHTML = "⚠️ API Error: " + data.error; status.className = "error";
+                }
+            } catch(e) {
+                status.innerHTML = "⚠️ Backend se connect nahi ho paya. Vercel URL check karein."; status.className = "error";
+            }
+        }
+
         function getSmartRole(n) {
             n = n.toLowerCase();
             if (n.includes("bumrah") || n.includes("shami") || n.includes("siraj") || n.includes("boult") || n.includes("starc") || n.includes("cummins") || n.includes("chahal") || n.includes("kuldeep") || n.includes("rashid") || n.includes("nortje") || n.includes("rabada")) return "BOWL";
             if (n.includes("dhoni") || n.includes("pant") || n.includes("rahul") || n.includes("samson") || n.includes("de kock") || n.includes("buttler") || n.includes("ishan")) return "WK";
             if (n.includes("jadeja") || n.includes("pandya") || n.includes("maxwell") || n.includes("stoinis") || n.includes("axar") || n.includes("russell") || n.includes("narine") || n.includes("curran")) return "AR";
             return "BAT";
-        }
-
-        function fetchSavedSquad(inputId, textAreaId, msgId) {
-            let teamName = document.getElementById(inputId).value.trim().toUpperCase();
-            if(!teamName) return;
-
-            db.ref('Game/Kalyan11/SavedSquads/' + teamName).once('value', snap => {
-                if(snap.exists()) {
-                    document.getElementById(textAreaId).value = snap.val(); 
-                    let msg = document.getElementById(msgId);
-                    msg.style.display = "block"; 
-                    setTimeout(() => { msg.style.display = "none"; }, 4000);
-                }
-            });
         }
 
         function launchSmartMatch() {
@@ -113,19 +144,18 @@
 
             status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Engine aur Database update ho raha hai..."; status.className = "success";
 
-            // 🔥 YAHAN HOTA HAI JADOO: Nayi team ko 'allteam' database me permanent save kar dena!
             db.ref('Game/Kalyan11/SavedSquads/' + t1).set(p1Text);
             db.ref('Game/Kalyan11/SavedSquads/' + t2).set(p2Text);
 
             let mId = "MATCH_" + Date.now();
             let pData = {};
             
-            p1Text.split(',').forEach((name, i) => { let cn = name.trim(); if(cn) pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5 }; });
-            p2Text.split(',').forEach((name, i) => { let cn = name.trim(); if(cn) pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5 }; });
+            p1Text.split(',').forEach((name, i) => { let cn = name.trim(); if(cn) pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
+            p2Text.split(',').forEach((name, i) => { let cn = name.trim(); if(cn) pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
 
-            db.ref('Game/Kalyan11/LiveMatches/' + mId).set({ engineUrl: eUrl, name: mName, team1: t1, team2: t2, dateTimeGMT: new Date(mTime).toISOString(), status: "Upcoming" });
+            db.ref('Game/Kalyan11/LiveMatches/' + mId).set({ engineUrl: eUrl, name: mName, team1: t1, team2: t2, dateTimeGMT: new Date(mTime).toISOString(), status: "Live" });
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => {
-                status.innerHTML = "✅ BOMB! Match Live Ho Gaya Aur Nayi Teams Database Me Save Ho Gayi!";
+                status.innerHTML = "✅ BOMB! Match Live Ho Gaya Aur Points Vercel Se Update Honge!";
                 
                 document.getElementById('engineUrl').value = ""; document.getElementById('matchName').value = "";
                 document.getElementById('t1Name').value = ""; document.getElementById('t2Name').value = "";
@@ -143,46 +173,13 @@
                         <h4 style="margin:0 0 5px; color:#00ff88;">${m.team1} vs ${m.team2}</h4>
                         <div style="font-size:12px; color:#aaa; margin-bottom:10px;">${m.name}</div>
                         <div class="action-btns">
-                            <button class="btn-edit" onclick="openEditBox('${mId}', '${m.team1}', '${m.team2}')">Edit Lineup</button>
                             <button class="btn-delete" onclick="deleteMatch('${mId}')">Delete Match</button>
-                        </div>
-                        <div id="editBox_${mId}" class="edit-box">
-                            <label style="color:#ffd700; font-size:12px;">${m.team1} Players</label><textarea id="editT1_${mId}"></textarea>
-                            <label style="color:#ffd700; font-size:12px; margin-top:10px;">${m.team2} Players</label><textarea id="editT2_${mId}"></textarea>
-                            <button class="btn-save-lineup" onclick="updateLineup('${mId}', '${m.team1}', '${m.team2}')">✅ Update Lineup in App</button>
                         </div>
                     </div>`;
             });
         });
 
-        function openEditBox(mId, t1, t2) {
-            let box = document.getElementById(`editBox_${mId}`);
-            if(box.style.display === "block") { box.style.display = "none"; return; }
-            box.style.display = "block";
-            db.ref('Game/Kalyan11/MatchPlayers/' + mId).once('value', snap => {
-                let t1N = []; let t2N = [];
-                if(snap.exists()) snap.forEach(c => { let p = c.val(); if(p.team===t1||p.team===t1.substring(0,3)) t1N.push(p.name); else t2N.push(p.name); });
-                document.getElementById(`editT1_${mId}`).value = t1N.join(", "); document.getElementById(`editT2_${mId}`).value = t2N.join(", ");
-            });
-        }
-
-        function updateLineup(mId, t1, t2) {
-            let p1Text = document.getElementById(`editT1_${mId}`).value.trim(); let p2Text = document.getElementById(`editT2_${mId}`).value.trim();
-            if(!p1Text || !p2Text) { alert("Dono team ke khiladi daalein!"); return; }
-            
-            // Edit Lineup karne par bhi database me latest squad save ho jayega
-            db.ref('Game/Kalyan11/SavedSquads/' + t1).set(p1Text);
-            db.ref('Game/Kalyan11/SavedSquads/' + t2).set(p2Text);
-
-            let pData = {};
-            p1Text.split(',').forEach((name, i) => { let cn = name.trim(); if(cn) pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5 }; });
-            p2Text.split(',').forEach((name, i) => { let cn = name.trim(); if(cn) pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5 }; });
-            db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => {
-                alert("✅ Lineup Successfully Updated in App!"); document.getElementById(`editBox_${mId}`).style.display = "none";
-            });
-        }
-
-        function deleteMatch(mId) { if(confirm("Pakka is match ko delete karna hai? Engine band ho jayega.")) { db.ref('Game/Kalyan11/LiveMatches/'+mId).remove(); db.ref('Game/Kalyan11/MatchPlayers/'+mId).remove(); } }
+        function deleteMatch(mId) { if(confirm("Pakka is match ko delete karna hai?")) { db.ref('Game/Kalyan11/LiveMatches/'+mId).remove(); db.ref('Game/Kalyan11/MatchPlayers/'+mId).remove(); } }
     </script>
 </body>
 </html>
