@@ -54,7 +54,6 @@
     </div>
 
     <script>
-        // 1. Firebase Setup
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
@@ -62,37 +61,30 @@
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId');
         
-        // Testing phone number
         if(!localStorage.getItem('userPhone')) { localStorage.setItem('userPhone', '9876543210'); }
         const userPhone = localStorage.getItem('userPhone');
 
-        // Pichhle page se chune gaye 11 khiladiyon ki IDs
         const selectedPlayersRaw = localStorage.getItem('kalyan_selected_team');
         let selectedPlayerIds = [];
         if(selectedPlayersRaw) { selectedPlayerIds = JSON.parse(selectedPlayersRaw); }
 
         let captain = null;
         let viceCaptain = null;
-        let finalPlayerData = []; // Asli naam save karne ke liye
+        let finalPlayerData = []; 
 
         const container = document.getElementById('teamContainer');
 
         if(selectedPlayerIds.length === 0 || !matchId) {
             container.innerHTML = "<div style='text-align:center; color:#ff004c; margin-top:20px; font-weight:bold;'>No Players Found! Go back and select 11 players.</div>";
         } else {
-            // 🎯 MAGIC LOGIC: Firebase se un 11 khiladiyon ke asli naam laana
             db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', snapshot => {
                 if(snapshot.exists()) {
                     let allMatchPlayers = snapshot.val();
-                    
-                    // Har ID ko check karke uska data nikalna
                     selectedPlayerIds.forEach(id => {
                         if(allMatchPlayers[id]) {
                             finalPlayerData.push(allMatchPlayers[id]);
                         }
                     });
-                    
-                    // Ab unhe screen par dikhana
                     renderTeam();
                 } else {
                     container.innerHTML = "<div style='text-align:center; color:#ff004c; margin-top:20px;'>Match Data Error!</div>";
@@ -164,7 +156,7 @@
 
             db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).set(teamData)
             .then(() => {
-                alert("Team Saved Successfully! 🚀");
+                // 🎯 YAHAN JADOO HUA HAI: Seedha Leaderboard par bheja
                 window.location.href = "Leaderboard.html?matchId=" + matchId;
             })
             .catch((error) => {
