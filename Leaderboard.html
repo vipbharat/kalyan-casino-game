@@ -16,21 +16,23 @@
         .title { font-weight: 900; font-size: 18px; text-transform: uppercase; }
         .sub-title { font-size: 11px; color: #00ff88; font-weight: bold; margin-top: 3px; }
         
-        .prize-pool-banner { background: #111; padding: 15px; text-align: center; border-bottom: 1px solid #333; }
-        .prize-pool-banner h2 { margin: 0; color: #ffd700; font-size: 24px; }
-        .prize-pool-banner p { margin: 5px 0 0; color: #aaa; font-size: 12px; }
+        .prize-pool-banner { background: #111; padding: 15px; border-bottom: 1px solid #333; }
+        .pool-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;}
+        .pool-flex h2 { margin: 0; color: #ffd700; font-size: 20px; }
+        .pool-flex span { font-size: 12px; color: #aaa; border: 1px solid #444; padding: 3px 8px; border-radius: 4px; background: #222;}
+        .progress-bar-bg { width: 100%; height: 6px; background: #333; border-radius: 10px; overflow: hidden; margin-bottom: 5px; }
+        .progress-bar-fill { height: 100%; background: #ff004c; border-radius: 10px; }
+        .spots-left { font-size: 11px; color: #aaa; display: flex; justify-content: space-between; }
+        .spots-left span.red { color: #ff004c; font-weight: bold; }
 
-        /* Leaderboard List */
         .leaderboard-container { padding: 15px; }
         
-        .user-row { background: linear-gradient(145deg, #1e1e2e, #111); border: 1px solid #333; border-radius: 10px; padding: 12px 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+        .user-row { background: linear-gradient(145deg, #1e1e2e, #111); border: 1px solid #333; border-radius: 10px; padding: 12px 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer; }
+        .user-row:active { transform: scale(0.98); }
         
-        /* Rank 1 ko chamkana hai */
         .user-row.rank-1 { border-color: #ffd700; background: linear-gradient(145deg, #332b00, #111); box-shadow: 0 0 15px rgba(255,215,0,0.2); }
         .user-row.rank-2 { border-color: #c0c0c0; }
         .user-row.rank-3 { border-color: #cd7f32; }
-        
-        /* Highlight my own team */
         .user-row.my-team { border-left: 4px solid #00ff88; }
 
         .rank-circle { width: 35px; height: 35px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; color: #aaa; border: 2px solid #555; }
@@ -41,13 +43,20 @@
         .user-details { flex: 1; margin-left: 15px; }
         .user-name { font-weight: bold; font-size: 15px; color: #fff; }
         .my-tag { background: #00ff88; color: #000; font-size: 9px; padding: 2px 5px; border-radius: 3px; margin-left: 5px; font-weight: bold; }
+        .lock-icon { color: #555; font-size: 12px; margin-left: 5px; }
         
+        .cvc-info { font-size: 11px; color: #aaa; margin-top: 4px; display: flex; gap: 10px;}
+        .cvc-info span { background: #222; padding: 2px 6px; border-radius: 4px; border: 1px solid #333;}
+        .cvc-info span.c { color: #ffd700; border-color: #554800;}
+        .cvc-info span.vc { color: #c0c0c0; border-color: #444;}
+
         .points-box { text-align: right; }
         .pts-value { font-size: 20px; font-weight: 900; color: #00ff88; }
         .pts-label { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
 
         .loading-text { text-align: center; color: #ffd700; font-weight: bold; margin-top: 30px; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
+        #scroll-loader { text-align: center; color: #00ff88; font-weight: bold; padding: 15px; display: none; }
     </style>
 </head>
 <body>
@@ -60,75 +69,161 @@
         </div>
     </div>
 
-    <div class="prize-pool-banner">
-        <p>Contest Standings</p>
-        <h2>🏆 WINNING ZONE</h2>
-    </div>
+    <div class="prize-pool-banner" id="dynamic-banner"></div>
 
     <div class="leaderboard-container" id="leaderboard-list">
-        <div class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Fetching Live Ranks...</div>
+        <div class="loading-text" id="main-loader"><i class="fa-solid fa-spinner fa-spin"></i> Fetching Teams...</div>
     </div>
+    
+    <div id="scroll-loader"><i class="fa-solid fa-spinner fa-spin"></i> Searching more teams...</div>
 
     <script>
-        // 1. 🔥 Firebase Setup
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
         
-        // Mera Number (Taaki main apni team pehchan saku)
         const myPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
-
-        // 2. 🌐 URL se Match ID nikalna
+        
+        // 🎯 NAYA SYSTEM: URL se check karo kitne Spots ka contest hai
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId') || "DEMO_MATCH";
+        // Agar URL me spots nahi hai, toh default Mega (150000) maan lega
+        const totalSpots = parseInt(urlParams.get('spots')) || 150000; 
+        const entryFee = urlParams.get('entry') || "99";
 
-        // 3. 🏆 Asli Live Leaderboard System
-        // .on('value') ka matlab hai jaise hi database me 1 point bhi badhega, ye function apne aap chal jayega!
-        db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', snapshot => {
-            const listContainer = document.getElementById('leaderboard-list');
-            listContainer.innerHTML = ""; // Purana data hatao
-            
-            const teamsData = snapshot.val();
+        const listContainer = document.getElementById('leaderboard-list');
+        const scrollLoader = document.getElementById('scroll-loader');
 
-            if (!teamsData) {
-                listContainer.innerHTML = `<div style="text-align:center; color:#888; margin-top:20px; font-weight:bold;">No teams joined yet! Be the first one.</div>`;
-                return;
-            }
+        let allCombinedTeams = [];
+        let displayedCount = 0;
+        const BATCH_SIZE = 50; 
+        let isFetching = false;
 
-            // Database data ko array me convert karna taaki points ke hisaab se sort kar sakein
-            let teamsArray = [];
-            Object.keys(teamsData).forEach(userPhone => {
-                let teamInfo = teamsData[userPhone];
-                teamsArray.push({
-                    phone: userPhone,
-                    points: teamInfo.total_points || 0, // Agar points nahi hain toh 0 manenge
-                    captain: teamInfo.captain || "Unknown"
-                });
+        // Banner setup karna Contest size ke hisaab se
+        const bannerDiv = document.getElementById('dynamic-banner');
+        if(totalSpots <= 10) {
+            // Small / Head-to-Head Banner
+            bannerDiv.innerHTML = `
+                <div class="pool-flex">
+                    <h2>⚔️ Small Contest</h2>
+                    <span>Entry: ₹${entryFee}</span>
+                </div>
+                <div class="spots-left">
+                    <span class="red">Total Spots: ${totalSpots}</span>
+                    <span>Exclusive</span>
+                </div>
+            `;
+        } else {
+            // Mega Contest Banner
+            let filled = totalSpots - 1068; // Random filled look
+            let fillPercent = (filled / totalSpots) * 100;
+            bannerDiv.innerHTML = `
+                <div class="pool-flex">
+                    <h2>🏆 Mega Contest</h2>
+                    <span>Entry: ₹${entryFee}</span>
+                </div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${fillPercent}%"></div></div>
+                <div class="spots-left">
+                    <span class="red">${filled.toLocaleString('en-IN')} Spots filled</span>
+                    <span>${totalSpots.toLocaleString('en-IN')} Spots</span>
+                </div>
+            `;
+        }
+
+        function createBot(points, playersArray) {
+            let randomNum = "9" + Math.floor(10000000 + Math.random() * 90000000); 
+            let cPlayer = playersArray[Math.floor(Math.random() * playersArray.length)];
+            let vcPlayer = playersArray[Math.floor(Math.random() * playersArray.length)];
+            let cName = cPlayer ? cPlayer.name.split(' ')[0][0] + ". " + (cPlayer.name.split(' ')[1] || "") : "Unknown";
+            let vcName = vcPlayer ? vcPlayer.name.split(' ')[0][0] + ". " + (vcPlayer.name.split(' ')[1] || "") : "Unknown";
+
+            return { phone: randomNum, points: points, cName: cName, vcName: vcName, isBot: true };
+        }
+
+        db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', playerSnap => {
+            let allPlayersObj = playerSnap.val() || {};
+            let playersArray = Object.values(allPlayersObj); 
+
+            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', snapshot => {
+                let realTeamsArray = [];
+                let maxRealPoints = 0; 
+                
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        let userPhone = child.key;
+                        let teamInfo = child.val();
+                        let pts = teamInfo.total_points || 0;
+                        if(pts > maxRealPoints) { maxRealPoints = pts; }
+                        
+                        let cId = teamInfo.captain;
+                        let vcId = teamInfo.viceCaptain;
+                        let cName = allPlayersObj[cId] ? allPlayersObj[cId].name.split(' ')[0][0] + ". " + (allPlayersObj[cId].name.split(' ')[1] || "") : "Unknown";
+                        let vcName = allPlayersObj[vcId] ? allPlayersObj[vcId].name.split(' ')[0][0] + ". " + (allPlayersObj[vcId].name.split(' ')[1] || "") : "Unknown";
+
+                        realTeamsArray.push({ phone: userPhone, points: pts, cName: cName, vcName: vcName, isBot: false });
+                    });
+                }
+
+                let basePoints = maxRealPoints > 0 ? maxRealPoints : 100; 
+                let botTeams = [];
+
+                // 🎯 MAGIC LOGIC: Contest Size ke hisaab se Bot banana
+                if(totalSpots <= 10) {
+                    // Small Contest: Sirf khali jagah bharne ke liye bot dalo
+                    let spotsLeft = totalSpots - realTeamsArray.length;
+                    for(let i=0; i < spotsLeft; i++) {
+                        // Small contest me bot ko bhagwan mat banao, thoda normal rakho taaki user ko lage wo jeet sakta hai
+                        let botPts = basePoints - 30 + (Math.random() * 60); 
+                        botTeams.push(createBot(botPts, playersArray));
+                    }
+                } else {
+                    // Mega Contest: Boss Bots + Faltu Bots
+                    for(let i = 0; i < 10; i++) {
+                        let bossPoints = basePoints + 15 + ((10 - i) * 3); 
+                        botTeams.push(createBot(bossPoints, playersArray));
+                    }
+                    for(let i = 0; i < 290; i++) {
+                        let normalPoints = basePoints - (Math.random() * 150);
+                        if(normalPoints < 0) normalPoints = Math.random() * 20; 
+                        botTeams.push(createBot(normalPoints, playersArray));
+                    }
+                }
+
+                allCombinedTeams = [...realTeamsArray, ...botTeams];
+                allCombinedTeams.sort((a, b) => b.points - a.points);
+
+                listContainer.innerHTML = "";
+                displayedCount = 0;
+                loadMoreTeams(); 
             });
+        });
 
-            // 🔥 MAGIC: Sorting! Jiske points sabse zyada, wo number 1 par aayega
-            teamsArray.sort((a, b) => b.points - a.points);
+        function loadMoreTeams() {
+            if(displayedCount >= allCombinedTeams.length) return; 
+            
+            isFetching = true;
+            let end = displayedCount + BATCH_SIZE;
+            let batch = allCombinedTeams.slice(displayedCount, end);
 
-            // Ab ek-ek karke sabko screen par dikhana hai
-            teamsArray.forEach((team, index) => {
-                let rank = index + 1;
+            batch.forEach((team, index) => {
+                let rank = displayedCount + index + 1; 
+                let hidePhone = team.isBot ? team.phone.substring(0, 4) + "****" + team.phone.substring(7, 9) : team.phone.substring(0, 4) + "****" + team.phone.substring(8, 10);
                 
-                // User ka number hide karna (Security ke liye: 9876543210 -> 9876**3210)
-                let hidePhone = team.phone.substring(0, 4) + "****" + team.phone.substring(8, 10);
-                
-                // Agar meri team hai toh 'My Team' ka tag lagana aur number poora dikhana
-                let isMyTeam = (team.phone === myPhone);
+                let isMyTeam = (!team.isBot && team.phone === myPhone);
                 let displayName = isMyTeam ? "You (" + team.phone + ")" : hidePhone;
-                let myTagHTML = isMyTeam ? `<span class="my-tag">MY TEAM</span>` : "";
+                let myTagHTML = isMyTeam ? `<span class="my-tag">MY TEAM</span> <i class="fa-solid fa-eye" style="color:#00ff88; font-size:11px; margin-left:5px;"></i>` : `<i class="fa-solid fa-lock lock-icon"></i>`;
                 let highlightClass = isMyTeam ? "my-team" : "";
+                let clickAction = isMyTeam ? `onclick="window.location.href='MyTeam.html?matchId=${matchId}'"` : `onclick="alert('🔒 Privacy Lock: Aap sirf apni team khol kar dekh sakte hain!')"`;
 
-                // HTML Card Banana
                 let cardHTML = `
-                    <div class="user-row rank-${rank} ${highlightClass}">
+                    <div class="user-row rank-${rank} ${highlightClass}" ${clickAction}>
                         <div class="rank-circle">${rank}</div>
                         <div class="user-details">
                             <div class="user-name">${displayName} ${myTagHTML}</div>
-                            <div style="font-size: 10px; color: #888; margin-top: 3px;">Capt: ${team.captain}</div>
+                            <div class="cvc-info">
+                                <span class="c">C: ${team.cName}</span>
+                                <span class="vc">VC: ${team.vcName}</span>
+                            </div>
                         </div>
                         <div class="points-box">
                             <div class="pts-value">${team.points.toFixed(1)}</div>
@@ -138,6 +233,18 @@
                 `;
                 listContainer.innerHTML += cardHTML;
             });
+
+            displayedCount += BATCH_SIZE;
+            isFetching = false;
+            scrollLoader.style.display = "none";
+        }
+
+        window.addEventListener('scroll', () => {
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 50 && !isFetching && displayedCount < allCombinedTeams.length) {
+                isFetching = true;
+                scrollLoader.style.display = "block"; 
+                setTimeout(() => { loadMoreTeams(); }, 1200); 
+            }
         });
     </script>
 </body>
