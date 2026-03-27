@@ -17,8 +17,10 @@
         .info-bar { background: #111; padding: 10px; text-align: center; font-size: 12px; color: #ffd700; border-bottom: 1px solid #333; }
         .player-list { padding: 15px; }
         .player-row { background: #111; border: 1px solid #333; padding: 12px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .p-info { display: flex; align-items: center; gap: 10px; }
+        .p-image { width: 40px; height: 40px; background: #222; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #888; border: 1px solid #444; }
         .p-name { font-weight: bold; font-size: 15px; }
-        .p-role { font-size: 11px; color: #aaa; }
+        .p-role { font-size: 11px; color: #aaa; background: #222; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-top: 4px; border: 1px solid #333; }
         
         .cvc-btns { display: flex; gap: 10px; }
         .cvc-btn { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #555; background: #222; color: #aaa; font-weight: 900; font-size: 12px; cursor: pointer; transition: 0.3s; }
@@ -28,6 +30,7 @@
         .footer { position: fixed; bottom: 0; width: 100%; background: #111; padding: 15px; box-sizing: border-box; display: flex; justify-content: center; border-top: 2px solid #ffd700; z-index: 100; }
         .save-btn { background: #00ff88; color: #000; padding: 12px 40px; border-radius: 5px; font-weight: 900; font-size: 16px; border: none; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.3s; width: 100%; }
         .save-btn.active { opacity: 1; pointer-events: auto; box-shadow: 0 0 15px rgba(0,255,136,0.4); }
+        .loader { text-align: center; color: #ffd700; font-weight: bold; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -42,7 +45,9 @@
     
     <div class="info-bar">Choose your Captain and Vice-Captain wisely!</div>
 
-    <div class="player-list" id="teamContainer"></div>
+    <div class="player-list" id="teamContainer">
+        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Players...</div>
+    </div>
 
     <div class="footer">
         <button class="save-btn" id="saveBtn" onclick="saveTeamToFirebase()">SAVE TEAM</button>
@@ -55,42 +60,71 @@
         const db = firebase.database();
 
         const urlParams = new URLSearchParams(window.location.search);
-        const matchId = urlParams.get('matchId') || "DEMO_MATCH";
+        const matchId = urlParams.get('matchId');
         
-        // Dummy phone number set kar rahe hain testing ke liye (Aap isko asali login wale number se link kar dena)
+        // Testing phone number
         if(!localStorage.getItem('userPhone')) { localStorage.setItem('userPhone', '9876543210'); }
         const userPhone = localStorage.getItem('userPhone');
 
-        // Get 11 players selected in previous screen
+        // Pichhle page se chune gaye 11 khiladiyon ki IDs
         const selectedPlayersRaw = localStorage.getItem('kalyan_selected_team');
-        let selectedPlayers = [];
-        if(selectedPlayersRaw) { selectedPlayers = JSON.parse(selectedPlayersRaw); }
-        else { document.getElementById('teamContainer').innerHTML = "<div style='text-align:center; color:red; margin-top:20px;'>No Players Selected! Go back and select 11 players.</div>"; }
+        let selectedPlayerIds = [];
+        if(selectedPlayersRaw) { selectedPlayerIds = JSON.parse(selectedPlayersRaw); }
 
         let captain = null;
         let viceCaptain = null;
+        let finalPlayerData = []; // Asli naam save karne ke liye
+
+        const container = document.getElementById('teamContainer');
+
+        if(selectedPlayerIds.length === 0 || !matchId) {
+            container.innerHTML = "<div style='text-align:center; color:#ff004c; margin-top:20px; font-weight:bold;'>No Players Found! Go back and select 11 players.</div>";
+        } else {
+            // 🎯 MAGIC LOGIC: Firebase se un 11 khiladiyon ke asli naam laana
+            db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', snapshot => {
+                if(snapshot.exists()) {
+                    let allMatchPlayers = snapshot.val();
+                    
+                    // Har ID ko check karke uska data nikalna
+                    selectedPlayerIds.forEach(id => {
+                        if(allMatchPlayers[id]) {
+                            finalPlayerData.push(allMatchPlayers[id]);
+                        }
+                    });
+                    
+                    // Ab unhe screen par dikhana
+                    renderTeam();
+                } else {
+                    container.innerHTML = "<div style='text-align:center; color:#ff004c; margin-top:20px;'>Match Data Error!</div>";
+                }
+            });
+        }
 
         function renderTeam() {
-            let container = document.getElementById('teamContainer');
             container.innerHTML = "";
             
-            selectedPlayers.forEach((playerId, index) => {
-                let isC = captain === playerId ? 'active-c' : '';
-                let isVC = viceCaptain === playerId ? 'active-vc' : '';
+            finalPlayerData.forEach((player) => {
+                let isC = captain === player.id ? 'active-c' : '';
+                let isVC = viceCaptain === player.id ? 'active-vc' : '';
+                let shortName = player.name.split(' ')[0][0] + ". " + (player.name.split(' ')[1] || player.name);
                 
                 container.innerHTML += `
                     <div class="player-row">
-                        <div>
-                            <div class="p-name">Player ID: ${playerId}</div>
-                            <div class="p-role">Selected Player</div>
+                        <div class="p-info">
+                            <div class="p-image"><i class="fa-solid fa-user"></i></div>
+                            <div>
+                                <div class="p-name">${shortName}</div>
+                                <div class="p-role">${player.team} | ${player.role}</div>
+                            </div>
                         </div>
                         <div class="cvc-btns">
-                            <button class="cvc-btn ${isC}" onclick="setRole('${playerId}', 'C')">C</button>
-                            <button class="cvc-btn ${isVC}" onclick="setRole('${playerId}', 'VC')">VC</button>
+                            <button class="cvc-btn ${isC}" onclick="setRole('${player.id}', 'C')">C</button>
+                            <button class="cvc-btn ${isVC}" onclick="setRole('${player.id}', 'VC')">VC</button>
                         </div>
                     </div>
                 `;
             });
+            updateSaveBtn();
         }
 
         function setRole(id, role) {
@@ -101,40 +135,44 @@
                 if(captain === id) captain = null;
                 viceCaptain = id;
             }
-            
-            // Activate SAVE button if both selected
-            let saveBtn = document.getElementById('saveBtn');
-            if(captain && viceCaptain) { saveBtn.classList.add('active'); } 
-            else { saveBtn.classList.remove('active'); }
-            
             renderTeam();
         }
 
+        function updateSaveBtn() {
+            let saveBtn = document.getElementById('saveBtn');
+            if(captain && viceCaptain) { 
+                saveBtn.classList.add('active'); 
+                saveBtn.disabled = false;
+            } else { 
+                saveBtn.classList.remove('active'); 
+                saveBtn.disabled = true;
+            }
+        }
+
         function saveTeamToFirebase() {
-            document.getElementById('saveBtn').innerText = "SAVING...";
+            let saveBtn = document.getElementById('saveBtn');
+            saveBtn.innerText = "SAVING...";
+            saveBtn.disabled = true;
             
             let teamData = {
-                players: selectedPlayers,
+                players: selectedPlayerIds,
                 captain: captain,
                 viceCaptain: viceCaptain,
-                total_points: 0, // Shuru me 0 points
+                total_points: 0, 
                 timestamp: new Date().getTime()
             };
 
-            // Save in Firebase under this Match and User
             db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).set(teamData)
             .then(() => {
                 alert("Team Saved Successfully! 🚀");
-                // Team save hone ke baad sidha Leaderboard par bhejo
                 window.location.href = "LiveLeaderboard.html?matchId=" + matchId;
             })
             .catch((error) => {
                 alert("Error saving team: " + error.message);
-                document.getElementById('saveBtn').innerText = "SAVE TEAM";
+                saveBtn.innerText = "SAVE TEAM";
+                saveBtn.disabled = false;
             });
         }
-
-        if(selectedPlayers.length > 0) { renderTeam(); }
     </script>
 </body>
 </html>
