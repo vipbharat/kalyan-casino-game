@@ -10,12 +10,19 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 70px; user-select: none; }
         .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; text-align: center; font-weight: 900; font-size: 18px; color: #ffd700; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .match-card { background: #111; margin: 15px; border-radius: 10px; border: 1px solid #333; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border-left: 4px solid #00ff88; }
+        .match-card { background: #111; margin: 15px; border-radius: 10px; border: 1px solid #333; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border-left: 4px solid #00ff88; position: relative; overflow: hidden; }
         .match-card:active { transform: scale(0.98); border-color: #ffd700; }
         .series-name { font-size: 11px; color: #aaa; margin-bottom: 12px; border-bottom: 1px dashed #333; padding-bottom: 8px; }
         .teams { display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 900; margin-bottom: 10px; }
         .vs { color: #ff004c; font-size: 12px; background: #222; padding: 4px 8px; border-radius: 50%; }
+        
+        /* Normal Time Badge */
         .time-badge { font-size: 11px; font-weight: bold; background: rgba(0,255,136,0.1); color: #00ff88; padding: 6px 12px; border-radius: 4px; display: inline-block; border: 1px solid #00ff88; }
+        
+        /* 🔥 Lineup Out / Live Badge (Naya Feature) */
+        .live-badge { background: rgba(255, 0, 76, 0.1); color: #ff004c; border: 1px solid #ff004c; animation: blink 1s infinite; font-size: 12px;}
+        @keyframes blink { 50% { opacity: 0.5; } }
+
         .loader { text-align: center; margin-top: 50px; color: #ffd700; font-weight: bold; }
     </style>
 </head>
@@ -30,7 +37,6 @@
 
         const container = document.getElementById('matches-list');
 
-        // 🟢 Seedha Firebase se Matches layega!
         db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
             container.innerHTML = "";
             if(!snapshot.exists()) {
@@ -45,9 +51,47 @@
                 matchesArray.push(m);
             });
 
-            matchesArray.forEach(m => {
-                let options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-                let displayTime = "Starts: " + new Date(m.dateTimeGMT).toLocaleString('en-IN', options);
+            let now = new Date().getTime();
+
+            // 1. Faltu aur 24 ghante se purane matches ko hatana
+            let cleanMatches = matchesArray.filter(m => {
+                if(!m.time) return false;
+                let mTime = new Date(m.time).getTime();
+                if(isNaN(mTime)) return false;
+                // Agar match 24 ghante (86400000 ms) se purana hai, toh list me mat dikhao
+                if(now - mTime > 86400000) return false;
+                return true;
+            });
+
+            // 2. Sort: Jo sabse pehle shuru hoga, wo sabse upar rahega
+            cleanMatches.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+            if(cleanMatches.length === 0) {
+                 container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">Abhi koi naya match active nahi hai.</div>`;
+                 return;
+            }
+
+            cleanMatches.forEach(m => {
+                let matchTime = new Date(m.time);
+                // Difference in minutes (Abhi ke time aur match ke time me kitna farq hai)
+                let diffMins = (matchTime.getTime() - now) / 60000;
+
+                let displayTime = "";
+                let badgeClass = "time-badge";
+
+                // 🎯 MAGIC LOGIC: Agar match me 30 minute bache hain ya live chal raha hai
+                if (diffMins <= 30 && diffMins > -400) {
+                    displayTime = "🔥 LINEUP OUT / LIVE";
+                    badgeClass = "time-badge live-badge"; 
+                } 
+                else if (diffMins <= -400) {
+                    displayTime = "Match Ended";
+                } 
+                else {
+                    let options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                    displayTime = "Starts: " + matchTime.toLocaleString('en-IN', options);
+                }
+
                 let clickAction = `window.location.href='Contests.html?matchId=${m.id}&t1=${m.team1}&t2=${m.team2}'`;
 
                 container.innerHTML += `
@@ -58,7 +102,7 @@
                             <div class="vs">V/S</div>
                             <div>${m.team2}</div>
                         </div>
-                        <div class="time-badge"><i class="fa-solid fa-bolt"></i> ${displayTime}</div>
+                        <div class="${badgeClass}"><i class="fa-solid fa-bolt"></i> ${displayTime}</div>
                     </div>
                 `;
             });
