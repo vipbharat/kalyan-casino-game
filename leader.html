@@ -89,22 +89,17 @@
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId') || "DEMO_MATCH";
         
-        // Dynamic Entry Fee System
         let entryFee = parseInt(localStorage.getItem('kalyan_entry_fee')) || parseInt(urlParams.get('entry')) || 49;
-        let totalSpots = 150000; // Default mega
+        let totalSpots = 150000; 
         let contestName = "🏆 Mega Contest";
-        let isMatchLive = false; // Flag to check if points should be 0
+        let isMatchLive = false; 
 
-        // Entry fee ke hisaab se spots aur naam change karo
         if(entryFee <= 49) {
-            totalSpots = 150000;
-            contestName = "🏆 Mega Contest";
+            totalSpots = 150000; contestName = "🏆 Mega Contest";
         } else if(entryFee > 49 && entryFee <= 199) {
-            totalSpots = 10000;
-            contestName = "⚔️ Hot Contest";
+            totalSpots = 10000; contestName = "⚔️ Hot Contest";
         } else {
-            totalSpots = 100;
-            contestName = "💎 VIP Contest";
+            totalSpots = 100; contestName = "💎 VIP Contest";
         }
 
         const listContainer = document.getElementById('leaderboard-list');
@@ -115,7 +110,6 @@
         const BATCH_SIZE = 50; 
         let isFetching = false;
 
-        // Check if match is live (Agar live hai toh points dikhao, warna 0)
         db.ref('Game/Kalyan11/Matches/' + matchId).on('value', snap => {
             let matchData = snap.val();
             if(matchData && matchData.match_time) {
@@ -126,10 +120,9 @@
                     document.getElementById('live-status').innerHTML = `<i class="fa-solid fa-circle-dot fa-beat"></i> Points Updating Live...`;
                 }
             }
-            fetchTeams(); // Match status pata chalne ke baad teams fetch karo
+            fetchTeams(); 
         });
 
-        // Dynamic Banner Setup
         const bannerDiv = document.getElementById('dynamic-banner');
         let filled = totalSpots > 1000 ? totalSpots - 1068 : Math.floor(totalSpots * 0.8); 
         let fillPercent = (filled / totalSpots) * 100;
@@ -152,11 +145,8 @@
             let vcPlayer = playersArray[Math.floor(Math.random() * playersArray.length)] || {name: "Bot P2"};
             let cName = cPlayer.name.split(' ')[0][0] + ". " + (cPlayer.name.split(' ')[1] || "");
             let vcName = vcPlayer.name.split(' ')[0][0] + ". " + (vcPlayer.name.split(' ')[1] || "");
-
-            // Agar match live nahi hai, toh bots ke points bhi 0 honge
             let finalPoints = isMatchLive ? points : 0.0;
-
-            return { phone: randomNum, points: finalPoints, cName: cName, vcName: vcName, isBot: true };
+            return { phone: randomNum, teamKey: randomNum, points: finalPoints, cName: cName, vcName: vcName, isBot: true };
         }
 
         function fetchTeams() {
@@ -166,17 +156,16 @@
 
                 db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', snapshot => {
                     let realTeamsArray = [];
-                    let myTeamObj = null; // Meri team ko alag se nikalenge
+                    let myTeams = []; 
                     
                     if (snapshot.exists()) {
                         snapshot.forEach(child => {
-                            let userPhone = child.key;
+                            let teamKey = child.key;
                             let teamInfo = child.val();
                             
-                            // Sirf wahi teams lo jinki entry fee is page wale contest se match karti hai
-                            // (Agar teamInfo me entry_paid nahi hai, toh usko dikha do taaki purani teams gayab na hon)
                             if(teamInfo.entry_paid && parseInt(teamInfo.entry_paid) !== entryFee) return;
 
+                            let actualPhone = teamInfo.phone || teamKey.split('_')[0]; 
                             let pts = isMatchLive ? (teamInfo.total_points || 0) : 0.0;
                             
                             let cId = teamInfo.captain;
@@ -184,10 +173,10 @@
                             let cName = allPlayersObj[cId] ? allPlayersObj[cId].name.split(' ')[0][0] + ". " + (allPlayersObj[cId].name.split(' ')[1] || "") : "Unknown";
                             let vcName = allPlayersObj[vcId] ? allPlayersObj[vcId].name.split(' ')[0][0] + ". " + (allPlayersObj[vcId].name.split(' ')[1] || "") : "Unknown";
 
-                            let teamData = { phone: userPhone, points: pts, cName: cName, vcName: vcName, isBot: false };
+                            let teamData = { phone: actualPhone, teamKey: teamKey, points: pts, cName: cName, vcName: vcName, isBot: false };
                             
-                            if(userPhone === myPhone) {
-                                myTeamObj = teamData; // User ki team mil gayi
+                            if(actualPhone === myPhone) {
+                                myTeams.push(teamData); 
                             } else {
                                 realTeamsArray.push(teamData);
                             }
@@ -195,20 +184,16 @@
                     }
 
                     let botTeams = [];
-                    // Generate bots
-                    let numBots = totalSpots > 1000 ? 300 : 20; // limit bots based on contest size
+                    let numBots = totalSpots > 1000 ? 300 : 20; 
                     for(let i = 0; i < numBots; i++) {
-                        let randomPts = Math.random() * 150; 
-                        botTeams.push(createBot(randomPts, playersArray));
+                        botTeams.push(createBot(Math.random() * 150, playersArray));
                     }
 
-                    // Combine and Sort
                     allCombinedTeams = [...realTeamsArray, ...botTeams];
-                    allCombinedTeams.sort((a, b) => b.points - a.points); // Sort by points (agar sab 0 hain, toh random rahenge)
+                    allCombinedTeams.sort((a, b) => b.points - a.points); 
 
-                    // 🎯 VIP LOGIC: Meri team ko hamesha list me sabse upar (Rank 1 par) daal do!
-                    if(myTeamObj) {
-                        allCombinedTeams.unshift(myTeamObj); // Array ke start me jod do
+                    if(myTeams.length > 0) {
+                        allCombinedTeams = [...myTeams, ...allCombinedTeams];
                     }
 
                     listContainer.innerHTML = "";
@@ -222,8 +207,7 @@
             if(displayedCount >= allCombinedTeams.length) return; 
             
             isFetching = true;
-            let end = displayedCount + BATCH_SIZE;
-            let batch = allCombinedTeams.slice(displayedCount, end);
+            let batch = allCombinedTeams.slice(displayedCount, displayedCount + BATCH_SIZE);
 
             batch.forEach((team, index) => {
                 let rank = displayedCount + index + 1; 
@@ -232,14 +216,11 @@
                 let isMyTeam = (!team.isBot && team.phone === myPhone);
                 let displayName = isMyTeam ? "You (" + team.phone + ")" : hidePhone;
                 
-                // 👁️ VIEW BUTTON SIRF USER KI TEAM PAR
-                let myTagHTML = isMyTeam ? `<span class="my-tag">MY TEAM</span> <button class="view-btn" onclick="window.location.href='MyTeam.html?matchId=${matchId}'"><i class="fa-solid fa-eye"></i> VIEW</button>` : `<i class="fa-solid fa-lock lock-icon" onclick="alert('🔒 Privacy Lock: Aap sirf apni team khol kar dekh sakte hain!')"></i>`;
+                // MULTIPLE TEAM VIEW BUTTON FIX
+                let myTagHTML = isMyTeam ? `<span class="my-tag">MY TEAM</span> <button class="view-btn" onclick="window.location.href='MyTeam.html?matchId=${matchId}&teamId=${team.teamKey}'"><i class="fa-solid fa-eye"></i> VIEW</button>` : `<i class="fa-solid fa-lock lock-icon" onclick="alert('🔒 Privacy Lock: Aap sirf apni team khol kar dekh sakte hain!')"></i>`;
                 
                 let highlightClass = isMyTeam ? "my-team" : "";
-                
-                // Rank color class
-                let rankClass = "rank-" + rank;
-                if(rank > 3) rankClass = "";
+                let rankClass = rank > 3 ? "" : "rank-" + rank;
 
                 let cardHTML = `
                     <div class="user-row ${rankClass} ${highlightClass}">
