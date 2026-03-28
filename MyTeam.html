@@ -16,7 +16,7 @@
         .summary-card { background: linear-gradient(145deg, #1e1e2e, #111); margin: 15px; padding: 15px; border-radius: 12px; border: 1px solid #333; display: flex; justify-content: space-around; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-top: 3px solid #ffd700;}
         .summary-item { text-align: center; }
         .summary-item h3 { margin: 0; color: #aaa; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;}
-        .summary-item p { margin: 5px 0 0; font-size: 18px; font-weight: 900; color: #fff; }
+        .summary-item p { margin: 5px 0 0; font-size: 22px; font-weight: 900; color: #fff; }
         
         .team-title { margin: 20px 15px 10px; font-size: 14px; font-weight: 900; color: #ffd700; text-transform: uppercase; border-bottom: 1px dashed #333; padding-bottom: 5px;}
 
@@ -27,9 +27,13 @@
         .p-name { font-weight: bold; font-size: 15px; margin-bottom: 4px;}
         .p-role { font-size: 10px; color: #aaa; background: #000; padding: 3px 8px; border-radius: 4px; border: 1px solid #333;}
         
-        .cvc-badge { width: 35px; height: 35px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; }
+        .cvc-badge { width: 35px; height: 35px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; margin-left: 10px;}
         .badge-c { background: #ffd700; color: #000; border: 2px solid #fff; box-shadow: 0 0 15px rgba(255,215,0,0.6); }
         .badge-vc { background: #c0c0c0; color: #000; border: 2px solid #fff; box-shadow: 0 0 15px rgba(192,192,192,0.6); }
+        
+        .player-pts-box { text-align: right; }
+        .player-pts { color: #00ff88; font-weight: 900; font-size: 18px; }
+        .player-pts-lbl { font-size: 9px; color: #aaa; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -46,7 +50,7 @@
         <div style="width: 1px; background: #333;"></div>
         <div class="summary-item">
             <h3>Total Points</h3>
-            <p id="t-points" style="color:#00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.5);">0.0</p>
+            <p id="t-points" style="color:#00ff88; text-shadow: 0 0 15px rgba(0,255,136,0.8);">0.0</p>
         </div>
     </div>
 
@@ -54,7 +58,7 @@
 
     <div class="p-list" id="playerContainer">
         <div style="text-align:center; margin-top:50px; color:#00ff88;">
-            <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Loading Your VIP Team...
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Loading Live Points...
         </div>
     </div>
 
@@ -72,7 +76,7 @@
         if(!matchId || !userPhone) {
             container.innerHTML = "<div style='color:#ff004c; text-align:center; padding: 20px; font-weight:bold;'>Error: Match Details Missing!</div>";
         } else {
-            // User ki team Firebase se nikalo
+            // 1. Pehle User Ki Team ki details nikalo (kisne captain banaya hai, entry kitni di)
             db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).once('value', teamSnap => {
                 if(!teamSnap.exists()) {
                     container.innerHTML = "<div style='color:#ff004c; text-align:center; padding: 20px; font-weight:bold;'>Aapne is match ke liye koi team nahi banayi hai!</div>";
@@ -80,30 +84,35 @@
                 }
 
                 let teamData = teamSnap.val();
-                
-                // Entry Fee aur Points Update karo
                 document.getElementById('t-entry').innerText = teamData.entry_paid ? "₹" + teamData.entry_paid : "Free";
-                
-                // Agar match start nahi hua, toh 0.0 dikhao
-                document.getElementById('t-points').innerText = teamData.total_points ? teamData.total_points.toFixed(1) : "0.0";
 
-                // Khiladiyon ka data Firebase se nikalo
-                db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', playerSnap => {
+                // 2. 🚀 LIVE POINTS ENGINE (Database mein point badalte hi yahan badlenge)
+                db.ref('Game/Kalyan11/MatchPlayers/' + matchId).on('value', playerSnap => {
                     let allPlayers = playerSnap.val() || {};
                     container.innerHTML = "";
+                    let totalTeamPoints = 0;
 
                     if(teamData.players && teamData.players.length > 0) {
                         
-                        // Khiladiyon ko screen par print karo
                         teamData.players.forEach(pid => {
                             let pInfo = allPlayers[pid];
                             if(pInfo) {
+                                // Default points check karo
+                                let basePts = parseFloat(pInfo.points || 0);
+                                let finalPts = basePts;
                                 let badgeHtml = "";
+
+                                // C aur VC ka multiplier jadoo
                                 if(teamData.captain === pid) {
                                     badgeHtml = '<div class="cvc-badge badge-c">C</div>';
+                                    finalPts = basePts * 2;
                                 } else if(teamData.viceCaptain === pid) {
                                     badgeHtml = '<div class="cvc-badge badge-vc">VC</div>';
+                                    finalPts = basePts * 1.5;
                                 }
+
+                                // Total points mein jodo
+                                totalTeamPoints += finalPts;
 
                                 let shortName = pInfo.name.split(' ')[0][0] + ". " + (pInfo.name.split(' ')[1] || pInfo.name);
 
@@ -116,11 +125,27 @@
                                                 <div class="p-role">${pInfo.team} | ${pInfo.role}</div>
                                             </div>
                                         </div>
-                                        ${badgeHtml}
+                                        <div style="display:flex; align-items:center;">
+                                            <div class="player-pts-box">
+                                                <div class="player-pts">${finalPts.toFixed(1)}</div>
+                                                <div class="player-pts-lbl">PTS</div>
+                                            </div>
+                                            ${badgeHtml}
+                                        </div>
                                     </div>
                                 `;
                             }
                         });
+
+                        // 3. UI mein Total Points Update karo
+                        document.getElementById('t-points').innerText = totalTeamPoints.toFixed(1);
+
+                        // 4. LEADERBOARD KE LIYE DATA SAVE KARO
+                        // Ye line tumhari team ke naye points automatically Leaderboard tak bhej degi!
+                        db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).update({
+                            total_points: totalTeamPoints
+                        });
+
                     } else {
                         container.innerHTML = "<div style='text-align:center;'>No players found in your team.</div>";
                     }
