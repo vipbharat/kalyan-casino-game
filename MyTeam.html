@@ -70,14 +70,17 @@
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId');
         const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+        
+        // UNIQUE TEAM ID CATCHER
+        const teamId = urlParams.get('teamId') || userPhone;
 
         const container = document.getElementById('playerContainer');
 
         if(!matchId || !userPhone) {
             container.innerHTML = "<div style='color:#ff004c; text-align:center; padding: 20px; font-weight:bold;'>Error: Match Details Missing!</div>";
         } else {
-            // 1. Pehle User Ki Team ki details nikalo (kisne captain banaya hai, entry kitni di)
-            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).once('value', teamSnap => {
+            // Yahan teamId se specific team dhoondhega (Chahe Team 1 ho ya Team 10)
+            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + teamId).once('value', teamSnap => {
                 if(!teamSnap.exists()) {
                     container.innerHTML = "<div style='color:#ff004c; text-align:center; padding: 20px; font-weight:bold;'>Aapne is match ke liye koi team nahi banayi hai!</div>";
                     return;
@@ -86,7 +89,6 @@
                 let teamData = teamSnap.val();
                 document.getElementById('t-entry').innerText = teamData.entry_paid ? "₹" + teamData.entry_paid : "Free";
 
-                // 2. 🚀 LIVE POINTS ENGINE (Database mein point badalte hi yahan badlenge)
                 db.ref('Game/Kalyan11/MatchPlayers/' + matchId).on('value', playerSnap => {
                     let allPlayers = playerSnap.val() || {};
                     container.innerHTML = "";
@@ -97,12 +99,10 @@
                         teamData.players.forEach(pid => {
                             let pInfo = allPlayers[pid];
                             if(pInfo) {
-                                // Default points check karo
                                 let basePts = parseFloat(pInfo.points || 0);
                                 let finalPts = basePts;
                                 let badgeHtml = "";
 
-                                // C aur VC ka multiplier jadoo
                                 if(teamData.captain === pid) {
                                     badgeHtml = '<div class="cvc-badge badge-c">C</div>';
                                     finalPts = basePts * 2;
@@ -111,9 +111,7 @@
                                     finalPts = basePts * 1.5;
                                 }
 
-                                // Total points mein jodo
                                 totalTeamPoints += finalPts;
-
                                 let shortName = pInfo.name.split(' ')[0][0] + ". " + (pInfo.name.split(' ')[1] || pInfo.name);
 
                                 container.innerHTML += `
@@ -137,12 +135,10 @@
                             }
                         });
 
-                        // 3. UI mein Total Points Update karo
                         document.getElementById('t-points').innerText = totalTeamPoints.toFixed(1);
 
-                        // 4. LEADERBOARD KE LIYE DATA SAVE KARO
-                        // Ye line tumhari team ke naye points automatically Leaderboard tak bhej degi!
-                        db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).update({
+                        // Is specific team ka total score update karega leaderboard ke liye
+                        db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + teamId).update({
                             total_points: totalTeamPoints
                         });
 
