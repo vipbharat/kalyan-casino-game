@@ -33,7 +33,7 @@
         .user-row.rank-1 { border-color: #ffd700; background: linear-gradient(145deg, #332b00, #111); box-shadow: 0 0 15px rgba(255,215,0,0.2); }
         .user-row.rank-2 { border-color: #c0c0c0; }
         .user-row.rank-3 { border-color: #cd7f32; }
-        .user-row.my-team { border-left: 4px solid #00ff88; }
+        .user-row.my-team { border-left: 4px solid #00ff88; background: linear-gradient(145deg, #113322, #111); box-shadow: 0 0 15px rgba(0,255,136,0.2); }
 
         .rank-circle { width: 35px; height: 35px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; color: #aaa; border: 2px solid #555; }
         .rank-1 .rank-circle { background: #ffd700; color: #000; border-color: #ffd700; }
@@ -41,7 +41,7 @@
         .rank-3 .rank-circle { background: #cd7f32; color: #000; border-color: #cd7f32; }
 
         .user-details { flex: 1; margin-left: 15px; }
-        .user-name { font-weight: bold; font-size: 15px; color: #fff; }
+        .user-name { font-weight: bold; font-size: 15px; color: #fff; display: flex; align-items: center;}
         .my-tag { background: #00ff88; color: #000; font-size: 9px; padding: 2px 5px; border-radius: 3px; margin-left: 5px; font-weight: bold; }
         .lock-icon { color: #555; font-size: 12px; margin-left: 5px; }
         
@@ -53,6 +53,8 @@
         .points-box { text-align: right; }
         .pts-value { font-size: 20px; font-weight: 900; color: #00ff88; }
         .pts-label { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .view-btn { background: #00d2d3; color: #000; font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: bold; margin-left: 8px; border: none; cursor: pointer; }
 
         .loading-text { text-align: center; color: #ffd700; font-weight: bold; margin-top: 30px; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
@@ -64,15 +66,15 @@
     <div class="header">
         <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
         <div>
-            <div class="title">LIVE LEADERBOARD</div>
-            <div class="sub-title"><i class="fa-solid fa-circle-dot fa-beat"></i> Points Updating Live...</div>
+            <div class="title">LEADERBOARD</div>
+            <div class="sub-title" id="live-status"><i class="fa-solid fa-clock"></i> Match not started yet</div>
         </div>
     </div>
 
     <div class="prize-pool-banner" id="dynamic-banner"></div>
 
     <div class="leaderboard-container" id="leaderboard-list">
-        <div class="loading-text" id="main-loader"><i class="fa-solid fa-spinner fa-spin"></i> Fetching Teams...</div>
+        <div class="loading-text" id="main-loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Teams...</div>
     </div>
     
     <div id="scroll-loader"><i class="fa-solid fa-spinner fa-spin"></i> Searching more teams...</div>
@@ -82,14 +84,28 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
         
-        const myPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+        const myPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "9876543210";
         
-        // 🎯 NAYA SYSTEM: URL se check karo kitne Spots ka contest hai
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId') || "DEMO_MATCH";
-        // Agar URL me spots nahi hai, toh default Mega (150000) maan lega
-        const totalSpots = parseInt(urlParams.get('spots')) || 150000; 
-        const entryFee = urlParams.get('entry') || "99";
+        
+        // Dynamic Entry Fee System
+        let entryFee = parseInt(localStorage.getItem('kalyan_entry_fee')) || parseInt(urlParams.get('entry')) || 49;
+        let totalSpots = 150000; // Default mega
+        let contestName = "🏆 Mega Contest";
+        let isMatchLive = false; // Flag to check if points should be 0
+
+        // Entry fee ke hisaab se spots aur naam change karo
+        if(entryFee <= 49) {
+            totalSpots = 150000;
+            contestName = "🏆 Mega Contest";
+        } else if(entryFee > 49 && entryFee <= 199) {
+            totalSpots = 10000;
+            contestName = "⚔️ Hot Contest";
+        } else {
+            totalSpots = 100;
+            contestName = "💎 VIP Contest";
+        }
 
         const listContainer = document.getElementById('leaderboard-list');
         const scrollLoader = document.getElementById('scroll-loader');
@@ -99,104 +115,108 @@
         const BATCH_SIZE = 50; 
         let isFetching = false;
 
-        // Banner setup karna Contest size ke hisaab se
+        // Check if match is live (Agar live hai toh points dikhao, warna 0)
+        db.ref('Game/Kalyan11/Matches/' + matchId).on('value', snap => {
+            let matchData = snap.val();
+            if(matchData && matchData.match_time) {
+                let matchTime = new Date(matchData.match_time).getTime();
+                let now = new Date().getTime();
+                if(now > matchTime) {
+                    isMatchLive = true;
+                    document.getElementById('live-status').innerHTML = `<i class="fa-solid fa-circle-dot fa-beat"></i> Points Updating Live...`;
+                }
+            }
+            fetchTeams(); // Match status pata chalne ke baad teams fetch karo
+        });
+
+        // Dynamic Banner Setup
         const bannerDiv = document.getElementById('dynamic-banner');
-        if(totalSpots <= 10) {
-            // Small / Head-to-Head Banner
-            bannerDiv.innerHTML = `
-                <div class="pool-flex">
-                    <h2>⚔️ Small Contest</h2>
-                    <span>Entry: ₹${entryFee}</span>
-                </div>
-                <div class="spots-left">
-                    <span class="red">Total Spots: ${totalSpots}</span>
-                    <span>Exclusive</span>
-                </div>
-            `;
-        } else {
-            // Mega Contest Banner
-            let filled = totalSpots - 1068; // Random filled look
-            let fillPercent = (filled / totalSpots) * 100;
-            bannerDiv.innerHTML = `
-                <div class="pool-flex">
-                    <h2>🏆 Mega Contest</h2>
-                    <span>Entry: ₹${entryFee}</span>
-                </div>
-                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${fillPercent}%"></div></div>
-                <div class="spots-left">
-                    <span class="red">${filled.toLocaleString('en-IN')} Spots filled</span>
-                    <span>${totalSpots.toLocaleString('en-IN')} Spots</span>
-                </div>
-            `;
-        }
+        let filled = totalSpots > 1000 ? totalSpots - 1068 : Math.floor(totalSpots * 0.8); 
+        let fillPercent = (filled / totalSpots) * 100;
+        
+        bannerDiv.innerHTML = `
+            <div class="pool-flex">
+                <h2>${contestName}</h2>
+                <span>Entry: ₹${entryFee}</span>
+            </div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${fillPercent}%"></div></div>
+            <div class="spots-left">
+                <span class="red">${filled.toLocaleString('en-IN')} Spots filled</span>
+                <span>${totalSpots.toLocaleString('en-IN')} Spots</span>
+            </div>
+        `;
 
         function createBot(points, playersArray) {
             let randomNum = "9" + Math.floor(10000000 + Math.random() * 90000000); 
-            let cPlayer = playersArray[Math.floor(Math.random() * playersArray.length)];
-            let vcPlayer = playersArray[Math.floor(Math.random() * playersArray.length)];
-            let cName = cPlayer ? cPlayer.name.split(' ')[0][0] + ". " + (cPlayer.name.split(' ')[1] || "") : "Unknown";
-            let vcName = vcPlayer ? vcPlayer.name.split(' ')[0][0] + ". " + (vcPlayer.name.split(' ')[1] || "") : "Unknown";
+            let cPlayer = playersArray[Math.floor(Math.random() * playersArray.length)] || {name: "Bot P1"};
+            let vcPlayer = playersArray[Math.floor(Math.random() * playersArray.length)] || {name: "Bot P2"};
+            let cName = cPlayer.name.split(' ')[0][0] + ". " + (cPlayer.name.split(' ')[1] || "");
+            let vcName = vcPlayer.name.split(' ')[0][0] + ". " + (vcPlayer.name.split(' ')[1] || "");
 
-            return { phone: randomNum, points: points, cName: cName, vcName: vcName, isBot: true };
+            // Agar match live nahi hai, toh bots ke points bhi 0 honge
+            let finalPoints = isMatchLive ? points : 0.0;
+
+            return { phone: randomNum, points: finalPoints, cName: cName, vcName: vcName, isBot: true };
         }
 
-        db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', playerSnap => {
-            let allPlayersObj = playerSnap.val() || {};
-            let playersArray = Object.values(allPlayersObj); 
+        function fetchTeams() {
+            db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', playerSnap => {
+                let allPlayersObj = playerSnap.val() || {};
+                let playersArray = Object.values(allPlayersObj); 
 
-            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', snapshot => {
-                let realTeamsArray = [];
-                let maxRealPoints = 0; 
-                
-                if (snapshot.exists()) {
-                    snapshot.forEach(child => {
-                        let userPhone = child.key;
-                        let teamInfo = child.val();
-                        let pts = teamInfo.total_points || 0;
-                        if(pts > maxRealPoints) { maxRealPoints = pts; }
-                        
-                        let cId = teamInfo.captain;
-                        let vcId = teamInfo.viceCaptain;
-                        let cName = allPlayersObj[cId] ? allPlayersObj[cId].name.split(' ')[0][0] + ". " + (allPlayersObj[cId].name.split(' ')[1] || "") : "Unknown";
-                        let vcName = allPlayersObj[vcId] ? allPlayersObj[vcId].name.split(' ')[0][0] + ". " + (allPlayersObj[vcId].name.split(' ')[1] || "") : "Unknown";
+                db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', snapshot => {
+                    let realTeamsArray = [];
+                    let myTeamObj = null; // Meri team ko alag se nikalenge
+                    
+                    if (snapshot.exists()) {
+                        snapshot.forEach(child => {
+                            let userPhone = child.key;
+                            let teamInfo = child.val();
+                            
+                            // Sirf wahi teams lo jinki entry fee is page wale contest se match karti hai
+                            // (Agar teamInfo me entry_paid nahi hai, toh usko dikha do taaki purani teams gayab na hon)
+                            if(teamInfo.entry_paid && parseInt(teamInfo.entry_paid) !== entryFee) return;
 
-                        realTeamsArray.push({ phone: userPhone, points: pts, cName: cName, vcName: vcName, isBot: false });
-                    });
-                }
+                            let pts = isMatchLive ? (teamInfo.total_points || 0) : 0.0;
+                            
+                            let cId = teamInfo.captain;
+                            let vcId = teamInfo.viceCaptain;
+                            let cName = allPlayersObj[cId] ? allPlayersObj[cId].name.split(' ')[0][0] + ". " + (allPlayersObj[cId].name.split(' ')[1] || "") : "Unknown";
+                            let vcName = allPlayersObj[vcId] ? allPlayersObj[vcId].name.split(' ')[0][0] + ". " + (allPlayersObj[vcId].name.split(' ')[1] || "") : "Unknown";
 
-                let basePoints = maxRealPoints > 0 ? maxRealPoints : 100; 
-                let botTeams = [];
-
-                // 🎯 MAGIC LOGIC: Contest Size ke hisaab se Bot banana
-                if(totalSpots <= 10) {
-                    // Small Contest: Sirf khali jagah bharne ke liye bot dalo
-                    let spotsLeft = totalSpots - realTeamsArray.length;
-                    for(let i=0; i < spotsLeft; i++) {
-                        // Small contest me bot ko bhagwan mat banao, thoda normal rakho taaki user ko lage wo jeet sakta hai
-                        let botPts = basePoints - 30 + (Math.random() * 60); 
-                        botTeams.push(createBot(botPts, playersArray));
+                            let teamData = { phone: userPhone, points: pts, cName: cName, vcName: vcName, isBot: false };
+                            
+                            if(userPhone === myPhone) {
+                                myTeamObj = teamData; // User ki team mil gayi
+                            } else {
+                                realTeamsArray.push(teamData);
+                            }
+                        });
                     }
-                } else {
-                    // Mega Contest: Boss Bots + Faltu Bots
-                    for(let i = 0; i < 10; i++) {
-                        let bossPoints = basePoints + 15 + ((10 - i) * 3); 
-                        botTeams.push(createBot(bossPoints, playersArray));
-                    }
-                    for(let i = 0; i < 290; i++) {
-                        let normalPoints = basePoints - (Math.random() * 150);
-                        if(normalPoints < 0) normalPoints = Math.random() * 20; 
-                        botTeams.push(createBot(normalPoints, playersArray));
-                    }
-                }
 
-                allCombinedTeams = [...realTeamsArray, ...botTeams];
-                allCombinedTeams.sort((a, b) => b.points - a.points);
+                    let botTeams = [];
+                    // Generate bots
+                    let numBots = totalSpots > 1000 ? 300 : 20; // limit bots based on contest size
+                    for(let i = 0; i < numBots; i++) {
+                        let randomPts = Math.random() * 150; 
+                        botTeams.push(createBot(randomPts, playersArray));
+                    }
 
-                listContainer.innerHTML = "";
-                displayedCount = 0;
-                loadMoreTeams(); 
+                    // Combine and Sort
+                    allCombinedTeams = [...realTeamsArray, ...botTeams];
+                    allCombinedTeams.sort((a, b) => b.points - a.points); // Sort by points (agar sab 0 hain, toh random rahenge)
+
+                    // 🎯 VIP LOGIC: Meri team ko hamesha list me sabse upar (Rank 1 par) daal do!
+                    if(myTeamObj) {
+                        allCombinedTeams.unshift(myTeamObj); // Array ke start me jod do
+                    }
+
+                    listContainer.innerHTML = "";
+                    displayedCount = 0;
+                    loadMoreTeams(); 
+                });
             });
-        });
+        }
 
         function loadMoreTeams() {
             if(displayedCount >= allCombinedTeams.length) return; 
@@ -211,12 +231,18 @@
                 
                 let isMyTeam = (!team.isBot && team.phone === myPhone);
                 let displayName = isMyTeam ? "You (" + team.phone + ")" : hidePhone;
-                let myTagHTML = isMyTeam ? `<span class="my-tag">MY TEAM</span> <i class="fa-solid fa-eye" style="color:#00ff88; font-size:11px; margin-left:5px;"></i>` : `<i class="fa-solid fa-lock lock-icon"></i>`;
+                
+                // 👁️ VIEW BUTTON SIRF USER KI TEAM PAR
+                let myTagHTML = isMyTeam ? `<span class="my-tag">MY TEAM</span> <button class="view-btn" onclick="window.location.href='MyTeam.html?matchId=${matchId}'"><i class="fa-solid fa-eye"></i> VIEW</button>` : `<i class="fa-solid fa-lock lock-icon" onclick="alert('🔒 Privacy Lock: Aap sirf apni team khol kar dekh sakte hain!')"></i>`;
+                
                 let highlightClass = isMyTeam ? "my-team" : "";
-                let clickAction = isMyTeam ? `onclick="window.location.href='MyTeam.html?matchId=${matchId}'"` : `onclick="alert('🔒 Privacy Lock: Aap sirf apni team khol kar dekh sakte hain!')"`;
+                
+                // Rank color class
+                let rankClass = "rank-" + rank;
+                if(rank > 3) rankClass = "";
 
                 let cardHTML = `
-                    <div class="user-row rank-${rank} ${highlightClass}" ${clickAction}>
+                    <div class="user-row ${rankClass} ${highlightClass}">
                         <div class="rank-circle">${rank}</div>
                         <div class="user-details">
                             <div class="user-name">${displayName} ${myTagHTML}</div>
