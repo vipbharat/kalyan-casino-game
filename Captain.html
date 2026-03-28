@@ -13,7 +13,6 @@
         .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; color: #ffd700; }
         .title { font-weight: 900; font-size: 16px; text-transform: uppercase; }
         .sub-title { font-size: 11px; color: #aaa; margin-top: 3px; }
-        
         .info-bar { background: #111; padding: 10px; text-align: center; font-size: 12px; color: #ffd700; border-bottom: 1px solid #333; }
         .player-list { padding: 15px; }
         .player-row { background: #111; border: 1px solid #333; padding: 12px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
@@ -21,12 +20,10 @@
         .p-image { width: 40px; height: 40px; background: #222; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #888; border: 1px solid #444; }
         .p-name { font-weight: bold; font-size: 15px; }
         .p-role { font-size: 11px; color: #aaa; background: #222; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-top: 4px; border: 1px solid #333; }
-        
         .cvc-btns { display: flex; gap: 10px; }
         .cvc-btn { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #555; background: #222; color: #aaa; font-weight: 900; font-size: 12px; cursor: pointer; transition: 0.3s; }
         .cvc-btn.active-c { background: #ffd700; color: #000; border-color: #ffd700; transform: scale(1.1); box-shadow: 0 0 10px rgba(255,215,0,0.5); }
         .cvc-btn.active-vc { background: #c0c0c0; color: #000; border-color: #c0c0c0; transform: scale(1.1); box-shadow: 0 0 10px rgba(192,192,192,0.5); }
-
         .footer { position: fixed; bottom: 0; width: 100%; background: #111; padding: 15px; box-sizing: border-box; display: flex; justify-content: center; border-top: 2px solid #ffd700; z-index: 100; }
         .save-btn { background: #00ff88; color: #000; padding: 12px 40px; border-radius: 5px; font-weight: 900; font-size: 16px; border: none; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.3s; width: 100%; display:flex; justify-content: center; align-items: center; gap: 10px;}
         .save-btn.active { opacity: 1; pointer-events: auto; box-shadow: 0 0 15px rgba(0,255,136,0.4); }
@@ -34,7 +31,6 @@
     </style>
 </head>
 <body>
-
     <div class="header">
         <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
         <div>
@@ -42,16 +38,9 @@
             <div class="sub-title">C gets 2X Points | VC gets 1.5X Points</div>
         </div>
     </div>
-    
     <div class="info-bar">Choose your Captain and Vice-Captain wisely!</div>
-
-    <div class="player-list" id="teamContainer">
-        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Players...</div>
-    </div>
-
-    <div class="footer">
-        <button class="save-btn" id="saveBtn" onclick="saveTeamToFirebase()">SAVE TEAM</button>
-    </div>
+    <div class="player-list" id="teamContainer"><div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Players...</div></div>
+    <div class="footer"><button class="save-btn" id="saveBtn" onclick="saveTeamToFirebase()">SAVE TEAM</button></div>
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
@@ -61,25 +50,16 @@
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId') || "DEMO_MATCH";
         
-        // 🎯 YAHAN HAI DYNAMIC JADOO!
-        // Ye check karega ki pichhle page se kya entry fee aayi hai. Agar nahi aayi toh default ₹49 kar dega.
         let entryFee = parseInt(localStorage.getItem('kalyan_entry_fee'));
-        if(isNaN(entryFee)) { entryFee = 49; } // Agar koi error aaye toh ₹49 katega
+        if(isNaN(entryFee)) { entryFee = 49; } 
 
-        // Button par automatic amount likh do
         document.getElementById('saveBtn').innerText = "SAVE TEAM & PAY ₹" + entryFee;
         
-        if(!localStorage.getItem('userPhone')) { localStorage.setItem('userPhone', '9876543210'); }
-        const userPhone = localStorage.getItem('userPhone');
-
+        const userPhone = localStorage.getItem('userPhone') || '9876543210';
         const selectedPlayersRaw = localStorage.getItem('kalyan_selected_team');
-        let selectedPlayerIds = [];
-        if(selectedPlayersRaw) { selectedPlayerIds = JSON.parse(selectedPlayersRaw); }
+        let selectedPlayerIds = selectedPlayersRaw ? JSON.parse(selectedPlayersRaw) : [];
 
-        let captain = null;
-        let viceCaptain = null;
-        let finalPlayerData = []; 
-
+        let captain = null; let viceCaptain = null; let finalPlayerData = []; 
         const container = document.getElementById('teamContainer');
 
         if(selectedPlayerIds.length === 0 || !matchId) {
@@ -88,26 +68,18 @@
             db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', snapshot => {
                 if(snapshot.exists()) {
                     let allMatchPlayers = snapshot.val();
-                    selectedPlayerIds.forEach(id => {
-                        if(allMatchPlayers[id]) {
-                            finalPlayerData.push(allMatchPlayers[id]);
-                        }
-                    });
+                    selectedPlayerIds.forEach(id => { if(allMatchPlayers[id]) finalPlayerData.push(allMatchPlayers[id]); });
                     renderTeam();
-                } else {
-                    container.innerHTML = "<div style='text-align:center; color:#ff004c; margin-top:20px;'>Match Data Error!</div>";
-                }
+                } else { container.innerHTML = "<div style='text-align:center; color:#ff004c; margin-top:20px;'>Match Data Error!</div>"; }
             });
         }
 
         function renderTeam() {
             container.innerHTML = "";
-            
             finalPlayerData.forEach((player) => {
                 let isC = captain === player.id ? 'active-c' : '';
                 let isVC = viceCaptain === player.id ? 'active-vc' : '';
                 let shortName = player.name.split(' ')[0][0] + ". " + (player.name.split(' ')[1] || player.name);
-                
                 container.innerHTML += `
                     <div class="player-row">
                         <div class="p-info">
@@ -121,32 +93,21 @@
                             <button class="cvc-btn ${isC}" onclick="setRole('${player.id}', 'C')">C</button>
                             <button class="cvc-btn ${isVC}" onclick="setRole('${player.id}', 'VC')">VC</button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
             updateSaveBtn();
         }
 
         function setRole(id, role) {
-            if (role === 'C') {
-                if(viceCaptain === id) viceCaptain = null;
-                captain = id;
-            } else if (role === 'VC') {
-                if(captain === id) captain = null;
-                viceCaptain = id;
-            }
+            if (role === 'C') { if(viceCaptain === id) viceCaptain = null; captain = id; } 
+            else if (role === 'VC') { if(captain === id) captain = null; viceCaptain = id; }
             renderTeam();
         }
 
         function updateSaveBtn() {
             let saveBtn = document.getElementById('saveBtn');
-            if(captain && viceCaptain) { 
-                saveBtn.classList.add('active'); 
-                saveBtn.disabled = false;
-            } else { 
-                saveBtn.classList.remove('active'); 
-                saveBtn.disabled = true;
-            }
+            if(captain && viceCaptain) { saveBtn.classList.add('active'); saveBtn.disabled = false; } 
+            else { saveBtn.classList.remove('active'); saveBtn.disabled = true; }
         }
 
         function saveTeamToFirebase() {
@@ -155,49 +116,37 @@
             saveBtn.disabled = true;
 
             let userWalletRef = db.ref('users/' + userPhone);
-            
             userWalletRef.once('value', (snapshot) => {
                 let userData = snapshot.val() || {};
-                
                 let mainBalance = parseFloat(userData.balance || 0);
                 let winBalance = parseFloat(userData.winning_balance || 0);
                 let totalBalance = mainBalance + winBalance;
 
-                // Check for dynamic entry fee
                 if(totalBalance >= entryFee) {
-                    
-                    let newMain = mainBalance;
-                    let newWin = winBalance;
-                    
-                    if(mainBalance >= entryFee) {
-                        newMain = mainBalance - entryFee;
-                    } else {
-                        let remaining = entryFee - mainBalance;
-                        newMain = 0;
-                        newWin = winBalance - remaining;
-                    }
+                    let newMain = mainBalance; let newWin = winBalance;
+                    if(mainBalance >= entryFee) { newMain = mainBalance - entryFee; } 
+                    else { let remaining = entryFee - mainBalance; newMain = 0; newWin = winBalance - remaining; }
 
-                    userWalletRef.update({
-                        balance: newMain,
-                        winning_balance: newWin
-                    }).then(() => {
+                    userWalletRef.update({ balance: newMain, winning_balance: newWin }).then(() => {
+                        
+                        // 🎯 YAHAN HUA HAI MULTIPLE TEAM KA JADOO!
+                        let uniqueTeamId = userPhone + "_" + new Date().getTime(); 
+
                         let teamData = {
+                            phone: userPhone, // Phone andar save kiya hai pehchanne ke liye
                             players: selectedPlayerIds,
                             captain: captain,
                             viceCaptain: viceCaptain,
                             total_points: 0, 
-                            entry_paid: entryFee, // Ye bhi save karenge taaki admin ko pata rahe kitne wale mein aaya tha
+                            entry_paid: entryFee,
                             timestamp: new Date().getTime()
                         };
 
-                        db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).set(teamData)
-                        .then(() => {
-                            window.location.href = "leader.html?matchId=" + matchId + "&spots=150000&entry=" + entryFee;
-                        });
+                        db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + uniqueTeamId).set(teamData)
+                        .then(() => { window.location.href = "leader.html?matchId=" + matchId + "&entry=" + entryFee; });
                     });
-
                 } else {
-                    alert("⚠️ Insufficient Balance!\nAapke wallet mein ₹" + entryFee + " nahi hain. Kripya pehle deposit karein.");
+                    alert("⚠️ Insufficient Balance!\nAapke wallet mein ₹" + entryFee + " nahi hain.");
                     saveBtn.innerText = "SAVE TEAM & PAY ₹" + entryFee;
                     saveBtn.disabled = false;
                 }
