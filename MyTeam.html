@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalyan 11 - My Team</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 30px;}
+        .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #00ff88; position: sticky; top:0; z-index:100; box-shadow: 0 4px 15px rgba(0,255,136,0.3); }
+        .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; color: #00ff88; }
+        .title { font-weight: 900; font-size: 18px; text-transform: uppercase; }
+        
+        .summary-card { background: linear-gradient(145deg, #1e1e2e, #111); margin: 15px; padding: 15px; border-radius: 12px; border: 1px solid #333; display: flex; justify-content: space-around; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-top: 3px solid #ffd700;}
+        .summary-item { text-align: center; }
+        .summary-item h3 { margin: 0; color: #aaa; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;}
+        .summary-item p { margin: 5px 0 0; font-size: 18px; font-weight: 900; color: #fff; }
+        
+        .team-title { margin: 20px 15px 10px; font-size: 14px; font-weight: 900; color: #ffd700; text-transform: uppercase; border-bottom: 1px dashed #333; padding-bottom: 5px;}
+
+        .p-list { padding: 0 15px; }
+        .p-row { background: #111; border: 1px solid #222; padding: 12px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);}
+        .p-info { display: flex; align-items: center; gap: 12px; }
+        .p-img { width: 45px; height: 45px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 1px solid #444; font-size: 20px; color: #555;}
+        .p-name { font-weight: bold; font-size: 15px; margin-bottom: 4px;}
+        .p-role { font-size: 10px; color: #aaa; background: #000; padding: 3px 8px; border-radius: 4px; border: 1px solid #333;}
+        
+        .cvc-badge { width: 35px; height: 35px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; }
+        .badge-c { background: #ffd700; color: #000; border: 2px solid #fff; box-shadow: 0 0 15px rgba(255,215,0,0.6); }
+        .badge-vc { background: #c0c0c0; color: #000; border: 2px solid #fff; box-shadow: 0 0 15px rgba(192,192,192,0.6); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
+        <div class="title">MY PLAYING 11</div>
+    </div>
+    
+    <div class="summary-card" id="teamSummary">
+        <div class="summary-item">
+            <h3>Entry Paid</h3>
+            <p id="t-entry">₹0</p>
+        </div>
+        <div style="width: 1px; background: #333;"></div>
+        <div class="summary-item">
+            <h3>Total Points</h3>
+            <p id="t-points" style="color:#00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.5);">0.0</p>
+        </div>
+    </div>
+
+    <div class="team-title"><i class="fa-solid fa-users"></i> Your Squad</div>
+
+    <div class="p-list" id="playerContainer">
+        <div style="text-align:center; margin-top:50px; color:#00ff88;">
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Loading Your VIP Team...
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const matchId = urlParams.get('matchId');
+        const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+
+        const container = document.getElementById('playerContainer');
+
+        if(!matchId || !userPhone) {
+            container.innerHTML = "<div style='color:#ff004c; text-align:center; padding: 20px; font-weight:bold;'>Error: Match Details Missing!</div>";
+        } else {
+            // User ki team Firebase se nikalo
+            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).once('value', teamSnap => {
+                if(!teamSnap.exists()) {
+                    container.innerHTML = "<div style='color:#ff004c; text-align:center; padding: 20px; font-weight:bold;'>Aapne is match ke liye koi team nahi banayi hai!</div>";
+                    return;
+                }
+
+                let teamData = teamSnap.val();
+                
+                // Entry Fee aur Points Update karo
+                document.getElementById('t-entry').innerText = teamData.entry_paid ? "₹" + teamData.entry_paid : "Free";
+                
+                // Agar match start nahi hua, toh 0.0 dikhao
+                document.getElementById('t-points').innerText = teamData.total_points ? teamData.total_points.toFixed(1) : "0.0";
+
+                // Khiladiyon ka data Firebase se nikalo
+                db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', playerSnap => {
+                    let allPlayers = playerSnap.val() || {};
+                    container.innerHTML = "";
+
+                    if(teamData.players && teamData.players.length > 0) {
+                        
+                        // Khiladiyon ko screen par print karo
+                        teamData.players.forEach(pid => {
+                            let pInfo = allPlayers[pid];
+                            if(pInfo) {
+                                let badgeHtml = "";
+                                if(teamData.captain === pid) {
+                                    badgeHtml = '<div class="cvc-badge badge-c">C</div>';
+                                } else if(teamData.viceCaptain === pid) {
+                                    badgeHtml = '<div class="cvc-badge badge-vc">VC</div>';
+                                }
+
+                                let shortName = pInfo.name.split(' ')[0][0] + ". " + (pInfo.name.split(' ')[1] || pInfo.name);
+
+                                container.innerHTML += `
+                                    <div class="p-row">
+                                        <div class="p-info">
+                                            <div class="p-img"><i class="fa-solid fa-user"></i></div>
+                                            <div>
+                                                <div class="p-name">${shortName}</div>
+                                                <div class="p-role">${pInfo.team} | ${pInfo.role}</div>
+                                            </div>
+                                        </div>
+                                        ${badgeHtml}
+                                    </div>
+                                `;
+                            }
+                        });
+                    } else {
+                        container.innerHTML = "<div style='text-align:center;'>No players found in your team.</div>";
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
