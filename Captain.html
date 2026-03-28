@@ -28,7 +28,7 @@
         .cvc-btn.active-vc { background: #c0c0c0; color: #000; border-color: #c0c0c0; transform: scale(1.1); box-shadow: 0 0 10px rgba(192,192,192,0.5); }
 
         .footer { position: fixed; bottom: 0; width: 100%; background: #111; padding: 15px; box-sizing: border-box; display: flex; justify-content: center; border-top: 2px solid #ffd700; z-index: 100; }
-        .save-btn { background: #00ff88; color: #000; padding: 12px 40px; border-radius: 5px; font-weight: 900; font-size: 16px; border: none; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.3s; width: 100%; }
+        .save-btn { background: #00ff88; color: #000; padding: 12px 40px; border-radius: 5px; font-weight: 900; font-size: 16px; border: none; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.3s; width: 100%; display:flex; justify-content: center; align-items: center; gap: 10px;}
         .save-btn.active { opacity: 1; pointer-events: auto; box-shadow: 0 0 15px rgba(0,255,136,0.4); }
         .loader { text-align: center; color: #ffd700; font-weight: bold; margin-top: 20px; }
     </style>
@@ -59,7 +59,15 @@
         const db = firebase.database();
 
         const urlParams = new URLSearchParams(window.location.search);
-        const matchId = urlParams.get('matchId');
+        const matchId = urlParams.get('matchId') || "DEMO_MATCH";
+        
+        // 🎯 YAHAN HAI DYNAMIC JADOO!
+        // Ye check karega ki pichhle page se kya entry fee aayi hai. Agar nahi aayi toh default ₹49 kar dega.
+        let entryFee = parseInt(localStorage.getItem('kalyan_entry_fee'));
+        if(isNaN(entryFee)) { entryFee = 49; } // Agar koi error aaye toh ₹49 katega
+
+        // Button par automatic amount likh do
+        document.getElementById('saveBtn').innerText = "SAVE TEAM & PAY ₹" + entryFee;
         
         if(!localStorage.getItem('userPhone')) { localStorage.setItem('userPhone', '9876543210'); }
         const userPhone = localStorage.getItem('userPhone');
@@ -143,26 +151,56 @@
 
         function saveTeamToFirebase() {
             let saveBtn = document.getElementById('saveBtn');
-            saveBtn.innerText = "SAVING...";
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PROCESSING...';
             saveBtn.disabled = true;
-            
-            let teamData = {
-                players: selectedPlayerIds,
-                captain: captain,
-                viceCaptain: viceCaptain,
-                total_points: 0, 
-                timestamp: new Date().getTime()
-            };
 
-            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).set(teamData)
-            .then(() => {
-                // 🎯 YAHAN JADOO HUA HAI: Naya address (leader.html) set kar diya
-                window.location.href = "leader.html?matchId=" + matchId + "&spots=150000&entry=99";
-            })
-            .catch((error) => {
-                alert("Error saving team: " + error.message);
-                saveBtn.innerText = "SAVE TEAM";
-                saveBtn.disabled = false;
+            let userWalletRef = db.ref('users/' + userPhone);
+            
+            userWalletRef.once('value', (snapshot) => {
+                let userData = snapshot.val() || {};
+                
+                let mainBalance = parseFloat(userData.balance || 0);
+                let winBalance = parseFloat(userData.winning_balance || 0);
+                let totalBalance = mainBalance + winBalance;
+
+                // Check for dynamic entry fee
+                if(totalBalance >= entryFee) {
+                    
+                    let newMain = mainBalance;
+                    let newWin = winBalance;
+                    
+                    if(mainBalance >= entryFee) {
+                        newMain = mainBalance - entryFee;
+                    } else {
+                        let remaining = entryFee - mainBalance;
+                        newMain = 0;
+                        newWin = winBalance - remaining;
+                    }
+
+                    userWalletRef.update({
+                        balance: newMain,
+                        winning_balance: newWin
+                    }).then(() => {
+                        let teamData = {
+                            players: selectedPlayerIds,
+                            captain: captain,
+                            viceCaptain: viceCaptain,
+                            total_points: 0, 
+                            entry_paid: entryFee, // Ye bhi save karenge taaki admin ko pata rahe kitne wale mein aaya tha
+                            timestamp: new Date().getTime()
+                        };
+
+                        db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).set(teamData)
+                        .then(() => {
+                            window.location.href = "leader.html?matchId=" + matchId + "&spots=150000&entry=" + entryFee;
+                        });
+                    });
+
+                } else {
+                    alert("⚠️ Insufficient Balance!\nAapke wallet mein ₹" + entryFee + " nahi hain. Kripya pehle deposit karein.");
+                    saveBtn.innerText = "SAVE TEAM & PAY ₹" + entryFee;
+                    saveBtn.disabled = false;
+                }
             });
         }
     </script>
