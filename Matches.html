@@ -16,7 +16,7 @@
         .teams { display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 900; margin-bottom: 10px; }
         .vs { color: #ff004c; font-size: 12px; background: #222; padding: 4px 8px; border-radius: 50%; }
         
-        .time-badge { font-size: 12px; font-weight: bold; background: rgba(0,255,136,0.1); color: #00ff88; padding: 6px 12px; border-radius: 4px; display: inline-block; border: 1px solid #00ff88; }
+        .time-badge { font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 4px; display: inline-block; border: 1px solid #00ff88; }
         .live-badge { background: rgba(255, 0, 76, 0.1); color: #ff004c; border: 1px solid #ff004c; animation: blink 1s infinite; }
         .error-badge { background: rgba(255, 165, 0, 0.1); color: #ffa500; border: 1px solid #ffa500; }
         @keyframes blink { 50% { opacity: 0.6; } }
@@ -35,6 +35,7 @@
 
         const container = document.getElementById('matches-list');
 
+        // FIREBASE SE DIRECT DATA UTHAO AUR DIKHAO (NO HIDING!)
         db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
             if(!snapshot.exists()) {
                 container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">Abhi koi match nahi hai. Admin Panel se match add karein!</div>`;
@@ -45,60 +46,27 @@
             snapshot.forEach(child => {
                 let m = child.val();
                 m.id = child.key;
+                
+                // Timestamp set karo sorting ke liye
+                m.finalTimeMs = m.timestamp || (m.time ? new Date(m.time).getTime() : 0);
                 matchesArray.push(m);
             });
 
-            let now = new Date().getTime();
-
-            // 🎯 NEW ZIDDI FILTER: Kuch bhi ho jaye, match dikhana hai!
-            let cleanMatches = matchesArray.filter(m => {
-                let mTime = m.timestamp; 
-                if(!mTime && m.time) { mTime = new Date(m.time).getTime(); }
-                
-                // 1. Agar time format completely kharab hai
-                if(!mTime || isNaN(mTime)) {
-                    m.finalTimeMs = now + 86400000; // 24 ghante aage ka fake time taaki screen pe dikhe
-                    m.timeError = true;
-                    return true; 
-                }
-                
-                // 2. Sirf tab hide karo jab time 100% theek ho AUR 12 ghante beet chuke hon
-                if(now > mTime + 43200000) return false;
-                
-                // Sab theek hai toh save karo
-                m.finalTimeMs = mTime; 
-                m.timeError = false;
-                return true;
-            });
-
-            // Jo sabse jaldi shuru hoga wo upar aayega
-            cleanMatches.sort((a, b) => a.finalTimeMs - b.finalTimeMs);
-
-            if(cleanMatches.length === 0) {
-                 container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">Pichhle matches khatam ho chuke hain. Naya match add karein.</div>`;
-                 return;
-            }
+            // Jo pehle shuru hoga wo upar aayega
+            matchesArray.sort((a, b) => a.finalTimeMs - b.finalTimeMs);
 
             let htmlContent = "";
-            cleanMatches.forEach(m => {
-                
-                // Agar time error hai toh alag message dikhayenge
-                let initialTimerHTML = m.timeError ? 
-                    `<i class="fa-solid fa-triangle-exclamation"></i> Time Error (Admin check karein)` : 
-                    `<i class="fa-solid fa-spinner fa-spin"></i> Calculating Time...`;
-                
-                let badgeClass = m.timeError ? "time-badge error-badge" : "time-badge";
-
+            matchesArray.forEach(m => {
                 htmlContent += `
-                    <div class="match-card" id="card-${m.id}" data-time="${m.finalTimeMs}" data-t1="${m.team1}" data-t2="${m.team2}" data-error="${m.timeError}">
+                    <div class="match-card" id="card-${m.id}" data-time="${m.finalTimeMs}" data-t1="${m.team1}" data-t2="${m.team2}">
                         <div class="series-name">${m.name}</div>
                         <div class="teams">
                             <div>${m.team1}</div>
                             <div class="vs">V/S</div>
                             <div>${m.team2}</div>
                         </div>
-                        <div class="${badgeClass}" id="timer-${m.id}">
-                            ${initialTimerHTML}
+                        <div class="time-badge" id="timer-${m.id}">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Loading...
                         </div>
                     </div>
                 `;
@@ -109,7 +77,7 @@
         });
 
         // ==========================================
-        // 🚀 LIVE COUNTDOWN TIMER & LOCK ENGINE 🚀
+        // 🚀 SIMPLE TIMER LOGIC (NO HIDING) 🚀
         // ==========================================
         function updateTimers() {
             let cards = document.querySelectorAll('.match-card');
@@ -117,21 +85,23 @@
 
             cards.forEach(card => {
                 let matchId = card.id.replace('card-', '');
-                let isError = card.getAttribute('data-error') === "true";
                 let matchTime = parseInt(card.getAttribute('data-time')); 
                 let t1 = card.getAttribute('data-t1');
                 let t2 = card.getAttribute('data-t2');
                 let timerBox = document.getElementById(`timer-${matchId}`);
                 
-                // Agar Time format kharab tha, toh usko normal click karne denge team banane ke liye
-                if(isError) {
+                // Agar time me error ho
+                if(isNaN(matchTime) || matchTime === 0) {
+                    timerBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Time Error`;
+                    timerBox.className = "time-badge error-badge"; 
                     card.onclick = function() { window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`; };
-                    return; // Iska aage ka timer calculation mat karo
+                    return; 
                 }
 
                 let diff = matchTime - now;
 
                 if (diff > 0) {
+                    // ⏳ MATCH SHURU HONE MEIN TIME HAI (TIMER CHALEGA)
                     let d = Math.floor(diff / (1000 * 60 * 60 * 24));
                     let h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                     let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -145,21 +115,25 @@
 
                     timerBox.innerHTML = `<i class="fa-regular fa-clock"></i> Starts in: ${timeText}`;
                     timerBox.className = "time-badge"; 
+                    timerBox.style.color = "#00ff88";
+                    timerBox.style.borderColor = "#00ff88";
+                    timerBox.style.background = "rgba(0,255,136,0.1)";
                     card.style.borderLeftColor = "#00ff88"; 
 
+                    // Create Team pe bhejo
                     card.onclick = function() { window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`; };
 
-                } else if (now <= matchTime + 43200000) { 
+                } else { 
+                    // 🔒 MATCH KA TIME NIKAL GAYA HAI (LOCKED)
                     timerBox.innerHTML = `<i class="fa-solid fa-lock"></i> MATCH STARTED (LOCKED)`;
                     timerBox.className = "time-badge live-badge"; 
+                    timerBox.style.color = "#ff004c";
+                    timerBox.style.borderColor = "#ff004c";
+                    timerBox.style.background = "rgba(255, 0, 76, 0.1)";
                     card.style.borderLeftColor = "#ff004c"; 
                     
-                    card.onclick = function() { 
-                        alert("⚠️ Team Creation is Locked!\nMatch has already started. Redirecting to Leaderboard to check your rank.");
-                        window.location.href = `leader.html?matchId=${matchId}`; 
-                    };
-                } else {
-                    card.style.display = "none";
+                    // Seedha Leaderboard pe bhejo
+                    card.onclick = function() { window.location.href = `leader.html?matchId=${matchId}`; };
                 }
             });
         }
