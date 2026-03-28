@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kalyan 11 - Live Leaderboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 20px; user-select: none; }
         .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #ffd700; position: sticky; top:0; z-index:100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
@@ -21,15 +19,13 @@
         .pool-flex h2 { margin: 0; color: #ffd700; font-size: 20px; }
         .pool-flex span { font-size: 12px; color: #aaa; border: 1px solid #444; padding: 3px 8px; border-radius: 4px; background: #222;}
         .progress-bar-bg { width: 100%; height: 6px; background: #333; border-radius: 10px; overflow: hidden; margin-bottom: 5px; }
-        .progress-bar-fill { height: 100%; background: #ff004c; border-radius: 10px; }
+        .progress-bar-fill { height: 100%; background: #ff004c; border-radius: 10px; transition: width 0.5s ease-in-out; }
         .spots-left { font-size: 11px; color: #aaa; display: flex; justify-content: space-between; }
         .spots-left span.red { color: #ff004c; font-weight: bold; }
 
         .leaderboard-container { padding: 15px; }
         
         .user-row { background: linear-gradient(145deg, #1e1e2e, #111); border: 1px solid #333; border-radius: 10px; padding: 12px 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.4); cursor: pointer; }
-        .user-row:active { transform: scale(0.98); }
-        
         .user-row.rank-1 { border-color: #ffd700; background: linear-gradient(145deg, #332b00, #111); box-shadow: 0 0 15px rgba(255,215,0,0.2); }
         .user-row.rank-2 { border-color: #c0c0c0; }
         .user-row.rank-3 { border-color: #cd7f32; }
@@ -71,7 +67,9 @@
         </div>
     </div>
 
-    <div class="prize-pool-banner" id="dynamic-banner"></div>
+    <div class="prize-pool-banner" id="dynamic-banner">
+        <div style="text-align:center; font-size:12px; color:#aaa;"><i class="fa-solid fa-spinner fa-spin"></i> Calculating Real Spots...</div>
+    </div>
 
     <div class="leaderboard-container" id="leaderboard-list">
         <div class="loading-text" id="main-loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Teams...</div>
@@ -123,22 +121,6 @@
             fetchTeams(); 
         });
 
-        const bannerDiv = document.getElementById('dynamic-banner');
-        let filled = totalSpots > 1000 ? totalSpots - 1068 : Math.floor(totalSpots * 0.8); 
-        let fillPercent = (filled / totalSpots) * 100;
-        
-        bannerDiv.innerHTML = `
-            <div class="pool-flex">
-                <h2>${contestName}</h2>
-                <span>Entry: ₹${entryFee}</span>
-            </div>
-            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${fillPercent}%"></div></div>
-            <div class="spots-left">
-                <span class="red">${filled.toLocaleString('en-IN')} Spots filled</span>
-                <span>${totalSpots.toLocaleString('en-IN')} Spots</span>
-            </div>
-        `;
-
         function createBot(points, playersArray) {
             let randomNum = "9" + Math.floor(10000000 + Math.random() * 90000000); 
             let cPlayer = playersArray[Math.floor(Math.random() * playersArray.length)] || {name: "Bot P1"};
@@ -183,8 +165,9 @@
                         });
                     }
 
+                    // Bot banane ka system (Kam bots, taaki real lage)
                     let botTeams = [];
-                    let numBots = totalSpots > 1000 ? 300 : 20; 
+                    let numBots = totalSpots > 1000 ? 55 : 5; // Fake numbers hata diye
                     for(let i = 0; i < numBots; i++) {
                         botTeams.push(createBot(Math.random() * 150, playersArray));
                     }
@@ -195,6 +178,23 @@
                     if(myTeams.length > 0) {
                         allCombinedTeams = [...myTeams, ...allCombinedTeams];
                     }
+
+                    // 🎯 VIP LOGIC: Yahan Asli Spots ki ginti hogi!
+                    let realFilledSpots = allCombinedTeams.length;
+                    let fillPercent = (realFilledSpots / totalSpots) * 100;
+                    
+                    const bannerDiv = document.getElementById('dynamic-banner');
+                    bannerDiv.innerHTML = `
+                        <div class="pool-flex">
+                            <h2>${contestName}</h2>
+                            <span>Entry: ₹${entryFee}</span>
+                        </div>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${fillPercent}%"></div></div>
+                        <div class="spots-left">
+                            <span class="red">${realFilledSpots.toLocaleString('en-IN')} Spots filled</span>
+                            <span>${totalSpots.toLocaleString('en-IN')} Spots</span>
+                        </div>
+                    `;
 
                     listContainer.innerHTML = "";
                     displayedCount = 0;
@@ -216,7 +216,6 @@
                 let isMyTeam = (!team.isBot && team.phone === myPhone);
                 let displayName = isMyTeam ? "You (" + team.phone + ")" : hidePhone;
                 
-                // MULTIPLE TEAM VIEW BUTTON FIX
                 let myTagHTML = isMyTeam ? `<span class="my-tag">MY TEAM</span> <button class="view-btn" onclick="window.location.href='MyTeam.html?matchId=${matchId}&teamId=${team.teamKey}'"><i class="fa-solid fa-eye"></i> VIEW</button>` : `<i class="fa-solid fa-lock lock-icon" onclick="alert('🔒 Privacy Lock: Aap sirf apni team khol kar dekh sakte hain!')"></i>`;
                 
                 let highlightClass = isMyTeam ? "my-team" : "";
