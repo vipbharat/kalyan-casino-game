@@ -17,11 +17,11 @@
         .vs { color: #ff004c; font-size: 12px; background: #222; padding: 4px 8px; border-radius: 50%; }
         
         /* Normal Time Badge */
-        .time-badge { font-size: 11px; font-weight: bold; background: rgba(0,255,136,0.1); color: #00ff88; padding: 6px 12px; border-radius: 4px; display: inline-block; border: 1px solid #00ff88; }
+        .time-badge { font-size: 12px; font-weight: bold; background: rgba(0,255,136,0.1); color: #00ff88; padding: 6px 12px; border-radius: 4px; display: inline-block; border: 1px solid #00ff88; }
         
-        /* 🔥 Lineup Out / Live Badge (Naya Feature) */
-        .live-badge { background: rgba(255, 0, 76, 0.1); color: #ff004c; border: 1px solid #ff004c; animation: blink 1s infinite; font-size: 12px;}
-        @keyframes blink { 50% { opacity: 0.5; } }
+        /* 🔥 Lineup Out / Live Badge */
+        .live-badge { background: rgba(255, 0, 76, 0.1); color: #ff004c; border: 1px solid #ff004c; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.6; } }
 
         .loader { text-align: center; margin-top: 50px; color: #ffd700; font-weight: bold; }
     </style>
@@ -38,7 +38,6 @@
         const container = document.getElementById('matches-list');
 
         db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
-            container.innerHTML = "";
             if(!snapshot.exists()) {
                 container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">Abhi koi match nahi hai. Admin Panel se match add karein!</div>`;
                 return;
@@ -53,17 +52,18 @@
 
             let now = new Date().getTime();
 
-            // 1. Faltu aur 24 ghante se purane matches ko hatana
+            // 1. 12 Ghante wala Filter (43200000 milliseconds)
             let cleanMatches = matchesArray.filter(m => {
                 if(!m.time) return false;
                 let mTime = new Date(m.time).getTime();
                 if(isNaN(mTime)) return false;
-                // Agar match 24 ghante (86400000 ms) se purana hai, toh list me mat dikhao
-                if(now - mTime > 86400000) return false;
+                
+                // Agar match shuru hue 12 ghante se ZYADA ho gaye hain, toh hide kardo
+                if(now > mTime + 43200000) return false;
                 return true;
             });
 
-            // 2. Sort: Jo sabse pehle shuru hoga, wo sabse upar rahega
+            // 2. Jo sabse jaldi shuru hoga wo upar aayega
             cleanMatches.sort((a, b) => new Date(a.time) - new Date(b.time));
 
             if(cleanMatches.length === 0) {
@@ -71,42 +71,86 @@
                  return;
             }
 
+            let htmlContent = "";
             cleanMatches.forEach(m => {
-                let matchTime = new Date(m.time);
-                // Difference in minutes (Abhi ke time aur match ke time me kitna farq hai)
-                let diffMins = (matchTime.getTime() - now) / 60000;
-
-                let displayTime = "";
-                let badgeClass = "time-badge";
-
-                // 🎯 MAGIC LOGIC: Agar match me 30 minute bache hain ya live chal raha hai
-                if (diffMins <= 30 && diffMins > -400) {
-                    displayTime = "🔥 LINEUP OUT / LIVE";
-                    badgeClass = "time-badge live-badge"; 
-                } 
-                else if (diffMins <= -400) {
-                    displayTime = "Match Ended";
-                } 
-                else {
-                    let options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-                    displayTime = "Starts: " + matchTime.toLocaleString('en-IN', options);
-                }
-
-                let clickAction = `window.location.href='Contests.html?matchId=${m.id}&t1=${m.team1}&t2=${m.team2}'`;
-
-                container.innerHTML += `
-                    <div class="match-card" onclick="${clickAction}">
+                // Yahan hum card mein 'data-time' save kar rahe hain timer chalane ke liye
+                htmlContent += `
+                    <div class="match-card" id="card-${m.id}" data-time="${m.time}" data-t1="${m.team1}" data-t2="${m.team2}">
                         <div class="series-name">${m.name}</div>
                         <div class="teams">
                             <div>${m.team1}</div>
                             <div class="vs">V/S</div>
                             <div>${m.team2}</div>
                         </div>
-                        <div class="${badgeClass}"><i class="fa-solid fa-bolt"></i> ${displayTime}</div>
+                        <div class="time-badge" id="timer-${m.id}">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Calculating Time...
+                        </div>
                     </div>
                 `;
             });
+            
+            container.innerHTML = htmlContent;
+            updateTimers(); // Data aate hi timer chalu
         });
+
+        // ==========================================
+        // 🚀 LIVE COUNTDOWN TIMER & LOCK ENGINE 🚀
+        // ==========================================
+        function updateTimers() {
+            let cards = document.querySelectorAll('.match-card');
+            let now = new Date().getTime();
+
+            cards.forEach(card => {
+                let matchId = card.id.replace('card-', '');
+                let matchTimeStr = card.getAttribute('data-time');
+                let t1 = card.getAttribute('data-t1');
+                let t2 = card.getAttribute('data-t2');
+                
+                let matchTime = new Date(matchTimeStr).getTime();
+                let timerBox = document.getElementById(`timer-${matchId}`);
+                
+                let diff = matchTime - now;
+
+                if (diff > 0) {
+                    // CASE 1: MATCH ABHI SHURU NAHI HUA HAI (TIMER CHALEGA)
+                    let d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    let h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    let s = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    h = (h < 10) ? "0" + h : h;
+                    m = (m < 10) ? "0" + m : m;
+                    s = (s < 10) ? "0" + s : s;
+
+                    let timeText = (d > 0) ? `${d}d ${h}h ${m}m ${s}s` : `${h}h ${m}m ${s}s`;
+
+                    timerBox.innerHTML = `<i class="fa-regular fa-clock"></i> Starts in: ${timeText}`;
+                    timerBox.className = "time-badge"; // Green 
+                    card.style.borderLeftColor = "#00ff88"; // Green border
+
+                    // Click karne par team banane bhejega
+                    card.onclick = function() { window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`; };
+
+                } else if (now <= matchTime + 43200000) { 
+                    // CASE 2: MATCH START HO CHUKA HAI (12 GHANTE TAK YAHI RAHEGA)
+                    timerBox.innerHTML = `<i class="fa-solid fa-lock"></i> MATCH STARTED (LOCKED)`;
+                    timerBox.className = "time-badge live-badge"; // Red blink 
+                    card.style.borderLeftColor = "#ff004c"; // Red border
+                    
+                    // Click karne par seedha Leaderboard bhejega (Team banani band)
+                    card.onclick = function() { 
+                        alert("⚠️ Team Creation is Locked!\nMatch has already started. Redirecting to Leaderboard to check your rank.");
+                        window.location.href = `leader.html?matchId=${matchId}`; 
+                    };
+                } else {
+                    // CASE 3: 12 GHANTE SE ZYADA HO GAYE TOH HIDE (Backup hide)
+                    card.style.display = "none";
+                }
+            });
+        }
+
+        // Har 1 second (1000ms) mein ghadi update hogi
+        setInterval(updateTimers, 1000);
     </script>
 </body>
 </html>
