@@ -18,7 +18,14 @@
         textarea { height: 90px; resize: vertical; }
         .row { display: flex; gap: 15px; }
         .row .input-group { flex: 1; }
-        .btn-live { background: #00ff88; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; }
+        .btn-live { background: #00ff88; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; margin-bottom: 10px;}
+        
+        /* Match Manager Styles */
+        .match-row { background: #222; border: 1px solid #444; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
+        .match-info h4 { margin: 0 0 5px; font-size: 14px; color: #ffd700;}
+        .match-info p { margin: 0; font-size: 11px; color: #aaa;}
+        .btn-delete { background: #ff004c; color: #fff; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
         #statusBox { text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 14px; margin-top: 10px;}
         .success { color: #00ff88; } .error { color: #ff004c; } .loading { color: #ffd700; }
     </style>
@@ -28,7 +35,7 @@
     <div class="header">👑 KALYAN VIP AUTO ENGINE</div>
 
     <div class="admin-box">
-        <h3>1. Auto Fetch From Cricbuzz</h3>
+        <h3><i class="fa-solid fa-plus"></i> 1. Add New Match</h3>
         
         <div class="input-group">
             <label>🔗 Engine Live URL</label>
@@ -50,24 +57,27 @@
         </div>
 
         <h3 style="margin-top:20px;">2. Auto Fetched Squads</h3>
-        <div class="input-group">
-            <label>Team 1 Players</label>
-            <textarea id="t1Players"></textarea>
-        </div>
-        <div class="input-group">
-            <label>Team 2 Players</label>
-            <textarea id="t2Players"></textarea>
+        <div class="row">
+            <div class="input-group"><label>Team 1 Players</label><textarea id="t1Players"></textarea></div>
+            <div class="input-group"><label>Team 2 Players</label><textarea id="t2Players"></textarea></div>
         </div>
         
         <button class="btn-live" onclick="launchSmartMatch()">🚀 LAUNCH MATCH TO APP</button>
     </div>
 
+    <div class="admin-box">
+        <h3><i class="fa-solid fa-trash-can"></i> 3. Manage Live Matches</h3>
+        <div id="activeMatchesList">
+            <div style="text-align:center; color:#ffd700;"><i class="fa-solid fa-spinner fa-spin"></i> Loading Matches...</div>
+        </div>
+    </div>
+
     <script>
-        // Apni Firebase Config confirm kar lena
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
+        // --- ADD MATCH LOGIC ---
         async function autoFetchPlayersFromLink() {
             let urlInput = document.getElementById('engineUrl').value.trim();
             let status = document.getElementById('statusBox');
@@ -120,19 +130,11 @@
             let p2Text = document.getElementById('t2Players').value.trim();
             let rawTime = document.getElementById('matchTime').value; 
 
-            if(!mName || !t1 || !t2 || !p1Text || !p2Text) {
-                alert("⚠️ Pehle link daal kar Engine se data fetch hone do!"); return;
-            }
-            if(!rawTime) {
-                alert("⚠️ Kripya Match ka Time aur Date select karein!"); return;
-            }
+            if(!mName || !t1 || !t2 || !p1Text || !p2Text) { alert("⚠️ Pehle data fetch karein!"); return; }
+            if(!rawTime) { alert("⚠️ Match ka Time select karein!"); return; }
 
-            // 🎯 YAHAN HAI JADOO! Time ko numbers (Milliseconds) mein convert karke bhej rahe hain
             let mTimeObj = new Date(rawTime);
-            // Time string banaya taaki sab browsers ko samajh aa jaye (e.g., "March 28, 2026 19:30:00")
             let safeTimeFormat = mTimeObj.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-            
-            // Ek aur property bhej rahe hain pure milliseconds ki backup ke liye
             let msTime = mTimeObj.getTime();
 
             let p1List = p1Text.split(/[,\n]+/).map(n => n.trim()).filter(n => n.length > 0);
@@ -144,21 +146,54 @@
             p1List.forEach((cn, i) => { pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
             p2List.forEach((cn, i) => { pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
 
-            // Ab database me safe format save hoga
             db.ref('Game/Kalyan11/LiveMatches/' + mId).set({ 
-                engineUrl: eUrl || "", 
-                name: mName, 
-                team1: t1, 
-                team2: t2, 
-                time: safeTimeFormat, // VIP safe format
-                timestamp: msTime, // Backup ke liye direct number
-                status: "Upcoming" 
+                engineUrl: eUrl || "", name: mName, team1: t1, team2: t2, time: safeTimeFormat, timestamp: msTime, status: "Upcoming" 
             });
             
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => {
-                alert("✅ BOMB! Match successfully App me launch ho gaya aur Time bhi theek save hua hai!");
-                window.location.reload();
+                alert("✅ Match App me launch ho gaya!");
+                document.getElementById('engineUrl').value = '';
+                // Reload list without refreshing whole page
             });
+        }
+
+        // --- MANAGE MATCHES LOGIC ---
+        db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
+            let container = document.getElementById('activeMatchesList');
+            container.innerHTML = "";
+            
+            if(!snapshot.exists()) {
+                container.innerHTML = "<p style='color:#aaa; text-align:center;'>Koi Match nahi hai.</p>";
+                return;
+            }
+
+            snapshot.forEach(child => {
+                let match = child.val();
+                let mId = child.key;
+                
+                // Pata lagao Time Error hai ya nahi
+                let timeStatus = match.timestamp ? `<span style="color:#00ff88;">Time OK</span>` : `<span style="color:#ff004c;">Time ERROR</span>`;
+
+                container.innerHTML += `
+                    <div class="match-row">
+                        <div class="match-info">
+                            <h4>${match.team1} vs ${match.team2}</h4>
+                            <p>${match.name}</p>
+                            <p>Status: ${timeStatus}</p>
+                        </div>
+                        <button class="btn-delete" onclick="deleteMatch('${mId}')"><i class="fa-solid fa-trash"></i> DELETE</button>
+                    </div>
+                `;
+            });
+        });
+
+        function deleteMatch(mId) {
+            if(confirm("🚨 Kya aap sach mein is match ko hamesha ke liye udana chahte hain?")) {
+                db.ref('Game/Kalyan11/LiveMatches/' + mId).remove();
+                db.ref('Game/Kalyan11/MatchPlayers/' + mId).remove();
+                db.ref('Game/Kalyan11/Contests/' + mId).remove();
+                alert("🗑️ Match delete ho gaya!");
+            }
         }
     </script>
 </body>
