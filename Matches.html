@@ -16,10 +16,7 @@
         .teams { display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 900; margin-bottom: 10px; }
         .vs { color: #ff004c; font-size: 12px; background: #222; padding: 4px 8px; border-radius: 50%; }
         
-        /* Normal Time Badge */
         .time-badge { font-size: 12px; font-weight: bold; background: rgba(0,255,136,0.1); color: #00ff88; padding: 6px 12px; border-radius: 4px; display: inline-block; border: 1px solid #00ff88; }
-        
-        /* 🔥 Lineup Out / Live Badge */
         .live-badge { background: rgba(255, 0, 76, 0.1); color: #ff004c; border: 1px solid #ff004c; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.6; } }
 
@@ -52,19 +49,26 @@
 
             let now = new Date().getTime();
 
-            // 1. 12 Ghante wala Filter (43200000 milliseconds)
+            // 1. VIP FILTER: Padhne ka naya tareeqa (Direct Milliseconds)
             let cleanMatches = matchesArray.filter(m => {
-                if(!m.time) return false;
-                let mTime = new Date(m.time).getTime();
-                if(isNaN(mTime)) return false;
+                // Admin panel ne jo numbers ('timestamp') bheje hain seedha unhe padho
+                let mTime = m.timestamp; 
                 
-                // Agar match shuru hue 12 ghante se ZYADA ho gaye hain, toh hide kardo
+                // Agar purana match hai jisme timestamp nahi hai, tabhi text padho
+                if(!mTime && m.time) { mTime = new Date(m.time).getTime(); }
+                
+                if(!mTime || isNaN(mTime)) return false; // Koi kharab time ho toh hide
+                
+                // 12 Ghante wala rule (43200000 ms)
                 if(now > mTime + 43200000) return false;
+                
+                // Time ekdum theek hai toh save karo
+                m.finalTimeMs = mTime; 
                 return true;
             });
 
             // 2. Jo sabse jaldi shuru hoga wo upar aayega
-            cleanMatches.sort((a, b) => new Date(a.time) - new Date(b.time));
+            cleanMatches.sort((a, b) => a.finalTimeMs - b.finalTimeMs);
 
             if(cleanMatches.length === 0) {
                  container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">Abhi koi naya match active nahi hai.</div>`;
@@ -73,9 +77,9 @@
 
             let htmlContent = "";
             cleanMatches.forEach(m => {
-                // Yahan hum card mein 'data-time' save kar rahe hain timer chalane ke liye
+                // Yahan 'data-time' mein hum direct safe numbers bhej rahe hain
                 htmlContent += `
-                    <div class="match-card" id="card-${m.id}" data-time="${m.time}" data-t1="${m.team1}" data-t2="${m.team2}">
+                    <div class="match-card" id="card-${m.id}" data-time="${m.finalTimeMs}" data-t1="${m.team1}" data-t2="${m.team2}">
                         <div class="series-name">${m.name}</div>
                         <div class="teams">
                             <div>${m.team1}</div>
@@ -90,7 +94,7 @@
             });
             
             container.innerHTML = htmlContent;
-            updateTimers(); // Data aate hi timer chalu
+            updateTimers(); 
         });
 
         // ==========================================
@@ -102,17 +106,17 @@
 
             cards.forEach(card => {
                 let matchId = card.id.replace('card-', '');
-                let matchTimeStr = card.getAttribute('data-time');
+                
+                // Yahan hum string ko wapas proper Number mein convert kar rahe hain!
+                let matchTime = parseInt(card.getAttribute('data-time')); 
+                
                 let t1 = card.getAttribute('data-t1');
                 let t2 = card.getAttribute('data-t2');
-                
-                let matchTime = new Date(matchTimeStr).getTime();
                 let timerBox = document.getElementById(`timer-${matchId}`);
                 
                 let diff = matchTime - now;
 
                 if (diff > 0) {
-                    // CASE 1: MATCH ABHI SHURU NAHI HUA HAI (TIMER CHALEGA)
                     let d = Math.floor(diff / (1000 * 60 * 60 * 24));
                     let h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                     let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -125,31 +129,26 @@
                     let timeText = (d > 0) ? `${d}d ${h}h ${m}m ${s}s` : `${h}h ${m}m ${s}s`;
 
                     timerBox.innerHTML = `<i class="fa-regular fa-clock"></i> Starts in: ${timeText}`;
-                    timerBox.className = "time-badge"; // Green 
-                    card.style.borderLeftColor = "#00ff88"; // Green border
+                    timerBox.className = "time-badge"; 
+                    card.style.borderLeftColor = "#00ff88"; 
 
-                    // Click karne par team banane bhejega
                     card.onclick = function() { window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`; };
 
                 } else if (now <= matchTime + 43200000) { 
-                    // CASE 2: MATCH START HO CHUKA HAI (12 GHANTE TAK YAHI RAHEGA)
                     timerBox.innerHTML = `<i class="fa-solid fa-lock"></i> MATCH STARTED (LOCKED)`;
-                    timerBox.className = "time-badge live-badge"; // Red blink 
-                    card.style.borderLeftColor = "#ff004c"; // Red border
+                    timerBox.className = "time-badge live-badge"; 
+                    card.style.borderLeftColor = "#ff004c"; 
                     
-                    // Click karne par seedha Leaderboard bhejega (Team banani band)
                     card.onclick = function() { 
                         alert("⚠️ Team Creation is Locked!\nMatch has already started. Redirecting to Leaderboard to check your rank.");
                         window.location.href = `leader.html?matchId=${matchId}`; 
                     };
                 } else {
-                    // CASE 3: 12 GHANTE SE ZYADA HO GAYE TOH HIDE (Backup hide)
                     card.style.display = "none";
                 }
             });
         }
 
-        // Har 1 second (1000ms) mein ghadi update hogi
         setInterval(updateTimers, 1000);
     </script>
 </body>
