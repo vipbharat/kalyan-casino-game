@@ -118,14 +118,22 @@
             let t2 = document.getElementById('t2Name').value.trim().toUpperCase();
             let p1Text = document.getElementById('t1Players').value.trim();
             let p2Text = document.getElementById('t2Players').value.trim();
-            let mTime = document.getElementById('matchTime').value; // Naya Time Variable
+            let rawTime = document.getElementById('matchTime').value; 
 
             if(!mName || !t1 || !t2 || !p1Text || !p2Text) {
                 alert("⚠️ Pehle link daal kar Engine se data fetch hone do!"); return;
             }
-            if(!mTime) {
+            if(!rawTime) {
                 alert("⚠️ Kripya Match ka Time aur Date select karein!"); return;
             }
+
+            // 🎯 YAHAN HAI JADOO! Time ko numbers (Milliseconds) mein convert karke bhej rahe hain
+            let mTimeObj = new Date(rawTime);
+            // Time string banaya taaki sab browsers ko samajh aa jaye (e.g., "March 28, 2026 19:30:00")
+            let safeTimeFormat = mTimeObj.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            
+            // Ek aur property bhej rahe hain pure milliseconds ki backup ke liye
+            let msTime = mTimeObj.getTime();
 
             let p1List = p1Text.split(/[,\n]+/).map(n => n.trim()).filter(n => n.length > 0);
             let p2List = p2Text.split(/[,\n]+/).map(n => n.trim()).filter(n => n.length > 0);
@@ -136,18 +144,19 @@
             p1List.forEach((cn, i) => { pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
             p2List.forEach((cn, i) => { pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
 
-            // Ab database me 'time' bhi save hoga
+            // Ab database me safe format save hoga
             db.ref('Game/Kalyan11/LiveMatches/' + mId).set({ 
                 engineUrl: eUrl || "", 
                 name: mName, 
                 team1: t1, 
                 team2: t2, 
-                time: mTime, // Yahan time add ho gaya
+                time: safeTimeFormat, // VIP safe format
+                timestamp: msTime, // Backup ke liye direct number
                 status: "Upcoming" 
             });
             
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => {
-                alert("✅ BOMB! Match successfully App me launch ho gaya!");
+                alert("✅ BOMB! Match successfully App me launch ho gaya aur Time bhi theek save hua hai!");
                 window.location.reload();
             });
         }
