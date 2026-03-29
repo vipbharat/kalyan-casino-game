@@ -20,7 +20,6 @@
         .row .input-group { flex: 1; }
         .btn-live { background: #00ff88; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; margin-bottom: 10px;}
         
-        /* Match Manager Styles */
         .match-row { background: #222; border: 1px solid #444; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
         .match-info h4 { margin: 0 0 5px; font-size: 14px; color: #ffd700;}
         .match-info p { margin: 0; font-size: 11px; color: #aaa;}
@@ -77,17 +76,25 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
+        // 🎯 NAYA HATHIYAR: Asli Match ID ko yaad rakhne ke liye
+        let globalApiMatchId = "";
+
         // --- ADD MATCH LOGIC ---
         async function autoFetchPlayersFromLink() {
             let urlInput = document.getElementById('engineUrl').value.trim();
             let status = document.getElementById('statusBox');
             if(!urlInput) return;
 
+            // 1. URL se ID nikalna
             let matchIdMatch = urlInput.match(/\/(\d+)\//);
             if(!matchIdMatch) matchIdMatch = urlInput.match(/\d{4,}/);
             if(!matchIdMatch) { status.innerHTML = "⚠️ Link me Match ID nahi mili!"; status.className = "error"; return; }
             
             let apiMatchId = matchIdMatch[1] || matchIdMatch[0];
+            
+            // 2. ASLI ID YAHAN SAVE KAR LI TAAKI VERCEL POINTS BHEJ SAKE!
+            globalApiMatchId = apiMatchId; 
+            
             status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Engine data nikal raha hai, please wait..."; status.className = "loading";
 
             try {
@@ -140,7 +147,9 @@
             let p1List = p1Text.split(/[,\n]+/).map(n => n.trim()).filter(n => n.length > 0);
             let p2List = p2Text.split(/[,\n]+/).map(n => n.trim()).filter(n => n.length > 0);
             
-            let mId = "MATCH_" + Date.now();
+            // 🎯 MAIN JADOO: Ab Random ID nahi, Cricbuzz ki ID banegi!
+            let mId = globalApiMatchId ? globalApiMatchId : "MATCH_" + Date.now();
+            
             let pData = {};
             
             p1List.forEach((cn, i) => { pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
@@ -151,9 +160,9 @@
             });
             
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => {
-                alert("✅ Match App me launch ho gaya!");
+                alert("✅ Match App me launch ho gaya! Ab live points direct connect honge!");
                 document.getElementById('engineUrl').value = '';
-                // Reload list without refreshing whole page
+                globalApiMatchId = ""; // Reset for next match
             });
         }
 
@@ -171,7 +180,6 @@
                 let match = child.val();
                 let mId = child.key;
                 
-                // Pata lagao Time Error hai ya nahi
                 let timeStatus = match.timestamp ? `<span style="color:#00ff88;">Time OK</span>` : `<span style="color:#ff004c;">Time ERROR</span>`;
 
                 container.innerHTML += `
@@ -179,7 +187,7 @@
                         <div class="match-info">
                             <h4>${match.team1} vs ${match.team2}</h4>
                             <p>${match.name}</p>
-                            <p>Status: ${timeStatus}</p>
+                            <p>Status: ${timeStatus} | ID: ${mId}</p>
                         </div>
                         <button class="btn-delete" onclick="deleteMatch('${mId}')"><i class="fa-solid fa-trash"></i> DELETE</button>
                     </div>
