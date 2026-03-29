@@ -23,7 +23,11 @@
         .pts-val { font-size: 24px; font-weight: 900; color: #00ff88; }
         .pts-lbl { font-size: 11px; color: #aaa; text-transform: uppercase; }
         
-        .view-btn { background: #00ff88; color: #000; font-weight: 900; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: 0.3s; box-shadow: 0 0 10px rgba(0,255,136,0.4);}
+        /* 🚀 Naye Buttons ka Style (Edit aur View Live) */
+        .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+        .edit-btn { background: linear-gradient(90deg, #3498db, #2980b9); color: #fff; font-weight: 900; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.3s; flex: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-transform: uppercase;}
+        .edit-btn:active { transform: scale(0.95); }
+        .view-btn { background: linear-gradient(90deg, #00ff88, #00d2d3); color: #000; font-weight: 900; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.3s; flex: 1; box-shadow: 0 4px 10px rgba(0,255,136,0.3); text-transform: uppercase;}
         .view-btn:active { transform: scale(0.95); }
 
         .loader { text-align: center; margin-top: 50px; color: #00ff88; font-weight: bold; }
@@ -49,7 +53,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId') || "DUMMY_MATCH";
         
-        // 🚀 THE MAGIC FIX: Yahan aapki Casino Login wali Secret Key laga di gayi hai
         let myPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
         const container = document.getElementById('myContestsList');
@@ -86,8 +89,13 @@
                                             <div class="pts-val">${points}</div>
                                             <div class="pts-lbl">Total Points</div>
                                         </div>
+                                    </div>
+                                    <div class="btn-row">
+                                        <button class="edit-btn" id="edit-btn-${matchId}" onclick="editMyTeam('${matchId}')">
+                                            <i class="fa-solid fa-pen"></i> EDIT TEAM
+                                        </button>
                                         <button class="view-btn" onclick="window.location.href='leader.html?matchId=${matchId}&entry=${entryPaid}'">
-                                            VIEW LIVE <i class="fa-solid fa-arrow-right"></i>
+                                            VIEW LIVE <i class="fa-solid fa-bolt"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -103,6 +111,37 @@
                             Aapne is match mein abhi tak koi contest join nahi kiya hai.
                         </div>`;
                 }
+            });
+        }
+
+        // 🚀 THE EDIT TEAM MAGIC FUNCTION 🚀
+        function editMyTeam(mId) {
+            let btn = document.getElementById(`edit-btn-${mId}`);
+            if(btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> LOADING...';
+
+            // 1. Pehle Live match se Team1 aur Team2 ka naam nikalo
+            db.ref('Game/Kalyan11/LiveMatches/' + mId).once('value', matchSnap => {
+                let mData = matchSnap.val();
+                let t1 = mData ? mData.team1 : "T1";
+                let t2 = mData ? mData.team2 : "T2";
+
+                // 2. Phir user ki bani hui team Firebase se nikalo
+                db.ref('Game/Kalyan11/Contests/' + mId + '/Teams/' + myPhone).once('value', teamSnap => {
+                    if(teamSnap.exists()) {
+                        let teamData = teamSnap.val();
+                        
+                        // 3. User ke purane khiladiyon ko memory mein save karo
+                        if(teamData.players) {
+                            localStorage.setItem('kalyan_selected_team', JSON.stringify(teamData.players));
+                        }
+                        
+                        // 4. CreateTeam page par bhej do (Edit mode mein)
+                        window.location.href = `CreateTeam.html?matchId=${mId}&t1=${t1}&t2=${t2}`;
+                    } else {
+                        alert("Team data nahi mila!");
+                        if(btn) btn.innerHTML = '<i class="fa-solid fa-pen"></i> EDIT TEAM';
+                    }
+                });
             });
         }
     </script>
