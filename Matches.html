@@ -18,16 +18,11 @@
         .live-badge { background: rgba(255, 0, 76, 0.1); color: #ff004c; border: 1px solid #ff004c; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.6; } }
 
-        /* Naye Buttons ka Style */
         .btn-container { display: flex; gap: 10px; width: 100%; }
         .action-btn { flex: 1; padding: 12px 5px; border: none; border-radius: 6px; font-weight: 900; font-size: 13px; cursor: pointer; text-transform: uppercase; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .btn-join { background: linear-gradient(90deg, #00ff88, #00d2d3); color: #000; }
-        
-        /* MY TEAM Button (Shuru mein chhipa rahega) */
         .btn-myteam { background: linear-gradient(90deg, #ffd700, #ff8c00); color: #000; display: none; } 
-        
         .btn-leaderboard { background: linear-gradient(90deg, #ff004c, #ff8c00); color: #fff; width: 100%;}
-
         .loader { text-align: center; margin-top: 50px; color: #ffd700; font-weight: bold; }
     </style>
 </head>
@@ -40,41 +35,40 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
-        // Asli Pehchaan (Secret Key)
         let myPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
         const container = document.getElementById('matches-list');
 
         db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
             if(!snapshot.exists()) {
-                container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">Abhi koi naya match active nahi hai.</div>`;
+                container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">Abhi koi naya match active nahi hai. Admin panel se match add karein!</div>`;
                 return;
             }
 
+            let htmlContent = "";
             let matchesArray = [];
+
+            // 🔒 TAGADA LOCK: Jo Firebase mein hai, woh screen par AAYEGA HI AAYEGA. Koi filter nahi.
             snapshot.forEach(child => {
                 let m = child.val();
                 m.id = child.key;
+                
+                // Agar galti se match me time na ho, toh error na aaye isliye ek default time lagaya hai.
+                if(!m.timestamp) m.timestamp = new Date().getTime() + 86400000; 
+                
                 matchesArray.push(m);
             });
 
-            // Brahmastra Filter
-            let cleanMatches = matchesArray.filter(m => m.timestamp);
-            cleanMatches.sort((a, b) => a.timestamp - b.timestamp);
+            // Match ko time ke hisaab se sort karna (Jo pehle shuru hoga wo upar)
+            matchesArray.sort((a, b) => a.timestamp - b.timestamp);
 
-            if(cleanMatches.length === 0) {
-                 container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">Abhi koi naya match active nahi hai.</div>`;
-                 return;
-            }
-
-            let htmlContent = "";
-            cleanMatches.forEach(m => {
+            matchesArray.forEach(m => {
                 htmlContent += `
-                    <div class="match-card" id="card-${m.id}" data-time="${m.timestamp}" data-t1="${m.team1}" data-t2="${m.team2}">
-                        <div class="series-name">${m.name}</div>
+                    <div class="match-card" id="card-${m.id}" data-time="${m.timestamp}" data-t1="${m.team1 || 'T1'}" data-t2="${m.team2 || 'T2'}">
+                        <div class="series-name">${m.name || 'Live Cricket Match'}</div>
                         <div class="teams">
-                            <div>${m.team1}</div>
+                            <div>${m.team1 || 'T1'}</div>
                             <div class="vs">V/S</div>
-                            <div>${m.team2}</div>
+                            <div>${m.team2 || 'T2'}</div>
                         </div>
                         <div class="time-badge" id="timer-${m.id}">
                             <i class="fa-solid fa-spinner fa-spin"></i> Loading...
@@ -92,21 +86,18 @@
             
             container.innerHTML = htmlContent;
             updateTimers(); 
-            
-            // 🔥 Yahan check hoga ki kis kis match mein team ban chuki hai 🔥
-            checkJoinedTeams(cleanMatches);
+            checkJoinedTeams(matchesArray);
         });
 
-        // Yeh function dhoondhega ki kahan kahan MY TEAM button dikhana hai
         function checkJoinedTeams(matches) {
             if(!myPhone) return;
             matches.forEach(m => {
                 db.ref('Game/Kalyan11/Contests/' + m.id + '/Teams/' + myPhone).on('value', snap => {
                     let myTeamBtn = document.getElementById(`myteam-btn-${m.id}`);
                     if(snap.exists() && myTeamBtn) {
-                        myTeamBtn.style.display = 'block'; // Team mili, toh button dikha do
+                        myTeamBtn.style.display = 'block';
                     } else if(myTeamBtn) {
-                        myTeamBtn.style.display = 'none'; // Team nahi mili, toh chhupaye rakho
+                        myTeamBtn.style.display = 'none';
                     }
                 });
             });
@@ -158,8 +149,16 @@
                     timerBox.style.background = "rgba(255, 0, 76, 0.1)";
                     card.style.borderLeftColor = "#ff004c"; 
                     
-                    // Match shuru hone ke baad sirf Leaderboard ka button bachega
-                    btnGroup.innerHTML = `<button class="action-btn btn-leaderboard" onclick="window.location.href='leader.html?matchId=${matchId}'">🏆 VIEW LEADERBOARD</button>`;
+                    // Match lock hone ke baad sirf Leaderboard dikhega, aur agar team banayi hai toh "MY TEAM" dikhega.
+                    // Match gayab NAHI hoga!
+                    if (document.getElementById(`myteam-btn-${matchId}`).style.display === 'block') {
+                        btnGroup.innerHTML = `
+                            <button class="action-btn btn-leaderboard" style="flex:1;" onclick="window.location.href='leader.html?matchId=${matchId}'">🏆 LEADERBOARD</button>
+                            <button class="action-btn btn-myteam" style="display:block; flex:1;" onclick="window.location.href='MyContests.html?matchId=${matchId}'"><i class="fa-solid fa-eye"></i> MY TEAM</button>
+                        `;
+                    } else {
+                        btnGroup.innerHTML = `<button class="action-btn btn-leaderboard" onclick="window.location.href='leader.html?matchId=${matchId}'">🏆 VIEW LEADERBOARD</button>`;
+                    }
                 }
             });
         }
