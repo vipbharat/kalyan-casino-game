@@ -47,28 +47,26 @@
             let htmlContent = "";
             let matchesArray = [];
 
+            // 🚀 ULTIMATE ZERO-FILTER CODE: Firebase mein jo dikha, sab idhar aayega!
             snapshot.forEach(child => {
                 let m = child.val();
                 m.id = child.key;
                 
-                // 🛡️ ANTI-KACHRA FILTER (Sirf Asli Match Andar Aayega)
-                // Agar match mein aapka diya hua timestamp hai, tabhi usko screen par dikhayenge
-                if(m.timestamp) {
-                    matchesArray.push(m);
+                // Agar match mein time nahi hai, tab bhi mat hatao, bas usko ek default time de do taaki error na aaye.
+                if(!m.timestamp) {
+                    m.timestamp = new Date().getTime() + 86400000; // 24 hours in future
                 }
+                
+                matchesArray.push(m); // HAR EK MATCH ANDAR AAYEGA!
             });
 
+            // Sorting: Jo naya hai wo pehle aayega
             matchesArray.sort((a, b) => a.timestamp - b.timestamp);
-
-            if(matchesArray.length === 0) {
-                 container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">Abhi koi naya match active nahi hai. Kripya Admin panel se link dalkar match add karein.</div>`;
-                 return;
-            }
 
             matchesArray.forEach(m => {
                 htmlContent += `
-                    <div class="match-card" id="card-${m.id}" data-time="${m.timestamp}" data-t1="${m.team1 || 'T1'}" data-t2="${m.team2 || 'T2'}">
-                        <div class="series-name">${m.name || 'Live Cricket Match'}</div>
+                    <div class="match-card" id="card-${m.id}" data-time="${m.timestamp}" data-t1="${m.team1 || 'Team 1'}" data-t2="${m.team2 || 'Team 2'}">
+                        <div class="series-name">${m.name || 'Cricket Match'}</div>
                         <div class="teams">
                             <div>${m.team1 || 'T1'}</div>
                             <div class="vs">V/S</div>
@@ -146,6 +144,8 @@
                     actionBtn.onclick = function() { window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`; };
                     
                 } else { 
+                    // Yahan se hide wala code hamesha ke liye HATA diya gaya hai!
+                    // Match chahe kitna bhi purana ho, yahan LOCK ban kar baitha rahega.
                     timerBox.innerHTML = `<i class="fa-solid fa-lock"></i> MATCH STARTED (LOCKED)`;
                     timerBox.className = "time-badge live-badge"; 
                     timerBox.style.color = "#ff004c";
