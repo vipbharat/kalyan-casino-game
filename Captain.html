@@ -3,42 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan 11 - My Joined Contests</title>
+    <title>Kalyan VIP - Create Team</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 30px; }
-        .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #00ff88; position: sticky; top:0; z-index:100; box-shadow: 0 4px 15px rgba(0,255,136,0.3); }
-        .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; color: #00ff88; }
-        .title { font-weight: 900; font-size: 18px; text-transform: uppercase; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 90px; user-select: none; }
+        .header { background: linear-gradient(135deg, #1a0033, #00ff88); padding: 15px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,255,136,0.3); color: #000; }
+        .back-btn { font-size: 20px; cursor: pointer; font-weight: bold; }
+        .match-info { text-align: center; font-weight: 900; font-size: 16px; flex-grow: 1; }
+        .status-bar { display: flex; justify-content: space-between; background: #111; padding: 10px 15px; border-bottom: 1px solid #333; font-size: 13px; font-weight: bold; position: sticky; top: 54px; z-index: 99;}
+        .credits { color: #ffd700; }
+        .player-count { color: #00ff88; }
         
-        .contest-card { background: linear-gradient(145deg, #1e1e2e, #111); margin: 15px; padding: 15px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-left: 4px solid #ffd700;}
-        .c-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #444; padding-bottom: 10px; margin-bottom: 10px; }
-        .c-type { font-size: 14px; font-weight: 900; color: #ffd700; }
-        .c-fee { font-size: 16px; font-weight: bold; background: #222; padding: 4px 10px; border-radius: 6px; border: 1px solid #444; }
+        .split-view { display: flex; gap: 10px; padding: 10px; }
+        .team-column { flex: 1; background: #0a0a14; border-radius: 8px; border: 1px solid #333; overflow: hidden; }
+        .team-title { text-align: center; font-weight: 900; background: #222; padding: 10px; margin-bottom: 10px; color: #fff; font-size: 15px; border-bottom: 2px solid #555;}
         
-        .c-body { display: flex; justify-content: space-between; align-items: center; }
-        .pts-box { text-align: left; }
-        .pts-val { font-size: 24px; font-weight: 900; color: #00ff88; }
-        .pts-lbl { font-size: 11px; color: #aaa; text-transform: uppercase; }
+        .player-list { padding: 0 5px; }
+        .mini-card { background: #1a1a2e; border: 1px solid #444; padding: 10px; margin-bottom: 8px; border-radius: 6px; position: relative; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; justify-content: space-between; }
+        .mini-card.selected { border-color: #00ff88; background: rgba(0, 255, 136, 0.1); box-shadow: 0 0 10px rgba(0, 255, 136, 0.2); }
         
-        .view-btn { background: #00ff88; color: #000; font-weight: 900; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: 0.3s; box-shadow: 0 0 10px rgba(0,255,136,0.4);}
-        .view-btn:active { transform: scale(0.95); }
-
-        .loader { text-align: center; margin-top: 50px; color: #00ff88; font-weight: bold; }
-        .no-data { text-align: center; margin-top: 50px; color: #ff004c; font-weight: bold; padding: 20px; background: #111; margin: 20px; border-radius: 10px; border: 1px solid #333; }
+        .p-name { font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 15px;}
+        .p-role { font-size: 10px; color: #aaa; margin-top: 3px;}
+        .p-credits { font-size: 12px; color: #ffd700; font-weight: bold; margin-top: 5px; text-align: left;}
+        
+        .check-icon { position: absolute; top: 8px; right: 8px; color: #00ff88; font-size: 16px; display: none; }
+        .mini-card.selected .check-icon { display: block; }
+        
+        .footer { position: fixed; bottom: 0; width: 100%; background: #111; padding: 15px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 100; border-top: 2px solid #333;}
+        .next-btn { background: #00ff88; color: #000; padding: 12px 30px; border-radius: 5px; font-weight: 900; font-size: 16px; border: none; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.3s; }
+        .next-btn.active { opacity: 1; pointer-events: auto; }
+        
+        .loader { text-align: center; margin-top: 50px; color: #00ff88; font-weight: bold; font-size: 16px; width: 100%;}
     </style>
 </head>
 <body>
 
     <div class="header">
-        <i class="fa-solid fa-arrow-left back-btn" onclick="window.location.href='Matches.html'"></i>
-        <div class="title">MY CONTESTS</div>
+        <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
+        <div class="match-info" id="matchHeader">Loading Match...</div>
+        <div style="width: 20px;"></div>
     </div>
 
-    <div id="myContestsList">
-        <div class="loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Searching your teams...</div>
+    <div class="status-bar">
+        <div class="player-count">Selected: <span id="pCount" style="font-size:16px;">0</span>/11</div>
+        <div class="credits">Credits: <span id="cCount" style="font-size:16px;">100</span></div>
+    </div>
+
+    <div class="split-view" id="mainSplitView">
+        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Khiladi aa rahe hain...</div>
+    </div>
+
+    <div class="footer">
+        <div style="font-size: 12px; color: #aaa;">Team preview</div>
+        <button class="next-btn" id="nextBtn" onclick="goToCaptain()">NEXT <i class="fa-solid fa-arrow-right"></i></button>
     </div>
 
     <script>
@@ -47,66 +68,104 @@
         const db = firebase.database();
 
         const urlParams = new URLSearchParams(window.location.search);
-        const matchId = urlParams.get('matchId');
-        
-        let myPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
-        if (!myPhone) {
-            myPhone = "GUEST_" + Math.floor(10000000 + Math.random() * 90000000);
-            localStorage.setItem('userPhone', myPhone);
+        const matchId = urlParams.get('matchId') || "DUMMY_MATCH";
+        const urlT1 = urlParams.get('t1') || "TEAM 1";
+        const urlT2 = urlParams.get('t2') || "TEAM 2";
+        const contestFee = urlParams.get('fee') || 49; 
+
+        document.getElementById('matchHeader').innerText = `${urlT1} vs ${urlT2}`;
+
+        let allPlayers = [];
+        let selectedPlayers = [];
+        let totalCredits = 100;
+
+        db.ref('Game/Kalyan11/MatchPlayers/' + matchId).on('value', snapshot => {
+            allPlayers = []; 
+            if(snapshot.exists()) {
+                snapshot.forEach(child => { allPlayers.push(child.val()); });
+            } else {
+                for(let i=1; i<=11; i++) {
+                    allPlayers.push({ id: urlT1+"_"+i, name: urlT1+" Player "+i, team: urlT1, role: "PLAYER", credits: 8.5 });
+                    allPlayers.push({ id: urlT2+"_"+i, name: urlT2+" Player "+i, team: urlT2, role: "PLAYER", credits: 8.5 });
+                }
+            }
+            renderSplitPlayers();
+        });
+
+        function renderSplitPlayers() {
+            let container = document.getElementById('mainSplitView');
+            container.innerHTML = "";
+
+            let uniqueTeams = [...new Set(allPlayers.map(p => p.team))];
+            let team1Name = uniqueTeams[0] || urlT1;
+            let team2Name = uniqueTeams[1] || urlT2;
+
+            let t1List = allPlayers.filter(p => p.team === team1Name);
+            let t2List = allPlayers.filter(p => p.team === team2Name);
+
+            let t1HTML = `<div class="team-column">
+                            <div class="team-title" style="border-bottom-color:#ffd700;">${team1Name}</div>
+                            <div class="player-list">`;
+            t1List.forEach(p => { t1HTML += createPlayerCard(p); });
+            t1HTML += `</div></div>`;
+
+            let t2HTML = `<div class="team-column">
+                            <div class="team-title" style="border-bottom-color:#00ff88;">${team2Name}</div>
+                            <div class="player-list">`;
+            t2List.forEach(p => { t2HTML += createPlayerCard(p); });
+            t2HTML += `</div></div>`;
+
+            container.innerHTML = t1HTML + t2HTML;
         }
 
-        const container = document.getElementById('myContestsList');
+        function createPlayerCard(p) {
+            let isSelected = selectedPlayers.includes(p.id);
+            let cardClass = isSelected ? "mini-card selected" : "mini-card";
+            return `
+                <div class="${cardClass}" onclick="togglePlayer('${p.id}', ${p.credits})">
+                    <i class="fa-solid fa-circle-check check-icon"></i>
+                    <div class="p-name">${p.name}</div>
+                    <div class="p-role">${p.role}</div>
+                    <div class="p-credits">${p.credits} Cr</div>
+                </div>
+            `;
+        }
 
-        if(!matchId) {
-            container.innerHTML = "<div class='no-data'>Match ID missing!</div>";
-        } else {
-            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', snap => {
-                container.innerHTML = "";
-                let hasTeams = false;
+        function togglePlayer(id, credits) {
+            let index = selectedPlayers.indexOf(id);
+            if (index > -1) {
+                selectedPlayers.splice(index, 1);
+                totalCredits += credits;
+            } else {
+                if (selectedPlayers.length >= 11) { alert("Aap maximum 11 players hi chun sakte hain!"); return; }
+                if (totalCredits - credits < 0) { alert("Aapke Credits khatam ho gaye hain!"); return; }
+                selectedPlayers.push(id);
+                totalCredits -= credits;
+            }
+            
+            document.getElementById('pCount').innerText = selectedPlayers.length;
+            document.getElementById('cCount').innerText = totalCredits.toFixed(1);
+            
+            let nextBtn = document.getElementById('nextBtn');
+            if(selectedPlayers.length === 11) { 
+                nextBtn.classList.add('active'); 
+                nextBtn.innerHTML = 'NEXT <i class="fa-solid fa-arrow-right fa-beat"></i>';
+            } else { 
+                nextBtn.classList.remove('active'); 
+                nextBtn.innerHTML = 'NEXT <i class="fa-solid fa-arrow-right"></i>';
+            }
+            
+            renderSplitPlayers();
+        }
 
-                if(snap.exists()) {
-                    snap.forEach(child => {
-                        let team = child.val();
-                        let teamPhone = team.phone || child.key.split('_')[0];
-                        
-                        if(teamPhone === myPhone) {
-                            hasTeams = true;
-                            let entryPaid = team.entry_paid || 49;
-                            let points = team.total_points ? team.total_points.toFixed(1) : "0.0";
-                            
-                            let contestName = "Mega Contest (1.5 Lakh Spots)";
-                            if(entryPaid > 49 && entryPaid <= 199) contestName = "Hot Contest (10,000 Spots)";
-                            else if(entryPaid >= 575) contestName = "H2H Battle (2 Spots)";
-
-                            container.innerHTML += `
-                                <div class="contest-card">
-                                    <div class="c-header">
-                                        <div class="c-type"><i class="fa-solid fa-trophy"></i> ${contestName}</div>
-                                        <div class="c-fee">₹${entryPaid}</div>
-                                    </div>
-                                    <div class="c-body">
-                                        <div class="pts-box">
-                                            <div class="pts-val">${points}</div>
-                                            <div class="pts-lbl">Total Points</div>
-                                        </div>
-                                        <button class="view-btn" onclick="window.location.href='Leader.html?matchId=${matchId}&entry=${entryPaid}'">
-                                            VIEW LIVE <i class="fa-solid fa-arrow-right"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    });
-                }
-
-                if(!hasTeams) {
-                    container.innerHTML = `
-                        <div class="no-data">
-                            <i class="fa-solid fa-face-frown fa-2x"></i><br><br>
-                            Aapne is match mein abhi tak koi contest join nahi kiya hai.
-                        </div>`;
-                }
-            });
+        // 🚀 THE FINAL FIX: Yahan ekdum sahi file par redirect kiya gaya hai
+        function goToCaptain() {
+            if(selectedPlayers.length !== 11) return;
+            localStorage.setItem('kalyan_selected_team', JSON.stringify(selectedPlayers));
+            localStorage.setItem('kalyan_entry_fee', contestFee); 
+            
+            // Seedha Captain wale page par jayega
+            window.location.href = `Captain.html?matchId=${matchId}&t1=${urlT1}&t2=${urlT2}&fee=${contestFee}`;
         }
     </script>
 </body>
