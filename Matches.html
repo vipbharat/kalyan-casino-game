@@ -10,19 +10,23 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 70px; user-select: none; }
         .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; text-align: center; font-weight: 900; font-size: 18px; color: #ffd700; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .match-card { background: #111; margin: 15px; border-radius: 10px; border: 1px solid #333; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border-left: 4px solid #00ff88; position: relative; overflow: hidden; }
-        .match-card:active { transform: scale(0.98); border-color: #ffd700; }
+        .match-card { background: #111; margin: 15px; border-radius: 10px; border: 1px solid #333; padding: 15px; text-align: center; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border-left: 4px solid #00ff88; position: relative; overflow: hidden; }
         .series-name { font-size: 11px; color: #aaa; margin-bottom: 12px; border-bottom: 1px dashed #333; padding-bottom: 8px; }
         .teams { display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: 900; margin-bottom: 10px; }
         .vs { color: #ff004c; font-size: 12px; background: #222; padding: 4px 8px; border-radius: 50%; }
-        
         .time-badge { font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 4px; display: inline-block; border: 1px solid #00ff88; margin-bottom: 15px;}
         .live-badge { background: rgba(255, 0, 76, 0.1); color: #ff004c; border: 1px solid #ff004c; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.6; } }
 
-        .action-btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: 900; font-size: 14px; cursor: pointer; text-transform: uppercase; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        /* Naye Buttons ka Style */
+        .btn-container { display: flex; gap: 10px; width: 100%; }
+        .action-btn { flex: 1; padding: 12px 5px; border: none; border-radius: 6px; font-weight: 900; font-size: 13px; cursor: pointer; text-transform: uppercase; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .btn-join { background: linear-gradient(90deg, #00ff88, #00d2d3); color: #000; }
-        .btn-leaderboard { background: linear-gradient(90deg, #ff004c, #ff8c00); color: #fff; }
+        
+        /* MY TEAM Button (Shuru mein chhipa rahega) */
+        .btn-myteam { background: linear-gradient(90deg, #ffd700, #ff8c00); color: #000; display: none; } 
+        
+        .btn-leaderboard { background: linear-gradient(90deg, #ff004c, #ff8c00); color: #fff; width: 100%;}
 
         .loader { text-align: center; margin-top: 50px; color: #ffd700; font-weight: bold; }
     </style>
@@ -36,6 +40,8 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
+        // Asli Pehchaan (Secret Key)
+        let myPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
         const container = document.getElementById('matches-list');
 
         db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
@@ -51,19 +57,9 @@
                 matchesArray.push(m);
             });
 
-            // 🚀 THE BRAHMASTRA FILTER 🚀
-            let cleanMatches = matchesArray.filter(m => {
-                // Agar match mein Admin wala naya 'timestamp' nahi hai, toh Vercel wala bhoot hai
-                if(!m.timestamp) {
-                    return false; // Isey yahin se laat maar kar nikal do! Screen pe nahi aayega.
-                }
-                
-                // Agar VIP Pass hai, toh andar aane do
-                m.finalTimeMs = m.timestamp;
-                return true; 
-            });
-
-            cleanMatches.sort((a, b) => a.finalTimeMs - b.finalTimeMs);
+            // Brahmastra Filter
+            let cleanMatches = matchesArray.filter(m => m.timestamp);
+            cleanMatches.sort((a, b) => a.timestamp - b.timestamp);
 
             if(cleanMatches.length === 0) {
                  container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">Abhi koi naya match active nahi hai.</div>`;
@@ -73,7 +69,7 @@
             let htmlContent = "";
             cleanMatches.forEach(m => {
                 htmlContent += `
-                    <div class="match-card" id="card-${m.id}" data-time="${m.finalTimeMs}" data-t1="${m.team1}" data-t2="${m.team2}">
+                    <div class="match-card" id="card-${m.id}" data-time="${m.timestamp}" data-t1="${m.team1}" data-t2="${m.team2}">
                         <div class="series-name">${m.name}</div>
                         <div class="teams">
                             <div>${m.team1}</div>
@@ -83,14 +79,38 @@
                         <div class="time-badge" id="timer-${m.id}">
                             <i class="fa-solid fa-spinner fa-spin"></i> Loading...
                         </div>
-                        <button class="action-btn" id="btn-${m.id}">PLEASE WAIT...</button>
+                        
+                        <div class="btn-container" id="btn-group-${m.id}">
+                            <button class="action-btn btn-join" id="btn-${m.id}">PLEASE WAIT...</button>
+                            <button class="action-btn btn-myteam" id="myteam-btn-${m.id}" onclick="window.location.href='MyContests.html?matchId=${m.id}'">
+                                <i class="fa-solid fa-eye"></i> MY TEAM
+                            </button>
+                        </div>
                     </div>
                 `;
             });
             
             container.innerHTML = htmlContent;
             updateTimers(); 
+            
+            // 🔥 Yahan check hoga ki kis kis match mein team ban chuki hai 🔥
+            checkJoinedTeams(cleanMatches);
         });
+
+        // Yeh function dhoondhega ki kahan kahan MY TEAM button dikhana hai
+        function checkJoinedTeams(matches) {
+            if(!myPhone) return;
+            matches.forEach(m => {
+                db.ref('Game/Kalyan11/Contests/' + m.id + '/Teams/' + myPhone).on('value', snap => {
+                    let myTeamBtn = document.getElementById(`myteam-btn-${m.id}`);
+                    if(snap.exists() && myTeamBtn) {
+                        myTeamBtn.style.display = 'block'; // Team mili, toh button dikha do
+                    } else if(myTeamBtn) {
+                        myTeamBtn.style.display = 'none'; // Team nahi mili, toh chhupaye rakho
+                    }
+                });
+            });
+        }
 
         function updateTimers() {
             let cards = document.querySelectorAll('.match-card');
@@ -103,6 +123,7 @@
                 let t2 = card.getAttribute('data-t2');
                 let timerBox = document.getElementById(`timer-${matchId}`);
                 let actionBtn = document.getElementById(`btn-${matchId}`);
+                let btnGroup = document.getElementById(`btn-group-${matchId}`);
                 
                 let diff = matchTime - now;
 
@@ -126,9 +147,9 @@
                     card.style.borderLeftColor = "#00ff88"; 
 
                     actionBtn.className = "action-btn btn-join";
-                    actionBtn.innerHTML = "🏏 JOIN CONTESTS";
-                    actionBtn.onclick = function() { window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`; };
-
+                    actionBtn.innerHTML = "🏏 JOIN";
+                    actionBtn.onclick = function() { window.location.href = `CreateTeam.html?matchId=${matchId}&t1=${t1}&t2=${t2}`; };
+                    
                 } else { 
                     timerBox.innerHTML = `<i class="fa-solid fa-lock"></i> MATCH STARTED (LOCKED)`;
                     timerBox.className = "time-badge live-badge"; 
@@ -137,9 +158,8 @@
                     timerBox.style.background = "rgba(255, 0, 76, 0.1)";
                     card.style.borderLeftColor = "#ff004c"; 
                     
-                    actionBtn.className = "action-btn btn-leaderboard";
-                    actionBtn.innerHTML = "🏆 VIEW LEADERBOARD";
-                    actionBtn.onclick = function() { window.location.href = `leader.html?matchId=${matchId}`; };
+                    // Match shuru hone ke baad sirf Leaderboard ka button bachega
+                    btnGroup.innerHTML = `<button class="action-btn btn-leaderboard" onclick="window.location.href='leader.html?matchId=${matchId}'">🏆 VIEW LEADERBOARD</button>`;
                 }
             });
         }
