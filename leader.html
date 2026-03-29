@@ -19,7 +19,7 @@
         /* Prize Pool & Auto-Fill Banner */
         .prize-pool-banner { background: #111; padding: 15px; border-bottom: 1px solid #333; }
         .pool-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;}
-        .pool-flex h2 { margin: 0; color: #ffd700; font-size: 18px; }
+        .pool-flex h2 { margin: 0; color: #ffd700; font-size: 18px; font-weight: 900; text-transform: uppercase;}
         .pool-flex span { font-size: 12px; color: #aaa; border: 1px solid #444; padding: 3px 8px; border-radius: 4px; background: #222;}
         .progress-bar-bg { width: 100%; height: 6px; background: #333; border-radius: 10px; overflow: hidden; margin-bottom: 5px; }
         .progress-bar-fill { height: 100%; background: #ff004c; border-radius: 10px; transition: width 1s ease-in-out; }
@@ -88,27 +88,42 @@
         const myPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId') || "DUMMY";
-        let entryFee = parseInt(localStorage.getItem('kalyan_entry_fee')) || parseInt(urlParams.get('entry')) || 49;
+        
+        // Yahan Entry Fee nikal rahe hain
+        let entryFee = parseInt(localStorage.getItem('kalyan_entry_fee')) || parseInt(urlParams.get('entry')) || 99;
 
-        // Smart Contest Rules
+        // 🎯 100% MATCHING RULES (Select Contest screen ke hisaab se) 🎯
         let totalSpots = 150000; 
-        let contestName = "🏆 Mega Contest";
-        if (entryFee == 99) { totalSpots = 50000; contestName = "🔥 Hot Contest"; }
-        else if (entryFee > 99 && entryFee <= 299) { totalSpots = 10000; contestName = "⚔️ Grand Battle"; }
-        else if (entryFee >= 575) { totalSpots = 2; contestName = "🤝 H2H Battle"; }
+        let contestName = "👑 Grand Mega Contest";
+
+        if (entryFee == 99) { 
+            totalSpots = 150000; 
+            contestName = "👑 Grand Mega Contest"; 
+        } 
+        else if (entryFee == 49) { 
+            totalSpots = 5000; 
+            contestName = "🏆 Mega Contest"; 
+        } 
+        else if (entryFee == 15) { 
+            totalSpots = 1000; 
+            contestName = "🔥 Guaranteed Contest"; 
+        } 
+        else if (entryFee >= 500) { 
+            totalSpots = 2; 
+            contestName = "🤝 Head to Head (1 V 1)"; 
+        }
 
         const listContainer = document.getElementById('leaderboard-list');
         let isMatchLive = false;
         let matchTimeMs = 0;
 
-        // Format Name Function (e.g., "Virat Kohli" -> "V. Kohli")
         function formatName(fullName) {
             if(!fullName) return "Player";
             let parts = fullName.split(' ');
             return parts[0][0] + ". " + (parts[1] || "");
         }
 
-        // 1. Fetch Match Info & Run Auto-Fill Banner
+        // Fetch Match Info & Run Auto-Fill Banner
         db.ref('Game/Kalyan11/LiveMatches/' + matchId).on('value', snap => {
             let mData = snap.val();
             matchTimeMs = mData && mData.timestamp ? mData.timestamp : (new Date().getTime() + 86400000);
@@ -120,12 +135,12 @@
                 let filledSpots = 0;
 
                 if (totalSpots === 2) {
-                    filledSpots = (diff <= 0) ? 2 : 1; // H2H Logic
+                    filledSpots = (diff <= 0) ? 2 : 1; 
                 } else {
-                    if (diff <= 0) filledSpots = totalSpots; // Match Started = 100% Full
-                    else if (diff < 3600000) filledSpots = Math.floor(totalSpots * 0.98); // Last 1 hr = 98%
-                    else if (diff < 43200000) filledSpots = Math.floor(totalSpots * 0.85); // Last 12 hr = 85%
-                    else filledSpots = Math.floor(totalSpots * 0.60); // Else = 60%
+                    if (diff <= 0) filledSpots = totalSpots; 
+                    else if (diff < 3600000) filledSpots = Math.floor(totalSpots * 0.98); 
+                    else if (diff < 43200000) filledSpots = Math.floor(totalSpots * 0.85); 
+                    else filledSpots = Math.floor(totalSpots * 0.60); 
                 }
 
                 let percent = (filledSpots / totalSpots) * 100;
@@ -145,15 +160,14 @@
                 }
             }, 1000);
 
-            // Ab teams aur players fetch karo
             fetchRealLeaderboard();
         });
 
-        // 2. Fetch Players, Teams and Combine with Bots
+        // Fetch Players, Teams and Combine with Bots
         function fetchRealLeaderboard() {
             db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', pSnap => {
                 let playersObj = pSnap.val() || {};
-                let playersArray = Object.values(playersObj); // For bots
+                let playersArray = Object.values(playersObj); 
 
                 db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', tSnap => {
                     let realTeams = [];
@@ -162,8 +176,7 @@
                     if (tSnap.exists()) {
                         tSnap.forEach(child => {
                             let t = child.val();
-                            if (parseInt(t.entry_paid || 49) === entryFee) {
-                                // Extract Real C & VC Names
+                            if (parseInt(t.entry_paid || 99) === entryFee) {
                                 let cName = playersObj[t.captain] ? formatName(playersObj[t.captain].name) : "Player";
                                 let vcName = playersObj[t.viceCaptain] ? formatName(playersObj[t.viceCaptain].name) : "Player";
                                 
@@ -178,11 +191,11 @@
                         });
                     }
 
-                    // Bot Generator (Limit to max 50 bots for smooth scrolling, rest is handled by fake progress bar)
+                    // Bot Generator (Sirf UI ke liye)
                     let botLimit = (totalSpots === 2) ? 1 : 50; 
                     let bots = [];
                     for(let i=0; i<botLimit; i++){
-                        let bPhone = "9" + Math.floor(10000000 + Math.random() * 90000000); // Fake Number
+                        let bPhone = "9" + Math.floor(10000000 + Math.random() * 90000000); 
                         let cp = playersArray.length > 0 ? formatName(playersArray[Math.floor(Math.random() * playersArray.length)].name) : "V. Kohli";
                         let vcp = playersArray.length > 0 ? formatName(playersArray[Math.floor(Math.random() * playersArray.length)].name) : "M. Dhoni";
                         
@@ -195,10 +208,8 @@
                         });
                     }
 
-                    // Combine & Sort by Points
                     let allTeams = [...realTeams, ...bots].sort((a,b) => b.points - a.points);
                     
-                    // Render UI
                     listContainer.innerHTML = "";
                     let myTeamHTML = "";
 
@@ -206,10 +217,8 @@
                         let rank = i + 1;
                         let isMe = (!team.isBot && team.phone === myPhone);
                         
-                        // Mask Number
                         let displayPhone = isMe ? "You ("+team.phone+")" : team.phone.substring(0,4)+"****"+team.phone.substring(8,10);
                         
-                        // Rank CSS
                         let rClass = rank <= 3 ? "rank-" + rank : "";
                         let meClass = isMe ? "my-team" : "";
                         let tag = isMe ? `<span class="my-tag">MY TEAM</span>` : ``;
@@ -228,7 +237,6 @@
                             </div>
                         `;
 
-                        // Find My Rank for Sticky Bar
                         if(isMe) {
                             myTeamExists = true;
                             myTeamHTML = `
@@ -249,7 +257,6 @@
                         }
                     });
 
-                    // Update Sticky Bar
                     if(myTeamExists) {
                         document.getElementById('my-rank-container').innerHTML = myTeamHTML;
                     } else {
