@@ -74,6 +74,9 @@
         const matchId = urlParams.get('matchId') || "DUMMY_MATCH";
         const urlT1 = urlParams.get('t1') || "TEAM 1";
         const urlT2 = urlParams.get('t2') || "TEAM 2";
+        
+        // 🟢 FIX 1: Pichli screen se aayi hui Fee ko catch kar liya
+        const contestFee = urlParams.get('fee') || 49; 
 
         document.getElementById('matchHeader').innerText = `${urlT1} vs ${urlT2}`;
 
@@ -81,14 +84,11 @@
         let selectedPlayers = [];
         let totalCredits = 100;
 
-        // 🚀 DATABASE SE KHILADI LANA + BACKUP PLAN
         db.ref('Game/Kalyan11/MatchPlayers/' + matchId).on('value', snapshot => {
             allPlayers = []; 
             if(snapshot.exists()) {
-                // Asali Data
                 snapshot.forEach(child => { allPlayers.push(child.val()); });
             } else {
-                // 🔥 BACKUP PLAN: Agar database fail ho jaye toh app rukni nahi chahiye!
                 console.log("Database khali hai, Backup Plan chalu!");
                 for(let i=1; i<=11; i++) {
                     allPlayers.push({ id: urlT1+"_"+i, name: urlT1+" Player "+i, team: urlT1, role: "PLAYER", credits: 8.5 });
@@ -98,12 +98,10 @@
             renderSplitPlayers();
         });
 
-        // 🟢 DONO TEAMS KO ALAG-ALAG LINE/COLUMN ME DIKHANA
         function renderSplitPlayers() {
             let container = document.getElementById('mainSplitView');
             container.innerHTML = "";
 
-            // Dono teams ke asali naam nikalna
             let uniqueTeams = [...new Set(allPlayers.map(p => p.team))];
             let team1Name = uniqueTeams[0] || urlT1;
             let team2Name = uniqueTeams[1] || urlT2;
@@ -111,25 +109,21 @@
             let t1List = allPlayers.filter(p => p.team === team1Name);
             let t2List = allPlayers.filter(p => p.team === team2Name);
 
-            // Team 1 Column Banana
             let t1HTML = `<div class="team-column">
                             <div class="team-title" style="border-bottom-color:#ffd700;">${team1Name}</div>
                             <div class="player-list">`;
             t1List.forEach(p => { t1HTML += createPlayerCard(p); });
             t1HTML += `</div></div>`;
 
-            // Team 2 Column Banana
             let t2HTML = `<div class="team-column">
                             <div class="team-title" style="border-bottom-color:#00ff88;">${team2Name}</div>
                             <div class="player-list">`;
             t2List.forEach(p => { t2HTML += createPlayerCard(p); });
             t2HTML += `</div></div>`;
 
-            // Dono ko screen par daalna
             container.innerHTML = t1HTML + t2HTML;
         }
 
-        // 🟢 CHHOTA CARD BANANE KA FUNCTION
         function createPlayerCard(p) {
             let isSelected = selectedPlayers.includes(p.id);
             let cardClass = isSelected ? "mini-card selected" : "mini-card";
@@ -143,7 +137,6 @@
             `;
         }
 
-        // 🟢 KHILADI CHUNNA (SELECT/DESELECT)
         function togglePlayer(id, credits) {
             let index = selectedPlayers.indexOf(id);
             if (index > -1) {
@@ -168,15 +161,18 @@
                 nextBtn.innerHTML = 'NEXT <i class="fa-solid fa-arrow-right"></i>';
             }
             
-            // Screen ko wapas naye colors ke sath update karna
             renderSplitPlayers();
         }
 
-        // 🟢 NEXT PAGE PAR JANA
         function goToCaptain() {
             if(selectedPlayers.length !== 11) return;
             localStorage.setItem('kalyan_selected_team', JSON.stringify(selectedPlayers));
-            window.location.href = `Captain.html?matchId=${matchId}&t1=${urlT1}&t2=${urlT2}`;
+            
+            // 🟢 FIX 2: Phone ki memory me fee save kar li
+            localStorage.setItem('kalyan_entry_fee', contestFee); 
+            
+            // 🟢 FIX 3: Agle page (Captain.html) ko bata diya ki entry fee kitni hai
+            window.location.href = `Captain.html?matchId=${matchId}&t1=${urlT1}&t2=${urlT2}&fee=${contestFee}`;
         }
     </script>
 </body>
