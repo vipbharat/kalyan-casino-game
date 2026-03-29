@@ -68,16 +68,20 @@
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId') || "DUMMY_MATCH";
         
-        // 🚀 THE MAGIC FIX: Fees ko har jagah se dhoondh kar pakadna
+        // Fees ko pakadna
         const contestFee = parseInt(localStorage.getItem('kalyan_entry_fee')) || parseInt(urlParams.get('fee')) || 49;
         document.getElementById('feeDisplay').innerText = `Entry Contest: ₹${contestFee}`;
 
-        // Pichli screen se aayi 11 khiladiyon ki list nikalna
+        // Pichli screen se aayi 11 khiladiyon ki list
         const selectedPlayersRaw = localStorage.getItem('kalyan_selected_team');
         const selectedPlayers = selectedPlayersRaw ? JSON.parse(selectedPlayersRaw) : [];
 
         // App use karne wale ka number nikalna
-        const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "9876543210";
+        let userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+        if (!userPhone) {
+            userPhone = "GUEST_" + Math.floor(10000000 + Math.random() * 90000000);
+            localStorage.setItem('userPhone', userPhone);
+        }
 
         let allPlayersData = {};
         let captainId = null;
@@ -97,7 +101,6 @@
             });
         }
 
-        // Screen par 11 khiladi dikhana
         function renderPlayersList() {
             let container = document.getElementById('playerContainer');
             container.innerHTML = "";
@@ -125,21 +128,18 @@
             });
         }
 
-        // Captain Chunne Ka Logic
         function selectC(pid) {
-            if(viceCaptainId === pid) return; // Jo VC hai wo C nahi ban sakta
+            if(viceCaptainId === pid) return; 
             captainId = pid;
             updateButtons();
         }
 
-        // Vice-Captain Chunne Ka Logic
         function selectVC(pid) {
-            if(captainId === pid) return; // Jo C hai wo VC nahi ban sakta
+            if(captainId === pid) return; 
             viceCaptainId = pid;
             updateButtons();
         }
 
-        // UI Update Karna (Pila aur Silver Rang Dikhana)
         function updateButtons() {
             document.querySelectorAll('.btn-c').forEach(btn => btn.classList.remove('active-c'));
             document.querySelectorAll('.btn-vc').forEach(btn => btn.classList.remove('active-vc'));
@@ -147,7 +147,6 @@
             if(captainId) document.getElementById(`c_${captainId}`).classList.add('active-c');
             if(viceCaptainId) document.getElementById(`vc_${viceCaptainId}`).classList.add('active-vc');
 
-            // Agar dono chun liye, toh SAVE ka button on ho jayega
             let saveBtn = document.getElementById('saveBtn');
             if(captainId && viceCaptainId) {
                 saveBtn.classList.add('active');
@@ -156,7 +155,7 @@
             }
         }
 
-        // 🚀 FINAL STEP: Firebase Mein Team Save Karna (Paise Ke Sath)
+        // Firebase Mein Team Save Karna
         function saveTeamToFirebase() {
             if(!captainId || !viceCaptainId || selectedPlayers.length !== 11) return;
             
@@ -164,26 +163,23 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> SAVING...';
             btn.classList.remove('active');
 
-            // Unique Team ID banayi (Phone Number Se)
             let teamId = userPhone; 
 
-            // Yeh data Firebase mein jayega
             let finalTeamData = {
                 phone: userPhone,
                 players: selectedPlayers,
                 captain: captainId,
                 viceCaptain: viceCaptainId,
                 total_points: 0,
-                entry_paid: contestFee, // 🏆 YEH RAHI WOH LINE JISSE SARI PROBLEM THEEK HO GAYI!
+                entry_paid: contestFee,
                 timestamp: Date.now()
             };
 
-            // Database mein set kiya
+            // Database mein save kiya aur "MyContests.html" par bheja
             db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + teamId).set(finalTeamData)
             .then(() => {
-                alert("🎉 Team Successfully Created!");
-                // Save hone ke baad seedha ussi fee wale Leaderboard par bhej do
-                window.location.href = `Leaderboard.html?matchId=${matchId}&entry=${contestFee}`;
+                // 🚀 YAHI WOH LINE HAI JO FIX KI GAYI HAI (Seedha MyContests par jayega)
+                window.location.href = `MyContests.html?matchId=${matchId}`;
             })
             .catch(error => {
                 alert("Error: " + error.message);
