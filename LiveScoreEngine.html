@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MULTI-MATCH CRICBUZZ ENGINE 🏏</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <style>
+        body { background: #050510; color: #fff; font-family: 'Segoe UI', sans-serif; padding: 20px; margin: 0; }
+        .header { text-align: center; border-bottom: 2px solid #00a83f; padding-bottom: 15px; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: #00a83f; font-size: 24px; text-transform: uppercase; }
+        .header p { margin: 5px 0 0; color: #aaa; font-size: 12px; }
+        
+        .add-box { background: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px; }
+        input { width: calc(100% - 20px); padding: 10px; margin-bottom: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 5px; }
+        .btn { width: 100%; padding: 12px; background: #ffd700; color: #000; border: none; border-radius: 5px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+        .btn-sync { background: #00a83f; color: #fff; margin-top: 10px; box-shadow: 0 0 15px rgba(0,168,63,0.3); }
+        
+        .match-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .match-card { background: linear-gradient(145deg, #1a1a2e, #111); border: 1px solid #00a83f; padding: 15px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); position: relative; }
+        .match-id { font-size: 18px; font-weight: 900; color: #ffd700; margin-bottom: 5px; }
+        .match-link { font-size: 10px; color: #aaa; word-break: break-all; margin-bottom: 10px; }
+        .status { font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block; }
+        .status.active { background: rgba(0,168,63,0.2); color: #00a83f; border: 1px solid #00a83f; }
+        .status.wait { background: rgba(255,215,0,0.2); color: #ffd700; border: 1px solid #ffd700; }
+        .delete-btn { position: absolute; top: 15px; right: 15px; color: #ff004c; cursor: pointer; font-size: 18px; }
+        .log-text { font-size: 10px; color: #00a83f; margin-top: 10px; border-top: 1px dashed #333; padding-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1><i class="fa-solid fa-satellite-dish fa-fade"></i> CRICBUZZ LIVE ENGINE</h1>
+        <p>Ensure you paste the "Scorecard" link of Cricbuzz!</p>
+    </div>
+
+    <div class="add-box">
+        <input type="text" id="m-id" placeholder="Match ID (e.g., 149651)">
+        <input type="text" id="m-link" placeholder="Cricbuzz Scorecard Link">
+        <button class="btn" onclick="addMatch()"><i class="fa-solid fa-plus"></i> ADD MATCH TO ENGINE</button>
+        <button class="btn btn-sync" onclick="syncAllMatches()"><i class="fa-solid fa-rotate"></i> SYNC ALL MATCHES NOW</button>
+        <div style="font-size:11px; color:#aaa; margin-top:10px; text-align:center;">
+            (Auto-Sync har 30 second mein chalega)
+        </div>
+    </div>
+
+    <div class="match-grid" id="matches-container"></div>
+
+<script>
+    // 1. Firebase Setup
+    const firebaseConfig = { 
+        apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
+        databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
+        projectId: "kalyan-casino"
+    };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.database();
+
+    let activeMatches = JSON.parse(localStorage.getItem('kalyan_live_matches')) || [];
+
+    function saveMatches() {
+        localStorage.setItem('kalyan_live_matches', JSON.stringify(activeMatches));
+        renderMatches();
+    }
+
+    function addMatch() {
+        let id = document.getElementById('m-id').value.trim();
+        let link = document.getElementById('m-link').value.trim();
+        
+        if(!id || !link) return alert("Match ID aur Link dono daalo!");
+        if(!link.includes('cricbuzz.com')) return alert("Bhai, ye Cricbuzz ka link nahi lag raha!");
+        
+        activeMatches.push({ id: id, link: link, lastSync: "Waiting...", status: "wait" });
+        
+        document.getElementById('m-id').value = "";
+        document.getElementById('m-link').value = "";
+        saveMatches();
+    }
+
+    function removeMatch(id) {
+        if(confirm("Is match ko hatana hai?")) {
+            activeMatches = activeMatches.filter(m => m.id !== id);
+            saveMatches();
+        }
+    }
+
+    function renderMatches() {
+        const container = document.getElementById('matches-container');
+        container.innerHTML = "";
+        
+        activeMatches.forEach(m => {
+            let statClass = m.status === "active" ? "active" : "wait";
+            let statText = m.status === "active" ? "SYNCING LIVE" : "WAITING";
+            
+            container.innerHTML += `
+                <div class="match-card" id="card-${m.id}">
+                    <i class="fa-solid fa-trash delete-btn" onclick="removeMatch('${m.id}')"></i>
+                    <div class="match-id">Match ID: ${m.id}</div>
+                    <div class="match-link">${m.link.substring(0, 45)}...</div>
+                    <div class="status ${statClass}"><i class="fa-solid fa-circle-dot"></i> ${statText}</div>
+                    <div class="log-text" id="log-${m.id}">Last Sync: ${m.lastSync}</div>
+                </div>
+            `;
+        });
+    }
+
+    // ---------------------------------------------------------
+    // 🏏 CRICBUZZ SCORECARD SCRAPER LOGIC
+    // ---------------------------------------------------------
+    async function syncMatchData(matchObj) {
+        let logEl = document.getElementById(`log-${matchObj.id}`);
+        try {
+            // CORS Bypass (Browser restriction hatane ke liye)
+            let proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(matchObj.link)}`;
+            
+            logEl.innerText = "Fetching Cricbuzz data...";
+            logEl.style.color = "#ffd700";
+
+            let response = await fetch(proxyUrl);
+            let data = await response.json();
+            
+            let parser = new DOMParser();
+            let doc = parser.parseFromString(data.contents, "text/html");
+
+            let playerUpdates = {};
+            let playersFound = 0;
+
+            // Cricbuzz ki Scorecard mein har player ki line ka class 'cb-scrd-itms' hota hai
+            let rows = doc.querySelectorAll('.cb-scrd-itms');
+            
+            rows.forEach(row => {
+                // Player ka naam nikalna
+                let nameElement = row.querySelector('a.cb-text-link');
+                if(!nameElement) return; // Agar naam nahi hai toh ye header line hogi, isko skip karo
+                
+                let pName = nameElement.innerText.trim();
+                
+                // Cricbuzz naam ke aage (c) ya (wk) laga deta hai, humein wo hatana padega
+                pName = pName.replace(/\(c\)/g, '').replace(/\(wk\)/g, '').trim();
+
+                // Columns nikalna (Run/Wicket check karne ke liye)
+                let cols = row.querySelectorAll('.cb-col.text-right, .cb-col.text-bold');
+                
+                if(cols.length > 0) {
+                    let runs = 0, wickets = 0;
+
+                    // Batting wali line mein Runs 1st ya 2nd number par hote hain (Total 7 column hote hain)
+                    // Bowling wali line mein Wickets 4th number par hote hain (Total 8 column hote hain)
+                    
+                    if (row.innerHTML.includes('Wickets') || row.innerHTML.includes('Overs')) {
+                        // Ignore headers
+                    } else if (cols.length >= 6) { // Bowling row (O, M, R, W, NB, WD, ECO)
+                        wickets = parseInt(cols[3].innerText || 0); // 4th column is Wickets
+                    } else if (cols.length >= 4) { // Batting row (R, B, 4s, 6s, SR)
+                        runs = parseInt(cols[0].innerText || 0); // 1st column is Runs
+                    }
+
+                    // Pehle se points save hain toh usme add karo (kyunki ek khiladi run aur wicket dono le sakta hai)
+                    if (!playerUpdates[pName]) {
+                        playerUpdates[pName] = { points: 0, r: 0, w: 0 };
+                    }
+                    
+                    playerUpdates[pName].r += runs;
+                    playerUpdates[pName].w += wickets;
+                    // Point Formula: 1 Run = 1 Pt, 1 Wicket = 25 Pts
+                    playerUpdates[pName].points = (playerUpdates[pName].r * 1) + (playerUpdates[pName].w * 25);
+                    
+                    playersFound++;
+                }
+            });
+
+            // 🔥 FIREBASE MEIN SEEDHA UPDATE
+            if(Object.keys(playerUpdates).length > 0) {
+                await db.ref(`Game/Kalyan11/MatchPlayers/${matchObj.id}`).update(playerUpdates);
+                let timeNow = new Date().toLocaleTimeString();
+                logEl.innerText = `✅ Synced ${playersFound} Players at ${timeNow}`;
+                logEl.style.color = "#00a83f";
+                
+                let idx = activeMatches.findIndex(m => m.id === matchObj.id);
+                if(idx > -1) { activeMatches[idx].status = "active"; activeMatches[idx].lastSync = timeNow; }
+            } else {
+                logEl.innerText = `⚠️ No players found. Ensure it is a "Scorecard" link.`;
+                logEl.style.color = "#ff8c00";
+            }
+
+        } catch(e) {
+            logEl.innerText = `❌ Error: ${e.message}`;
+            logEl.style.color = "#ff004c";
+        }
+    }
+
+    async function syncAllMatches() {
+        for(let match of activeMatches) {
+            await syncMatchData(match);
+            await new Promise(r => setTimeout(r, 2000)); // Cricbuzz ko shak na ho isliye 2 sec gap
+        }
+        renderMatches();
+    }
+
+    // Har 30 Second mein automatically data Firebase bhejta rahega
+    setInterval(() => {
+        if(activeMatches.length > 0) {
+            syncAllMatches();
+        }
+    }, 30000);
+
+    renderMatches();
+</script>
+</body>
+</html>
