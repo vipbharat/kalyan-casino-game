@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VIP Casino Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -12,47 +14,93 @@
         .tab-btn { padding: 10px; cursor: pointer; color: #888; display: inline-block; width: 45%; border-bottom: 2px solid #333; }
         .active-tab { color: #ffd700; border-bottom: 2px solid #ffd700; font-weight: bold; }
         input { width: 90%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; outline: none; }
-        button { width: 90%; padding: 14px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #000; margin-top: 10px; font-size: 16px; }
-        .hidden { display: none; }
+        button { width: 90%; padding: 14px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #000; margin-top: 10px; font-size: 16px; transition: 0.3s;}
+        button:disabled { background: #555; color: #888; cursor: not-allowed; }
+        .hidden { display: none !important; }
         #otp-display { background: rgba(255,215,0,0.1); border: 2px dashed #ffd700; padding: 15px; margin: 15px 0; color: #ffd700; font-size: 24px; font-weight: bold; }
+        
+        /* Quick Login Box Styles */
+        #quick-login-box { padding: 10px 0; }
+        #quick-login-box h3 { color: #00ff88; margin-top: 0; }
+        .saved-phone { font-size: 20px; font-weight: 900; color: #fff; background: #222; padding: 10px; border-radius: 8px; border: 1px dashed #555; margin-bottom: 15px; letter-spacing: 2px;}
+        .go-btn { background: linear-gradient(90deg, #00ff88, #00d2d3); color: #000; box-shadow: 0 4px 15px rgba(0,255,136,0.3); }
+        .logout-btn { background: transparent; color: #ff004c; border: 1px solid #ff004c; margin-top: 15px; padding: 10px; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div style="margin-bottom: 20px;">
-        <div id="tab1" class="tab-btn active-tab" onclick="toggleView('l')">LOGIN</div>
-        <div id="tab2" class="tab-btn" onclick="toggleView('r')">REGISTER</div>
+    <div id="quick-login-box" class="hidden">
+        <h3><i class="fa-solid fa-circle-check"></i> WELCOME BACK!</h3>
+        <p style="color: #aaa; font-size: 12px;">Aapka account pehle se login hai</p>
+        <div class="saved-phone" id="saved-phone-text"></div>
+        <button class="go-btn" onclick="window.location.href='dashboard.html'">
+            PLAY NOW <i class="fa-solid fa-arrow-right"></i>
+        </button>
+        <button class="logout-btn" onclick="logoutUser()">
+            <i class="fa-solid fa-right-from-bracket"></i> LOGOUT / CHANGE ID
+        </button>
     </div>
 
-    <div id="login-box">
-        <input type="number" id="l-phone" placeholder="Mobile Number">
-        <input type="password" id="l-pass" placeholder="Password">
-        <button onclick="handleLogin()">LOGIN NOW</button>
-    </div>
-
-    <div id="reg-box" class="hidden">
-        <input type="number" id="r-phone" placeholder="Mobile Number">
-        <div id="reg-step2" class="hidden">
-            <div id="otp-display">OTP: <span id="otp-num">000000</span></div>
-            <input type="number" id="r-otp" placeholder="Enter OTP">
-            <input type="password" id="r-pass1" placeholder="Create Password">
-            <input type="password" id="r-pass2" placeholder="Confirm Password">
+    <div id="normal-auth-box">
+        <div style="margin-bottom: 20px;">
+            <div id="tab1" class="tab-btn active-tab" onclick="toggleView('l')">LOGIN</div>
+            <div id="tab2" class="tab-btn" onclick="toggleView('r')">REGISTER</div>
         </div>
-        <div id="timer-text" style="color: #0f0; margin: 10px 0;"></div>
-        <button id="main-btn" onclick="handleRegister()">SEND OTP</button>
+
+        <div id="login-box">
+            <input type="number" id="l-phone" placeholder="Mobile Number">
+            <input type="password" id="l-pass" placeholder="Password">
+            <button onclick="handleLogin()">LOGIN NOW</button>
+        </div>
+
+        <div id="reg-box" class="hidden">
+            <input type="number" id="r-phone" placeholder="Mobile Number">
+            <div id="reg-step2" class="hidden">
+                <div id="otp-display">OTP: <span id="otp-num">000000</span></div>
+                <input type="number" id="r-otp" placeholder="Enter OTP">
+                <input type="password" id="r-pass1" placeholder="Create Password">
+                <input type="password" id="r-pass2" placeholder="Confirm Password">
+            </div>
+            <div id="timer-text" style="color: #0f0; margin: 10px 0; font-weight:bold;"></div>
+            <button id="main-btn" onclick="checkDeviceAndRegister()">SEND OTP</button>
+        </div>
     </div>
 </div>
 
 <script>
     // 1. Connection (Direct)
     var firebaseConfig = { 
-        apiKey: "AIzaSySy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
+        apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" 
     };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     var database = firebase.database();
     var globalOTP = "";
+
+    // 🚀 KHUFIYA DEVICE ID GENERATOR 🚀
+    let deviceId = localStorage.getItem('kalyan_device_id');
+    if(!deviceId) {
+        deviceId = "DEV_" + Math.random().toString(36).substr(2, 9) + Date.now();
+        localStorage.setItem('kalyan_device_id', deviceId);
+    }
+
+    // 🚀 QUICK LOGIN CHECKER (Page load hote hi check karega) 🚀
+    window.onload = function() {
+        var savedPhone = localStorage.getItem('userPhone');
+        if(savedPhone && savedPhone !== "") {
+            // User already logged in hai, purana box chupao, Quick Login dikhao
+            document.getElementById('normal-auth-box').classList.add('hidden');
+            document.getElementById('quick-login-box').classList.remove('hidden');
+            document.getElementById('saved-phone-text').innerText = "📱 " + savedPhone;
+        }
+    };
+
+    // Logout Function
+    function logoutUser() {
+        localStorage.removeItem('userPhone'); // Memory se number delete
+        window.location.reload(); // Page refresh
+    }
 
     function toggleView(mode) {
         document.getElementById('login-box').classList.toggle('hidden', mode === 'r');
@@ -61,15 +109,35 @@
         document.getElementById('tab2').className = (mode === 'r' ? 'tab-btn active-tab' : 'tab-btn');
     }
 
-    // 2. Register logic with 10s Timer
-    function handleRegister() {
+    // 2. 🛑 ANTI-FRAUD LOCK CHECK 🛑
+    function checkDeviceAndRegister() {
         var ph = document.getElementById('r-phone').value;
-        if(ph.length !== 10) return alert("Sahi number daalein!");
+        if(ph.length !== 10) return alert("⚠️ Sahi 10-digit number daalein!");
 
         var btn = document.getElementById('main-btn');
-        var txt = document.getElementById('timer-text');
-        
         btn.disabled = true;
+        btn.innerText = "CHECKING SECURITY...";
+
+        database.ref('DeviceLocks/' + deviceId).once('value').then(function(snap) {
+            if(snap.exists()) {
+                let linkedPhone = snap.val().phone;
+                if(linkedPhone !== ph) {
+                    alert("🚨 SECURITY ALERT!\nEk mobile se sirf ek hi account ban sakta hai.\nYe device pehle se kisi aur account ke sath link hai.");
+                    btn.innerText = "DEVICE LOCKED";
+                    return; 
+                }
+            }
+            handleRegister(ph, btn);
+        }).catch(function(error) {
+            alert("Network Error. Try again.");
+            btn.disabled = false;
+            btn.innerText = "SEND OTP";
+        });
+    }
+
+    // 3. Register logic with 10s Timer
+    function handleRegister(ph, btn) {
+        var txt = document.getElementById('timer-text');
         var countdown = 10;
 
         var t = setInterval(function() {
@@ -88,38 +156,47 @@
         }, 1000);
     }
 
-    // 3. Save User (₹51 Bonus + Unique VIP ID)
+    // 4. Save User
     function saveToDatabase() {
         var ph = document.getElementById('r-phone').value;
         var otp = document.getElementById('r-otp').value;
         var p1 = document.getElementById('r-pass1').value;
         var p2 = document.getElementById('r-pass2').value;
 
-        if(otp !== globalOTP) return alert("Galat OTP!");
-        if(p1 === "" || p1 !== p2) return alert("Password match nahi hua!");
+        if(otp !== globalOTP) return alert("❌ Galat OTP!");
+        if(p1 === "" || p1 !== p2) return alert("❌ Password match nahi hua!");
 
         var vid = "VIP" + Math.floor(100000 + Math.random() * 899999);
 
         database.ref('users/' + ph).set({
-            phone: ph, password: p1, balance: 51, uid: vid
+            phone: ph, 
+            password: p1, 
+            balance: 51, 
+            uid: vid,
+            deviceId: deviceId 
         }).then(function() {
+            database.ref('DeviceLocks/' + deviceId).set({ phone: ph });
+            
             localStorage.setItem('userPhone', ph);
             window.location.href = "dashboard.html";
         }).catch(function(e) { alert("Error: Rules check karein!"); });
     }
 
-    // 4. Login (Naye/Purane Dono ke liye)
+    // 5. Login
     function handleLogin() {
         var ph = document.getElementById('l-phone').value;
         var ps = document.getElementById('l-pass').value;
+        
+        if(!ph || !ps) return alert("Number aur Password daalein!");
+
         database.ref('users/' + ph).once('value').then(function(snap) {
             if(snap.exists()) {
                 var u = snap.val();
                 if(u.password == ps || u.pass == ps) {
-                    localStorage.setItem('userPhone', ph);
-                    window.location.href = "dashboard.html";
-                } else { alert("Galat Password!"); }
-            } else { alert("Account nahi mila!"); }
+                    localStorage.setItem('userPhone', ph); // Number memory mein save
+                    window.location.href = "dashboard.html"; // Seedha andar!
+                } else { alert("❌ Galat Password!"); }
+            } else { alert("❌ Account nahi mila! Pehle Register karein."); }
         });
     }
 </script>
