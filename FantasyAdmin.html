@@ -118,16 +118,16 @@
             p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
             p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
 
-            // 🎯 PAKKA ELAJ: Match ko VIP List (ApprovedMatches) me daalo!
-            db.ref('Game/Kalyan11/ApprovedMatches/' + mId).set({ timestamp: msTime, time: safeTimeFormat });
-
-            db.ref('Game/Kalyan11/LiveMatches/' + mId).set({ engineUrl: eUrl || "", name: mName, team1: t1, team2: t2, time: safeTimeFormat, timestamp: msTime, status: "Upcoming" });
+            // 🎯 JADOO: Naye VIP dabe me save karo!
+            db.ref('Game/Kalyan11/VIPMatches/' + mId).set({ engineUrl: eUrl || "", name: mName, team1: t1, team2: t2, time: safeTimeFormat, timestamp: msTime, status: "Upcoming" });
+            
+            // Points wale dabbe me bhi save karo taaki Vercel update kar sake
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => {
                 alert("✅ VIP Match App me launch ho gaya!"); document.getElementById('engineUrl').value = ''; globalApiMatchId = ""; 
             });
         }
 
-        db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
+        db.ref('Game/Kalyan11/VIPMatches').on('value', snapshot => {
             let container = document.getElementById('activeMatchesList');
             container.innerHTML = "";
             if(!snapshot.exists()) { container.innerHTML = "<p style='color:#aaa; text-align:center;'>Koi Match nahi hai.</p>"; return; }
@@ -144,10 +144,9 @@
 
         function deleteMatch(mId) {
             if(confirm("🚨 Delete kar dein?")) {
-                db.ref('Game/Kalyan11/LiveMatches/' + mId).remove();
+                db.ref('Game/Kalyan11/VIPMatches/' + mId).remove();
                 db.ref('Game/Kalyan11/MatchPlayers/' + mId).remove();
                 db.ref('Game/Kalyan11/Contests/' + mId).remove();
-                db.ref('Game/Kalyan11/ApprovedMatches/' + mId).remove(); // Remove from VIP List
             }
         }
     </script>
