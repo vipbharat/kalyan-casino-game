@@ -21,15 +21,14 @@
         .btn-container { display: flex; gap: 10px; width: 100%; }
         .action-btn { flex: 1; padding: 12px 5px; border: none; border-radius: 6px; font-weight: 900; font-size: 13px; cursor: pointer; text-transform: uppercase; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .btn-join { background: linear-gradient(90deg, #00ff88, #00d2d3); color: #000; }
-        .btn-leaderboard { background: linear-gradient(90deg, #ff004c, #ff8c00); color: #fff; width: 100%;}
+        .btn-leaderboard { background: linear-gradient(90deg, #ff004c, #ff8c00); color: #fff; }
         .btn-myteam { background: linear-gradient(90deg, #ffd700, #ff8c00); color: #000; display: none; } 
-        
         .loader { text-align: center; margin-top: 50px; color: #ffd700; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="header">🏏 KALYAN 11 MATCHES</div>
-    <div id="matches-list"><div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading VIP Matches...</div></div>
+    <div id="matches-list"><div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Matches...</div></div>
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
@@ -37,66 +36,58 @@
         const db = firebase.database();
 
         let myPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
-        
-        let approvedData = {};
-        let liveMatchesSnap = null;
+        const container = document.getElementById('matches-list');
 
-        // Bouncer List: Check karo kisko aane dena hai
-        db.ref('Game/Kalyan11/ApprovedMatches').on('value', snap => {
-            approvedData = snap.val() || {};
-            drawMatches();
-        });
-
-        // Saare Matches ka data
-        db.ref('Game/Kalyan11/LiveMatches').on('value', snap => {
-            liveMatchesSnap = snap;
-            drawMatches();
-        });
-
-        function drawMatches() {
-            const container = document.getElementById('matches-list');
-
-            if(!liveMatchesSnap || Object.keys(approvedData).length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">Abhi koi VIP match active nahi hai. Admin panel se match add karein!</div>`;
+        // 🎯 MAIN JADOO: Ab hum 'VIPMatches' se data uthayenge (Vercel isko delete nahi kar sakta)
+        db.ref('Game/Kalyan11/VIPMatches').on('value', snapshot => {
+            if(!snapshot.exists()) {
+                container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">Abhi koi naya match active nahi hai. Admin panel se match add karein!</div>`;
                 return;
             }
 
             let htmlContent = "";
             let matchesArray = [];
 
-            liveMatchesSnap.forEach(child => {
+            snapshot.forEach(child => {
                 let m = child.val();
                 m.id = child.key;
                 
-                // 🚀 PAKKA ELAJ (VIP SHIELD): Sirf wahi match andar aayega jiska naam Approved List me hai!
-                if(approvedData[m.id]) {
-                    // Time bhi hum Vercel se nahi, seedha VIP list se uthayenge taaki kabhi error na aaye!
-                    m.finalTimeMs = approvedData[m.id].timestamp;
-                    matchesArray.push(m);
+                let mTime = m.timestamp;
+                if(!mTime && m.time) { mTime = new Date(m.time).getTime(); }
+                
+                if(!mTime || isNaN(mTime)) {
+                    m.finalTimeMs = new Date().getTime() - 1000; 
+                } else {
+                    m.finalTimeMs = mTime;
                 }
+                
+                matchesArray.push(m);
             });
-
-            if(matchesArray.length === 0) {
-                 container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;">Abhi koi VIP match active nahi hai.</div>`;
-                 return;
-            }
 
             matchesArray.sort((a, b) => a.finalTimeMs - b.finalTimeMs);
 
             matchesArray.forEach(m => {
-                let t1 = m.team1 || "T1"; let t2 = m.team2 || "T2"; let mName = m.name || "VIP Match";
+                let t1 = m.team1 || "T1";
+                let t2 = m.team2 || "T2";
+                let mName = m.name || "Live Match";
 
                 htmlContent += `
                     <div class="match-card" id="card-${m.id}" data-time="${m.finalTimeMs}" data-t1="${t1}" data-t2="${t2}">
                         <div class="series-name">${mName}</div>
                         <div class="teams">
-                            <div>${t1}</div><div class="vs">V/S</div><div>${t2}</div>
+                            <div>${t1}</div>
+                            <div class="vs">V/S</div>
+                            <div>${t2}</div>
                         </div>
-                        <div class="time-badge" id="timer-${m.id}"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>
+                        <div class="time-badge" id="timer-${m.id}">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Loading...
+                        </div>
                         
                         <div class="btn-container" id="btn-group-${m.id}">
                             <button class="action-btn" id="btn-action-${m.id}">PLEASE WAIT...</button>
-                            <button class="action-btn btn-myteam" id="btn-myteam-${m.id}" onclick="window.location.href='MyContests.html?matchId=${m.id}'"><i class="fa-solid fa-eye"></i> MY TEAM</button>
+                            <button class="action-btn btn-myteam" id="btn-myteam-${m.id}" onclick="window.location.href='MyContests.html?matchId=${m.id}'">
+                                <i class="fa-solid fa-eye"></i> MY TEAM
+                            </button>
                         </div>
                     </div>
                 `;
@@ -105,7 +96,7 @@
             container.innerHTML = htmlContent;
             updateTimers(); 
             checkJoinedTeams(matchesArray);
-        }
+        });
 
         function checkJoinedTeams(matches) {
             if(!myPhone) return;
@@ -113,15 +104,17 @@
                 db.ref('Game/Kalyan11/Contests/' + m.id + '/Teams').on('value', snap => {
                     let myTeamBtn = document.getElementById(`btn-myteam-${m.id}`);
                     let hasTeam = false;
+
                     if(snap.exists()) {
                         snap.forEach(child => {
                             let teamKey = child.key;
                             let actualPhone = child.val().phone || teamKey.split('_')[0];
-                            if(actualPhone === myPhone) hasTeam = true;
+                            if(actualPhone === myPhone) { hasTeam = true; }
                         });
                     }
-                    if(hasTeam && myTeamBtn) myTeamBtn.style.display = 'block';
-                    else if(myTeamBtn) myTeamBtn.style.display = 'none';
+
+                    if(hasTeam && myTeamBtn) { myTeamBtn.style.display = 'block'; } 
+                    else if(myTeamBtn) { myTeamBtn.style.display = 'none'; }
                 });
             });
         }
@@ -133,7 +126,8 @@
             cards.forEach(card => {
                 let matchId = card.id.replace('card-', '');
                 let matchTime = parseInt(card.getAttribute('data-time')); 
-                let t1 = card.getAttribute('data-t1'); let t2 = card.getAttribute('data-t2');
+                let t1 = card.getAttribute('data-t1');
+                let t2 = card.getAttribute('data-t2');
                 let timerBox = document.getElementById(`timer-${matchId}`);
                 let actionBtn = document.getElementById(`btn-action-${matchId}`);
                 let btnGroup = document.getElementById(`btn-group-${matchId}`);
@@ -141,8 +135,11 @@
                 let diff = matchTime - now;
 
                 if (diff > 0) {
-                    let d = Math.floor(diff / (1000 * 60 * 60 * 24)); let h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)); let s = Math.floor((diff % (1000 * 60)) / 1000);
+                    let d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    let h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    let s = Math.floor((diff % (1000 * 60)) / 1000);
+
                     h = (h < 10) ? "0" + h : h; m = (m < 10) ? "0" + m : m; s = (s < 10) ? "0" + s : s;
                     let timeText = (d > 0) ? `${d}d ${h}h ${m}m ${s}s` : `${h}h ${m}m ${s}s`;
 
@@ -150,16 +147,20 @@
                     timerBox.className = "time-badge"; timerBox.style.color = "#00ff88"; timerBox.style.borderColor = "#00ff88"; timerBox.style.background = "rgba(0,255,136,0.1)";
                     card.style.borderLeftColor = "#00ff88"; 
 
-                    actionBtn.className = "action-btn btn-join"; actionBtn.innerHTML = "🏏 JOIN CONTESTS";
+                    actionBtn.className = "action-btn btn-join";
+                    actionBtn.innerHTML = "🏏 JOIN CONTESTS";
                     actionBtn.onclick = function() { window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`; };
+                    
                 } else { 
                     timerBox.innerHTML = `<i class="fa-solid fa-lock"></i> MATCH STARTED (LOCKED)`;
                     timerBox.className = "time-badge live-badge"; timerBox.style.color = "#ff004c"; timerBox.style.borderColor = "#ff004c"; timerBox.style.background = "rgba(255, 0, 76, 0.1)";
                     card.style.borderLeftColor = "#ff004c"; 
                     
                     if (document.getElementById(`btn-myteam-${matchId}`).style.display === 'block') {
-                        btnGroup.innerHTML = `<button class="action-btn btn-leaderboard" style="flex:1;" onclick="window.location.href='leader.html?matchId=${matchId}'">🏆 LEADERBOARD</button>
-                        <button class="action-btn btn-myteam" style="display:block; flex:1;" onclick="window.location.href='MyContests.html?matchId=${matchId}'"><i class="fa-solid fa-eye"></i> MY TEAM</button>`;
+                        btnGroup.innerHTML = `
+                            <button class="action-btn btn-leaderboard" style="flex:1;" onclick="window.location.href='leader.html?matchId=${matchId}'">🏆 LEADERBOARD</button>
+                            <button class="action-btn btn-myteam" style="display:block; flex:1;" onclick="window.location.href='MyContests.html?matchId=${matchId}'"><i class="fa-solid fa-eye"></i> MY TEAM</button>
+                        `;
                     } else {
                         btnGroup.innerHTML = `<button class="action-btn btn-leaderboard" onclick="window.location.href='leader.html?matchId=${matchId}'">🏆 VIEW LEADERBOARD</button>`;
                     }
