@@ -57,7 +57,7 @@
     </div>
 
     <div class="footer">
-        <button class="save-btn" id="saveBtn" onclick="saveTeamToFirebase()">SAVE TEAM</button>
+        <button class="save-btn" id="saveBtn" onclick="processPaymentAndSaveTeam()">PAY & SAVE TEAM</button>
     </div>
 
     <script>
@@ -69,7 +69,15 @@
         const matchId = urlParams.get('matchId') || "DUMMY_MATCH";
         
         const contestFee = parseInt(localStorage.getItem('kalyan_entry_fee')) || parseInt(urlParams.get('fee')) || 49;
-        document.getElementById('feeDisplay').innerText = `Entry Contest: ₹${contestFee}`;
+        
+        // Agar edit mode hai toh fee ₹0 dikhegi, kyunki paise pehle hi kat chuke hain
+        const isEditMode = localStorage.getItem('kalyan_edit_team_key');
+        if(isEditMode) {
+            document.getElementById('feeDisplay').innerText = `Editing Team (Free)`;
+            document.getElementById('saveBtn').innerText = `UPDATE TEAM`;
+        } else {
+            document.getElementById('feeDisplay').innerText = `Entry Contest: ₹${contestFee}`;
+        }
 
         const selectedPlayersRaw = localStorage.getItem('kalyan_selected_team');
         const selectedPlayers = selectedPlayersRaw ? JSON.parse(selectedPlayersRaw) : [];
@@ -105,10 +113,7 @@
                         <div class="p-row">
                             <div class="p-info">
                                 <div class="p-img"><i class="fa-solid fa-user"></i></div>
-                                <div>
-                                    <div class="p-name">${shortName}</div>
-                                    <div class="p-role">${p.team} | ${p.role}</div>
-                                </div>
+                                <div><div class="p-name">${shortName}</div><div class="p-role">${p.team} | ${p.role}</div></div>
                             </div>
                             <div class="cvc-btns">
                                 <div class="cvc-btn btn-c" id="c_${pid}" onclick="selectC('${pid}')">C</div>
@@ -120,17 +125,8 @@
             });
         }
 
-        function selectC(pid) {
-            if(viceCaptainId === pid) return; 
-            captainId = pid;
-            updateButtons();
-        }
-
-        function selectVC(pid) {
-            if(captainId === pid) return; 
-            viceCaptainId = pid;
-            updateButtons();
-        }
+        function selectC(pid) { if(viceCaptainId === pid) return; captainId = pid; updateButtons(); }
+        function selectVC(pid) { if(captainId === pid) return; viceCaptainId = pid; updateButtons(); }
 
         function updateButtons() {
             document.querySelectorAll('.btn-c').forEach(btn => btn.classList.remove('active-c'));
@@ -140,31 +136,69 @@
             if(viceCaptainId) document.getElementById(`vc_${viceCaptainId}`).classList.add('active-vc');
 
             let saveBtn = document.getElementById('saveBtn');
-            if(captainId && viceCaptainId) {
-                saveBtn.classList.add('active');
-            } else {
-                saveBtn.classList.remove('active');
-            }
+            if(captainId && viceCaptainId) saveBtn.classList.add('active');
+            else saveBtn.classList.remove('active');
         }
 
-        function saveTeamToFirebase() {
+        // 🚀 THE WALLET DEDUCTION ENGINE 🚀
+        function processPaymentAndSaveTeam() {
             if(!captainId || !viceCaptainId || selectedPlayers.length !== 11) return;
-            
-            if(!userPhone) {
-                alert("Please pehle Login karein!");
-                return;
-            }
+            if(!userPhone) { alert("Please pehle Login karein!"); return; }
             
             let btn = document.getElementById('saveBtn');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> SAVING...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PROCESSING...';
             btn.classList.remove('active');
 
-            // 🚀 THE MAGIC FIX: HAR TEAM KA ALAG UNIQUE NAAM 🚀
-            let uniqueTeamId = userPhone + "_" + Date.now();
+            // Agar user Edit kar raha hai, toh seedha team save karo (No money cut)
+            if(isEditMode) {
+                saveFinalDataToDB(isEditMode, true);
+                return;
+            }
 
+            // 🎯 MAIN FIX: Tumhare Dashboard wala exact path 'users/{phone}'
+            let walletRef = db.ref('users/' + userPhone);
+            
+            walletRef.once('value', snapshot => {
+                let userData = snapshot.val() || {};
+                
+                // Hum main Deposit balance se paise kat rahe hain
+                let currentBalance = parseFloat(userData.balance || 0);
+
+                // Agar contest Free hai (₹0) ya Wallet mein sufficient balance hai
+                if (contestFee === 0 || currentBalance >= contestFee) {
+                    
+                    // Paise Kato!
+                    if(contestFee > 0) {
+                        let newBalance = currentBalance - contestFee;
+                        db.ref('users/' + userPhone + '/balance').set(newBalance); // Dashboard path updated
+                        
+                        // Transaction History me entry (Agar tumhari app me history ka option hai toh kaam ayega)
+                        db.ref('users/' + userPhone + '/Transactions').push({
+                            title: `Fantasy Entry (₹${contestFee})`,
+                            amount: -contestFee,
+                            type: "debit",
+                            date: new Date().toLocaleString()
+                        });
+                    }
+
+                    // Ab aage badho aur team save karo
+                    let newUniqueTeamId = userPhone + "_" + Date.now();
+                    saveFinalDataToDB(newUniqueTeamId, false);
+
+                } else {
+                    // Wallet me paise nahi hain!
+                    alert(`⚠️ INSUFFICIENT BALANCE!\nAapke wallet mein ₹${currentBalance} hain. Entry fee ₹${contestFee} hai.\nKripya apne Dashboard se pehle deposit karein!`);
+                    btn.innerHTML = 'PAY & SAVE TEAM';
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // Team Save Karne wala final function
+        function saveFinalDataToDB(teamKeyId, isUpdate) {
             let finalTeamData = {
                 phone: userPhone,
-                teamKey: uniqueTeamId, // Isko database mein pehchanne ke liye
+                teamKey: teamKeyId,
                 players: selectedPlayers,
                 captain: captainId,
                 viceCaptain: viceCaptainId,
@@ -173,17 +207,23 @@
                 timestamp: Date.now()
             };
 
-            // Naye unique dabbe mein save hoga, purana overwrite nahi hoga!
-            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + uniqueTeamId).set(finalTeamData)
+            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + teamKeyId).set(finalTeamData)
             .then(() => {
-                // 🧹 SAFARI: Purani memory delete kar do, taaki agle contest ke liye blank mile!
                 localStorage.removeItem('kalyan_selected_team');
+                localStorage.removeItem('kalyan_edit_team_key');
+                
+                if(!isUpdate && contestFee > 0) {
+                    alert(`✅ TEAM SAVED! ₹${contestFee} Wallet se kat gaye hain.`);
+                } else {
+                    alert("✅ TEAM UPDATED!");
+                }
                 
                 window.location.href = `MyContests.html?matchId=${matchId}`;
             })
             .catch(error => {
                 alert("Error: " + error.message);
-                btn.innerHTML = 'SAVE TEAM';
+                let btn = document.getElementById('saveBtn');
+                btn.innerHTML = 'TRY AGAIN';
                 btn.classList.add('active');
             });
         }
