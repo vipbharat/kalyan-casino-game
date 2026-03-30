@@ -19,14 +19,35 @@
         .row { display: flex; gap: 15px; }
         .row .input-group { flex: 1; }
         .btn-live { background: #00ff88; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; margin-bottom: 10px;}
-        .match-row { background: #222; border: 1px solid #444; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
-        .match-info h4 { margin: 0 0 5px; font-size: 14px; color: #ffd700;}
-        .match-info p { margin: 0; font-size: 11px; color: #aaa;}
-        .saved-link { color: #00d2d3; font-size: 10px; margin-top: 5px; word-break: break-all; background: #111; padding: 4px; border-radius: 4px; border: 1px solid #333; }
-        .btn-delete { background: #ff004c; color: #fff; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
+        .match-row { background: #1a1a2e; border: 1px solid #4a00e0; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
+        .match-info h4 { margin: 0 0 5px; font-size: 16px; color: #ffd700; text-transform: uppercase;}
+        .match-info p { margin: 0; font-size: 12px; color: #aaa;}
+        .saved-link { color: #00d2d3; font-size: 10px; margin-top: 5px; word-break: break-all; background: #0a0a14; padding: 6px; border-radius: 4px; border: 1px solid #333; }
+        
+        .action-btns { display: flex; gap: 10px; flex-direction: column;}
+        .btn-delete { background: #ff004c; color: #fff; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 12px;}
+        .btn-toss { background: #ffd700; color: #000; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: 900; font-size: 12px; box-shadow: 0 0 10px rgba(255,215,0,0.3);}
+        
         #statusBox { text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 14px; margin-top: 10px;}
         .success { color: #00ff88; } .error { color: #ff004c; } .loading { color: #ffd700; }
         .clear-btn { background: #ff004c; border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
+        /* 📋 LINEUP MODAL STYLES */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-content { background: #111; width: 90%; max-width: 500px; max-height: 85vh; border-radius: 15px; border: 2px solid #00ff88; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0,255,136,0.2);}
+        .modal-header { padding: 15px; background: #1a1a2e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { margin: 0; color: #ffd700; font-size: 18px; }
+        .close-btn { color: #ff004c; font-size: 24px; font-weight: bold; cursor: pointer; }
+        .modal-body { padding: 15px; overflow-y: auto; flex: 1; }
+        
+        .player-toggle-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .p-toggle { background: #222; border: 2px solid #555; padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 12px; font-weight: bold; transition: 0.2s; user-select: none;}
+        .p-toggle.playing { background: rgba(0,255,136,0.2); border-color: #00ff88; color: #00ff88; }
+        .p-toggle.benched { background: rgba(255,0,76,0.2); border-color: #ff004c; color: #ff004c; }
+        
+        .modal-footer { padding: 15px; background: #1a1a2e; border-top: 1px solid #333; }
+        .btn-save-lineup { width: 100%; background: #00ff88; color: #000; font-weight: 900; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;}
     </style>
 </head>
 <body>
@@ -60,8 +81,25 @@
     </div>
 
     <div class="admin-box">
-        <h3><i class="fa-solid fa-trash-can"></i> 3. Manage Matches</h3>
+        <h3><i class="fa-solid fa-gamepad"></i> 3. Manage Matches & Toss</h3>
         <div id="activeMatchesList"><div style="text-align:center; color:#ffd700;"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div></div>
+    </div>
+
+    <div id="lineupModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🟢 UPDATE LINEUP (TOSS)</h2>
+                <div class="close-btn" onclick="closeLineupModal()">&times;</div>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 11px; color: #aaa; text-align: center; margin-top: 0;">Click once for <b>Playing</b> (Green). Click twice for <b>Benched</b> (Red).</p>
+                <div class="player-toggle-list" id="modalPlayerList">
+                    </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-save-lineup" onclick="saveLineupToFirebase()"><i class="fa-solid fa-cloud-arrow-up"></i> PUBLISH LINEUP</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -70,8 +108,9 @@
         const db = firebase.database();
 
         let globalApiMatchId = "";
+        let currentEditingMatchId = "";
+        let currentPlayersData = {};
 
-        // Manually link saaf karne ka function
         function clearLink() {
             document.getElementById('engineUrl').value = '';
             document.getElementById('statusBox').innerHTML = '';
@@ -131,14 +170,14 @@
             let mId = globalApiMatchId ? globalApiMatchId : "MATCH_" + Date.now();
             let pData = {};
             
-            p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
-            p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
+            // playingStatus: "unannounced" added by default
+            p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
+            p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
 
             db.ref('Game/Kalyan11/VIPMatches/' + mId).set({ engineUrl: eUrl || "", name: mName, team1: t1, team2: t2, time: safeTimeFormat, timestamp: msTime, status: "Upcoming" });
             
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => {
                 alert("✅ VIP Match App me launch ho gaya!"); 
-                // Yahan se URL clear karne wali line hata di gayi hai! Ab link wahi rahega.
                 globalApiMatchId = ""; 
             });
         }
@@ -157,9 +196,12 @@
                         <div class="match-info">
                             <h4>${match.team1} vs ${match.team2}</h4>
                             <p>${match.name}</p>
-                            <div class="saved-link"><i class="fa-solid fa-link"></i> ${savedUrl}</div>
+                            <div class="saved-link"><i class="fa-solid fa-link"></i> ${savedUrl.substring(0, 40)}...</div>
                         </div>
-                        <button class="btn-delete" onclick="deleteMatch('${child.key}')"><i class="fa-solid fa-trash"></i> DELETE</button>
+                        <div class="action-btns">
+                            <button class="btn-toss" onclick="openLineupModal('${child.key}')"><i class="fa-solid fa-users"></i> UPDATE TOSS</button>
+                            <button class="btn-delete" onclick="deleteMatch('${child.key}')"><i class="fa-solid fa-trash"></i> DELETE</button>
+                        </div>
                     </div>`;
             });
         });
@@ -170,6 +212,85 @@
                 db.ref('Game/Kalyan11/MatchPlayers/' + mId).remove();
                 db.ref('Game/Kalyan11/Contests/' + mId).remove();
             }
+        }
+
+        // ==========================================
+        // 🟢 LINEUP / TOSS MANAGER LOGIC
+        // ==========================================
+
+        function openLineupModal(matchId) {
+            currentEditingMatchId = matchId;
+            document.getElementById('lineupModal').style.display = 'flex';
+            document.getElementById('modalPlayerList').innerHTML = "<div style='color:#00ff88; grid-column:span 2; text-align:center;'><i class='fa-solid fa-spinner fa-spin'></i> Fetching Squads...</div>";
+
+            db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', snap => {
+                if(!snap.exists()) { document.getElementById('modalPlayerList').innerHTML = "No players found!"; return; }
+                
+                currentPlayersData = snap.val();
+                renderModalPlayers();
+            });
+        }
+
+        function closeLineupModal() {
+            document.getElementById('lineupModal').style.display = 'none';
+        }
+
+        function renderModalPlayers() {
+            let container = document.getElementById('modalPlayerList');
+            container.innerHTML = "";
+
+            Object.keys(currentPlayersData).forEach(pKey => {
+                let p = currentPlayersData[pKey];
+                let statusClass = "";
+                let statusIcon = "⚪";
+                
+                if(p.playingStatus === "playing") { statusClass = "playing"; statusIcon = "🟢"; }
+                else if(p.playingStatus === "benched") { statusClass = "benched"; statusIcon = "🔴"; }
+
+                container.innerHTML += `
+                    <div class="p-toggle ${statusClass}" id="toggle_${pKey}" onclick="togglePlayerStatus('${pKey}')">
+                        <span id="icon_${pKey}">${statusIcon}</span> ${p.name}
+                    </div>
+                `;
+            });
+        }
+
+        function togglePlayerStatus(pKey) {
+            let p = currentPlayersData[pKey];
+            let currentStat = p.playingStatus || "unannounced";
+
+            // Click cycle: unannounced -> playing -> benched -> unannounced
+            if(currentStat === "unannounced") { p.playingStatus = "playing"; }
+            else if(currentStat === "playing") { p.playingStatus = "benched"; }
+            else { p.playingStatus = "unannounced"; }
+
+            // Re-render single element to be fast
+            let el = document.getElementById("toggle_" + pKey);
+            let icon = document.getElementById("icon_" + pKey);
+            
+            el.className = "p-toggle";
+            if(p.playingStatus === "playing") { el.classList.add("playing"); icon.innerText = "🟢"; }
+            else if(p.playingStatus === "benched") { el.classList.add("benched"); icon.innerText = "🔴"; }
+            else { icon.innerText = "⚪"; }
+        }
+
+        function saveLineupToFirebase() {
+            let btn = document.querySelector('.btn-save-lineup');
+            btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> SAVING...";
+            
+            // Push only the updated playingStatus to Firebase
+            let updates = {};
+            Object.keys(currentPlayersData).forEach(pKey => {
+                updates[pKey + "/playingStatus"] = currentPlayersData[pKey].playingStatus;
+            });
+
+            db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).update(updates).then(() => {
+                btn.innerHTML = "<i class='fa-solid fa-check'></i> LINEUP PUBLISHED!";
+                setTimeout(() => {
+                    btn.innerHTML = "<i class='fa-solid fa-cloud-arrow-up'></i> PUBLISH LINEUP";
+                    closeLineupModal();
+                }, 1500);
+            });
         }
     </script>
 </body>
