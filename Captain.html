@@ -74,7 +74,6 @@
         const selectedPlayersRaw = localStorage.getItem('kalyan_selected_team');
         const selectedPlayers = selectedPlayersRaw ? JSON.parse(selectedPlayersRaw) : [];
 
-        // 🚀 THE MAGIC FIX: App ab bilkul sahi jagah se aapka Asli Mobile Number uthayegi!
         let userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
         let allPlayersData = {};
@@ -151,7 +150,6 @@
         function saveTeamToFirebase() {
             if(!captainId || !viceCaptainId || selectedPlayers.length !== 11) return;
             
-            // Security check: Agar login nahi hai toh roko
             if(!userPhone) {
                 alert("Please pehle Login karein!");
                 return;
@@ -161,8 +159,12 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> SAVING...';
             btn.classList.remove('active');
 
+            // 🚀 THE MAGIC FIX: HAR TEAM KA ALAG UNIQUE NAAM 🚀
+            let uniqueTeamId = userPhone + "_" + Date.now();
+
             let finalTeamData = {
                 phone: userPhone,
+                teamKey: uniqueTeamId, // Isko database mein pehchanne ke liye
                 players: selectedPlayers,
                 captain: captainId,
                 viceCaptain: viceCaptainId,
@@ -171,8 +173,12 @@
                 timestamp: Date.now()
             };
 
-            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).set(finalTeamData)
+            // Naye unique dabbe mein save hoga, purana overwrite nahi hoga!
+            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + uniqueTeamId).set(finalTeamData)
             .then(() => {
+                // 🧹 SAFARI: Purani memory delete kar do, taaki agle contest ke liye blank mile!
+                localStorage.removeItem('kalyan_selected_team');
+                
                 window.location.href = `MyContests.html?matchId=${matchId}`;
             })
             .catch(error => {
