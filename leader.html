@@ -23,7 +23,6 @@
         .spots-left { font-size: 11px; color: #aaa; display: flex; justify-content: space-between; }
         .spots-left span.red { color: #ff004c; font-weight: bold; }
 
-        /* 🏆 New Rank View Button */
         .breakdown-btn { background: linear-gradient(90deg, #ff8c00, #ffd700); color: #000; font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 12px; cursor: pointer; text-transform: uppercase; border: 1px solid #fff; box-shadow: 0 2px 8px rgba(255,215,0,0.4); display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;}
         .breakdown-btn:active { transform: scale(0.95); }
 
@@ -56,7 +55,6 @@
         .loading-text { text-align: center; color: #ffd700; padding: 20px; font-weight: bold; }
         #scroll-loader { text-align: center; color: #00ff88; padding: 15px; font-weight: bold; display: none; }
 
-        /* 🔥 DYNAMIC MODAL STYLING 🔥 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: flex-end; }
         .modal-content { background: #1a1a2e; width: 100%; max-height: 75vh; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; overflow-y: auto; animation: slideUp 0.3s ease-out; border-top: 2px solid #ffd700; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -138,7 +136,6 @@
             return parts[0][0] + ". " + (parts[1] || "");
         }
 
-        // 🏆 VIEW PRIZE MODAL LOGIC 🏆
         function openPrizeBreakdown() {
             let html = '';
             if (entryFee === 0) {
@@ -177,8 +174,6 @@
         }
         function closePrizeBreakdown() { document.getElementById('prizeModalOverlay').style.display = 'none'; }
 
-
-        // 🏆 WINNING CALCULATOR ENGINE
         function calculatePrize(rank, entry) {
             if(entry === 0) return 0; 
             if(totalSpots === 2) { if(rank === 1) return Math.floor(entry * 1.8); return 0; }
@@ -195,16 +190,20 @@
             let mData = snap.val();
             matchTimeMs = mData && mData.timestamp ? mData.timestamp : (new Date().getTime() + 86400000);
             
+            // 🚀 Instant Check (Page load hote hi pata lag jayega)
+            let diff = matchTimeMs - new Date().getTime();
+            isMatchLive = diff <= 0;
+            isMatchCompleted = diff < -14400000;
+
             setInterval(() => {
                 let diff = matchTimeMs - new Date().getTime();
-                if (diff <= 0) {
-                    isMatchLive = true;
-                    if(diff < -14400000) {
-                        isMatchCompleted = true;
-                        document.getElementById('live-status').innerHTML = `<i class="fa-solid fa-flag-checkered" style="color:#00ff88;"></i> Match Completed`;
-                    } else {
-                        document.getElementById('live-status').innerHTML = `<i class="fa-solid fa-circle-dot fa-beat" style="color:#ff004c;"></i> Match is Live`;
-                    }
+                isMatchLive = diff <= 0;
+                isMatchCompleted = diff < -14400000;
+
+                if (isMatchCompleted) {
+                    document.getElementById('live-status').innerHTML = `<i class="fa-solid fa-flag-checkered" style="color:#00ff88;"></i> Match Completed`;
+                } else if (isMatchLive) {
+                    document.getElementById('live-status').innerHTML = `<i class="fa-solid fa-circle-dot fa-beat" style="color:#ff004c;"></i> Match is Live`;
                 } else {
                     document.getElementById('live-status').innerHTML = `<i class="fa-solid fa-clock"></i> Upcoming Match`;
                 }
@@ -279,7 +278,6 @@
                     if(actualFilledSpotsForUI > totalSpots) actualFilledSpotsForUI = totalSpots; 
                     let fillPercent = (actualFilledSpotsForUI / totalSpots) * 100;
 
-                    // 🚀 Added "WINNING RANKS" Button in Banner 🚀
                     document.getElementById('dynamic-banner').innerHTML = `
                         <div class="pool-flex">
                             <div>
@@ -296,14 +294,15 @@
                     displayedCount = 0;
                     loadMoreTeams();
 
-                    // 🚀 DOUBLE LOCK: AUTO-PAYOUT ENGINE 🚀
                     if(myTeamsInThisContest.length > 0) {
                         let bestMyTeam = myTeamsInThisContest.sort((a,b) => b.points - a.points)[0];
                         let myRank = allCombinedTeams.findIndex(t => t.teamKey === bestMyTeam.teamKey) + 1;
                         let myPrize = calculatePrize(myRank, entryFee);
                         
                         let isPaid = bestMyTeam.payment_status === "PAID";
-                        let prizeDisplay = myPrize > 0 ? `<div style="font-size:11px; color:#ffd700; font-weight:bold;">🏆 Won: ₹${myPrize.toLocaleString('en-IN')} ${isPaid ? '<span class="paid-tag">PAID IN WALLET</span>' : ''}</div>` : ``;
+                        
+                        // 🔒 THE FIX: Check isMatchCompleted Before Displaying Prize 🔒
+                        let prizeDisplay = (isMatchCompleted && myPrize > 0) ? `<div style="font-size:11px; color:#ffd700; font-weight:bold;">🏆 Won: ₹${myPrize.toLocaleString('en-IN')} ${isPaid ? '<span class="paid-tag">PAID IN WALLET</span>' : ''}</div>` : ``;
 
                         document.getElementById('my-rank-container').innerHTML = `
                             <div class="my-rank-sticky">
@@ -318,7 +317,6 @@
                             </div>
                         `;
 
-                        // 🔥 Asli Payout Logic 🔥
                         if (isMatchCompleted && myPrize > 0 && !isPaid) {
                             processWinnerPayout(bestMyTeam.teamKey, myPrize, myRank);
                         }
@@ -329,23 +327,17 @@
             });
         }
 
-        // 💸 SECRET PAYOUT FUNCTION
         function processWinnerPayout(teamKey, prizeAmount, rank) {
             let teamRef = db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${teamKey}`);
-            
             teamRef.once('value').then(snapshot => {
                 let teamData = snapshot.val();
                 if (teamData && teamData.payment_status !== "PAID") {
-                    
                     teamRef.update({ payment_status: "PAID" }).then(() => {
                         let userWalletRef = db.ref(`users/${myPhone}`);
                         userWalletRef.once('value').then(wSnap => {
                             let wData = wSnap.val() || {};
                             let currentWinningBal = parseFloat(wData.winning_balance || 0);
-                            
-                            userWalletRef.update({ 
-                                winning_balance: currentWinningBal + prizeAmount 
-                            });
+                            userWalletRef.update({ winning_balance: currentWinningBal + prizeAmount });
 
                             db.ref(`users/${myPhone}/Transactions`).push({
                                 title: `🏆 Fantasy Winnings (Rank ${rank})`,
@@ -353,8 +345,6 @@
                                 type: "credit",
                                 date: new Date().toLocaleString()
                             });
-                            
-                            console.log(`Successfully credited ₹${prizeAmount} to ${myPhone}`);
                         });
                     });
                 }
@@ -376,7 +366,9 @@
 
                 let prize = calculatePrize(rank, entryFee);
                 let isPaid = team.payment_status === "PAID";
-                let prizeHtml = prize > 0 ? `<br><span class="win-amt">🏆 ₹${prize.toLocaleString('en-IN')} ${isPaid && isMe ? '<span style="color:#00ff88; font-size:9px; border-left:1px solid #fff; margin-left:4px; padding-left:4px;">PAID</span>' : ''}</span>` : ``;
+                
+                // 🔒 THE FIX: Check isMatchCompleted Before Displaying Prize in the main list 🔒
+                let prizeHtml = (isMatchCompleted && prize > 0) ? `<br><span class="win-amt">🏆 ₹${prize.toLocaleString('en-IN')} ${isPaid && isMe ? '<span style="color:#00ff88; font-size:9px; border-left:1px solid #fff; margin-left:4px; padding-left:4px;">PAID</span>' : ''}</span>` : ``;
 
                 listContainer.innerHTML += `
                     <div class="user-row ${rClass} ${meClass}">
