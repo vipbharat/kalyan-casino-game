@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan 11 - Live Leaderboard</title>
+    <title>Kalyan 11 - Live Leaderboard & Payouts</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -19,14 +19,14 @@
         .pool-flex h2 { margin: 0; color: #ffd700; font-size: 16px; font-weight: 900; text-transform: uppercase;}
         .pool-flex span { font-size: 12px; color: #aaa; border: 1px solid #444; padding: 3px 8px; border-radius: 4px; background: #222;}
         .progress-bar-bg { width: 100%; height: 6px; background: #333; border-radius: 10px; overflow: hidden; margin-bottom: 5px; }
-        .progress-bar-fill { height: 100%; background: #ff004c; border-radius: 10px; transition: width 1s ease-in-out; }
+        .progress-bar-fill { height: 100%; background: #ff004c; border-radius: 10px; transition: width 0.5s ease-in-out; }
         .spots-left { font-size: 11px; color: #aaa; display: flex; justify-content: space-between; }
         .spots-left span.red { color: #ff004c; font-weight: bold; }
 
         .leaderboard-container { padding: 15px; }
         .user-row { background: linear-gradient(145deg, #1e1e2e, #111); border: 1px solid #333; border-radius: 10px; padding: 12px 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
-        
         .user-row.my-team { border-left: 4px solid #00ff88; background: linear-gradient(145deg, #113322, #111); box-shadow: 0 0 15px rgba(0,255,136,0.2); }
+        
         .rank-circle { width: 35px; height: 35px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; color: #aaa; border: 2px solid #555; flex-shrink: 0;}
         .rank-1 .rank-circle { background: #ffd700; color: #000; border-color: #ffd700; }
         .rank-2 .rank-circle { background: #c0c0c0; color: #000; border-color: #c0c0c0; }
@@ -42,6 +42,10 @@
         .points-box { text-align: right; }
         .pts-value { font-size: 18px; font-weight: 900; color: #00ff88; }
         .pts-label { font-size: 9px; color: #aaa; text-transform: uppercase; }
+        
+        /* Winnings UI */
+        .win-amt { font-size: 11px; color: #ffd700; font-weight: bold; margin-top: 5px; display: inline-block; border: 1px dashed #ffd700; padding: 2px 6px; border-radius: 4px; background: rgba(255, 215, 0, 0.1); }
+        .paid-tag { font-size: 10px; color: #000; background: #00ff88; padding: 2px 6px; border-radius: 4px; font-weight: 900; margin-left: 5px; box-shadow: 0 0 5px #00ff88;}
 
         .my-rank-sticky { position: fixed; bottom: 0; left: 0; width: 100%; background: linear-gradient(90deg, #00ff88, #00c366); color: #000; padding: 12px 15px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 1000; box-shadow: 0 -5px 15px rgba(0,255,136,0.3); border-top-left-radius: 15px; border-top-right-radius: 15px;}
         .my-rank-sticky .r-circle { width: 35px; height: 35px; background: #000; color: #00ff88; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 15px; border: 2px solid #fff; }
@@ -80,10 +84,8 @@
         const myPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId') || "DUMMY";
-        
         let entryFee = parseInt(urlParams.get('entry')) || parseInt(localStorage.getItem('kalyan_entry_fee')) || 99;
 
-        // 🧠 25 CONTESTS DATABASE (Exact limits)
         const contestConfig = {
             99: { name: "Grand Mega Contest", spots: 150000 }, 49: { name: "Mega Contest", spots: 5000 }, 39: { name: "Mega Contest", spots: 3000 }, 25: { name: "Mega Contest", spots: 2000 },
             999: { name: "Small League", spots: 50 }, 499: { name: "Small League", spots: 35 }, 299: { name: "Small League", spots: 40 }, 199: { name: "Small League", spots: 30 }, 125: { name: "Small League", spots: 28 }, 75: { name: "Small League", spots: 30 }, 35: { name: "Small League", spots: 35 }, 15: { name: "Contest", spots: 40 },
@@ -99,6 +101,7 @@
         const listContainer = document.getElementById('leaderboard-list');
         const scrollLoader = document.getElementById('scroll-loader');
         let isMatchLive = false;
+        let isMatchCompleted = false;
         let matchTimeMs = 0;
 
         let allCombinedTeams = [];
@@ -112,35 +115,34 @@
             return parts[0][0] + ". " + (parts[1] || "");
         }
 
+        // 🏆 WINNING CALCULATOR ENGINE
+        function calculatePrize(rank, entry) {
+            if(entry === 0) return 0; 
+            if(totalSpots === 2) { if(rank === 1) return Math.floor(entry * 1.8); return 0; }
+            if(entry === 99) { if(rank === 1) return 5000000; if(rank === 2) return 1000000; if(rank <= 10) return 100000; if(rank <= 50000) return 99; }
+            if(entry === 49) { if(rank === 1) return 20000; if(rank === 2) return 10000; if(rank <= 700) return 49; }
+            
+            if(rank === 1) return Math.floor(entry * totalSpots * 0.4); 
+            if(rank === 2) return Math.floor(entry * totalSpots * 0.15); 
+            if(rank <= Math.floor(totalSpots * 0.4)) return entry; 
+            return 0; 
+        }
+
         db.ref('Game/Kalyan11/VIPMatches/' + matchId).on('value', snap => {
             let mData = snap.val();
             matchTimeMs = mData && mData.timestamp ? mData.timestamp : (new Date().getTime() + 86400000);
             
             setInterval(() => {
-                let now = new Date().getTime();
-                let diff = matchTimeMs - now;
-                let filledSpots = 0;
-
-                if (totalSpots <= 6) {
-                    filledSpots = (diff <= 0) ? totalSpots : Math.max(1, totalSpots - 1); 
-                } else {
-                    if (diff <= 0) filledSpots = totalSpots; 
-                    else if (diff < 3600000) filledSpots = Math.floor(totalSpots * 0.98); 
-                    else if (diff < 43200000) filledSpots = Math.floor(totalSpots * 0.85); 
-                    else filledSpots = Math.floor(totalSpots * 0.60); 
-                }
-
-                let percent = (filledSpots / totalSpots) * 100;
-
-                document.getElementById('dynamic-banner').innerHTML = `
-                    <div class="pool-flex"><h2>${contestName}</h2><span>Entry: ₹${entryFee}</span></div>
-                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${percent}%"></div></div>
-                    <div class="spots-left"><span class="red">${filledSpots.toLocaleString('en-IN')} Spots filled</span><span>${totalSpots.toLocaleString('en-IN')} Spots</span></div>
-                `;
-                
+                let diff = matchTimeMs - new Date().getTime();
                 if (diff <= 0) {
                     isMatchLive = true;
-                    document.getElementById('live-status').innerHTML = `<i class="fa-solid fa-circle-dot fa-beat" style="color:#ff004c;"></i> Match is Live`;
+                    // 🕒 4 Ghante Baad Match Khatam Manenge (-14400000 ms)
+                    if(diff < -14400000) {
+                        isMatchCompleted = true;
+                        document.getElementById('live-status').innerHTML = `<i class="fa-solid fa-flag-checkered" style="color:#00ff88;"></i> Match Completed`;
+                    } else {
+                        document.getElementById('live-status').innerHTML = `<i class="fa-solid fa-circle-dot fa-beat" style="color:#ff004c;"></i> Match is Live`;
+                    }
                 } else {
                     document.getElementById('live-status').innerHTML = `<i class="fa-solid fa-clock"></i> Upcoming Match`;
                 }
@@ -155,9 +157,7 @@
                 let playersArray = Object.values(playersObj); 
 
                 db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', tSnap => {
-                    let realTeams = [];
-                    let myTeamsInThisContest = [];
-                    let maxRealPoints = 0; // 🎯 Real players ka highest score nikalne ke liye
+                    let realTeams = []; let myTeamsInThisContest = []; let maxRealPoints = 0; 
 
                     if (tSnap.exists()) {
                         tSnap.forEach(child => {
@@ -166,121 +166,163 @@
                                 let cName = playersObj[t.captain] ? formatName(playersObj[t.captain].name) : "Player";
                                 let vcName = playersObj[t.viceCaptain] ? formatName(playersObj[t.viceCaptain].name) : "Player";
                                 let pts = isMatchLive ? (t.total_points || 0) : 0;
+                                if(pts > maxRealPoints) maxRealPoints = pts; 
                                 
-                                if(pts > maxRealPoints) maxRealPoints = pts; // Highest point record kiya
-
                                 let teamData = { 
                                     phone: t.phone || child.key.split('_')[0], 
-                                    teamKey: child.key,
-                                    points: pts, 
-                                    cName: cName, vcName: vcName, isBot: false 
+                                    teamKey: child.key, 
+                                    points: pts, cName: cName, vcName: vcName, isBot: false,
+                                    payment_status: t.payment_status || "PENDING"
                                 };
-
-                                if(teamData.phone === myPhone) {
-                                    myTeamsInThisContest.push(teamData);
-                                } else {
-                                    realTeams.push(teamData);
-                                }
+                                
+                                if(teamData.phone === myPhone) myTeamsInThisContest.push(teamData);
+                                else realTeams.push(teamData);
                             }
                         });
                     }
 
-                    // 🤖 THE PRO-BOT ENGINE (Illusion of High Competition)
-                    let botLimit = totalSpots;
-                    if(totalSpots > 300) botLimit = 300; // Performance ke liye Mega contest me 300 bot max dikhayenge
-                    let botsNeeded = botLimit - realTeams.length - myTeamsInThisContest.length;
-                    if(botsNeeded < 0) botsNeeded = 0;
+                    // ... [BOT GENERATOR LOGIC SAME] ...
+                    let realCount = realTeams.length + myTeamsInThisContest.length;
+                    let diff = matchTimeMs - new Date().getTime();
+                    let actualFilledSpotsForUI = 0; let targetBotsForList = 0;
+
+                    if (totalSpots <= 2) {
+                        if (realCount >= 1) { targetBotsForList = totalSpots - realCount; actualFilledSpotsForUI = totalSpots; } 
+                        else { targetBotsForList = 1; actualFilledSpotsForUI = 1; }
+                    } else {
+                        let desiredPercent = 0;
+                        if (diff <= 0) desiredPercent = 100; else if (diff <= 3600000) desiredPercent = 95; else if (diff <= 7200000) desiredPercent = 88; else desiredPercent = 50; 
+                        let timeBasedSpots = Math.floor((desiredPercent / 100) * totalSpots);
+                        if(timeBasedSpots < realCount) timeBasedSpots = realCount; 
+                        actualFilledSpotsForUI = timeBasedSpots;
+                        targetBotsForList = (totalSpots <= 100) ? actualFilledSpotsForUI - realCount : 300 - realCount; 
+                        if(targetBotsForList < 0) targetBotsForList = 0;
+                    }
 
                     let bots = [];
-                    for(let i=0; i < botsNeeded; i++){
+                    for(let i=0; i < targetBotsForList; i++){
                         let bPhone = "9" + Math.floor(10000000 + Math.random() * 90000000); 
                         let cp = playersArray.length > 0 ? formatName(playersArray[Math.floor(Math.random() * playersArray.length)].name) : "Bot C.";
                         let vcp = playersArray.length > 0 ? formatName(playersArray[Math.floor(Math.random() * playersArray.length)].name) : "Bot V.";
-                        
                         let bPoints = 0;
                         if(isMatchLive) {
-                            // Shuru ke 5% bots "PRO BOTS" honge jo Real Players se hamesha aage rahenge!
-                            let isProBot = i < (botsNeeded * 0.05); 
-                            if(isProBot) {
-                                bPoints = maxRealPoints + (Math.random() * 25); // Real player se 0-25 point aage
-                            } else {
-                                bPoints = Math.random() * (maxRealPoints + 5); // Baki mixed rahenge
-                            }
+                            let isProBot = i < Math.max(2, targetBotsForList * 0.05); 
+                            bPoints = isProBot ? maxRealPoints + (Math.random() * 20) + 2 : Math.random() * (maxRealPoints + 5); 
                         }
-                        
                         bots.push({ phone: bPhone, points: bPoints, cName: cp, vcName: vcp, isBot: true });
                     }
 
                     allCombinedTeams = [...realTeams, ...myTeamsInThisContest, ...bots];
-                    allCombinedTeams.sort((a,b) => b.points - a.points); // Jiske zyada point, wo number 1
+                    allCombinedTeams.sort((a,b) => b.points - a.points); 
                     
+                    if(actualFilledSpotsForUI > totalSpots) actualFilledSpotsForUI = totalSpots; 
+                    let fillPercent = (actualFilledSpotsForUI / totalSpots) * 100;
+
+                    document.getElementById('dynamic-banner').innerHTML = `
+                        <div class="pool-flex"><h2>${contestName}</h2><span>Entry: ₹${entryFee}</span></div>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${fillPercent}%"></div></div>
+                        <div class="spots-left"><span class="red">${actualFilledSpotsForUI.toLocaleString('en-IN')} Spots filled</span><span>${totalSpots.toLocaleString('en-IN')} Spots</span></div>
+                    `;
+
                     listContainer.innerHTML = "";
                     displayedCount = 0;
                     loadMoreTeams();
 
-                    // Update Bottom Rank Bar
+                    // 🚀 DOUBLE LOCK: AUTO-PAYOUT ENGINE 🚀
                     if(myTeamsInThisContest.length > 0) {
                         let bestMyTeam = myTeamsInThisContest.sort((a,b) => b.points - a.points)[0];
                         let myRank = allCombinedTeams.findIndex(t => t.teamKey === bestMyTeam.teamKey) + 1;
+                        let myPrize = calculatePrize(myRank, entryFee);
+                        
+                        let isPaid = bestMyTeam.payment_status === "PAID";
+                        let prizeDisplay = myPrize > 0 ? `<div style="font-size:11px; color:#ffd700; font-weight:bold;">🏆 Won: ₹${myPrize.toLocaleString('en-IN')} ${isPaid ? '<span class="paid-tag">PAID IN WALLET</span>' : ''}</div>` : ``;
 
                         document.getElementById('my-rank-container').innerHTML = `
                             <div class="my-rank-sticky">
                                 <div style="display:flex; align-items:center; gap:12px;">
                                     <div class="r-circle">#${myRank}</div>
-                                    <div>
-                                        <div style="font-weight:900; font-size:15px;">YOUR TEAM ${myTeamsInThisContest.length > 1 ? '(Best)' : ''}</div>
-                                        <div style="font-size:11px; font-weight:bold; color:#111;">C: ${bestMyTeam.cName} | VC: ${bestMyTeam.vcName}</div>
-                                    </div>
+                                    <div><div style="font-weight:900; font-size:15px;">YOUR TEAM ${myTeamsInThisContest.length > 1 ? '(Best)' : ''}</div><div style="font-size:11px; font-weight:bold; color:#111;">C: ${bestMyTeam.cName} | VC: ${bestMyTeam.vcName}</div></div>
                                 </div>
                                 <div style="text-align:right;">
                                     <div style="font-weight:900; font-size:18px;">${bestMyTeam.points.toFixed(1)}</div>
-                                    <div style="font-size:10px; font-weight:bold;">POINTS</div>
+                                    ${prizeDisplay}
                                 </div>
                             </div>
                         `;
+
+                        // 🔥 Asli Payout Logic 🔥
+                        if (isMatchCompleted && myPrize > 0 && !isPaid) {
+                            processWinnerPayout(bestMyTeam.teamKey, myPrize, myRank);
+                        }
                     } else {
-                        document.getElementById('my-rank-container').innerHTML = `
-                            <div class="my-rank-sticky" style="background:#222; color:#fff; border-top:1px solid #444;">
-                                <div style="font-size:13px; font-weight:bold;">Aapne yeh contest join nahi kiya hai.</div>
-                            </div>
-                        `;
+                        document.getElementById('my-rank-container').innerHTML = `<div class="my-rank-sticky" style="background:#222; color:#fff; border-top:1px solid #444;"><div style="font-size:13px; font-weight:bold;">Aapne yeh contest join nahi kiya hai.</div></div>`;
                     }
                 });
             });
         }
 
-        // 📜 INFINITE SCROLL JADOO
+        // 💸 SECRET PAYOUT FUNCTION (Client Triggered, Database Locked)
+        function processWinnerPayout(teamKey, prizeAmount, rank) {
+            let teamRef = db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${teamKey}`);
+            
+            // 🔒 Pehle Database Check karo, taaki 2 baar paise na jaye
+            teamRef.once('value').then(snapshot => {
+                let teamData = snapshot.val();
+                if (teamData && teamData.payment_status !== "PAID") {
+                    
+                    // 1. Mark as PAID turant
+                    teamRef.update({ payment_status: "PAID" }).then(() => {
+                        
+                        // 2. Wallet mein 'winning_balance' bada do
+                        let userWalletRef = db.ref(`users/${myPhone}`);
+                        userWalletRef.once('value').then(wSnap => {
+                            let wData = wSnap.val() || {};
+                            let currentWinningBal = parseFloat(wData.winning_balance || 0);
+                            
+                            userWalletRef.update({ 
+                                winning_balance: currentWinningBal + prizeAmount 
+                            });
+
+                            // 3. Statement/History mein likh do
+                            db.ref(`users/${myPhone}/Transactions`).push({
+                                title: `🏆 Fantasy Winnings (Rank ${rank})`,
+                                amount: prizeAmount,
+                                type: "credit",
+                                date: new Date().toLocaleString()
+                            });
+                            
+                            console.log(`Successfully credited ₹${prizeAmount} to ${myPhone}`);
+                        });
+                    });
+                }
+            });
+        }
+
         function loadMoreTeams() {
             if(displayedCount >= allCombinedTeams.length) return; 
-            
             isFetching = true;
             let batch = allCombinedTeams.slice(displayedCount, displayedCount + BATCH_SIZE);
 
             batch.forEach((team, index) => {
                 let rank = displayedCount + index + 1;
                 let isMe = (!team.isBot && team.phone === myPhone);
-                
                 let displayPhone = isMe ? "You ("+team.phone+")" : team.phone.substring(0,4)+"****"+team.phone.substring(8,10);
-                
                 let rClass = rank <= 3 ? "rank-" + rank : "";
                 let meClass = isMe ? "my-team" : "";
                 let tag = isMe ? `<span class="my-tag">MY TEAM</span>` : ``;
 
+                let prize = calculatePrize(rank, entryFee);
+                let isPaid = team.payment_status === "PAID";
+                let prizeHtml = prize > 0 ? `<br><span class="win-amt">🏆 ₹${prize.toLocaleString('en-IN')} ${isPaid && isMe ? '<span style="color:#00ff88; font-size:9px; border-left:1px solid #fff; margin-left:4px; padding-left:4px;">PAID</span>' : ''}</span>` : ``;
+
                 listContainer.innerHTML += `
                     <div class="user-row ${rClass} ${meClass}">
                         <div class="rank-circle">${rank}</div>
-                        <div class="user-details">
-                            <div class="user-name">${displayPhone} ${tag}</div>
-                            <div class="cvc-info"><span class="c">C: ${team.cName}</span><span class="vc">VC: ${team.vcName}</span></div>
-                        </div>
-                        <div class="points-box">
-                            <div class="pts-value">${team.points.toFixed(1)}</div>
-                            <div class="pts-label">Points</div>
-                        </div>
+                        <div class="user-details"><div class="user-name">${displayPhone} ${tag}</div><div class="cvc-info"><span class="c">C: ${team.cName}</span><span class="vc">VC: ${team.vcName}</span></div>${prizeHtml}</div>
+                        <div class="points-box"><div class="pts-value">${team.points.toFixed(1)}</div><div class="pts-label">Points</div></div>
                     </div>
                 `;
             });
-
             displayedCount += BATCH_SIZE;
             isFetching = false;
             scrollLoader.style.display = "none";
