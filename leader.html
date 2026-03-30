@@ -190,7 +190,6 @@
             let mData = snap.val();
             matchTimeMs = mData && mData.timestamp ? mData.timestamp : (new Date().getTime() + 86400000);
             
-            // 🚀 Instant Check (Page load hote hi pata lag jayega)
             let diff = matchTimeMs - new Date().getTime();
             isMatchLive = diff <= 0;
             isMatchCompleted = diff < -14400000;
@@ -213,10 +212,12 @@
         });
 
         function fetchRealLeaderboard() {
+            // 1. Live Players ke Points uthao
             db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', pSnap => {
                 let playersObj = pSnap.val() || {};
                 let playersArray = Object.values(playersObj); 
 
+                // 2. Ab Teams ko uthao aur calculation karo
                 db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', tSnap => {
                     let realTeams = []; let myTeamsInThisContest = []; let maxRealPoints = 0; 
 
@@ -224,15 +225,35 @@
                         tSnap.forEach(child => {
                             let t = child.val();
                             if (parseInt(t.entry_paid || 99) === entryFee) {
+                                
+                                // 🚀 VIP POINT CALCULATOR ENGINE 🚀
+                                let calculatedPoints = 0;
+                                let teamPlayers = t.players || {};
+                                
+                                Object.values(teamPlayers).forEach(pKey => {
+                                    let livePt = (playersObj[pKey] && playersObj[pKey].points) ? parseFloat(playersObj[pKey].points) : 0;
+                                    
+                                    if(pKey === t.captain) calculatedPoints += (livePt * 2);        // Captain 2x
+                                    else if(pKey === t.viceCaptain) calculatedPoints += (livePt * 1.5); // VC 1.5x
+                                    else calculatedPoints += livePt;                                  // Normal 1x
+                                });
+
+                                let finalPts = (isMatchLive || isMatchCompleted) ? parseFloat(calculatedPoints.toFixed(1)) : 0;
+                                
+                                // 💾 Database Auto-Saver (Agar 0.0 hai toh usko permanent theek kar dega)
+                                if((isMatchLive || isMatchCompleted) && Math.abs((t.total_points || 0) - finalPts) > 0.1) {
+                                    db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${child.key}`).update({total_points: finalPts});
+                                }
+
                                 let cName = playersObj[t.captain] ? formatName(playersObj[t.captain].name) : "Player";
                                 let vcName = playersObj[t.viceCaptain] ? formatName(playersObj[t.viceCaptain].name) : "Player";
-                                let pts = isMatchLive ? (t.total_points || 0) : 0;
-                                if(pts > maxRealPoints) maxRealPoints = pts; 
+                                
+                                if(finalPts > maxRealPoints) maxRealPoints = finalPts; 
                                 
                                 let teamData = { 
                                     phone: t.phone || child.key.split('_')[0], 
                                     teamKey: child.key, 
-                                    points: pts, cName: cName, vcName: vcName, isBot: false,
+                                    points: finalPts, cName: cName, vcName: vcName, isBot: false,
                                     payment_status: t.payment_status || "PENDING"
                                 };
                                 
@@ -265,11 +286,14 @@
                         let cp = playersArray.length > 0 ? formatName(playersArray[Math.floor(Math.random() * playersArray.length)].name) : "Bot C.";
                         let vcp = playersArray.length > 0 ? formatName(playersArray[Math.floor(Math.random() * playersArray.length)].name) : "Bot V.";
                         let bPoints = 0;
-                        if(isMatchLive) {
+                        
+                        // 🤖 BOT FREEZER: Bots ke points refresh karne par fluctuate nahi honge!
+                        if(isMatchLive || isMatchCompleted) {
                             let isProBot = i < Math.max(2, targetBotsForList * 0.05); 
-                            bPoints = isProBot ? maxRealPoints + (Math.random() * 20) + 2 : Math.random() * (maxRealPoints + 5); 
+                            let pseudoRandom = (Math.sin(i * 9999) + 1) / 2; // Locked random based on index
+                            bPoints = isProBot ? maxRealPoints + (pseudoRandom * 20) + 1 : pseudoRandom * (maxRealPoints + 5); 
                         }
-                        bots.push({ phone: bPhone, points: bPoints, cName: cp, vcName: vcp, isBot: true });
+                        bots.push({ phone: bPhone, points: parseFloat(bPoints.toFixed(1)), cName: cp, vcName: vcp, isBot: true });
                     }
 
                     allCombinedTeams = [...realTeams, ...myTeamsInThisContest, ...bots];
@@ -301,7 +325,6 @@
                         
                         let isPaid = bestMyTeam.payment_status === "PAID";
                         
-                        // 🔒 THE FIX: Check isMatchCompleted Before Displaying Prize 🔒
                         let prizeDisplay = (isMatchCompleted && myPrize > 0) ? `<div style="font-size:11px; color:#ffd700; font-weight:bold;">🏆 Won: ₹${myPrize.toLocaleString('en-IN')} ${isPaid ? '<span class="paid-tag">PAID IN WALLET</span>' : ''}</div>` : ``;
 
                         document.getElementById('my-rank-container').innerHTML = `
@@ -367,7 +390,6 @@
                 let prize = calculatePrize(rank, entryFee);
                 let isPaid = team.payment_status === "PAID";
                 
-                // 🔒 THE FIX: Check isMatchCompleted Before Displaying Prize in the main list 🔒
                 let prizeHtml = (isMatchCompleted && prize > 0) ? `<br><span class="win-amt">🏆 ₹${prize.toLocaleString('en-IN')} ${isPaid && isMe ? '<span style="color:#00ff88; font-size:9px; border-left:1px solid #fff; margin-left:4px; padding-left:4px;">PAID</span>' : ''}</span>` : ``;
 
                 listContainer.innerHTML += `
