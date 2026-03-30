@@ -22,9 +22,11 @@
         .match-row { background: #222; border: 1px solid #444; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
         .match-info h4 { margin: 0 0 5px; font-size: 14px; color: #ffd700;}
         .match-info p { margin: 0; font-size: 11px; color: #aaa;}
+        .saved-link { color: #00d2d3; font-size: 10px; margin-top: 5px; word-break: break-all; background: #111; padding: 4px; border-radius: 4px; border: 1px solid #333; }
         .btn-delete { background: #ff004c; color: #fff; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         #statusBox { text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 14px; margin-top: 10px;}
         .success { color: #00ff88; } .error { color: #ff004c; } .loading { color: #ffd700; }
+        .clear-btn { background: #ff004c; border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -33,7 +35,15 @@
 
     <div class="admin-box">
         <h3><i class="fa-solid fa-plus"></i> 1. Add New Match</h3>
-        <div class="input-group"><label>🔗 Engine Live URL</label><input type="text" id="engineUrl" placeholder="Cricbuzz link paste karein..." oninput="autoFetchPlayersFromLink()"></div>
+        
+        <div class="input-group">
+            <label>🔗 Engine Live URL</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="engineUrl" placeholder="Cricbuzz link paste karein..." oninput="autoFetchPlayersFromLink()">
+                <button class="clear-btn" onclick="clearLink()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+        
         <div id="statusBox"></div>
         <div class="input-group"><label>Match Title</label><input type="text" id="matchName" placeholder="Auto Fill Hoga..."></div>
         <div class="row">
@@ -60,6 +70,12 @@
         const db = firebase.database();
 
         let globalApiMatchId = "";
+
+        // Manually link saaf karne ka function
+        function clearLink() {
+            document.getElementById('engineUrl').value = '';
+            document.getElementById('statusBox').innerHTML = '';
+        }
 
         async function autoFetchPlayersFromLink() {
             let urlInput = document.getElementById('engineUrl').value.trim();
@@ -118,12 +134,12 @@
             p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
             p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
 
-            // 🎯 JADOO: Naye VIP dabe me save karo!
             db.ref('Game/Kalyan11/VIPMatches/' + mId).set({ engineUrl: eUrl || "", name: mName, team1: t1, team2: t2, time: safeTimeFormat, timestamp: msTime, status: "Upcoming" });
             
-            // Points wale dabbe me bhi save karo taaki Vercel update kar sake
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => {
-                alert("✅ VIP Match App me launch ho gaya!"); document.getElementById('engineUrl').value = ''; globalApiMatchId = ""; 
+                alert("✅ VIP Match App me launch ho gaya!"); 
+                // Yahan se URL clear karne wali line hata di gayi hai! Ab link wahi rahega.
+                globalApiMatchId = ""; 
             });
         }
 
@@ -134,9 +150,15 @@
 
             snapshot.forEach(child => {
                 let match = child.val();
+                let savedUrl = match.engineUrl ? match.engineUrl : "Koi Link Save Nahi Hai";
+                
                 container.innerHTML += `
                     <div class="match-row">
-                        <div class="match-info"><h4>${match.team1} vs ${match.team2}</h4><p>${match.name}</p></div>
+                        <div class="match-info">
+                            <h4>${match.team1} vs ${match.team2}</h4>
+                            <p>${match.name}</p>
+                            <div class="saved-link"><i class="fa-solid fa-link"></i> ${savedUrl}</div>
+                        </div>
                         <button class="btn-delete" onclick="deleteMatch('${child.key}')"><i class="fa-solid fa-trash"></i> DELETE</button>
                     </div>`;
             });
