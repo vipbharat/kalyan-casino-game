@@ -16,13 +16,16 @@
         .vs { color: #ff004c; font-size: 12px; background: #222; padding: 4px 8px; border-radius: 50%; }
         .time-badge { font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 4px; display: inline-block; border: 1px solid #00ff88; margin-bottom: 15px;}
         .live-badge { background: rgba(255, 0, 76, 0.1); color: #ff004c; border: 1px solid #ff004c; animation: blink 1s infinite; }
+        .error-badge { background: rgba(255, 165, 0, 0.1); color: #ffa500; border: 1px solid #ffa500; }
         @keyframes blink { 50% { opacity: 0.6; } }
 
+        /* VIP BUTTON DESIGN */
         .btn-container { display: flex; gap: 10px; width: 100%; }
         .action-btn { flex: 1; padding: 12px 5px; border: none; border-radius: 6px; font-weight: 900; font-size: 13px; cursor: pointer; text-transform: uppercase; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .btn-join { background: linear-gradient(90deg, #00ff88, #00d2d3); color: #000; }
+        .btn-leaderboard { background: linear-gradient(90deg, #ff004c, #ff8c00); color: #fff; }
         .btn-myteam { background: linear-gradient(90deg, #ffd700, #ff8c00); color: #000; display: none; } 
-        .btn-leaderboard { background: linear-gradient(90deg, #ff004c, #ff8c00); color: #fff; width: 100%;}
+        
         .loader { text-align: center; margin-top: 50px; color: #ffd700; font-weight: bold; }
     </style>
 </head>
@@ -47,38 +50,47 @@
             let htmlContent = "";
             let matchesArray = [];
 
-            // 🚀 ULTIMATE ZERO-FILTER CODE: Firebase mein jo dikha, sab idhar aayega!
+            // 🚀 BRAHMASTRA LOCK: Kucch bhi delete nahi hoga, sab screen pe aayega!
             snapshot.forEach(child => {
                 let m = child.val();
                 m.id = child.key;
                 
-                // Agar match mein time nahi hai, tab bhi mat hatao, bas usko ek default time de do taaki error na aaye.
-                if(!m.timestamp) {
-                    m.timestamp = new Date().getTime() + 86400000; // 24 hours in future
+                // Vercel engine se time udne par fallback time de do taaki error na aaye
+                let mTime = m.timestamp;
+                if(!mTime && m.time) { mTime = new Date(m.time).getTime(); }
+                
+                if(!mTime || isNaN(mTime)) {
+                    m.finalTimeMs = new Date().getTime() - 1000; // Time kharab ho tab bhi Locked dikhega, par gayab nahi hoga
+                } else {
+                    m.finalTimeMs = mTime;
                 }
                 
-                matchesArray.push(m); // HAR EK MATCH ANDAR AAYEGA!
+                matchesArray.push(m);
             });
 
-            // Sorting: Jo naya hai wo pehle aayega
-            matchesArray.sort((a, b) => a.timestamp - b.timestamp);
+            // Jo pehle aayega wo upar rahega
+            matchesArray.sort((a, b) => a.finalTimeMs - b.finalTimeMs);
 
             matchesArray.forEach(m => {
+                let t1 = m.team1 || "T1";
+                let t2 = m.team2 || "T2";
+                let mName = m.name || "Live Match";
+
                 htmlContent += `
-                    <div class="match-card" id="card-${m.id}" data-time="${m.timestamp}" data-t1="${m.team1 || 'Team 1'}" data-t2="${m.team2 || 'Team 2'}">
-                        <div class="series-name">${m.name || 'Cricket Match'}</div>
+                    <div class="match-card" id="card-${m.id}" data-time="${m.finalTimeMs}" data-t1="${t1}" data-t2="${t2}">
+                        <div class="series-name">${mName}</div>
                         <div class="teams">
-                            <div>${m.team1 || 'T1'}</div>
+                            <div>${t1}</div>
                             <div class="vs">V/S</div>
-                            <div>${m.team2 || 'T2'}</div>
+                            <div>${t2}</div>
                         </div>
                         <div class="time-badge" id="timer-${m.id}">
                             <i class="fa-solid fa-spinner fa-spin"></i> Loading...
                         </div>
                         
-                        <div class="btn-container" id="btn-group-${m.id}">
-                            <button class="action-btn btn-join" id="btn-${m.id}">PLEASE WAIT...</button>
-                            <button class="action-btn btn-myteam" id="myteam-btn-${m.id}" onclick="window.location.href='MyContests.html?matchId=${m.id}'">
+                        <div class="btn-container">
+                            <button class="action-btn" id="btn-action-${m.id}">PLEASE WAIT...</button>
+                            <button class="action-btn btn-myteam" id="btn-myteam-${m.id}" onclick="window.location.href='MyContests.html?matchId=${m.id}'">
                                 <i class="fa-solid fa-eye"></i> MY TEAM
                             </button>
                         </div>
@@ -91,12 +103,27 @@
             checkJoinedTeams(matchesArray);
         });
 
+        // 🎯 FIX: Multiple teams hone par apna number pehchano aur MY TEAM button dikhao
         function checkJoinedTeams(matches) {
             if(!myPhone) return;
             matches.forEach(m => {
-                db.ref('Game/Kalyan11/Contests/' + m.id + '/Teams/' + myPhone).on('value', snap => {
-                    let myTeamBtn = document.getElementById(`myteam-btn-${m.id}`);
-                    if(snap.exists() && myTeamBtn) {
+                db.ref('Game/Kalyan11/Contests/' + m.id + '/Teams').on('value', snap => {
+                    let myTeamBtn = document.getElementById(`btn-myteam-${m.id}`);
+                    let hasTeam = false;
+
+                    if(snap.exists()) {
+                        snap.forEach(child => {
+                            let teamKey = child.key;
+                            let teamData = child.val();
+                            let actualPhone = teamData.phone || teamKey.split('_')[0];
+                            
+                            if(actualPhone === myPhone) {
+                                hasTeam = true;
+                            }
+                        });
+                    }
+
+                    if(hasTeam && myTeamBtn) {
                         myTeamBtn.style.display = 'block';
                     } else if(myTeamBtn) {
                         myTeamBtn.style.display = 'none';
@@ -105,6 +132,7 @@
             });
         }
 
+        // ⏱️ TIMER LOGIC: Sirf Countdown aur "Action" Button (Leaderboard/Join) badlega
         function updateTimers() {
             let cards = document.querySelectorAll('.match-card');
             let now = new Date().getTime();
@@ -115,8 +143,7 @@
                 let t1 = card.getAttribute('data-t1');
                 let t2 = card.getAttribute('data-t2');
                 let timerBox = document.getElementById(`timer-${matchId}`);
-                let actionBtn = document.getElementById(`btn-${matchId}`);
-                let btnGroup = document.getElementById(`btn-group-${matchId}`);
+                let actionBtn = document.getElementById(`btn-action-${matchId}`);
                 
                 let diff = matchTime - now;
 
@@ -139,13 +166,13 @@
                     timerBox.style.background = "rgba(0,255,136,0.1)";
                     card.style.borderLeftColor = "#00ff88"; 
 
+                    // Match chalu hone se pehle: JOIN CONTESTS
                     actionBtn.className = "action-btn btn-join";
                     actionBtn.innerHTML = "🏏 JOIN CONTESTS";
                     actionBtn.onclick = function() { window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`; };
                     
                 } else { 
-                    // Yahan se hide wala code hamesha ke liye HATA diya gaya hai!
-                    // Match chahe kitna bhi purana ho, yahan LOCK ban kar baitha rahega.
+                    // Match Start Hone ke baad: MATCH LOCKED
                     timerBox.innerHTML = `<i class="fa-solid fa-lock"></i> MATCH STARTED (LOCKED)`;
                     timerBox.className = "time-badge live-badge"; 
                     timerBox.style.color = "#ff004c";
@@ -153,14 +180,10 @@
                     timerBox.style.background = "rgba(255, 0, 76, 0.1)";
                     card.style.borderLeftColor = "#ff004c"; 
                     
-                    if (document.getElementById(`myteam-btn-${matchId}`).style.display === 'block') {
-                        btnGroup.innerHTML = `
-                            <button class="action-btn btn-leaderboard" style="flex:1;" onclick="window.location.href='leader.html?matchId=${matchId}'">🏆 LEADERBOARD</button>
-                            <button class="action-btn btn-myteam" style="display:block; flex:1;" onclick="window.location.href='MyContests.html?matchId=${matchId}'"><i class="fa-solid fa-eye"></i> MY TEAM</button>
-                        `;
-                    } else {
-                        btnGroup.innerHTML = `<button class="action-btn btn-leaderboard" onclick="window.location.href='leader.html?matchId=${matchId}'">🏆 VIEW LEADERBOARD</button>`;
-                    }
+                    // Button ban jayega VIEW LEADERBOARD
+                    actionBtn.className = "action-btn btn-leaderboard";
+                    actionBtn.innerHTML = "🏆 VIEW LEADERBOARD";
+                    actionBtn.onclick = function() { window.location.href = `leader.html?matchId=${matchId}`; };
                 }
             });
         }
