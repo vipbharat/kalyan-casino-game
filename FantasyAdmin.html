@@ -19,12 +19,10 @@
         .row { display: flex; gap: 15px; }
         .row .input-group { flex: 1; }
         .btn-live { background: #00ff88; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; margin-bottom: 10px;}
-        
         .match-row { background: #222; border: 1px solid #444; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
         .match-info h4 { margin: 0 0 5px; font-size: 14px; color: #ffd700;}
         .match-info p { margin: 0; font-size: 11px; color: #aaa;}
         .btn-delete { background: #ff004c; color: #fff; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        
         #statusBox { text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 14px; margin-top: 10px;}
         .success { color: #00ff88; } .error { color: #ff004c; } .loading { color: #ffd700; }
     </style>
@@ -35,40 +33,25 @@
 
     <div class="admin-box">
         <h3><i class="fa-solid fa-plus"></i> 1. Add New Match</h3>
-        
-        <div class="input-group">
-            <label>🔗 Engine Live URL</label>
-            <input type="text" id="engineUrl" placeholder="Cricbuzz link paste karein..." oninput="autoFetchPlayersFromLink()">
-        </div>
-        
+        <div class="input-group"><label>🔗 Engine Live URL</label><input type="text" id="engineUrl" placeholder="Cricbuzz link paste karein..." oninput="autoFetchPlayersFromLink()"></div>
         <div id="statusBox"></div>
-
         <div class="input-group"><label>Match Title</label><input type="text" id="matchName" placeholder="Auto Fill Hoga..."></div>
-        
         <div class="row">
             <div class="input-group"><label>Team 1 Name</label><input type="text" id="t1Name" placeholder="Auto"></div>
             <div class="input-group"><label>Team 2 Name</label><input type="text" id="t2Name" placeholder="Auto"></div>
         </div>
-
-        <div class="input-group">
-            <label>⏱️ Match Start Time (Zaroori Hai)</label>
-            <input type="datetime-local" id="matchTime">
-        </div>
-
+        <div class="input-group"><label>⏱️ Match Start Time</label><input type="datetime-local" id="matchTime"></div>
         <h3 style="margin-top:20px;">2. Auto Fetched Squads</h3>
         <div class="row">
             <div class="input-group"><label>Team 1 Players</label><textarea id="t1Players"></textarea></div>
             <div class="input-group"><label>Team 2 Players</label><textarea id="t2Players"></textarea></div>
         </div>
-        
-        <button class="btn-live" onclick="launchSmartMatch()">🚀 LAUNCH MATCH TO APP</button>
+        <button class="btn-live" onclick="launchSmartMatch()">🚀 LAUNCH VIP MATCH</button>
     </div>
 
     <div class="admin-box">
-        <h3><i class="fa-solid fa-trash-can"></i> 3. Manage Live Matches</h3>
-        <div id="activeMatchesList">
-            <div style="text-align:center; color:#ffd700;"><i class="fa-solid fa-spinner fa-spin"></i> Loading Matches...</div>
-        </div>
+        <h3><i class="fa-solid fa-trash-can"></i> 3. Manage Matches</h3>
+        <div id="activeMatchesList"><div style="text-align:center; color:#ffd700;"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div></div>
     </div>
 
     <script>
@@ -76,33 +59,22 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
-        // 🎯 NAYA HATHIYAR: Asli Match ID ko yaad rakhne ke liye
         let globalApiMatchId = "";
 
-        // --- ADD MATCH LOGIC ---
         async function autoFetchPlayersFromLink() {
             let urlInput = document.getElementById('engineUrl').value.trim();
             let status = document.getElementById('statusBox');
             if(!urlInput) return;
 
-            // 1. URL se ID nikalna
             let matchIdMatch = urlInput.match(/\/(\d+)\//);
             if(!matchIdMatch) matchIdMatch = urlInput.match(/\d{4,}/);
             if(!matchIdMatch) { status.innerHTML = "⚠️ Link me Match ID nahi mili!"; status.className = "error"; return; }
             
-            let apiMatchId = matchIdMatch[1] || matchIdMatch[0];
-            
-            // 2. ASLI ID YAHAN SAVE KAR LI TAAKI VERCEL POINTS BHEJ SAKE!
-            globalApiMatchId = apiMatchId; 
-            
-            status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Engine data nikal raha hai, please wait..."; status.className = "loading";
+            globalApiMatchId = matchIdMatch[1] || matchIdMatch[0];
+            status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Engine data nikal raha hai..."; status.className = "loading";
 
             try {
-                let response = await fetch(`https://kalyan-point-enginee-rjkh.vercel.app/api/scout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ apiMatchId: apiMatchId })
-                });
+                let response = await fetch(`https://kalyan-point-enginee-rjkh.vercel.app/api/scout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiMatchId: globalApiMatchId }) });
                 let data = await response.json();
                 
                 if(data.success) {
@@ -111,20 +83,16 @@
                     document.getElementById('t1Players').value = data.t1Players;
                     document.getElementById('t2Players').value = data.t2Players;
                     document.getElementById('matchName').value = `${data.t1Name} vs ${data.t2Name} Live Match`;
-                    status.innerHTML = "✅ Jadoo! Engine ne saara data nikal liya!"; status.className = "success";
-                } else {
-                    status.innerHTML = "⚠️ API Error: " + data.error; status.className = "error";
-                }
-            } catch(e) {
-                status.innerHTML = "⚠️ Engine Connection Error. Check server.js!"; status.className = "error";
-            }
+                    status.innerHTML = "✅ Jadoo! Data aagaya!"; status.className = "success";
+                } else { status.innerHTML = "⚠️ API Error"; status.className = "error"; }
+            } catch(e) { status.innerHTML = "⚠️ Engine Connection Error"; status.className = "error"; }
         }
 
         function getSmartRole(n) {
             n = n.toLowerCase();
-            if (n.includes("bumrah") || n.includes("shami") || n.includes("siraj") || n.includes("amir") || n.includes("rashid") || n.includes("zampa")) return "BOWL";
-            if (n.includes("dhoni") || n.includes("pant") || n.includes("rizwan") || n.includes("de kock") || n.includes("buttler")) return "WK";
-            if (n.includes("jadeja") || n.includes("pandya") || n.includes("maxwell") || n.includes("shadab") || n.includes("narine")) return "AR";
+            if (n.includes("bumrah") || n.includes("shami") || n.includes("siraj") || n.includes("rashid")) return "BOWL";
+            if (n.includes("dhoni") || n.includes("pant") || n.includes("rizwan") || n.includes("buttler")) return "WK";
+            if (n.includes("jadeja") || n.includes("pandya") || n.includes("maxwell") || n.includes("narine")) return "AR";
             return "BAT";
         }
 
@@ -144,63 +112,42 @@
             let safeTimeFormat = mTimeObj.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
             let msTime = mTimeObj.getTime();
 
-            let p1List = p1Text.split(/[,\n]+/).map(n => n.trim()).filter(n => n.length > 0);
-            let p2List = p2Text.split(/[,\n]+/).map(n => n.trim()).filter(n => n.length > 0);
-            
-            // 🎯 MAIN JADOO: Ab Random ID nahi, Cricbuzz ki ID banegi!
             let mId = globalApiMatchId ? globalApiMatchId : "MATCH_" + Date.now();
-            
             let pData = {};
             
-            p1List.forEach((cn, i) => { pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
-            p2List.forEach((cn, i) => { pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
+            p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
+            p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0 }; });
 
-            db.ref('Game/Kalyan11/LiveMatches/' + mId).set({ 
-                engineUrl: eUrl || "", name: mName, team1: t1, team2: t2, time: safeTimeFormat, timestamp: msTime, status: "Upcoming" 
-            });
-            
+            // 🎯 PAKKA ELAJ: Match ko VIP List (ApprovedMatches) me daalo!
+            db.ref('Game/Kalyan11/ApprovedMatches/' + mId).set({ timestamp: msTime, time: safeTimeFormat });
+
+            db.ref('Game/Kalyan11/LiveMatches/' + mId).set({ engineUrl: eUrl || "", name: mName, team1: t1, team2: t2, time: safeTimeFormat, timestamp: msTime, status: "Upcoming" });
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => {
-                alert("✅ Match App me launch ho gaya! Ab live points direct connect honge!");
-                document.getElementById('engineUrl').value = '';
-                globalApiMatchId = ""; // Reset for next match
+                alert("✅ VIP Match App me launch ho gaya!"); document.getElementById('engineUrl').value = ''; globalApiMatchId = ""; 
             });
         }
 
-        // --- MANAGE MATCHES LOGIC ---
         db.ref('Game/Kalyan11/LiveMatches').on('value', snapshot => {
             let container = document.getElementById('activeMatchesList');
             container.innerHTML = "";
-            
-            if(!snapshot.exists()) {
-                container.innerHTML = "<p style='color:#aaa; text-align:center;'>Koi Match nahi hai.</p>";
-                return;
-            }
+            if(!snapshot.exists()) { container.innerHTML = "<p style='color:#aaa; text-align:center;'>Koi Match nahi hai.</p>"; return; }
 
             snapshot.forEach(child => {
                 let match = child.val();
-                let mId = child.key;
-                
-                let timeStatus = match.timestamp ? `<span style="color:#00ff88;">Time OK</span>` : `<span style="color:#ff004c;">Time ERROR</span>`;
-
                 container.innerHTML += `
                     <div class="match-row">
-                        <div class="match-info">
-                            <h4>${match.team1} vs ${match.team2}</h4>
-                            <p>${match.name}</p>
-                            <p>Status: ${timeStatus} | ID: ${mId}</p>
-                        </div>
-                        <button class="btn-delete" onclick="deleteMatch('${mId}')"><i class="fa-solid fa-trash"></i> DELETE</button>
-                    </div>
-                `;
+                        <div class="match-info"><h4>${match.team1} vs ${match.team2}</h4><p>${match.name}</p></div>
+                        <button class="btn-delete" onclick="deleteMatch('${child.key}')"><i class="fa-solid fa-trash"></i> DELETE</button>
+                    </div>`;
             });
         });
 
         function deleteMatch(mId) {
-            if(confirm("🚨 Kya aap sach mein is match ko hamesha ke liye udana chahte hain?")) {
+            if(confirm("🚨 Delete kar dein?")) {
                 db.ref('Game/Kalyan11/LiveMatches/' + mId).remove();
                 db.ref('Game/Kalyan11/MatchPlayers/' + mId).remove();
                 db.ref('Game/Kalyan11/Contests/' + mId).remove();
-                alert("🗑️ Match delete ho gaya!");
+                db.ref('Game/Kalyan11/ApprovedMatches/' + mId).remove(); // Remove from VIP List
             }
         }
     </script>
