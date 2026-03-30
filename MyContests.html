@@ -23,15 +23,16 @@
         .pts-val { font-size: 24px; font-weight: 900; color: #00ff88; }
         .pts-lbl { font-size: 11px; color: #aaa; text-transform: uppercase; }
         
-        /* 🚀 Naye Buttons ka Style (Edit aur View Live) */
+        /* 🚀 Naye Buttons ka Style */
         .btn-row { display: flex; gap: 10px; margin-top: 15px; }
-        .edit-btn { background: linear-gradient(90deg, #3498db, #2980b9); color: #fff; font-weight: 900; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.3s; flex: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-transform: uppercase;}
-        .edit-btn:active { transform: scale(0.95); }
-        .view-btn { background: linear-gradient(90deg, #00ff88, #00d2d3); color: #000; font-weight: 900; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.3s; flex: 1; box-shadow: 0 4px 10px rgba(0,255,136,0.3); text-transform: uppercase;}
+        .view-team-btn { background: linear-gradient(90deg, #3498db, #2980b9); color: #fff; font-weight: 900; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; transition: 0.3s; flex: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-transform: uppercase;}
+        .view-team-btn:active { transform: scale(0.95); }
+        .view-btn { background: linear-gradient(90deg, #00ff88, #00d2d3); color: #000; font-weight: 900; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; transition: 0.3s; flex: 1; box-shadow: 0 4px 10px rgba(0,255,136,0.3); text-transform: uppercase;}
         .view-btn:active { transform: scale(0.95); }
 
         .loader { text-align: center; margin-top: 50px; color: #00ff88; font-weight: bold; }
         .no-data { text-align: center; margin-top: 50px; color: #ff004c; font-weight: bold; padding: 20px; background: #111; margin: 20px; border-radius: 10px; border: 1px solid #333; }
+        .team-id-badge { font-size: 9px; color: #666; margin-top: 5px; text-align: right; }
     </style>
 </head>
 <body>
@@ -57,6 +58,15 @@
 
         const container = document.getElementById('myContestsList');
 
+        // Smart Dictionary for 25 Contests
+        const contestNames = {
+            99: "Grand Mega Contest", 49: "Mega Contest", 39: "Mega Contest", 25: "Mega Contest",
+            999: "Small League", 499: "Small League", 299: "Small League", 199: "Small League", 125: "Small League", 75: "Small League", 35: "Small League",
+            25000: "VIP High Roller", 15000: "VIP High Roller", 10000: "VIP High Roller", 5000: "VIP High Roller",
+            5750: "H2H Battle", 2875: "H2H Battle", 1150: "H2H Battle", 575: "H2H Battle", 299: "H2H Battle", 119: "H2H Battle", 59: "H2H Battle", 29: "H2H Battle", 15: "Contest",
+            0: "Practice Contest"
+        };
+
         if(!matchId) {
             container.innerHTML = "<div class='no-data'>Match ID missing!</div>";
         } else {
@@ -67,22 +77,21 @@
                 if(snap.exists()) {
                     snap.forEach(child => {
                         let team = child.val();
-                        let teamPhone = team.phone || child.key.split('_')[0];
+                        let teamKey = child.key; // 🚀 Naya unique ID (e.g. 9876543210_1712456)
+                        let teamPhone = team.phone || teamKey.split('_')[0];
                         
                         if(teamPhone === myPhone) {
                             hasTeams = true;
-                            let entryPaid = team.entry_paid || 49;
+                            let entryPaid = parseInt(team.entry_paid || 49);
                             let points = team.total_points ? team.total_points.toFixed(1) : "0.0";
                             
-                            let contestName = "Mega Contest (1.5 Lakh Spots)";
-                            if(entryPaid > 49 && entryPaid <= 199) contestName = "Hot Contest (10,000 Spots)";
-                            else if(entryPaid >= 575) contestName = "H2H Battle (2 Spots)";
+                            let cName = contestNames[entryPaid] || "Fantasy Contest";
 
                             container.innerHTML += `
                                 <div class="contest-card">
                                     <div class="c-header">
-                                        <div class="c-type"><i class="fa-solid fa-trophy"></i> ${contestName}</div>
-                                        <div class="c-fee">₹${entryPaid}</div>
+                                        <div class="c-type"><i class="fa-solid fa-trophy"></i> ${cName}</div>
+                                        <div class="c-fee">${entryPaid === 0 ? 'FREE' : '₹'+entryPaid}</div>
                                     </div>
                                     <div class="c-body">
                                         <div class="pts-box">
@@ -91,11 +100,11 @@
                                         </div>
                                     </div>
                                     <div class="btn-row">
-                                        <button class="edit-btn" id="edit-btn-${matchId}" onclick="editMyTeam('${matchId}')">
-                                            <i class="fa-solid fa-pen"></i> EDIT TEAM
+                                        <button class="view-team-btn" onclick="window.location.href='MyTeam.html?matchId=${matchId}&teamId=${teamKey}'">
+                                            <i class="fa-solid fa-users"></i> VIEW 11
                                         </button>
                                         <button class="view-btn" onclick="window.location.href='leader.html?matchId=${matchId}&entry=${entryPaid}'">
-                                            VIEW LIVE <i class="fa-solid fa-bolt"></i>
+                                            <i class="fa-solid fa-bolt"></i> LEADERBOARD
                                         </button>
                                     </div>
                                 </div>
@@ -111,37 +120,6 @@
                             Aapne is match mein abhi tak koi contest join nahi kiya hai.
                         </div>`;
                 }
-            });
-        }
-
-        // 🚀 THE EDIT TEAM MAGIC FUNCTION 🚀
-        function editMyTeam(mId) {
-            let btn = document.getElementById(`edit-btn-${mId}`);
-            if(btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> LOADING...';
-
-            // 1. Pehle Live match se Team1 aur Team2 ka naam nikalo
-            db.ref('Game/Kalyan11/LiveMatches/' + mId).once('value', matchSnap => {
-                let mData = matchSnap.val();
-                let t1 = mData ? mData.team1 : "T1";
-                let t2 = mData ? mData.team2 : "T2";
-
-                // 2. Phir user ki bani hui team Firebase se nikalo
-                db.ref('Game/Kalyan11/Contests/' + mId + '/Teams/' + myPhone).once('value', teamSnap => {
-                    if(teamSnap.exists()) {
-                        let teamData = teamSnap.val();
-                        
-                        // 3. User ke purane khiladiyon ko memory mein save karo
-                        if(teamData.players) {
-                            localStorage.setItem('kalyan_selected_team', JSON.stringify(teamData.players));
-                        }
-                        
-                        // 4. CreateTeam page par bhej do (Edit mode mein)
-                        window.location.href = `CreateTeam.html?matchId=${mId}&t1=${t1}&t2=${t2}`;
-                    } else {
-                        alert("Team data nahi mila!");
-                        if(btn) btn.innerHTML = '<i class="fa-solid fa-pen"></i> EDIT TEAM';
-                    }
-                });
             });
         }
     </script>
