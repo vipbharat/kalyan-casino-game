@@ -23,16 +23,14 @@
         .pts-val { font-size: 24px; font-weight: 900; color: #00ff88; }
         .pts-lbl { font-size: 11px; color: #aaa; text-transform: uppercase; }
         
-        /* 🚀 Naye Buttons ka Style */
+        /* Buttons Style */
         .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+        .edit-team-btn { background: linear-gradient(90deg, #ffd700, #ff8c00); color: #000; font-weight: 900; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; transition: 0.3s; flex: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-transform: uppercase;}
         .view-team-btn { background: linear-gradient(90deg, #3498db, #2980b9); color: #fff; font-weight: 900; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; transition: 0.3s; flex: 1; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-transform: uppercase;}
-        .view-team-btn:active { transform: scale(0.95); }
         .view-btn { background: linear-gradient(90deg, #00ff88, #00d2d3); color: #000; font-weight: 900; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; transition: 0.3s; flex: 1; box-shadow: 0 4px 10px rgba(0,255,136,0.3); text-transform: uppercase;}
-        .view-btn:active { transform: scale(0.95); }
-
+        
         .loader { text-align: center; margin-top: 50px; color: #00ff88; font-weight: bold; }
         .no-data { text-align: center; margin-top: 50px; color: #ff004c; font-weight: bold; padding: 20px; background: #111; margin: 20px; border-radius: 10px; border: 1px solid #333; }
-        .team-id-badge { font-size: 9px; color: #666; margin-top: 5px; text-align: right; }
     </style>
 </head>
 <body>
@@ -53,74 +51,88 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId') || "DUMMY_MATCH";
-        
         let myPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
-
         const container = document.getElementById('myContestsList');
 
-        // Smart Dictionary for 25 Contests
         const contestNames = {
             99: "Grand Mega Contest", 49: "Mega Contest", 39: "Mega Contest", 25: "Mega Contest",
             999: "Small League", 499: "Small League", 299: "Small League", 199: "Small League", 125: "Small League", 75: "Small League", 35: "Small League",
             25000: "VIP High Roller", 15000: "VIP High Roller", 10000: "VIP High Roller", 5000: "VIP High Roller",
-            5750: "H2H Battle", 2875: "H2H Battle", 1150: "H2H Battle", 575: "H2H Battle", 299: "H2H Battle", 119: "H2H Battle", 59: "H2H Battle", 29: "H2H Battle", 15: "Contest",
-            0: "Practice Contest"
+            5750: "H2H Battle", 2875: "H2H Battle", 1150: "H2H Battle", 575: "H2H Battle", 299: "H2H Battle", 119: "H2H Battle", 59: "H2H Battle", 29: "H2H Battle", 15: "Contest", 0: "Practice Contest"
         };
 
         if(!matchId) {
             container.innerHTML = "<div class='no-data'>Match ID missing!</div>";
         } else {
-            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', snap => {
-                container.innerHTML = "";
-                let hasTeams = false;
+            // 1. Pehle Match ka Time pata karo (Line off hui hai ya nahi)
+            db.ref('Game/Kalyan11/VIPMatches/' + matchId).once('value', mSnap => {
+                let mData = mSnap.val() || {};
+                let matchTimeMs = mData.timestamp || 0;
+                let now = new Date().getTime();
+                let isMatchLive = now >= matchTimeMs; // Agar time nikal gaya, toh Match Live hai (Line Off)
+                
+                let tenDaysMs = 10 * 24 * 60 * 60 * 1000; // 10 Din ka time milliseconds mein
 
-                if(snap.exists()) {
-                    snap.forEach(child => {
-                        let team = child.val();
-                        let teamKey = child.key; // 🚀 Naya unique ID (e.g. 9876543210_1712456)
-                        let teamPhone = team.phone || teamKey.split('_')[0];
-                        
-                        if(teamPhone === myPhone) {
-                            hasTeams = true;
-                            let entryPaid = parseInt(team.entry_paid || 49);
-                            let points = team.total_points ? team.total_points.toFixed(1) : "0.0";
+                // 2. Ab Teams nikalo
+                db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', snap => {
+                    container.innerHTML = "";
+                    let hasTeams = false;
+
+                    if(snap.exists()) {
+                        snap.forEach(child => {
+                            let team = child.val();
+                            let teamKey = child.key; 
+                            let teamPhone = team.phone || teamKey.split('_')[0];
+                            let teamCreationTime = team.timestamp || now;
                             
-                            let cName = contestNames[entryPaid] || "Fantasy Contest";
+                            // 🚀 10-DAY AUTO DELETE ENGINE 🚀
+                            if(now - teamCreationTime > tenDaysMs) {
+                                db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + teamKey).remove(); // Database se saaf
+                                return; // Screen pe mat dikhao
+                            }
 
-                            container.innerHTML += `
-                                <div class="contest-card">
-                                    <div class="c-header">
-                                        <div class="c-type"><i class="fa-solid fa-trophy"></i> ${cName}</div>
-                                        <div class="c-fee">${entryPaid === 0 ? 'FREE' : '₹'+entryPaid}</div>
-                                    </div>
-                                    <div class="c-body">
-                                        <div class="pts-box">
-                                            <div class="pts-val">${points}</div>
-                                            <div class="pts-lbl">Total Points</div>
+                            if(teamPhone === myPhone) {
+                                hasTeams = true;
+                                let entryPaid = parseInt(team.entry_paid || 49);
+                                let points = team.total_points ? team.total_points.toFixed(1) : "0.0";
+                                let cName = contestNames[entryPaid] || "Fantasy Contest";
+
+                                // 🚀 LOGIC: Match chalu toh VIEW, warna EDIT 🚀
+                                let teamActionBtn = isMatchLive ? 
+                                    `<button class="view-team-btn" onclick="window.location.href='MyTeam.html?matchId=${matchId}&teamId=${teamKey}'"><i class="fa-solid fa-users"></i> VIEW 11</button>` :
+                                    `<button class="edit-team-btn" onclick="editMyTeam('${matchId}', '${teamKey}', '${team.players}')"><i class="fa-solid fa-pen"></i> EDIT TEAM</button>`;
+
+                                container.innerHTML += `
+                                    <div class="contest-card">
+                                        <div class="c-header"><div class="c-type"><i class="fa-solid fa-trophy"></i> ${cName}</div><div class="c-fee">${entryPaid === 0 ? 'FREE' : '₹'+entryPaid}</div></div>
+                                        <div class="c-body"><div class="pts-box"><div class="pts-val">${points}</div><div class="pts-lbl">Total Points</div></div></div>
+                                        <div class="btn-row">
+                                            ${teamActionBtn}
+                                            <button class="view-btn" onclick="window.location.href='leader.html?matchId=${matchId}&entry=${entryPaid}'"><i class="fa-solid fa-bolt"></i> LEADERBOARD</button>
                                         </div>
                                     </div>
-                                    <div class="btn-row">
-                                        <button class="view-team-btn" onclick="window.location.href='MyTeam.html?matchId=${matchId}&teamId=${teamKey}'">
-                                            <i class="fa-solid fa-users"></i> VIEW 11
-                                        </button>
-                                        <button class="view-btn" onclick="window.location.href='leader.html?matchId=${matchId}&entry=${entryPaid}'">
-                                            <i class="fa-solid fa-bolt"></i> LEADERBOARD
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    });
-                }
+                                `;
+                            }
+                        });
+                    }
 
-                if(!hasTeams) {
-                    container.innerHTML = `
-                        <div class="no-data">
-                            <i class="fa-solid fa-face-frown fa-2x"></i><br><br>
-                            Aapne is match mein abhi tak koi contest join nahi kiya hai.
-                        </div>`;
-                }
+                    if(!hasTeams) {
+                        container.innerHTML = `<div class="no-data"><i class="fa-solid fa-face-frown fa-2x"></i><br><br>Aapne is match mein abhi tak koi contest join nahi kiya hai.</div>`;
+                    }
+                });
             });
+        }
+
+        // 🚀 EDIT TEAM JADOO 🚀
+        function editMyTeam(mId, teamKey, playersData) {
+            // Purane chune hue khiladi save karo
+            localStorage.setItem('kalyan_selected_team', JSON.stringify(playersData.split(',')));
+            
+            // Sabse Zaroori: Team ka ID save karo, taaki nai duplicate team na bane!
+            localStorage.setItem('kalyan_edit_team_key', teamKey);
+            
+            // Player chunne wale page par bhej do
+            window.location.href = `CreateTeam.html?matchId=${mId}`;
         }
     </script>
 </body>
