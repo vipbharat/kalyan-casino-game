@@ -74,6 +74,7 @@
             <div class="input-group"><label>Team 2 Name</label><input type="text" id="t2Name" placeholder="Auto"></div>
         </div>
         <div class="input-group"><label>⏱️ Match Start Time</label><input type="datetime-local" id="matchTime"></div>
+        
         <h3 style="margin-top:20px;">2. Auto Fetched Squads</h3>
         <div class="row">
             <div class="input-group"><label>Team 1 Players</label><textarea id="t1Players"></textarea></div>
@@ -117,7 +118,7 @@
         let currentEditingMatchId = "";
         let currentPlayersData = {};
 
-        // Contest Spot Settings
+        // Contest Prize Spots Configuration
         const contestConfig = {
             99: 150000, 49: 5000, 39: 3000, 25: 2000,
             999: 50, 499: 35, 299: 40, 199: 30, 125: 28, 75: 30, 35: 35, 15: 40,
@@ -128,6 +129,7 @@
 
         function clearLink() { document.getElementById('engineUrl').value = ''; document.getElementById('statusBox').innerHTML = ''; }
 
+        // --- API FETCH LOGIC ---
         async function autoFetchPlayersFromLink() {
             let urlInput = document.getElementById('engineUrl').value.trim();
             let status = document.getElementById('statusBox');
@@ -150,6 +152,7 @@
             } catch(e) { status.innerHTML = "⚠️ Engine Connection Error"; status.className = "error"; }
         }
 
+        // --- SMART ROLE ASSIGNMENT ---
         function getSmartRole(n) {
             n = n.toLowerCase();
             if (n.includes("bumrah") || n.includes("shami") || n.includes("siraj") || n.includes("rashid")) return "BOWL";
@@ -158,8 +161,16 @@
             return "BAT";
         }
 
+        // --- MATCH LAUNCH LOGIC (BUG FIXED: SANITIZATION & RESET) ---
         function launchSmartMatch() {
-            let eUrl = document.getElementById('engineUrl').value.trim(), mName = document.getElementById('matchName').value.trim(), t1 = document.getElementById('t1Name').value.trim().toUpperCase(), t2 = document.getElementById('t2Name').value.trim().toUpperCase(), p1Text = document.getElementById('t1Players').value.trim(), p2Text = document.getElementById('t2Players').value.trim(), rawTime = document.getElementById('matchTime').value; 
+            let eUrl = document.getElementById('engineUrl').value.trim();
+            let mName = document.getElementById('matchName').value.trim();
+            let t1 = document.getElementById('t1Name').value.trim().toUpperCase();
+            let t2 = document.getElementById('t2Name').value.trim().toUpperCase();
+            let p1Text = document.getElementById('t1Players').value.trim();
+            let p2Text = document.getElementById('t2Players').value.trim();
+            let rawTime = document.getElementById('matchTime').value; 
+            
             if(!mName || !t1 || !t2 || !p1Text || !p2Text) return alert("⚠️ Pehle data fetch karein!");
             if(!rawTime) return alert("⚠️ Match ka Time select karein!");
 
@@ -169,13 +180,37 @@
             let mId = globalApiMatchId ? globalApiMatchId : "MATCH_" + Date.now();
             let pData = {};
             
-            p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[t1+"_"+i] = { id: t1+"_"+i, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
-            p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[t2+"_"+i] = { id: t2+"_"+i, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
+            // Clean Team Names for safe DOM ID creation
+            let safeT1 = t1.replace(/[^a-zA-Z0-9]/g, '');
+            let safeT2 = t2.replace(/[^a-zA-Z0-9]/g, '');
+
+            p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { 
+                let pId = safeT1 + "_" + i;
+                pData[pId] = { id: pId, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; 
+            });
+            p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { 
+                let pId = safeT2 + "_" + i;
+                pData[pId] = { id: pId, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; 
+            });
 
             db.ref('Game/Kalyan11/VIPMatches/' + mId).set({ engineUrl: eUrl || "", name: mName, team1: t1, team2: t2, time: safeTimeFormat, timestamp: msTime, status: "Upcoming" });
-            db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => { alert("✅ VIP Match App me launch ho gaya!"); globalApiMatchId = ""; });
+            db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => { 
+                alert("✅ VIP Match App me launch ho gaya!"); 
+                
+                // Reset Fields after success
+                document.getElementById('engineUrl').value = '';
+                document.getElementById('matchName').value = '';
+                document.getElementById('t1Name').value = '';
+                document.getElementById('t2Name').value = '';
+                document.getElementById('t1Players').value = '';
+                document.getElementById('t2Players').value = '';
+                document.getElementById('matchTime').value = '';
+                document.getElementById('statusBox').innerHTML = '';
+                globalApiMatchId = ""; 
+            });
         }
 
+        // --- FETCH ACTIVE MATCHES ---
         db.ref('Game/Kalyan11/VIPMatches').on('value', snapshot => {
             let container = document.getElementById('activeMatchesList'); container.innerHTML = "";
             if(!snapshot.exists()) { container.innerHTML = "<p style='color:#aaa; text-align:center;'>Koi Match nahi hai.</p>"; return; }
@@ -198,44 +233,58 @@
             });
         });
 
+        // --- DELETE MATCH ---
         function deleteMatch(mId) {
-            if(confirm("🚨 Delete kar dein?")) {
+            if(confirm("🚨 Delete kar dein? Yeh sabhi teams aur players hata dega!")) {
                 db.ref('Game/Kalyan11/VIPMatches/' + mId).remove();
                 db.ref('Game/Kalyan11/MatchPlayers/' + mId).remove();
                 db.ref('Game/Kalyan11/Contests/' + mId).remove();
             }
         }
 
-        // TOSS MODAL LOGIC
+        // --- TOSS MODAL LOGIC (BUG FIXED) ---
         function openLineupModal(matchId) {
             currentEditingMatchId = matchId;
             document.getElementById('lineupModal').style.display = 'flex';
-            document.getElementById('modalPlayerList').innerHTML = "<div style='color:#00ff88; grid-column:span 2; text-align:center;'>Fetching...</div>";
+            document.getElementById('modalPlayerList').innerHTML = "<div style='color:#00ff88; grid-column:span 2; text-align:center;'><i class='fa-solid fa-spinner fa-spin'></i> Fetching Squads...</div>";
+            
             db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', snap => {
-                if(!snap.exists()) return; currentPlayersData = snap.val();
+                if(!snap.exists()) {
+                    document.getElementById('modalPlayerList').innerHTML = "<div style='color:#ff004c; grid-column:span 2; text-align:center;'>Squad Data Missing!</div>";
+                    return; 
+                }
+                currentPlayersData = snap.val();
                 let container = document.getElementById('modalPlayerList'); container.innerHTML = "";
+                
                 Object.keys(currentPlayersData).forEach(pKey => {
                     let p = currentPlayersData[pKey], statusClass = "", statusIcon = "⚪";
                     if(p.playingStatus === "playing") { statusClass = "playing"; statusIcon = "🟢"; }
                     else if(p.playingStatus === "benched") { statusClass = "benched"; statusIcon = "🔴"; }
+                    
                     container.innerHTML += `<div class="p-toggle ${statusClass}" id="toggle_${pKey}" onclick="togglePlayerStatus('${pKey}')"><span id="icon_${pKey}">${statusIcon}</span> ${p.name}</div>`;
                 });
             });
         }
+        
         function closeLineupModal() { document.getElementById('lineupModal').style.display = 'none'; }
+        
         function togglePlayerStatus(pKey) {
             let p = currentPlayersData[pKey];
             p.playingStatus = p.playingStatus === "unannounced" ? "playing" : (p.playingStatus === "playing" ? "benched" : "unannounced");
-            let el = document.getElementById("toggle_" + pKey), icon = document.getElementById("icon_" + pKey);
+            
+            let el = document.getElementById("toggle_" + pKey);
+            let icon = document.getElementById("icon_" + pKey);
+            
             el.className = "p-toggle";
             if(p.playingStatus === "playing") { el.classList.add("playing"); icon.innerText = "🟢"; }
             else if(p.playingStatus === "benched") { el.classList.add("benched"); icon.innerText = "🔴"; }
             else { icon.innerText = "⚪"; }
         }
+
         function saveLineupToFirebase() {
             let updates = {};
             Object.keys(currentPlayersData).forEach(pKey => { updates[pKey + "/playingStatus"] = currentPlayersData[pKey].playingStatus; });
-            db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).update(updates).then(() => { closeLineupModal(); });
+            db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).update(updates).then(() => { closeLineupModal(); alert("✅ Toss/Lineup updated successfully!"); });
         }
 
         // ==========================================
