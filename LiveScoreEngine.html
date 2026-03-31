@@ -26,7 +26,7 @@
         .status.active { background: rgba(0,168,63,0.2); color: #00a83f; border: 1px solid #00a83f; }
         .status.wait { background: rgba(255,215,0,0.2); color: #ffd700; border: 1px solid #ffd700; }
         .delete-btn { position: absolute; top: 15px; right: 15px; color: #ff004c; cursor: pointer; font-size: 18px; }
-        .log-text { font-size: 10px; color: #00a83f; margin-top: 10px; border-top: 1px dashed #333; padding-top: 5px; }
+        .log-text { font-size: 11px; color: #00a83f; margin-top: 10px; border-top: 1px dashed #333; padding-top: 5px; font-weight: bold;}
     </style>
 </head>
 <body>
@@ -37,7 +37,7 @@
     </div>
 
     <div class="add-box">
-        <input type="text" id="m-id" placeholder="Match ID (e.g., 149651)">
+        <input type="text" id="m-id" placeholder="Match ID (Mera wala, Jaise: MATCH_1711...)">
         <input type="text" id="m-link" placeholder="Cricbuzz Scorecard Link">
         <button class="btn" onclick="addMatch()"><i class="fa-solid fa-plus"></i> ADD MATCH TO ENGINE</button>
         <button class="btn btn-sync" onclick="syncAllMatches()"><i class="fa-solid fa-rotate"></i> SYNC ALL MATCHES NOW</button>
@@ -107,81 +107,111 @@
     }
 
     // ---------------------------------------------------------
-    // 🏏 CRICBUZZ SCORECARD SCRAPER LOGIC
+    // 🏏 BUG-FREE SMART CRICBUZZ SCORECARD SCRAPER
     // ---------------------------------------------------------
     async function syncMatchData(matchObj) {
         let logEl = document.getElementById(`log-${matchObj.id}`);
         try {
-            // CORS Bypass (Browser restriction hatane ke liye)
-            let proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(matchObj.link)}`;
-            
-            logEl.innerText = "Fetching Cricbuzz data...";
+            logEl.innerText = "Connecting to Database...";
             logEl.style.color = "#ffd700";
 
+            // STEP 1: Pehle Database se players nikalo taaki ID match kar sakein
+            let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchObj.id}`).once('value');
+            if(!dbSnap.exists()) throw new Error("Database mein yeh Match ID nahi mili!");
+            
+            let dbPlayers = dbSnap.val();
+            let playerIdMap = {}; 
+            
+            // Database players ke naam clean karke (Sirf A-Z) map banao
+            Object.keys(dbPlayers).forEach(key => {
+                let cleanName = dbPlayers[key].name.toLowerCase().replace(/[^a-z]/g, '');
+                playerIdMap[cleanName] = key; // e.g., "viratkohli" -> "IND_0"
+            });
+
+            logEl.innerText = "Fetching Cricbuzz Live Score...";
+            
+            // CORS Bypass (Browser restriction hatane ke liye)
+            let proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(matchObj.link)}`;
             let response = await fetch(proxyUrl);
             let data = await response.json();
             
             let parser = new DOMParser();
             let doc = parser.parseFromString(data.contents, "text/html");
 
-            let playerUpdates = {};
+            let playerUpdates = {}; // Temporary storage for calculating total points
             let playersFound = 0;
 
-            // Cricbuzz ki Scorecard mein har player ki line ka class 'cb-scrd-itms' hota hai
             let rows = doc.querySelectorAll('.cb-scrd-itms');
             
             rows.forEach(row => {
-                // Player ka naam nikalna
                 let nameElement = row.querySelector('a.cb-text-link');
-                if(!nameElement) return; // Agar naam nahi hai toh ye header line hogi, isko skip karo
+                if(!nameElement) return; 
                 
-                let pName = nameElement.innerText.trim();
-                
-                // Cricbuzz naam ke aage (c) ya (wk) laga deta hai, humein wo hatana padega
-                pName = pName.replace(/\(c\)/g, '').replace(/\(wk\)/g, '').trim();
+                let pNameRaw = nameElement.innerText.trim();
+                // Cricbuzz ke (c) aur (wk) ko hatana aur clean karna
+                let cleanScrapedName = pNameRaw.replace(/\(c\)/ig, '').replace(/\(wk\)/ig, '').toLowerCase().replace(/[^a-z]/g, '');
 
-                // Columns nikalna (Run/Wicket check karne ke liye)
+                // SMART MATCHER: Check karo ki Cricbuzz ka naam hamare DB mein kahan hai
+                let matchedFirebaseKey = null;
+                for (let dbName in playerIdMap) {
+                    if (cleanScrapedName.includes(dbName) || dbName.includes(cleanScrapedName)) {
+                        matchedFirebaseKey = playerIdMap[dbName];
+                        break;
+                    }
+                }
+
+                if(!matchedFirebaseKey) return; // Agar player hamari fantasy list mein nahi hai toh ignore karo
+
                 let cols = row.querySelectorAll('.cb-col.text-right, .cb-col.text-bold');
                 
                 if(cols.length > 0) {
                     let runs = 0, wickets = 0;
-
-                    // Batting wali line mein Runs 1st ya 2nd number par hote hain (Total 7 column hote hain)
-                    // Bowling wali line mein Wickets 4th number par hote hain (Total 8 column hote hain)
                     
                     if (row.innerHTML.includes('Wickets') || row.innerHTML.includes('Overs')) {
-                        // Ignore headers
-                    } else if (cols.length >= 6) { // Bowling row (O, M, R, W, NB, WD, ECO)
-                        wickets = parseInt(cols[3].innerText || 0); // 4th column is Wickets
-                    } else if (cols.length >= 4) { // Batting row (R, B, 4s, 6s, SR)
-                        runs = parseInt(cols[0].innerText || 0); // 1st column is Runs
+                        // Headers ignore karega
+                    } else if (cols.length >= 6) { 
+                        // Bowling Lineup
+                        wickets = parseInt(cols[3].innerText || 0); 
+                    } else if (cols.length >= 4) { 
+                        // Batting Lineup
+                        runs = parseInt(cols[0].innerText || 0); 
                     }
 
-                    // Pehle se points save hain toh usme add karo (kyunki ek khiladi run aur wicket dono le sakta hai)
-                    if (!playerUpdates[pName]) {
-                        playerUpdates[pName] = { points: 0, r: 0, w: 0 };
+                    if (!playerUpdates[matchedFirebaseKey]) {
+                        playerUpdates[matchedFirebaseKey] = { runs: 0, wickets: 0 };
                     }
                     
-                    playerUpdates[pName].r += runs;
-                    playerUpdates[pName].w += wickets;
-                    // Point Formula: 1 Run = 1 Pt, 1 Wicket = 25 Pts
-                    playerUpdates[pName].points = (playerUpdates[pName].r * 1) + (playerUpdates[pName].w * 25);
-                    
-                    playersFound++;
+                    // Add runs and wickets (Kyunki All-Rounder dono karta hai)
+                    playerUpdates[matchedFirebaseKey].runs += runs;
+                    playerUpdates[matchedFirebaseKey].wickets += wickets;
+                    // Formula: 1 Run = 1 Pt, 1 Wicket = 25 Pts
+                    playerUpdates[matchedFirebaseKey].points = (playerUpdates[matchedFirebaseKey].runs * 1) + (playerUpdates[matchedFirebaseKey].wickets * 25);
                 }
             });
 
-            // 🔥 FIREBASE MEIN SEEDHA UPDATE
-            if(Object.keys(playerUpdates).length > 0) {
-                await db.ref(`Game/Kalyan11/MatchPlayers/${matchObj.id}`).update(playerUpdates);
+            // STEP 2: FIREBASE MEIN PERFECT ID KE SAATH BHEJNA
+            let keysToUpdate = Object.keys(playerUpdates);
+            if(keysToUpdate.length > 0) {
+                let firebasePayload = {};
+                
+                // Hum seedha ID/points bhejenge taaki baki data (jaise credits/role) delete na ho!
+                keysToUpdate.forEach(key => {
+                    firebasePayload[key + '/points'] = playerUpdates[key].points;
+                    firebasePayload[key + '/runs'] = playerUpdates[key].runs;
+                    firebasePayload[key + '/wickets'] = playerUpdates[key].wickets;
+                });
+
+                await db.ref(`Game/Kalyan11/MatchPlayers/${matchObj.id}`).update(firebasePayload);
+                
+                playersFound = keysToUpdate.length;
                 let timeNow = new Date().toLocaleTimeString();
-                logEl.innerText = `✅ Synced ${playersFound} Players at ${timeNow}`;
-                logEl.style.color = "#00a83f";
+                logEl.innerText = `✅ Success! Updated ${playersFound} Players at ${timeNow}`;
+                logEl.style.color = "#00ff88";
                 
                 let idx = activeMatches.findIndex(m => m.id === matchObj.id);
                 if(idx > -1) { activeMatches[idx].status = "active"; activeMatches[idx].lastSync = timeNow; }
             } else {
-                logEl.innerText = `⚠️ No players found. Ensure it is a "Scorecard" link.`;
+                logEl.innerText = `⚠️ No players found or Scorecard not updated yet.`;
                 logEl.style.color = "#ff8c00";
             }
 
@@ -192,18 +222,17 @@
     }
 
     async function syncAllMatches() {
+        if(activeMatches.length === 0) return;
         for(let match of activeMatches) {
             await syncMatchData(match);
-            await new Promise(r => setTimeout(r, 2000)); // Cricbuzz ko shak na ho isliye 2 sec gap
+            await new Promise(r => setTimeout(r, 2000)); // 2 second pause taaki API block na ho
         }
         renderMatches();
     }
 
-    // Har 30 Second mein automatically data Firebase bhejta rahega
+    // Auto-Sync Loop (Har 30 Sec)
     setInterval(() => {
-        if(activeMatches.length > 0) {
-            syncAllMatches();
-        }
+        syncAllMatches();
     }, 30000);
 
     renderMatches();
