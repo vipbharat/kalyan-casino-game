@@ -1,308 +1,225 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan 11 - Live Leaderboard & Payouts</title>
+    <title>KALYAN VIP - X-RAY ENGINE 🏏</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 90px; user-select: none; }
-        .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #ffd700; position: sticky; top:0; z-index:100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; color: #ffd700; }
-        .title { font-weight: 900; font-size: 18px; text-transform: uppercase; }
-        .sub-title { font-size: 11px; color: #00ff88; font-weight: bold; margin-top: 3px; display: flex; align-items: center; gap: 4px;}
+        body { background: #050510; color: #fff; font-family: 'Segoe UI', sans-serif; padding: 20px; margin: 0; }
+        .header { text-align: center; border-bottom: 2px solid #00a83f; padding-bottom: 15px; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: #00a83f; font-size: 24px; text-transform: uppercase; }
+        .add-box { background: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px; }
+        input { width: calc(100% - 20px); padding: 10px; margin-bottom: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 5px; }
+        .btn { width: 100%; padding: 12px; background: #ffd700; color: #000; border: none; border-radius: 5px; font-weight: 900; cursor: pointer; text-transform: uppercase; margin-bottom: 10px;}
+        .btn-sync { background: #00a83f; color: #fff; box-shadow: 0 0 15px rgba(0,168,63,0.3); }
         
-        .prize-pool-banner { background: #111; padding: 15px; border-bottom: 1px solid #333; position: relative;}
-        .pool-flex { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;}
-        .pool-flex h2 { margin: 0; color: #ffd700; font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 5px;}
-        .pool-flex span { font-size: 12px; color: #aaa; border: 1px solid #444; padding: 3px 8px; border-radius: 4px; background: #222;}
-        .progress-bar-bg { width: 100%; height: 6px; background: #333; border-radius: 10px; overflow: hidden; margin-bottom: 5px; }
-        .progress-bar-fill { height: 100%; background: #ff004c; border-radius: 10px; transition: width 0.5s ease-in-out; }
-        .spots-left { font-size: 11px; color: #aaa; display: flex; justify-content: space-between; }
-        .spots-left span.red { color: #ff004c; font-weight: bold; }
+        .terminal { background: #000; border: 1px solid #00ff88; padding: 10px; border-radius: 5px; height: 180px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-bottom: 20px; box-shadow: inset 0 0 10px rgba(0,255,136,0.2);}
+        .terminal p { margin: 2px 0; }
+        .log-info { color: #aaa; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ffd700; }
 
-        .leaderboard-container { padding: 15px; }
-        .user-row { background: linear-gradient(145deg, #1e1e2e, #111); border: 1px solid #333; border-radius: 10px; padding: 12px 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
-        
-        /* 🏆 Top 3 Rank Glows */
-        .rank-1 { border: 1px solid #ffd700; background: linear-gradient(145deg, #332b00, #111); box-shadow: 0 0 15px rgba(255,215,0,0.3); }
-        .rank-2 { border: 1px solid #c0c0c0; background: linear-gradient(145deg, #222, #111); }
-        .rank-3 { border: 1px solid #cd7f32; background: linear-gradient(145deg, #3a220c, #111); }
-        .user-row.my-team { border-left: 4px solid #00ff88; background: linear-gradient(145deg, #113322, #111); }
-        
-        .rank-circle { width: 35px; height: 35px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; color: #aaa; border: 2px solid #555; flex-shrink: 0;}
-        .rank-1 .rank-circle { background: #ffd700; color: #000; border-color: #ffd700; }
-        .rank-2 .rank-circle { background: #c0c0c0; color: #000; border-color: #c0c0c0; }
-        .rank-3 .rank-circle { background: #cd7f32; color: #000; border-color: #cd7f32; }
-
-        .user-details { flex: 1; margin-left: 15px; }
-        .user-name { font-weight: bold; font-size: 14px; color: #fff; display: flex; align-items: center; gap: 5px;}
-        .my-tag { background: #00ff88; color: #000; font-size: 9px; padding: 2px 5px; border-radius: 3px; font-weight: bold; }
-        .cvc-info { font-size: 10.5px; color: #aaa; margin-top: 5px; display: flex; gap: 5px;}
-        .cvc-info span { background: #222; padding: 2px 5px; border-radius: 3px; border: 1px solid #444;}
-        .cvc-info span.c { color: #ffd700; border-color: #554800; }
-
-        .points-box { text-align: right; }
-        .pts-value { font-size: 18px; font-weight: 900; color: #00ff88; }
-        .pts-label { font-size: 9px; color: #aaa; text-transform: uppercase; }
-        
-        .win-amt { font-size: 11px; color: #ffd700; font-weight: bold; margin-top: 5px; display: inline-block; border: 1px dashed #ffd700; padding: 2px 6px; border-radius: 4px; background: rgba(255, 215, 0, 0.1); }
-        .paid-tag { font-size: 10px; color: #000; background: #00ff88; padding: 2px 6px; border-radius: 4px; font-weight: 900; margin-left: 5px; box-shadow: 0 0 5px #00ff88;}
-
-        .my-rank-sticky { position: fixed; bottom: 0; left: 0; width: 100%; background: linear-gradient(90deg, #00ff88, #00c366); color: #000; padding: 12px 15px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 1000; border-top-left-radius: 15px; border-top-right-radius: 15px; box-shadow: 0 -5px 15px rgba(0,255,136,0.2);}
-        .my-rank-sticky .r-circle { width: 35px; height: 35px; background: #000; color: #00ff88; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 15px; border: 2px solid #fff; }
-
-        .live-dot { display: inline-block; width: 8px; height: 8px; background: #ff004c; border-radius: 50%; animation: blink 1s infinite; }
-        @keyframes blink { 0% { opacity: 1; box-shadow: 0 0 5px #ff004c; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .match-card { background: #111; border: 1px solid #00a83f; padding: 15px; border-radius: 10px; margin-bottom: 15px; position: relative;}
+        .match-id { font-size: 16px; font-weight: 900; color: #ffd700; margin-bottom: 5px; }
+        .delete-btn { position: absolute; top: 15px; right: 15px; color: #ff004c; cursor: pointer; font-size: 18px; }
+        .player-log { font-size: 11px; color: #fff; margin-top: 10px; padding: 10px; background: #000; border-radius: 5px; border: 1px dashed #333; max-height: 100px; overflow-y: auto;}
     </style>
 </head>
 <body>
 
     <div class="header">
-        <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
-        <div>
-            <div class="title">LIVE LEADERBOARD</div>
-            <div class="sub-title" id="live-status"><i class="fa-solid fa-spinner fa-spin"></i> Loading Match Status...</div>
-        </div>
+        <h1><i class="fa-solid fa-bug"></i> KALYAN X-RAY ENGINE</h1>
+        <p style="color:#aaa; font-size:12px;">Diagnostic Mode - See exactly what's failing</p>
     </div>
 
-    <div class="prize-pool-banner" id="dynamic-banner">
-        <div class="pool-flex">
-            <h2>MEGA CONTEST</h2>
-            <span id="entry-fee-display">₹99</span>
-        </div>
-        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 85%;"></div></div>
-        <div class="spots-left">Contest Almost Full! <span class="red">Hurry up!</span></div>
+    <div class="terminal" id="console-box">
+        <p class="log-info">> Engine Initialized & Ready...</p>
     </div>
 
-    <div class="leaderboard-container" id="leaderboard-list">
-        <div style="text-align:center; padding: 50px; color: #00ff88; font-weight: bold;">
-            <i class="fa-solid fa-cog fa-spin" style="font-size: 30px; margin-bottom: 10px;"></i><br>
-            Calculating Live Points...
-        </div>
+    <div class="add-box">
+        <input type="text" id="m-id" placeholder="Match ID (e.g., 149651)">
+        <input type="text" id="m-link" placeholder="Cricbuzz Scorecard Link">
+        <button class="btn" onclick="addMatch()">ADD MATCH</button>
+        <button class="btn btn-sync" onclick="syncAllMatches()">FORCE SYNC NOW</button>
     </div>
-    
-    <div id="my-rank-container"></div>
 
-    <script>
-        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-        const db = firebase.database();
+    <div id="matches-container"></div>
+
+<script>
+    const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.database();
+
+    let activeMatches = JSON.parse(localStorage.getItem('kalyan_live_matches')) || [];
+
+    function cLog(type, msg) {
+        let box = document.getElementById('console-box');
+        let time = new Date().toLocaleTimeString();
+        box.innerHTML += `<p class="log-${type}">[${time}] ${msg}</p>`;
+        box.scrollTop = box.scrollHeight; 
+    }
+
+    function saveMatches() { localStorage.setItem('kalyan_live_matches', JSON.stringify(activeMatches)); renderMatches(); }
+
+    function addMatch() {
+        let id = document.getElementById('m-id').value.trim();
+        let link = document.getElementById('m-link').value.trim();
+        if(!id || !link) return alert("Details missing!");
         
-        const myPhone = localStorage.getItem('userPhone') || localStorage.getItem('loggedInUser') || "GUEST";
-        const urlParams = new URLSearchParams(window.location.search);
-        const matchId = urlParams.get('matchId') || "DUMMY";
-        let entryFee = parseInt(urlParams.get('entry')) || 99;
+        if(link.includes('cricket-scores')) { link = link.replace('cricket-scores', 'live-cricket-scorecard'); }
+        
+        activeMatches.push({ id: id, link: link, lastSync: "Waiting...", logDetails: "" });
+        document.getElementById('m-id').value = ""; document.getElementById('m-link').value = "";
+        cLog('success', `Added new Match: ${id}`);
+        saveMatches();
+    }
 
-        document.getElementById('entry-fee-display').innerText = `Entry: ₹${entryFee}`;
+    function removeMatch(id) {
+        if(confirm("Hata dein?")) { activeMatches = activeMatches.filter(m => m.id !== id); saveMatches(); cLog('error', `Removed Match: ${id}`);}
+    }
 
-        let allCombinedTeams = [];
-        let isMatchLive = false, isMatchCompleted = false, matchTimeMs = 0;
-
-        function formatName(fullName) {
-            if(!fullName) return "Player";
-            let parts = fullName.split(' ');
-            if (parts.length === 1) return parts[0];
-            return parts[0][0] + ". " + parts[parts.length - 1]; 
-        }
-
-        // 🏆 PRIZE CALCULATOR
-        function calculatePrize(rank, entry) {
-            if(entry === 0) return 0;
-            if(entry === 99) {
-                if(rank === 1) return 5000000; if(rank === 2) return 1000000;
-                if(rank <= 10) return 100000; if(rank <= 50000) return 99;
-                return 0;
-            }
-            if(entry === 49) {
-                if(rank === 1) return 20000; if(rank === 2) return 10000;
-                if(rank <= 700) return 49;
-                return 0;
-            }
-            if(rank === 1) return entry * 4;
-            if(rank <= 10) return entry;
-            return 0;
-        }
-
-        db.ref('Game/Kalyan11/VIPMatches/' + matchId).on('value', snap => {
-            let mData = snap.val();
-            if(!mData) return;
-
-            matchTimeMs = mData.timestamp;
-            let statusEl = document.getElementById('live-status');
-            
-            setInterval(() => {
-                let diff = matchTimeMs - new Date().getTime();
-                isMatchCompleted = diff < -14400000; 
-                isMatchLive = diff <= 0 && !isMatchCompleted; 
-                
-                if(isMatchCompleted) {
-                    statusEl.innerHTML = `<span style="color:#ffd700;"><i class="fa-solid fa-flag-checkered"></i> Match Completed</span>`;
-                } else if(isMatchLive) {
-                    statusEl.innerHTML = `<span class="live-dot"></span> LIVE CRICBUZZ SYNC ON`;
-                } else {
-                    statusEl.innerHTML = `<i class="fa-regular fa-clock"></i> Match Upcoming`;
-                }
-            }, 1000);
-
-            fetchRealLeaderboard();
+    function renderMatches() {
+        const container = document.getElementById('matches-container'); container.innerHTML = "";
+        activeMatches.forEach(m => {
+            container.innerHTML += `
+                <div class="match-card">
+                    <i class="fa-solid fa-trash delete-btn" onclick="removeMatch('${m.id}')"></i>
+                    <div class="match-id">${m.id}</div>
+                    <div style="font-size:10px; color:#aaa; margin-bottom:10px;">${m.link.substring(0, 45)}...</div>
+                    <div style="font-size:12px; color:#00ff88; font-weight:bold;">Last Sync: ${m.lastSync}</div>
+                    <div class="player-log" id="plog-${m.id}">${m.logDetails || "No data yet..."}</div>
+                </div>
+            `;
         });
+    }
 
-        function fetchRealLeaderboard() {
-            db.ref('Game/Kalyan11/MatchPlayers/' + matchId).on('value', pSnap => {
-                let playersObj = pSnap.val() || {};
-                let playersArray = Object.values(playersObj);
-                let sortedLivePlayers = [...playersArray].sort((a,b) => (parseFloat(b.points)||0) - (parseFloat(a.points)||0));
-
-                db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', tSnap => {
-                    let realTeams = [];
-                    let maxRealPoints = 0;
-
-                    tSnap.forEach(child => {
-                        let t = child.val();
-                        if (parseInt(t.entry_paid || 99) === entryFee) {
-                            let calcPts = 0;
-                            let cNameStr = "Player", vcNameStr = "Player";
-
-                            Object.values(t.players || {}).forEach(pKey => {
-                                let p = playersObj[pKey] || {};
-                                let livePts = parseFloat(p.points || 0);
-                                let bonus = (p.playingStatus === "playing") ? 4 : 0; 
-                                let totalPts = bonus + livePts;
-
-                                if(pKey === t.captain) { calcPts += (totalPts * 2); cNameStr = formatName(p.name); }
-                                else if(pKey === t.viceCaptain) { calcPts += (totalPts * 1.5); vcNameStr = formatName(p.name); }
-                                else { calcPts += totalPts; }
-                            });
-
-                            let finalPts = (isMatchLive || isMatchCompleted) ? parseFloat(calcPts.toFixed(1)) : 0;
-                            if(finalPts > maxRealPoints) maxRealPoints = finalPts;
-
-                            realTeams.push({ 
-                                phone: t.phone || child.key.split('_')[0], 
-                                teamKey: child.key, 
-                                points: finalPts, 
-                                cName: cNameStr, 
-                                vcName: vcNameStr,
-                                isBot: false, 
-                                payment_status: t.payment_status || "PENDING"
-                            });
-                        }
-                    });
-
-                    let bots = [];
-                    let botCount = 150 - realTeams.length; 
-                    if(botCount < 0) botCount = 0;
-
-                    for(let i=0; i < botCount; i++) {
-                        let bPoints = 0;
-                        let cp = "Player", vcp = "Player";
-                        
-                        if(isMatchLive || isMatchCompleted) {
-                            let pseudo = (Math.sin(i * 999) + 1) / 2;
-                            bPoints = i < 3 ? maxRealPoints + (pseudo * 10) : pseudo * (maxRealPoints + 5);
-                            if(i < 10 && sortedLivePlayers.length > 2) {
-                                cp = formatName(sortedLivePlayers[0].name);
-                                vcp = formatName(sortedLivePlayers[1].name);
-                            }
-                        }
-                        
-                        bots.push({ 
-                            phone: "9" + Math.floor(10000000 + Math.random() * 90000000), 
-                            points: parseFloat(bPoints.toFixed(1)), 
-                            cName: cp, vcName: vcp, 
-                            isBot: true 
-                        });
-                    }
-
-                    // 🚨 THE FIX: COMBINE, SHUFFLE RANDOMLY, THEN SORT BY POINTS
-                    let combined = [...realTeams, ...bots];
-                    
-                    // Fisher-Yates Shuffle Algorithm (Isse tie hone par teams aage peeche ho jayengi)
-                    for (let i = combined.length - 1; i > 0; i--) {
-                        let j = Math.floor(Math.random() * (i + 1));
-                        [combined[i], combined[j]] = [combined[j], combined[i]];
-                    }
-
-                    // Now sort by points. Agar points 0 hain, toh shuffeled order hi rahega!
-                    allCombinedTeams = combined.sort((a,b) => b.points - a.points);
-                    
-                    renderList();
-                });
-            });
-        }
-
-        function renderList() {
-            let container = document.getElementById('leaderboard-list');
-            let myRankContainer = document.getElementById('my-rank-container');
+    // --- BULLETPROOF SCRAPING LOGIC ---
+    async function syncMatchData(matchObj) {
+        let pLogEl = document.getElementById(`plog-${matchObj.id}`);
+        
+        try {
+            cLog('info', `Syncing Match: ${matchObj.id}...`);
             
-            container.innerHTML = "";
-            myRankContainer.innerHTML = "";
-            let myTeamFound = false;
+            // 1. Fetch Database Players
+            cLog('warn', `Fetching DB Players for ${matchObj.id}...`);
+            let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchObj.id}`).once('value');
+            if(!dbSnap.exists()) throw new Error("Match ID not found in Firebase Database!");
             
-            allCombinedTeams.slice(0, 100).forEach((t, i) => {
-                let rank = i + 1;
-                let isMe = (t.phone === myPhone && !t.isBot);
-                let prize = calculatePrize(rank, entryFee);
-                
-                let prizeHtml = "";
-                if((isMatchCompleted || isMatchLive) && prize > 0) {
-                    prizeHtml = `<br><span class="win-amt">🏆 WINNINGS: ₹${prize.toLocaleString('en-IN')}</span>`;
-                    if(t.payment_status === "PAID") prizeHtml += `<span class="paid-tag">PAID ✅</span>`;
-                }
-
-                let rankClass = rank <= 3 ? `rank-${rank}` : '';
-
-                let htmlContent = `
-                    <div class="user-row ${rankClass} ${isMe ? 'my-team' : ''}">
-                        <div class="rank-circle">#${rank}</div>
-                        <div class="user-details">
-                            <div class="user-name">
-                                ${isMe ? 'YOU' : 'VIP_'+t.phone.substring(2,6)} 
-                                ${isMe ? '<span class="my-tag">MY TEAM</span>':''}
-                            </div>
-                            <div class="cvc-info">
-                                <span class="c">C: ${t.cName}</span>
-                                <span>VC: ${t.vcName}</span>
-                            </div>
-                            ${prizeHtml}
-                        </div>
-                        <div class="points-box">
-                            <div class="pts-value">${t.points.toFixed(1)}</div>
-                            <div class="pts-label">Points</div>
-                        </div>
-                    </div>`;
-
-                container.innerHTML += htmlContent;
-
-                if(isMe && !myTeamFound) {
-                    myTeamFound = true;
-                    myRankContainer.innerHTML = `
-                        <div class="my-rank-sticky">
-                            <div style="display:flex; align-items:center; gap:15px;">
-                                <div class="r-circle">#${rank}</div>
-                                <div>
-                                    <div style="font-weight:900; font-size:16px;">MY TEAM RANK</div>
-                                    <div style="font-size:11px; font-weight:bold;">Out of ${allCombinedTeams.length} Teams</div>
-                                </div>
-                            </div>
-                            <div style="text-align:right;">
-                                <div style="font-weight:900; font-size:22px;">${t.points.toFixed(1)}</div>
-                                <div style="font-size:10px; font-weight:bold;">TOTAL PTS</div>
-                            </div>
-                        </div>`;
-                }
+            let dbPlayers = dbSnap.val();
+            let playerIdMap = {}; 
+            
+            Object.keys(dbPlayers).forEach(key => {
+                let cleanName = dbPlayers[key].name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                playerIdMap[cleanName] = key; 
             });
+            cLog('success', `Found ${Object.keys(playerIdMap).length} players in Firebase DB.`);
 
-            if(!myTeamFound) {
-                myRankContainer.innerHTML = `
-                    <div class="my-rank-sticky" style="background: linear-gradient(90deg, #ff004c, #b30036); justify-content:center;">
-                        <div style="font-weight:900; font-size:14px; color:#fff;"><i class="fa-solid fa-triangle-exclamation"></i> YOU HAVEN'T JOINED THIS CONTEST YET!</div>
-                    </div>`;
+            // 2. Fetch Cricbuzz Data using ALLORIGINS PROXY (Anti-Mobile Blocker)
+            cLog('warn', `Bypassing Cricbuzz Security...`);
+            let proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(matchObj.link)}`;
+            
+            let response = await fetch(proxyUrl);
+            let data = await response.json();
+            let htmlText = data.contents; // AllOrigins uses contents
+
+            if(!htmlText || htmlText.includes('Cloudflare') || htmlText.includes('Just a moment...')) {
+                throw new Error("🚨 Cricbuzz Cloudflare Security Blocked the Engine!");
             }
+
+            let parser = new DOMParser();
+            let doc = parser.parseFromString(htmlText, "text/html");
+
+            let playerUpdates = {}; 
+            let rows = doc.querySelectorAll('.cb-scrd-itms');
+            cLog('info', `Found ${rows.length} rows in Scorecard.`);
+
+            if(rows.length === 0) {
+                throw new Error("Scorecard khali hai ya match abhi start nahi hua!");
+            }
+
+            rows.forEach(row => {
+                let nameElement = row.querySelector('a.cb-text-link');
+                if(!nameElement) return; 
+                
+                let pNameRaw = nameElement.innerText;
+                // Smart Name Cleaner
+                let cleanScrapedName = pNameRaw.toLowerCase().replace(/\(c\)/ig, '').replace(/\(wk\)/ig, '').replace(/[^a-z0-9]/g, '');
+
+                // Smart Matching (Check if Scraped Name matches Firebase Name or vice-versa)
+                let matchedFirebaseKey = null;
+                for (let dbName in playerIdMap) {
+                    if (cleanScrapedName.includes(dbName) || dbName.includes(cleanScrapedName)) {
+                        matchedFirebaseKey = playerIdMap[dbName];
+                        break;
+                    }
+                }
+
+                if(!matchedFirebaseKey) return; 
+
+                // BULLETPROOF STATS FINDER
+                let cols = row.querySelectorAll('.cb-col');
+                let runs = 0, wickets = 0;
+                
+                if (row.innerHTML.includes('Wickets') || row.innerHTML.includes('Overs')) return; // Headers
+                
+                let boldStat = row.querySelector('.text-bold');
+                let primaryNumber = boldStat ? parseInt(boldStat.innerText) : 0;
+                if(isNaN(primaryNumber)) primaryNumber = 0;
+
+                let isBowling = row.innerHTML.includes('ECO') || row.innerHTML.includes('Maiden');
+                
+                if (!playerUpdates[matchedFirebaseKey]) {
+                    playerUpdates[matchedFirebaseKey] = { runs: 0, wickets: 0, name: dbPlayers[matchedFirebaseKey].name };
+                }
+
+                if(isBowling) {
+                    playerUpdates[matchedFirebaseKey].wickets += primaryNumber;
+                } else {
+                    playerUpdates[matchedFirebaseKey].runs += primaryNumber;
+                }
+                
+                // Final Formula Calculation
+                playerUpdates[matchedFirebaseKey].points = (playerUpdates[matchedFirebaseKey].runs * 1) + (playerUpdates[matchedFirebaseKey].wickets * 25);
+            });
+
+            // 3. Send to Firebase
+            let keysToUpdate = Object.keys(playerUpdates);
+            if(keysToUpdate.length > 0) {
+                let firebasePayload = {};
+                let logTextStr = "";
+
+                keysToUpdate.forEach(key => {
+                    let p = playerUpdates[key];
+                    firebasePayload[key + '/points'] = p.points;
+                    logTextStr += `<span style="color:#00ff88;">✔ ${p.name}</span>: ${p.points} Pts (R:${p.runs}, W:${p.wickets})<br>`;
+                });
+
+                cLog('warn', `Pushing ${keysToUpdate.length} Players Points to Firebase...`);
+                await db.ref(`Game/Kalyan11/MatchPlayers/${matchObj.id}`).update(firebasePayload);
+                
+                let timeNow = new Date().toLocaleTimeString();
+                cLog('success', `✅ POINTS UPDATED IN FIREBASE SUCCESSFULLY!`);
+                pLogEl.innerHTML = logTextStr;
+                
+                let idx = activeMatches.findIndex(m => m.id === matchObj.id);
+                if(idx > -1) { activeMatches[idx].lastSync = timeNow; activeMatches[idx].logDetails = logTextStr; saveMatches(); }
+            } else {
+                cLog('error', `⚠️ Players HTML mein mile, par Database ke naam se match nahi hue!`);
+            }
+
+        } catch(e) { 
+            cLog('error', e.message);
+            pLogEl.innerHTML = `<span style="color:#ff004c;">Error: ${e.message}</span>`;
         }
-    </script>
+    }
+
+    async function syncAllMatches() {
+        if(activeMatches.length === 0) { cLog('info', 'No matches added to sync.'); return; }
+        for(let match of activeMatches) { await syncMatchData(match); await new Promise(r => setTimeout(r, 2000)); }
+    }
+
+    renderMatches();
+</script>
 </body>
 </html>
