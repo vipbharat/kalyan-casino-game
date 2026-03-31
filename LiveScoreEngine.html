@@ -31,7 +31,7 @@
 
     <div class="header">
         <h1><i class="fa-solid fa-bug"></i> KALYAN X-RAY ENGINE</h1>
-        <p style="color:#aaa; font-size:12px;">Diagnostic Mode - See exactly what's failing</p>
+        <p style="color:#aaa; font-size:12px;">Diagnostic Mode - AllOrigins Proxy Enabled</p>
     </div>
 
     <div class="terminal" id="console-box">
@@ -54,12 +54,11 @@
 
     let activeMatches = JSON.parse(localStorage.getItem('kalyan_live_matches')) || [];
 
-    // --- CUSTOM HACKER CONSOLE ---
     function cLog(type, msg) {
         let box = document.getElementById('console-box');
         let time = new Date().toLocaleTimeString();
         box.innerHTML += `<p class="log-${type}">[${time}] ${msg}</p>`;
-        box.scrollTop = box.scrollHeight; // Auto scroll to bottom
+        box.scrollTop = box.scrollHeight; 
     }
 
     function saveMatches() { localStorage.setItem('kalyan_live_matches', JSON.stringify(activeMatches)); renderMatches(); }
@@ -96,7 +95,6 @@
         });
     }
 
-    // --- BULLETPROOF SCRAPING LOGIC ---
     async function syncMatchData(matchObj) {
         let pLogEl = document.getElementById(`plog-${matchObj.id}`);
         
@@ -112,24 +110,20 @@
             let playerIdMap = {}; 
             
             Object.keys(dbPlayers).forEach(key => {
-                // Name cleaning for better matching
                 let cleanName = dbPlayers[key].name.toLowerCase().replace(/[^a-z0-9]/g, '');
                 playerIdMap[cleanName] = key; 
             });
             cLog('success', `Found ${Object.keys(playerIdMap).length} players in Firebase DB.`);
 
-            // 2. Fetch Cricbuzz Data using raw HTML proxy (CodeTabs is better than AllOrigins for HTML)
-            cLog('warn', `Bypassing Cricbuzz Security...`);
-            let proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(matchObj.link)}`;
+            // 2. Fetch Cricbuzz Data using AllOrigins Proxy
+            cLog('warn', `Bypassing Cricbuzz Security via AllOrigins...`);
+            let proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(matchObj.link)}`;
             
             let response = await fetch(proxyUrl);
-            if(!response.ok) throw new Error("Cricbuzz Server rejected the request!");
-            let htmlText = await response.text();
-
-            // Check if Cloudflare blocked us
-            if(htmlText.includes('Cloudflare') || htmlText.includes('Just a moment...')) {
-                throw new Error("🚨 Cricbuzz Cloudflare Security Blocked the Engine!");
-            }
+            let data = await response.json();
+            
+            if(!data.contents) throw new Error("Proxy failed to get HTML content.");
+            let htmlText = data.contents;
 
             let parser = new DOMParser();
             let doc = parser.parseFromString(htmlText, "text/html");
@@ -149,7 +143,6 @@
                 let pNameRaw = nameElement.innerText;
                 let cleanScrapedName = pNameRaw.toLowerCase().replace(/\(c\)/ig, '').replace(/\(wk\)/ig, '').replace(/[^a-z0-9]/g, '');
 
-                // Smart Matching
                 let matchedFirebaseKey = null;
                 for (let dbName in playerIdMap) {
                     if (cleanScrapedName.includes(dbName) || dbName.includes(cleanScrapedName)) {
@@ -160,8 +153,6 @@
 
                 if(!matchedFirebaseKey) return; 
 
-                // BULLETPROOF STATS FINDER
-                // Cricbuzz always uses .text-bold for the main stat (Runs for Batter, Wickets for Bowler)
                 let boldStat = row.querySelector('.text-bold');
                 let primaryNumber = boldStat ? parseInt(boldStat.innerText) : 0;
                 if(isNaN(primaryNumber)) primaryNumber = 0;
@@ -178,7 +169,6 @@
                     playerUpdates[matchedFirebaseKey].runs += primaryNumber;
                 }
                 
-                // Final Formula Calculation
                 playerUpdates[matchedFirebaseKey].points = (playerUpdates[matchedFirebaseKey].runs * 1) + (playerUpdates[matchedFirebaseKey].wickets * 25);
             });
 
@@ -194,7 +184,7 @@
                     logTextStr += `<span style="color:#00ff88;">✔ ${p.name}</span>: ${p.points} Pts (R:${p.runs}, W:${p.wickets})<br>`;
                 });
 
-                cLog('warn', `Pushing Points to Firebase...`);
+                cLog('warn', `Pushing ${keysToUpdate.length} Players' Points to Firebase...`);
                 await db.ref(`Game/Kalyan11/MatchPlayers/${matchObj.id}`).update(firebasePayload);
                 
                 let timeNow = new Date().toLocaleTimeString();
@@ -204,7 +194,7 @@
                 let idx = activeMatches.findIndex(m => m.id === matchObj.id);
                 if(idx > -1) { activeMatches[idx].lastSync = timeNow; activeMatches[idx].logDetails = logTextStr; saveMatches(); }
             } else {
-                cLog('error', `⚠️ Players HTML mein mile, par Database ke naam se match nahi hue!`);
+                cLog('error', `⚠️ Players HTML mein mile, par DB ke naam se match nahi hue!`);
             }
 
         } catch(e) { 
