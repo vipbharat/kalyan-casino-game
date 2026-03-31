@@ -16,10 +16,9 @@
         .btn { width: 100%; padding: 12px; background: #ffd700; color: #000; border: none; border-radius: 5px; font-weight: 900; cursor: pointer; text-transform: uppercase; margin-bottom: 10px;}
         .btn-sync { background: #00a83f; color: #fff; box-shadow: 0 0 15px rgba(0,168,63,0.3); }
         
-        /* Hacker Console Terminal */
         .terminal { background: #000; border: 1px solid #00ff88; padding: 10px; border-radius: 5px; height: 180px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-bottom: 20px; box-shadow: inset 0 0 10px rgba(0,255,136,0.2);}
-        .terminal p { margin: 2px 0; }
-        .log-info { color: #aaa; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ffd700; }
+        .terminal p { margin: 2px 0; border-bottom: 1px dashed #111; padding-bottom: 2px;}
+        .log-info { color: #00d2d3; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ffd700; }
 
         .match-card { background: #111; border: 1px solid #00a83f; padding: 15px; border-radius: 10px; margin-bottom: 15px; position: relative;}
         .match-id { font-size: 16px; font-weight: 900; color: #ffd700; margin-bottom: 5px; }
@@ -31,7 +30,7 @@
 
     <div class="header">
         <h1><i class="fa-solid fa-bug"></i> KALYAN X-RAY ENGINE</h1>
-        <p style="color:#aaa; font-size:12px;">Diagnostic Mode - AllOrigins Proxy Enabled</p>
+        <p style="color:#aaa; font-size:12px;">Multi-Proxy Anti-Block System Active</p>
     </div>
 
     <div class="terminal" id="console-box">
@@ -68,6 +67,7 @@
         let link = document.getElementById('m-link').value.trim();
         if(!id || !link) return alert("Details missing!");
         
+        // Auto convert to scorecard link
         if(link.includes('cricket-scores')) { link = link.replace('cricket-scores', 'live-cricket-scorecard'); }
         
         activeMatches.push({ id: id, link: link, lastSync: "Waiting...", logDetails: "" });
@@ -102,9 +102,9 @@
             cLog('info', `Syncing Match: ${matchObj.id}...`);
             
             // 1. Fetch Database Players
-            cLog('warn', `Fetching DB Players for ${matchObj.id}...`);
+            cLog('warn', `Fetching DB Players...`);
             let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchObj.id}`).once('value');
-            if(!dbSnap.exists()) throw new Error("Match ID not found in Firebase Database!");
+            if(!dbSnap.exists()) throw new Error("Match ID nahi mili Firebase me!");
             
             let dbPlayers = dbSnap.val();
             let playerIdMap = {}; 
@@ -113,18 +113,48 @@
                 let cleanName = dbPlayers[key].name.toLowerCase().replace(/[^a-z0-9]/g, '');
                 playerIdMap[cleanName] = key; 
             });
-            cLog('success', `Found ${Object.keys(playerIdMap).length} players in Firebase DB.`);
+            cLog('success', `Found ${Object.keys(playerIdMap).length} DB players.`);
 
-            // 2. Fetch Cricbuzz Data using AllOrigins Proxy
-            cLog('warn', `Bypassing Cricbuzz Security via AllOrigins...`);
-            let proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(matchObj.link)}`;
+            // 2. Multi-Proxy Anti-Block System
+            cLog('warn', `Bypassing Security with Multi-Proxy...`);
+            let targetUrl = matchObj.link;
             
-            let response = await fetch(proxyUrl);
-            let data = await response.json();
-            
-            if(!data.contents) throw new Error("Proxy failed to get HTML content.");
-            let htmlText = data.contents;
+            // 3 Different Proxy Servers
+            let proxies = [
+                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
+            ];
 
+            let htmlText = "";
+            let proxyWorked = false;
+
+            for (let i = 0; i < proxies.length; i++) {
+                try {
+                    cLog('info', `Trying Server ${i+1}...`);
+                    let response = await fetch(proxies[i], { cache: "no-store" });
+                    
+                    if (response.ok) {
+                        htmlText = await response.text();
+                        // Check if it is valid scorecard HTML
+                        if(htmlText.includes('cb-scrd-itms') || htmlText.includes('cb-col')) {
+                            proxyWorked = true;
+                            cLog('success', `Server ${i+1} Connected!`);
+                            break; // Stop loop if successful
+                        } else {
+                            cLog('error', `Server ${i+1} blocked by Cloudflare.`);
+                        }
+                    } else {
+                        cLog('error', `Server ${i+1} Failed to Fetch.`);
+                    }
+                } catch(e) {
+                    cLog('error', `Server ${i+1} Offline/Blocked.`);
+                }
+            }
+
+            if(!proxyWorked) throw new Error("🚨 Sabhi Servers fail ho gaye! (Scorecard nahi bani hogi ya Internet Issue hai)");
+
+            // 3. Parse HTML
             let parser = new DOMParser();
             let doc = parser.parseFromString(htmlText, "text/html");
 
@@ -132,9 +162,7 @@
             let rows = doc.querySelectorAll('.cb-scrd-itms');
             cLog('info', `Found ${rows.length} rows in Scorecard.`);
 
-            if(rows.length === 0) {
-                throw new Error("Scorecard khali hai ya match abhi start nahi hua!");
-            }
+            if(rows.length === 0) throw new Error("Scorecard khali hai!");
 
             rows.forEach(row => {
                 let nameElement = row.querySelector('a.cb-text-link');
@@ -172,7 +200,7 @@
                 playerUpdates[matchedFirebaseKey].points = (playerUpdates[matchedFirebaseKey].runs * 1) + (playerUpdates[matchedFirebaseKey].wickets * 25);
             });
 
-            // 3. Send to Firebase
+            // 4. Update Firebase
             let keysToUpdate = Object.keys(playerUpdates);
             if(keysToUpdate.length > 0) {
                 let firebasePayload = {};
@@ -184,17 +212,17 @@
                     logTextStr += `<span style="color:#00ff88;">✔ ${p.name}</span>: ${p.points} Pts (R:${p.runs}, W:${p.wickets})<br>`;
                 });
 
-                cLog('warn', `Pushing ${keysToUpdate.length} Players' Points to Firebase...`);
+                cLog('warn', `Pushing ${keysToUpdate.length} Players' Points to DB...`);
                 await db.ref(`Game/Kalyan11/MatchPlayers/${matchObj.id}`).update(firebasePayload);
                 
                 let timeNow = new Date().toLocaleTimeString();
-                cLog('success', `✅ POINTS UPDATED IN FIREBASE SUCCESSFULLY!`);
+                cLog('success', `✅ FIREBASE UPDATED SUCCESSFULLY!`);
                 pLogEl.innerHTML = logTextStr;
                 
                 let idx = activeMatches.findIndex(m => m.id === matchObj.id);
                 if(idx > -1) { activeMatches[idx].lastSync = timeNow; activeMatches[idx].logDetails = logTextStr; saveMatches(); }
             } else {
-                cLog('error', `⚠️ Players HTML mein mile, par DB ke naam se match nahi hue!`);
+                cLog('error', `⚠️ Players HTML mein mile, par DB ke naam match nahi hue!`);
             }
 
         } catch(e) { 
