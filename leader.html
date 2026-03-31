@@ -23,8 +23,6 @@
         .spots-left { font-size: 11px; color: #aaa; display: flex; justify-content: space-between; }
         .spots-left span.red { color: #ff004c; font-weight: bold; }
 
-        .breakdown-btn { background: linear-gradient(90deg, #ff8c00, #ffd700); color: #000; font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 12px; cursor: pointer; text-transform: uppercase; border: 1px solid #fff; box-shadow: 0 2px 8px rgba(255,215,0,0.4); display: inline-flex; align-items: center; gap: 5px; transition: 0.2s;}
-
         .leaderboard-container { padding: 15px; }
         .user-row { background: linear-gradient(145deg, #1e1e2e, #111); border: 1px solid #333; border-radius: 10px; padding: 12px 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
         
@@ -93,7 +91,6 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
         
-        // Ensure user phone exists to find "My Team"
         const myPhone = localStorage.getItem('userPhone') || localStorage.getItem('loggedInUser') || "GUEST";
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId') || "DUMMY";
@@ -108,7 +105,7 @@
             if(!fullName) return "Player";
             let parts = fullName.split(' ');
             if (parts.length === 1) return parts[0];
-            return parts[0][0] + ". " + parts[parts.length - 1]; // e.g. "V. Kohli"
+            return parts[0][0] + ". " + parts[parts.length - 1]; 
         }
 
         // 🏆 PRIZE CALCULATOR
@@ -124,13 +121,11 @@
                 if(rank <= 700) return 49;
                 return 0;
             }
-            // 40% Winning Zone for generic entries
             if(rank === 1) return entry * 4;
             if(rank <= 10) return entry;
             return 0;
         }
 
-        // --- FETCH MATCH TIMING & STATUS ---
         db.ref('Game/Kalyan11/VIPMatches/' + matchId).on('value', snap => {
             let mData = snap.val();
             if(!mData) return;
@@ -140,8 +135,8 @@
             
             setInterval(() => {
                 let diff = matchTimeMs - new Date().getTime();
-                isMatchCompleted = diff < -14400000; // Older than 4 hours
-                isMatchLive = diff <= 0 && !isMatchCompleted; // Started but not completed
+                isMatchCompleted = diff < -14400000; 
+                isMatchLive = diff <= 0 && !isMatchCompleted; 
                 
                 if(isMatchCompleted) {
                     statusEl.innerHTML = `<span style="color:#ffd700;"><i class="fa-solid fa-flag-checkered"></i> Match Completed</span>`;
@@ -155,49 +150,31 @@
             fetchRealLeaderboard();
         });
 
-        // --- THE MASTER ENGINE: FETCHING POINTS & CALCULATING RANKS ---
         function fetchRealLeaderboard() {
-            // Step 1: Fetch Live Players Data (Points updated by Cricbuzz Engine)
             db.ref('Game/Kalyan11/MatchPlayers/' + matchId).on('value', pSnap => {
                 let playersObj = pSnap.val() || {};
                 let playersArray = Object.values(playersObj);
-                
-                // Keep track of top performers for smart bots
                 let sortedLivePlayers = [...playersArray].sort((a,b) => (parseFloat(b.points)||0) - (parseFloat(a.points)||0));
 
-                // Step 2: Fetch all teams created by Users
                 db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', tSnap => {
                     let realTeams = [];
                     let maxRealPoints = 0;
 
                     tSnap.forEach(child => {
                         let t = child.val();
-                        // Filter by Contest Entry Fee
                         if (parseInt(t.entry_paid || 99) === entryFee) {
-                            
-                            // 🔥 Calculate Exact Points based on Captain(2x) & VC(1.5x)
                             let calcPts = 0;
                             let cNameStr = "Player", vcNameStr = "Player";
 
                             Object.values(t.players || {}).forEach(pKey => {
                                 let p = playersObj[pKey] || {};
                                 let livePts = parseFloat(p.points || 0);
-                                
-                                // Toss Bonus Points
                                 let bonus = (p.playingStatus === "playing") ? 4 : 0; 
                                 let totalPts = bonus + livePts;
 
-                                if(pKey === t.captain) {
-                                    calcPts += (totalPts * 2);
-                                    cNameStr = formatName(p.name);
-                                }
-                                else if(pKey === t.viceCaptain) {
-                                    calcPts += (totalPts * 1.5);
-                                    vcNameStr = formatName(p.name);
-                                }
-                                else {
-                                    calcPts += totalPts;
-                                }
+                                if(pKey === t.captain) { calcPts += (totalPts * 2); cNameStr = formatName(p.name); }
+                                else if(pKey === t.viceCaptain) { calcPts += (totalPts * 1.5); vcNameStr = formatName(p.name); }
+                                else { calcPts += totalPts; }
                             });
 
                             let finalPts = (isMatchLive || isMatchCompleted) ? parseFloat(calcPts.toFixed(1)) : 0;
@@ -215,9 +192,8 @@
                         }
                     });
 
-                    // Step 3: 🤖 Generate Smart Bots to make competition real
                     let bots = [];
-                    let botCount = 150 - realTeams.length; // Ensure at least 150 spots filled
+                    let botCount = 150 - realTeams.length; 
                     if(botCount < 0) botCount = 0;
 
                     for(let i=0; i < botCount; i++) {
@@ -226,10 +202,7 @@
                         
                         if(isMatchLive || isMatchCompleted) {
                             let pseudo = (Math.sin(i * 999) + 1) / 2;
-                            // Top 3 bots tightly contest with Real Max Points
                             bPoints = i < 3 ? maxRealPoints + (pseudo * 10) : pseudo * (maxRealPoints + 5);
-                            
-                            // Best bots get best C/VC names
                             if(i < 10 && sortedLivePlayers.length > 2) {
                                 cp = formatName(sortedLivePlayers[0].name);
                                 vcp = formatName(sortedLivePlayers[1].name);
@@ -244,14 +217,23 @@
                         });
                     }
 
-                    // Step 4: Combine, Sort by Points (High to Low) and Render!
-                    allCombinedTeams = [...realTeams, ...bots].sort((a,b) => b.points - a.points);
+                    // 🚨 THE FIX: COMBINE, SHUFFLE RANDOMLY, THEN SORT BY POINTS
+                    let combined = [...realTeams, ...bots];
+                    
+                    // Fisher-Yates Shuffle Algorithm (Isse tie hone par teams aage peeche ho jayengi)
+                    for (let i = combined.length - 1; i > 0; i--) {
+                        let j = Math.floor(Math.random() * (i + 1));
+                        [combined[i], combined[j]] = [combined[j], combined[i]];
+                    }
+
+                    // Now sort by points. Agar points 0 hain, toh shuffeled order hi rahega!
+                    allCombinedTeams = combined.sort((a,b) => b.points - a.points);
+                    
                     renderList();
                 });
             });
         }
 
-        // --- RENDER LEADERBOARD UI ---
         function renderList() {
             let container = document.getElementById('leaderboard-list');
             let myRankContainer = document.getElementById('my-rank-container');
@@ -265,14 +247,12 @@
                 let isMe = (t.phone === myPhone && !t.isBot);
                 let prize = calculatePrize(rank, entryFee);
                 
-                // Show WIN amount only if match is completed or live and prize exists
                 let prizeHtml = "";
                 if((isMatchCompleted || isMatchLive) && prize > 0) {
                     prizeHtml = `<br><span class="win-amt">🏆 WINNINGS: ₹${prize.toLocaleString('en-IN')}</span>`;
                     if(t.payment_status === "PAID") prizeHtml += `<span class="paid-tag">PAID ✅</span>`;
                 }
 
-                // Rank Class for Top 3
                 let rankClass = rank <= 3 ? `rank-${rank}` : '';
 
                 let htmlContent = `
@@ -297,7 +277,6 @@
 
                 container.innerHTML += htmlContent;
 
-                // Sticky Footer for My Team
                 if(isMe && !myTeamFound) {
                     myTeamFound = true;
                     myRankContainer.innerHTML = `
