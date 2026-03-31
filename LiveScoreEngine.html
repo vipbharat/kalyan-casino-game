@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MULTI-MATCH CRICBUZZ ENGINE 🏏</title>
+    <title>KALYAN VIP - X-RAY ENGINE 🏏</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -13,34 +13,39 @@
         .header h1 { margin: 0; color: #00a83f; font-size: 24px; text-transform: uppercase; }
         .add-box { background: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px; }
         input { width: calc(100% - 20px); padding: 10px; margin-bottom: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 5px; }
-        .btn { width: 100%; padding: 12px; background: #ffd700; color: #000; border: none; border-radius: 5px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
-        .btn-sync { background: #00a83f; color: #fff; margin-top: 10px; box-shadow: 0 0 15px rgba(0,168,63,0.3); }
-        .match-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
-        .match-card { background: linear-gradient(145deg, #1a1a2e, #111); border: 1px solid #00a83f; padding: 15px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); position: relative; }
-        .match-id { font-size: 18px; font-weight: 900; color: #ffd700; margin-bottom: 5px; }
-        .status { font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block; }
-        .status.active { background: rgba(0,168,63,0.2); color: #00a83f; border: 1px solid #00a83f; }
+        .btn { width: 100%; padding: 12px; background: #ffd700; color: #000; border: none; border-radius: 5px; font-weight: 900; cursor: pointer; text-transform: uppercase; margin-bottom: 10px;}
+        .btn-sync { background: #00a83f; color: #fff; box-shadow: 0 0 15px rgba(0,168,63,0.3); }
+        
+        /* Hacker Console Terminal */
+        .terminal { background: #000; border: 1px solid #00ff88; padding: 10px; border-radius: 5px; height: 180px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-bottom: 20px; box-shadow: inset 0 0 10px rgba(0,255,136,0.2);}
+        .terminal p { margin: 2px 0; }
+        .log-info { color: #aaa; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ffd700; }
+
+        .match-card { background: #111; border: 1px solid #00a83f; padding: 15px; border-radius: 10px; margin-bottom: 15px; position: relative;}
+        .match-id { font-size: 16px; font-weight: 900; color: #ffd700; margin-bottom: 5px; }
         .delete-btn { position: absolute; top: 15px; right: 15px; color: #ff004c; cursor: pointer; font-size: 18px; }
-        .log-text { font-size: 11px; color: #ffd700; margin-top: 10px; border-top: 1px dashed #333; padding-top: 5px; font-weight: bold;}
-        .player-log { font-size: 10px; color: #aaa; margin-top: 5px; max-height: 80px; overflow-y: auto; background: #000; padding: 5px; border-radius: 4px;}
-        .player-log span { color: #00ff88; }
+        .player-log { font-size: 11px; color: #fff; margin-top: 10px; padding: 10px; background: #000; border-radius: 5px; border: 1px dashed #333;}
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1><i class="fa-solid fa-satellite-dish fa-fade"></i> CRICBUZZ LIVE ENGINE</h1>
-        <p>Engine will auto-convert URLs and match Surnames smartly!</p>
+        <h1><i class="fa-solid fa-bug"></i> KALYAN X-RAY ENGINE</h1>
+        <p style="color:#aaa; font-size:12px;">Diagnostic Mode - See exactly what's failing</p>
+    </div>
+
+    <div class="terminal" id="console-box">
+        <p class="log-info">> Engine Initialized & Ready...</p>
     </div>
 
     <div class="add-box">
         <input type="text" id="m-id" placeholder="Match ID (e.g., MATCH_1711...)">
-        <input type="text" id="m-link" placeholder="Cricbuzz Link Paste Here">
-        <button class="btn" onclick="addMatch()">ADD MATCH TO ENGINE</button>
-        <button class="btn btn-sync" onclick="syncAllMatches()">SYNC ALL MATCHES NOW</button>
+        <input type="text" id="m-link" placeholder="Cricbuzz Scorecard Link">
+        <button class="btn" onclick="addMatch()">ADD MATCH</button>
+        <button class="btn btn-sync" onclick="syncAllMatches()">FORCE SYNC NOW</button>
     </div>
 
-    <div class="match-grid" id="matches-container"></div>
+    <div id="matches-container"></div>
 
 <script>
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
@@ -49,6 +54,14 @@
 
     let activeMatches = JSON.parse(localStorage.getItem('kalyan_live_matches')) || [];
 
+    // --- CUSTOM HACKER CONSOLE ---
+    function cLog(type, msg) {
+        let box = document.getElementById('console-box');
+        let time = new Date().toLocaleTimeString();
+        box.innerHTML += `<p class="log-${type}">[${time}] ${msg}</p>`;
+        box.scrollTop = box.scrollHeight; // Auto scroll to bottom
+    }
+
     function saveMatches() { localStorage.setItem('kalyan_live_matches', JSON.stringify(activeMatches)); renderMatches(); }
 
     function addMatch() {
@@ -56,16 +69,16 @@
         let link = document.getElementById('m-link').value.trim();
         if(!id || !link) return alert("Details missing!");
         
-        // AUTO-FIX URL: Force it to be the scorecard link
         if(link.includes('cricket-scores')) { link = link.replace('cricket-scores', 'live-cricket-scorecard'); }
         
         activeMatches.push({ id: id, link: link, lastSync: "Waiting...", logDetails: "" });
         document.getElementById('m-id').value = ""; document.getElementById('m-link').value = "";
+        cLog('success', `Added new Match: ${id}`);
         saveMatches();
     }
 
     function removeMatch(id) {
-        if(confirm("Hata dein?")) { activeMatches = activeMatches.filter(m => m.id !== id); saveMatches(); }
+        if(confirm("Hata dein?")) { activeMatches = activeMatches.filter(m => m.id !== id); saveMatches(); cLog('error', `Removed Match: ${id}`);}
     }
 
     function renderMatches() {
@@ -75,89 +88,101 @@
                 <div class="match-card">
                     <i class="fa-solid fa-trash delete-btn" onclick="removeMatch('${m.id}')"></i>
                     <div class="match-id">${m.id}</div>
-                    <div class="status active"><i class="fa-solid fa-circle-dot"></i> LIVE ENGINE</div>
-                    <div class="log-text" id="log-${m.id}">${m.lastSync}</div>
-                    <div class="player-log" id="plog-${m.id}">${m.logDetails || "Waiting for players..."}</div>
+                    <div style="font-size:10px; color:#aaa; margin-bottom:10px;">${m.link.substring(0, 45)}...</div>
+                    <div style="font-size:12px; color:#00ff88; font-weight:bold;">Last Sync: ${m.lastSync}</div>
+                    <div class="player-log" id="plog-${m.id}">${m.logDetails || "No data yet..."}</div>
                 </div>
             `;
         });
     }
 
+    // --- BULLETPROOF SCRAPING LOGIC ---
     async function syncMatchData(matchObj) {
-        let logEl = document.getElementById(`log-${matchObj.id}`);
         let pLogEl = document.getElementById(`plog-${matchObj.id}`);
         
         try {
-            logEl.innerText = "Connecting DB & Cricbuzz...";
+            cLog('info', `Syncing Match: ${matchObj.id}...`);
             
-            // 1. Fetch from Firebase
+            // 1. Fetch Database Players
+            cLog('warn', `Fetching DB Players for ${matchObj.id}...`);
             let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchObj.id}`).once('value');
-            if(!dbSnap.exists()) throw new Error("Match ID not found in Firebase!");
+            if(!dbSnap.exists()) throw new Error("Match ID not found in Firebase Database!");
             
             let dbPlayers = dbSnap.val();
             let playerIdMap = {}; 
             
-            // SMART SURNAME MAPPER
             Object.keys(dbPlayers).forEach(key => {
-                let fullName = dbPlayers[key].name.toLowerCase().trim();
-                let nameParts = fullName.split(' ');
-                // Pick the last word (Surname) and clean it
-                let surName = nameParts[nameParts.length - 1].replace(/[^a-z]/g, ''); 
-                playerIdMap[surName] = key; // e.g. "kohli" -> "IND_0"
+                // Name cleaning for better matching
+                let cleanName = dbPlayers[key].name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                playerIdMap[cleanName] = key; 
             });
+            cLog('success', `Found ${Object.keys(playerIdMap).length} players in Firebase DB.`);
 
-            // 2. Fetch from Cricbuzz
-            let proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(matchObj.link)}`;
-            let response = await fetch(proxyUrl);
-            let data = await response.json();
+            // 2. Fetch Cricbuzz Data using raw HTML proxy (CodeTabs is better than AllOrigins for HTML)
+            cLog('warn', `Bypassing Cricbuzz Security...`);
+            let proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(matchObj.link)}`;
             
+            let response = await fetch(proxyUrl);
+            if(!response.ok) throw new Error("Cricbuzz Server rejected the request!");
+            let htmlText = await response.text();
+
+            // Check if Cloudflare blocked us
+            if(htmlText.includes('Cloudflare') || htmlText.includes('Just a moment...')) {
+                throw new Error("🚨 Cricbuzz Cloudflare Security Blocked the Engine!");
+            }
+
             let parser = new DOMParser();
-            let doc = parser.parseFromString(data.contents, "text/html");
+            let doc = parser.parseFromString(htmlText, "text/html");
 
             let playerUpdates = {}; 
-            let matchedNamesList = [];
-
             let rows = doc.querySelectorAll('.cb-scrd-itms');
-            
+            cLog('info', `Found ${rows.length} rows in Scorecard.`);
+
+            if(rows.length === 0) {
+                throw new Error("Scorecard khali hai ya match abhi start nahi hua!");
+            }
+
             rows.forEach(row => {
                 let nameElement = row.querySelector('a.cb-text-link');
                 if(!nameElement) return; 
                 
-                let pNameRaw = nameElement.innerText.toLowerCase();
-                let scrapedNameParts = pNameRaw.replace(/\(c\)/ig, '').replace(/\(wk\)/ig, '').trim().split(' ');
-                let scrapedSurName = scrapedNameParts[scrapedNameParts.length - 1].replace(/[^a-z]/g, '');
+                let pNameRaw = nameElement.innerText;
+                let cleanScrapedName = pNameRaw.toLowerCase().replace(/\(c\)/ig, '').replace(/\(wk\)/ig, '').replace(/[^a-z0-9]/g, '');
 
-                // Match by Surname!
-                let matchedFirebaseKey = playerIdMap[scrapedSurName];
-                if(!matchedFirebaseKey) return; 
-
-                // Find Runs / Wickets
-                let cols = row.querySelectorAll('.cb-col');
-                let runs = 0, wickets = 0;
-                
-                // Cricbuzz Logic: Batting row has 7 columns, Bowling has 8
-                if (row.innerHTML.includes('Wickets') || row.innerHTML.includes('Overs')) return; // Ignore titles
-                
-                // If it's a Batting row (Usually first text-bold is runs)
-                let boldText = row.querySelector('.text-bold');
-                if (cols.length >= 7 && !row.innerHTML.includes('ECO')) {
-                    runs = parseInt(boldText ? boldText.innerText : (cols[2].innerText || 0)); 
-                } 
-                // If it's a Bowling row
-                else if (cols.length >= 8) {
-                    wickets = parseInt(cols[4].innerText || 0); // Wickets is usually 5th column
+                // Smart Matching
+                let matchedFirebaseKey = null;
+                for (let dbName in playerIdMap) {
+                    if (cleanScrapedName.includes(dbName) || dbName.includes(cleanScrapedName)) {
+                        matchedFirebaseKey = playerIdMap[dbName];
+                        break;
+                    }
                 }
 
+                if(!matchedFirebaseKey) return; 
+
+                // BULLETPROOF STATS FINDER
+                // Cricbuzz always uses .text-bold for the main stat (Runs for Batter, Wickets for Bowler)
+                let boldStat = row.querySelector('.text-bold');
+                let primaryNumber = boldStat ? parseInt(boldStat.innerText) : 0;
+                if(isNaN(primaryNumber)) primaryNumber = 0;
+
+                let isBowling = row.innerHTML.includes('ECO') || row.innerHTML.includes('Maiden');
+                
                 if (!playerUpdates[matchedFirebaseKey]) {
                     playerUpdates[matchedFirebaseKey] = { runs: 0, wickets: 0, name: dbPlayers[matchedFirebaseKey].name };
                 }
+
+                if(isBowling) {
+                    playerUpdates[matchedFirebaseKey].wickets += primaryNumber;
+                } else {
+                    playerUpdates[matchedFirebaseKey].runs += primaryNumber;
+                }
                 
-                playerUpdates[matchedFirebaseKey].runs += runs;
-                playerUpdates[matchedFirebaseKey].wickets += wickets;
+                // Final Formula Calculation
                 playerUpdates[matchedFirebaseKey].points = (playerUpdates[matchedFirebaseKey].runs * 1) + (playerUpdates[matchedFirebaseKey].wickets * 25);
             });
 
-            // 3. Update Firebase
+            // 3. Send to Firebase
             let keysToUpdate = Object.keys(playerUpdates);
             if(keysToUpdate.length > 0) {
                 let firebasePayload = {};
@@ -166,30 +191,33 @@
                 keysToUpdate.forEach(key => {
                     let p = playerUpdates[key];
                     firebasePayload[key + '/points'] = p.points;
-                    logTextStr += `<span>✔ ${p.name}</span> = ${p.points} Pts (R:${p.runs}, W:${p.wickets})<br>`;
+                    logTextStr += `<span style="color:#00ff88;">✔ ${p.name}</span>: ${p.points} Pts (R:${p.runs}, W:${p.wickets})<br>`;
                 });
 
+                cLog('warn', `Pushing Points to Firebase...`);
                 await db.ref(`Game/Kalyan11/MatchPlayers/${matchObj.id}`).update(firebasePayload);
                 
                 let timeNow = new Date().toLocaleTimeString();
-                logEl.innerText = `✅ Success at ${timeNow}`;
-                pLogEl.innerHTML = logTextStr; // UI par dikhayega kisko kya mila
+                cLog('success', `✅ POINTS UPDATED IN FIREBASE SUCCESSFULLY!`);
+                pLogEl.innerHTML = logTextStr;
                 
                 let idx = activeMatches.findIndex(m => m.id === matchObj.id);
                 if(idx > -1) { activeMatches[idx].lastSync = timeNow; activeMatches[idx].logDetails = logTextStr; saveMatches(); }
             } else {
-                logEl.innerText = `⚠️ No matching players found on Scorecard.`;
+                cLog('error', `⚠️ Players HTML mein mile, par Database ke naam se match nahi hue!`);
             }
 
-        } catch(e) { logEl.innerText = `❌ Error: ${e.message}`; }
+        } catch(e) { 
+            cLog('error', e.message);
+            pLogEl.innerHTML = `<span style="color:#ff004c;">Error: ${e.message}</span>`;
+        }
     }
 
     async function syncAllMatches() {
-        if(activeMatches.length === 0) return;
+        if(activeMatches.length === 0) { cLog('info', 'No matches added to sync.'); return; }
         for(let match of activeMatches) { await syncMatchData(match); await new Promise(r => setTimeout(r, 2000)); }
     }
 
-    setInterval(() => { syncAllMatches(); }, 30000);
     renderMatches();
 </script>
 </body>
