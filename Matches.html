@@ -32,7 +32,6 @@
         .match-card:active { transform: scale(0.98); }
         .match-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #00ff88; }
         
-        /* Specific borders based on status */
         .match-card.card-live::before { background: #ff004c; box-shadow: 0 0 10px #ff004c;}
         .match-card.card-completed::before { background: #ffd700; }
 
@@ -80,9 +79,8 @@
         const db = firebase.database();
 
         let allMatches = [];
-        let currentTab = 'upcoming'; // Default tab
+        let currentTab = 'upcoming'; 
 
-        // 🔄 Real-time Listener for Matches
         db.ref('Game/Kalyan11/VIPMatches').on('value', snapshot => {
             allMatches = [];
             let hasLiveMatches = false;
@@ -93,24 +91,18 @@
                     m.id = child.key;
                     allMatches.push(m);
                     
-                    // Check if there's any LIVE match to show the red blinking dot
                     let diff = m.timestamp - new Date().getTime();
                     if(diff <= 0 && diff > -14400000) { hasLiveMatches = true; }
                 });
             }
 
-            // Show/Hide Live Dot on the Tab
             document.getElementById('live-indicator').style.display = hasLiveMatches ? 'inline-block' : 'none';
-
-            // Re-render based on selected tab
             renderMatches(currentTab);
         });
 
-        // 🔘 Tab Switcher Logic
         function switchTab(tabName) {
             currentTab = tabName;
             
-            // Update Active Class
             document.getElementById('tab-upcoming').classList.remove('active');
             document.getElementById('tab-live').classList.remove('active');
             document.getElementById('tab-completed').classList.remove('active');
@@ -120,32 +112,28 @@
             renderMatches(tabName);
         }
 
-        // 🖥️ Display Logic
         function renderMatches(tabName) {
             let container = document.getElementById('match-container');
             container.innerHTML = "";
             let now = new Date().getTime();
 
-            // 🔍 Filter Matches Based on Time
             let filteredMatches = allMatches.filter(m => {
                 let diff = m.timestamp - now;
-                let isLive = diff <= 0 && diff > -14400000; // Match start ho gaya, aur 4 ghante poore nahi hue
-                let isCompleted = diff <= -14400000;       // 4 Ghante se zyada ho gaya
-                let isUpcoming = diff > 0;                 // Abhi start hona baaki hai
+                let isLive = diff <= 0 && diff > -14400000; 
+                let isCompleted = diff <= -14400000;       
+                let isUpcoming = diff > 0;                 
 
                 if(tabName === 'live') return isLive;
                 if(tabName === 'completed') return isCompleted;
                 return isUpcoming;
             });
 
-            // 📌 Sort Matches
             if(tabName === 'upcoming') {
-                filteredMatches.sort((a, b) => a.timestamp - b.timestamp); // Jo jaldi hoga wo upar
+                filteredMatches.sort((a, b) => a.timestamp - b.timestamp); 
             } else {
-                filteredMatches.sort((a, b) => b.timestamp - a.timestamp); // Live/Completed mein naya wala upar
+                filteredMatches.sort((a, b) => b.timestamp - a.timestamp); 
             }
 
-            // ❌ No Matches Found
             if(filteredMatches.length === 0) {
                 let msg = "No matches available.";
                 if(tabName === 'live') msg = "Koi bhi match abhi LIVE nahi hai.";
@@ -156,13 +144,10 @@
                 return;
             }
 
-            // 📝 Generate HTML for each match
             filteredMatches.forEach(m => {
-                let diff = m.timestamp - now;
                 let statusHtml = "";
                 let cardClass = "";
 
-                // Time Box UI Logic
                 if (tabName === 'live') {
                     statusHtml = `<div class="time-box time-live">🔴 LIVE NOW</div>`;
                     cardClass = "card-live";
@@ -173,8 +158,9 @@
                     statusHtml = `<div class="time-box" id="timer-${m.id}">Loading...</div>`;
                 }
 
+                // 🚀 UPDATE: Yahan onclick function mein hum tabName pass kar rahe hain!
                 container.innerHTML += `
-                    <div class="match-card ${cardClass}" onclick="openMatch('${m.id}', '${m.team1}', '${m.team2}')">
+                    <div class="match-card ${cardClass}" onclick="openMatch('${m.id}', '${m.team1}', '${m.team2}', '${tabName}')">
                         <div class="tour-name">${m.name}</div>
                         
                         <div class="teams-row">
@@ -201,11 +187,9 @@
                 `;
             });
 
-            // Start Live Timers for Upcoming matches
             if(tabName === 'upcoming') { updateTimers(filteredMatches); }
         }
 
-        // ⏱️ Countdown Timer Function (Only for Upcoming)
         let timerInterval;
         function updateTimers(matches) {
             clearInterval(timerInterval);
@@ -222,7 +206,6 @@
                     if (diff <= 0) {
                         el.innerHTML = "🔴 MATCH STARTED";
                         el.className = "time-box time-live";
-                        // Auto-refresh tabs to push it to LIVE section
                         setTimeout(() => { if(currentTab === 'upcoming') switchTab('upcoming'); }, 2000);
                         return;
                     }
@@ -246,9 +229,16 @@
             }, 1000);
         }
 
-        // 🔗 Redirect to Contests Page
-        function openMatch(matchId, t1, t2) {
-            window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`;
+        // 🔗 SMART ROUTER: Completed Match Seedha Leaderboard Pe Jayega!
+        function openMatch(matchId, t1, t2, status) {
+            if (status === 'completed') {
+                // Agar match complete ho gaya hai, toh seedha Leaderboard (Result) page kholo
+                let savedEntry = localStorage.getItem('kalyan_entry_fee') || 99; // Default 99 wala contest uthayega
+                window.location.href = `leader.html?matchId=${matchId}&t1=${t1}&t2=${t2}&entry=${savedEntry}`;
+            } else {
+                // Upcoming aur Live match normal Contests page pe jayenge
+                window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`;
+            }
         }
     </script>
 </body>
