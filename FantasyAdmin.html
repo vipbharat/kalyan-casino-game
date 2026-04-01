@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -50,7 +50,6 @@
         .modal-footer { padding: 15px; background: #1a1a2e; border-top: 1px solid #333; }
         .btn-save-lineup { width: 100%; background: #00ff88; color: #000; font-weight: 900; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;}
 
-        /* Loader Overlay for Payout */
         #payoutLoader { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; flex-direction:column; justify-content:center; align-items:center; color:#00ff88; font-size:20px; font-weight:900; }
     </style>
 </head>
@@ -118,28 +117,18 @@
         let currentEditingMatchId = "";
         let currentPlayersData = {};
 
-        // Contest Prize Spots Configuration
-        const contestConfig = {
-            99: 150000, 49: 5000, 39: 3000, 25: 2000,
-            999: 50, 499: 35, 299: 40, 199: 30, 125: 28, 75: 30, 35: 35, 15: 40,
-            25000: 2, 15000: 3, 10000: 5, 5000: 6,
-            5750: 2, 2875: 2, 1150: 2, 575: 2, 299: 2, 119: 2, 59: 2, 29: 2,
-            0: 100000
-        };
+        const contestConfig = { 99: 150000, 49: 5000, 39: 3000, 25: 2000, 999: 50, 499: 35, 299: 40, 199: 30, 125: 28, 75: 30, 35: 35, 15: 40, 25000: 2, 15000: 3, 10000: 5, 5000: 6, 5750: 2, 2875: 2, 1150: 2, 575: 2, 299: 2, 119: 2, 59: 2, 29: 2, 0: 100000 };
 
         function clearLink() { document.getElementById('engineUrl').value = ''; document.getElementById('statusBox').innerHTML = ''; }
 
-        // --- API FETCH LOGIC ---
         async function autoFetchPlayersFromLink() {
             let urlInput = document.getElementById('engineUrl').value.trim();
             let status = document.getElementById('statusBox');
             if(!urlInput) return;
-
             let matchIdMatch = urlInput.match(/\/(\d+)\//) || urlInput.match(/\d{4,}/);
-            if(!matchIdMatch) { status.innerHTML = "⚠️ Link me Match ID nahi mili!"; status.className = "error"; return; }
+            if(!matchIdMatch) { status.innerHTML = "⚠️ Match ID nahi mili!"; return; }
             globalApiMatchId = matchIdMatch[1] || matchIdMatch[0];
-            status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Engine data nikal raha hai..."; status.className = "loading";
-
+            status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Fetching..."; status.className = "loading";
             try {
                 let response = await fetch(`https://kalyan-point-enginee-rjkh.vercel.app/api/scout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiMatchId: globalApiMatchId }) });
                 let data = await response.json();
@@ -147,21 +136,19 @@
                     document.getElementById('t1Name').value = data.t1Name; document.getElementById('t2Name').value = data.t2Name;
                     document.getElementById('t1Players').value = data.t1Players; document.getElementById('t2Players').value = data.t2Players;
                     document.getElementById('matchName').value = `${data.t1Name} vs ${data.t2Name} Live Match`;
-                    status.innerHTML = "✅ Jadoo! Data aagaya!"; status.className = "success";
-                } else { status.innerHTML = "⚠️ API Error"; status.className = "error"; }
-            } catch(e) { status.innerHTML = "⚠️ Engine Connection Error"; status.className = "error"; }
+                    status.innerHTML = "✅ Data Loaded!"; status.className = "success";
+                }
+            } catch(e) { status.innerHTML = "⚠️ Error"; status.className = "error"; }
         }
 
-        // --- SMART ROLE ASSIGNMENT ---
         function getSmartRole(n) {
             n = n.toLowerCase();
-            if (n.includes("bumrah") || n.includes("shami") || n.includes("siraj") || n.includes("rashid")) return "BOWL";
-            if (n.includes("dhoni") || n.includes("pant") || n.includes("rizwan") || n.includes("buttler")) return "WK";
-            if (n.includes("jadeja") || n.includes("pandya") || n.includes("maxwell") || n.includes("narine")) return "AR";
+            if (n.includes("bumrah") || n.includes("shami")) return "BOWL";
+            if (n.includes("dhoni") || n.includes("pant")) return "WK";
+            if (n.includes("jadeja") || n.includes("pandya")) return "AR";
             return "BAT";
         }
 
-        // --- MATCH LAUNCH LOGIC (BUG FIXED: SANITIZATION & RESET) ---
         function launchSmartMatch() {
             let eUrl = document.getElementById('engineUrl').value.trim();
             let mName = document.getElementById('matchName').value.trim();
@@ -170,257 +157,66 @@
             let p1Text = document.getElementById('t1Players').value.trim();
             let p2Text = document.getElementById('t2Players').value.trim();
             let rawTime = document.getElementById('matchTime').value; 
-            
-            if(!mName || !t1 || !t2 || !p1Text || !p2Text) return alert("⚠️ Pehle data fetch karein!");
-            if(!rawTime) return alert("⚠️ Match ka Time select karein!");
+            if(!mName || !t1 || !t2 || !p1Text || !p2Text || !rawTime) return alert("⚠️ Details bhariye!");
 
             let mTimeObj = new Date(rawTime);
-            let safeTimeFormat = mTimeObj.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
             let msTime = mTimeObj.getTime();
+            let engineWakeUp = msTime - 1200000; // 20 mins before
             let mId = globalApiMatchId ? globalApiMatchId : "MATCH_" + Date.now();
             let pData = {};
-            
-            // Clean Team Names for safe DOM ID creation
             let safeT1 = t1.replace(/[^a-zA-Z0-9]/g, '');
             let safeT2 = t2.replace(/[^a-zA-Z0-9]/g, '');
 
-            p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { 
-                let pId = safeT1 + "_" + i;
-                pData[pId] = { id: pId, name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; 
-            });
-            p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { 
-                let pId = safeT2 + "_" + i;
-                pData[pId] = { id: pId, name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; 
-            });
+            p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[safeT1 + "_" + i] = { name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
+            p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[safeT2 + "_" + i] = { name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
 
-            db.ref('Game/Kalyan11/VIPMatches/' + mId).set({ engineUrl: eUrl || "", name: mName, team1: t1, team2: t2, time: safeTimeFormat, timestamp: msTime, status: "Upcoming" });
-            db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData).then(() => { 
-                alert("✅ VIP Match App me launch ho gaya!"); 
-                
-                // Reset Fields after success
-                document.getElementById('engineUrl').value = '';
-                document.getElementById('matchName').value = '';
-                document.getElementById('t1Name').value = '';
-                document.getElementById('t2Name').value = '';
-                document.getElementById('t1Players').value = '';
-                document.getElementById('t2Players').value = '';
-                document.getElementById('matchTime').value = '';
-                document.getElementById('statusBox').innerHTML = '';
-                globalApiMatchId = ""; 
-            });
+            // 1. VIP Matches update
+            db.ref('Game/Kalyan11/VIPMatches/' + mId).set({ engineUrl: eUrl, name: mName, team1: t1, team2: t2, timestamp: msTime, status: "Upcoming" });
+            // 2. Players update
+            db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData);
+            // 3. ENGINE TRIGGER (CRITICAL)
+            db.ref('Game/Kalyan11/LiveEngine/' + mId).set({ matchId: mId, cricbuzzLink: eUrl, wakeUpTime: engineWakeUp })
+            .then(() => { alert("✅ Match & Engine Launched!"); location.reload(); });
         }
 
-        // --- FETCH ACTIVE MATCHES ---
         db.ref('Game/Kalyan11/VIPMatches').on('value', snapshot => {
             let container = document.getElementById('activeMatchesList'); container.innerHTML = "";
-            if(!snapshot.exists()) { container.innerHTML = "<p style='color:#aaa; text-align:center;'>Koi Match nahi hai.</p>"; return; }
-
             snapshot.forEach(child => {
                 let match = child.val();
-                container.innerHTML += `
-                    <div class="match-row">
-                        <div class="match-info">
-                            <h4>${match.team1} vs ${match.team2}</h4>
-                            <p>${match.name}</p>
-                            <div class="saved-link"><i class="fa-solid fa-link"></i> ${(match.engineUrl || "No Link").substring(0, 30)}...</div>
-                        </div>
-                        <div class="action-btns">
-                            <button class="btn-toss" onclick="openLineupModal('${child.key}')"><i class="fa-solid fa-users"></i> UPDATE TOSS</button>
-                            <button class="btn-payout" onclick="processPerfectPayout('${child.key}')"><i class="fa-solid fa-trophy"></i> PAY WINNERS</button>
-                            <button class="btn-delete" onclick="deleteMatch('${child.key}')"><i class="fa-solid fa-trash"></i> DELETE</button>
-                        </div>
-                    </div>`;
+                container.innerHTML += `<div class="match-row">
+                    <div class="match-info"><h4>${match.team1} vs ${match.team2}</h4><p>${match.name}</p></div>
+                    <div class="action-btns">
+                        <button class="btn-toss" onclick="openLineupModal('${child.key}')">UPDATE TOSS</button>
+                        <button class="btn-delete" onclick="deleteMatch('${child.key}')">DELETE</button>
+                    </div>
+                </div>`;
             });
         });
 
-        // --- DELETE MATCH ---
-        function deleteMatch(mId) {
-            if(confirm("🚨 Delete kar dein? Yeh sabhi teams aur players hata dega!")) {
-                db.ref('Game/Kalyan11/VIPMatches/' + mId).remove();
-                db.ref('Game/Kalyan11/MatchPlayers/' + mId).remove();
-                db.ref('Game/Kalyan11/Contests/' + mId).remove();
-            }
-        }
+        function deleteMatch(mId) { if(confirm("Delete?")) { db.ref('Game/Kalyan11/VIPMatches/'+mId).remove(); db.ref('Game/Kalyan11/LiveEngine/'+mId).remove(); } }
 
-        // --- TOSS MODAL LOGIC (BUG FIXED) ---
         function openLineupModal(matchId) {
             currentEditingMatchId = matchId;
             document.getElementById('lineupModal').style.display = 'flex';
-            document.getElementById('modalPlayerList').innerHTML = "<div style='color:#00ff88; grid-column:span 2; text-align:center;'><i class='fa-solid fa-spinner fa-spin'></i> Fetching Squads...</div>";
-            
             db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', snap => {
-                if(!snap.exists()) {
-                    document.getElementById('modalPlayerList').innerHTML = "<div style='color:#ff004c; grid-column:span 2; text-align:center;'>Squad Data Missing!</div>";
-                    return; 
-                }
                 currentPlayersData = snap.val();
                 let container = document.getElementById('modalPlayerList'); container.innerHTML = "";
-                
                 Object.keys(currentPlayersData).forEach(pKey => {
-                    let p = currentPlayersData[pKey], statusClass = "", statusIcon = "⚪";
-                    if(p.playingStatus === "playing") { statusClass = "playing"; statusIcon = "🟢"; }
-                    else if(p.playingStatus === "benched") { statusClass = "benched"; statusIcon = "🔴"; }
-                    
-                    container.innerHTML += `<div class="p-toggle ${statusClass}" id="toggle_${pKey}" onclick="togglePlayerStatus('${pKey}')"><span id="icon_${pKey}">${statusIcon}</span> ${p.name}</div>`;
+                    let p = currentPlayersData[pKey];
+                    let s = p.playingStatus === 'playing' ? 'playing' : (p.playingStatus === 'benched' ? 'benched' : '');
+                    container.innerHTML += `<div class="p-toggle ${s}" onclick="toggleStatus('${pKey}')">${p.name}</div>`;
                 });
             });
         }
-        
-        function closeLineupModal() { document.getElementById('lineupModal').style.display = 'none'; }
-        
-        function togglePlayerStatus(pKey) {
-            let p = currentPlayersData[pKey];
-            p.playingStatus = p.playingStatus === "unannounced" ? "playing" : (p.playingStatus === "playing" ? "benched" : "unannounced");
-            
-            let el = document.getElementById("toggle_" + pKey);
-            let icon = document.getElementById("icon_" + pKey);
-            
-            el.className = "p-toggle";
-            if(p.playingStatus === "playing") { el.classList.add("playing"); icon.innerText = "🟢"; }
-            else if(p.playingStatus === "benched") { el.classList.add("benched"); icon.innerText = "🔴"; }
-            else { icon.innerText = "⚪"; }
+        function toggleStatus(k) {
+            let p = currentPlayersData[k];
+            p.playingStatus = p.playingStatus === "playing" ? "benched" : "playing";
+            openLineupModal(currentEditingMatchId);
         }
-
         function saveLineupToFirebase() {
-            let updates = {};
-            Object.keys(currentPlayersData).forEach(pKey => { updates[pKey + "/playingStatus"] = currentPlayersData[pKey].playingStatus; });
-            db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).update(updates).then(() => { closeLineupModal(); alert("✅ Toss/Lineup updated successfully!"); });
+            db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).update(currentPlayersData).then(() => { alert("Saved!"); closeLineupModal(); });
         }
-
-        // ==========================================
-        // 🏆 100% BULLETPROOF PAYOUT ENGINE
-        // ==========================================
-        function calculatePrizeLogic(rank, entry, totalSpots) {
-            if(entry === 0) return 0; 
-            if(entry === 99) { if(rank === 1) return 5000000; if(rank === 2) return 1000000; if(rank <= 10) return 100000; if(rank <= 50000) return 99; return 0; }
-            if(entry === 49) { if(rank === 1) return 20000; if(rank === 2) return 10000; if(rank <= 700) return 49; return 0; }
-            if(totalSpots <= 2) { if(rank === 1) return Math.floor(entry * 1.8); return 0;}
-            if(rank === 1) return Math.floor(entry * totalSpots * 0.4); 
-            if(rank === 2) return Math.floor(entry * totalSpots * 0.15); 
-            if(rank <= Math.floor(totalSpots * 0.4)) return entry; 
-            return 0; 
-        }
-
-        async function processPerfectPayout(matchId) {
-            if(!confirm("⚠️ DHYAN DEIN: Kya match khatam ho gaya hai aur aap sabhi jeetne walon ko unke rank ke hisaab se unke wallet mein paisa bhejna chahte hain?")) return;
-
-            const loader = document.getElementById('payoutLoader');
-            const loaderText = document.getElementById('payoutText');
-            loader.style.display = 'flex';
-
-            try {
-                // 1. Get Live Player Points
-                loaderText.innerText = "Fetching Player Points...";
-                let pSnap = await db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value');
-                let playersObj = pSnap.val() || {};
-                let maxRealPoints = 0;
-
-                // 2. Get All Teams
-                loaderText.innerText = "Scanning User Teams...";
-                let tSnap = await db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').once('value');
-                let allRealTeams = [];
-
-                if(tSnap.exists()) {
-                    tSnap.forEach(child => {
-                        let t = child.val();
-                        let calculatedPoints = 0;
-                        let teamPlayers = t.players || {};
-                        
-                        Object.values(teamPlayers).forEach(pKey => {
-                            let livePt = (playersObj[pKey] && playersObj[pKey].points) ? parseFloat(playersObj[pKey].points) : 0;
-                            if(pKey === t.captain) calculatedPoints += (livePt * 2);
-                            else if(pKey === t.viceCaptain) calculatedPoints += (livePt * 1.5);
-                            else calculatedPoints += livePt;
-                        });
-
-                        let finalPts = parseFloat(calculatedPoints.toFixed(1));
-                        if(finalPts > maxRealPoints) maxRealPoints = finalPts;
-
-                        allRealTeams.push({
-                            teamKey: child.key,
-                            phone: t.phone || child.key.split('_')[0],
-                            entry_paid: parseInt(t.entry_paid || 99),
-                            points: finalPts,
-                            payment_status: t.payment_status || "PENDING"
-                        });
-                        
-                        // Overwrite exact points in DB for safety
-                        db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${child.key}`).update({total_points: finalPts});
-                    });
-                }
-
-                // 3. Group by Contest (Entry Fee) & Distribute
-                loaderText.innerText = "Ranking & Distributing Winnings...";
-                let contestsGrouped = {};
-                allRealTeams.forEach(t => {
-                    if(!contestsGrouped[t.entry_paid]) contestsGrouped[t.entry_paid] = [];
-                    contestsGrouped[t.entry_paid].push(t);
-                });
-
-                let totalPaidUsers = 0;
-                let totalAmountPaid = 0;
-
-                for (let entryFee in contestsGrouped) {
-                    entryFee = parseInt(entryFee);
-                    let realTeamsInContest = contestsGrouped[entryFee];
-                    let totalSpots = contestConfig[entryFee] || 1000;
-                    
-                    // Generate exact same bots as leader.html to keep ranks stable
-                    let bots = [];
-                    let targetBotsForList = (totalSpots <= 100) ? totalSpots - realTeamsInContest.length : 300 - realTeamsInContest.length;
-                    if(targetBotsForList < 0) targetBotsForList = 0;
-
-                    for(let i=0; i < targetBotsForList; i++) {
-                        let pseudoRandom = (Math.sin(i * 9999) + 1) / 2;
-                        let bPoints = (i < Math.max(2, targetBotsForList * 0.05)) ? maxRealPoints + (pseudoRandom * 20) + 1 : pseudoRandom * (maxRealPoints + 5); 
-                        bots.push({ points: parseFloat(bPoints.toFixed(1)), isBot: true });
-                    }
-
-                    // Combine and Sort Exactly
-                    let combined = [...realTeamsInContest, ...bots];
-                    combined.sort((a,b) => b.points - a.points);
-
-                    // Loop sorted list to assign Exact Rank
-                    for(let r = 0; r < combined.length; r++) {
-                        let currentTeam = combined[r];
-                        if(!currentTeam.isBot) {
-                            let rank = r + 1;
-                            let prize = calculatePrizeLogic(rank, entryFee, totalSpots);
-
-                            // PAY THEM IF THEY WON AND ARE UNPAID
-                            if(prize > 0 && currentTeam.payment_status !== "PAID") {
-                                // 1. Set team as PAID
-                                await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${currentTeam.teamKey}`).update({ payment_status: "PAID" });
-                                
-                                // 2. Add to Winning Wallet
-                                let wSnap = await db.ref(`users/${currentTeam.phone}`).once('value');
-                                let wData = wSnap.val() || {};
-                                let currentWinBal = parseFloat(wData.winning_balance || 0);
-                                await db.ref(`users/${currentTeam.phone}`).update({ winning_balance: currentWinBal + prize });
-
-                                // 3. Add Transaction History
-                                await db.ref(`users/${currentTeam.phone}/Transactions`).push({
-                                    title: `🏆 Fantasy Winnings (Rank ${rank})`, amount: prize, type: "credit", date: new Date().toLocaleString()
-                                });
-
-                                totalPaidUsers++;
-                                totalAmountPaid += prize;
-                            }
-                        }
-                    }
-                }
-
-                // Make match officially very old so it moves to Completed tab
-                await db.ref(`Game/Kalyan11/VIPMatches/${matchId}`).update({ timestamp: new Date().getTime() - 15000000 });
-
-                loader.style.display = 'none';
-                alert(`✅ PAYOUT SUCCESSFUL!\n\n🏆 Total Winners Paid: ${totalPaidUsers}\n💰 Total Amount Given: ₹${totalAmountPaid.toLocaleString('en-IN')}`);
-
-            } catch (error) {
-                loader.style.display = 'none';
-                alert("❌ ERROR: " + error.message);
-            }
-        }
+        function closeLineupModal() { document.getElementById('lineupModal').style.display = 'none'; }
     </script>
 </body>
 </html>
