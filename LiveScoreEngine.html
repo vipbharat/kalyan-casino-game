@@ -3,184 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KALYAN VIP - SMART AUTO ENGINE 🚀</title>
+    <title>Kalyan VIP - Auto Engine Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        body { background: #050510; color: #fff; font-family: 'Segoe UI', sans-serif; padding: 20px; margin: 0; }
-        .header { text-align: center; border-bottom: 2px solid #00ff88; padding-bottom: 15px; margin-bottom: 20px; }
-        .header h1 { margin: 0; color: #00ff88; font-size: 24px; text-transform: uppercase; text-shadow: 0 0 10px rgba(0,255,136,0.3);}
-        .terminal { background: #000; border: 1px solid #00ff88; padding: 15px; border-radius: 5px; height: 350px; overflow-y: auto; font-family: monospace; font-size: 12px; margin-bottom: 20px;}
-        .terminal p { margin: 4px 0; border-bottom: 1px dashed #111; padding-bottom: 4px;}
-        .log-info { color: #00d2d3; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ff9f43; }
-        .status-badge { display: inline-block; padding: 8px 15px; border-radius: 15px; font-size: 12px; font-weight: bold; background: #333; color: #aaa; margin-top: 10px;}
-        .status-badge.active { background: #00ff88; color: #000; box-shadow: 0 0 10px rgba(0,255,136,0.5); animation: pulse 2s infinite;}
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        body { font-family: 'Segoe UI', sans-serif; background: #050510; color: #fff; margin: 0; padding: 20px; }
+        .header { background: linear-gradient(135deg, #1a0033, #00ff88); padding: 15px; text-align: center; font-weight: 900; font-size: 20px; border-radius: 10px; margin-bottom: 20px; color: #000; box-shadow: 0 0 15px rgba(0,255,136,0.4); }
+        .admin-box { background: #111; border: 1px solid #333; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .admin-box h3 { color: #00ff88; margin-top: 0; border-bottom: 1px dashed #444; padding-bottom: 10px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; color: #aaa; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 12px; box-sizing: border-box; background: #222; border: 1px solid #444; color: #fff; border-radius: 5px; font-size: 14px;}
+        textarea { height: 90px; resize: vertical; }
+        .row { display: flex; gap: 15px; }
+        .row .input-group { flex: 1; }
+        .btn-live { background: #00ff88; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; margin-bottom: 10px;}
+        
+        .match-row { background: #1a1a2e; border: 1px solid #4a00e0; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
+        .match-info h4 { margin: 0 0 5px; font-size: 16px; color: #ffd700; text-transform: uppercase;}
+        .match-info p { margin: 0; font-size: 12px; color: #aaa;}
+        .saved-link { color: #00d2d3; font-size: 10px; margin-top: 5px; word-break: break-all; background: #0a0a14; padding: 6px; border-radius: 4px; border: 1px solid #333; }
+        
+        .action-btns { display: flex; gap: 8px; flex-direction: column;}
+        .btn-delete { background: #ff004c; color: #fff; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 11px;}
+        .btn-toss { background: #ffd700; color: #000; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: 900; font-size: 11px; }
+        .btn-payout { background: #00ff88; color: #000; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: 900; font-size: 11px; box-shadow: 0 0 10px rgba(0,255,136,0.3);}
+        
+        #statusBox { text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 14px; margin-top: 10px;}
+        .success { color: #00ff88; } .error { color: #ff004c; } .loading { color: #ffd700; }
+        .clear-btn { background: #ff004c; border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
+        /* MODAL STYLES */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-content { background: #111; width: 90%; max-width: 500px; max-height: 85vh; border-radius: 15px; border: 2px solid #00ff88; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0,255,136,0.2);}
+        .modal-header { padding: 15px; background: #1a1a2e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { margin: 0; color: #ffd700; font-size: 18px; }
+        .close-btn { color: #ff004c; font-size: 24px; font-weight: bold; cursor: pointer; }
+        .modal-body { padding: 15px; overflow-y: auto; flex: 1; }
+        
+        .player-toggle-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .p-toggle { background: #222; border: 2px solid #555; padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 12px; font-weight: bold; transition: 0.2s; user-select: none;}
+        .p-toggle.playing { background: rgba(0,255,136,0.2); border-color: #00ff88; color: #00ff88; }
+        .p-toggle.benched { background: rgba(255,0,76,0.2); border-color: #ff004c; color: #ff004c; }
+        
+        .modal-footer { padding: 15px; background: #1a1a2e; border-top: 1px solid #333; }
+        .btn-save-lineup { width: 100%; background: #00ff88; color: #000; font-weight: 900; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;}
+
+        #payoutLoader { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; flex-direction:column; justify-content:center; align-items:center; color:#00ff88; font-size:20px; font-weight:900; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1><i class="fa-solid fa-satellite-dish"></i> VIP AUTO ENGINE</h1>
-        <p style="color:#aaa; font-size:12px;">Admin Panel ke Command ka wait kar raha hai...</p>
+    <div class="header">👑 KALYAN VIP AUTO ENGINE</div>
+
+    <div class="admin-box">
+        <h3><i class="fa-solid fa-plus"></i> 1. Add New Match</h3>
+        <div class="input-group">
+            <label>🔗 Engine Live URL</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="engineUrl" placeholder="Cricbuzz link paste karein..." oninput="autoFetchPlayersFromLink()">
+                <button class="clear-btn" onclick="clearLink()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+        <div id="statusBox"></div>
+        <div class="input-group"><label>Match Title</label><input type="text" id="matchName" placeholder="Auto Fill Hoga..."></div>
+        <div class="row">
+            <div class="input-group"><label>Team 1 Name</label><input type="text" id="t1Name" placeholder="Auto"></div>
+            <div class="input-group"><label>Team 2 Name</label><input type="text" id="t2Name" placeholder="Auto"></div>
+        </div>
+        <div class="input-group"><label>⏱️ Match Start Time</label><input type="datetime-local" id="matchTime"></div>
+        
+        <h3 style="margin-top:20px;">2. Auto Fetched Squads</h3>
+        <div class="row">
+            <div class="input-group"><label>Team 1 Players</label><textarea id="t1Players"></textarea></div>
+            <div class="input-group"><label>Team 2 Players</label><textarea id="t2Players"></textarea></div>
+        </div>
+        <button class="btn-live" onclick="launchSmartMatch()">🚀 LAUNCH VIP MATCH</button>
     </div>
 
-    <div style="text-align: center; margin-bottom: 20px;">
-        <div class="status-badge" id="sync-status">Status: MONITORING 🔥</div>
+    <div class="admin-box">
+        <h3><i class="fa-solid fa-gamepad"></i> 3. Manage Matches & Payouts</h3>
+        <div id="activeMatchesList"><div style="text-align:center; color:#ffd700;"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div></div>
     </div>
 
-    <div class="terminal" id="console-box">
-        <p class="log-info">> Engine Started. Database se connect ho raha hai...</p>
+    <div id="lineupModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🟢 UPDATE LINEUP (TOSS)</h2>
+                <div class="close-btn" onclick="closeLineupModal()">&times;</div>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 11px; color: #aaa; text-align: center; margin-top: 0;">Click once for <b>Playing</b>. Click twice for <b>Benched</b>.</p>
+                <div class="player-toggle-list" id="modalPlayerList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-save-lineup" onclick="saveLineupToFirebase()"><i class="fa-solid fa-cloud-arrow-up"></i> PUBLISH LINEUP</button>
+            </div>
+        </div>
     </div>
 
-<script>
-    // Firebase Setup
-    const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
-    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-    const db = firebase.database();
+    <div id="payoutLoader">
+        <i class="fa-solid fa-cog fa-spin" style="font-size:50px; margin-bottom:20px; color:#ffd700;"></i>
+        <div id="payoutText">Calculating Exact Ranks...</div>
+    </div>
 
-    // Aapki Google API (Fix rakhi hai)
-    const API_URL = "https://script.google.com/macros/s/AKfycbyCsBcyJ7HIIBQPULR1RNQs5FU1QIzmNRKDQQ54s61c1Ni4cH_1EtFqaOlSrzLMBj0yfA/exec";
-    
-    let activeMatchesList = {};
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
 
-    function cLog(type, msg) {
-        let box = document.getElementById('console-box');
-        let time = new Date().toLocaleTimeString();
-        box.innerHTML += `<p class="log-${type}">[${time}] ${msg}</p>`;
-        box.scrollTop = box.scrollHeight; 
-    }
+        let globalApiMatchId = "";
+        let currentEditingMatchId = "";
+        let currentPlayersData = {};
 
-    // --- 📡 APP KI COMMAND SUNO ---
-    db.ref(`Game/Kalyan11/LiveEngine`).on('value', (snapshot) => {
-        if(snapshot.exists()) {
-            activeMatchesList = snapshot.val();
-            let count = Object.keys(activeMatchesList).length;
-            document.getElementById('sync-status').innerText = `Status: ${count} MATCHES RECEIVED 📱`;
-            document.getElementById('sync-status').classList.add("active");
-            cLog('success', `📱 Admin Panel se ${count} matches ka data mila.`);
-        } else {
-            activeMatchesList = {};
-            document.getElementById('sync-status').innerText = "Status: WAITING FOR ADMIN 📱";
-            document.getElementById('sync-status').classList.remove("active");
+        const contestConfig = { 99: 150000, 49: 5000, 39: 3000, 25: 2000, 999: 50, 499: 35, 299: 40, 199: 30, 125: 28, 75: 30, 35: 35, 15: 40, 25000: 2, 15000: 3, 10000: 5, 5000: 6, 5750: 2, 2875: 2, 1150: 2, 575: 2, 299: 2, 119: 2, 59: 2, 29: 2, 0: 100000 };
+
+        function clearLink() { document.getElementById('engineUrl').value = ''; document.getElementById('statusBox').innerHTML = ''; }
+
+        async function autoFetchPlayersFromLink() {
+            let urlInput = document.getElementById('engineUrl').value.trim();
+            let status = document.getElementById('statusBox');
+            if(!urlInput) return;
+            let matchIdMatch = urlInput.match(/\/(\d+)\//) || urlInput.match(/\d{4,}/);
+            if(!matchIdMatch) { status.innerHTML = "⚠️ Match ID nahi mili!"; return; }
+            globalApiMatchId = matchIdMatch[1] || matchIdMatch[0];
+            status.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Fetching..."; status.className = "loading";
+            try {
+                let response = await fetch(`https://kalyan-point-enginee-rjkh.vercel.app/api/scout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiMatchId: globalApiMatchId }) });
+                let data = await response.json();
+                if(data.success) {
+                    document.getElementById('t1Name').value = data.t1Name; document.getElementById('t2Name').value = data.t2Name;
+                    document.getElementById('t1Players').value = data.t1Players; document.getElementById('t2Players').value = data.t2Players;
+                    document.getElementById('matchName').value = `${data.t1Name} vs ${data.t2Name} Live Match`;
+                    status.innerHTML = "✅ Data Loaded!"; status.className = "success";
+                }
+            } catch(e) { status.innerHTML = "⚠️ Error"; status.className = "error"; }
         }
-    });
 
-    // --- ⏱️ HAR 3 MINUTE MEIN CHECK KARO ---
-    setInterval(async () => {
-        let now = Date.now();
-        let matchIds = Object.keys(activeMatchesList);
-
-        if(matchIds.length === 0) return; // Koi match nahi hai toh ruko
-
-        for (let i = 0; i < matchIds.length; i++) {
-            let match = activeMatchesList[matchIds[i]];
-            
-            // ⏰ TIME CHECK: Kya toss ka time (Match - 20 mins) ho gaya hai?
-            if (now >= match.wakeUpTime) {
-                cLog('info', `🔥 Waking up for Match: ${match.matchId}`);
-                await fetchAndSync(match.matchId, match.cricbuzzLink);
-            } else {
-                let minsLeft = Math.floor((match.wakeUpTime - now) / 60000);
-                cLog('warn', `⏳ ${match.matchId}: Toss hone mein ${minsLeft} minute baaki hain. Sleeping...`);
-            }
+        function getSmartRole(n) {
+            n = n.toLowerCase();
+            if (n.includes("bumrah") || n.includes("shami")) return "BOWL";
+            if (n.includes("dhoni") || n.includes("pant")) return "WK";
+            if (n.includes("jadeja") || n.includes("pandya")) return "AR";
+            return "BAT";
         }
-    }, 180000); // Har 3 Minute (180000 ms)
 
-    // --- 🔥 FETCH AUR UPDATE LOGIC ---
-    async function fetchAndSync(matchId, currentMatchLink) {
-        if(!matchId || !currentMatchLink) return;
+        function launchSmartMatch() {
+            let eUrl = document.getElementById('engineUrl').value.trim();
+            let mName = document.getElementById('matchName').value.trim();
+            let t1 = document.getElementById('t1Name').value.trim().toUpperCase();
+            let t2 = document.getElementById('t2Name').value.trim().toUpperCase();
+            let p1Text = document.getElementById('t1Players').value.trim();
+            let p2Text = document.getElementById('t2Players').value.trim();
+            let rawTime = document.getElementById('matchTime').value; 
+            if(!mName || !t1 || !t2 || !p1Text || !p2Text || !rawTime) return alert("⚠️ Details bhariye!");
 
-        try {
-            cLog('info', `[${matchId}] Scorecard Fetch kar raha hoon... URL: ${currentMatchLink}`);
-            
-            let finalUrl = API_URL + "?url=" + encodeURIComponent(currentMatchLink);
-            let response = await fetch(finalUrl);
-            let htmlText = await response.text();
-            
-            if(!htmlText || htmlText.length < 500) throw new Error("Google API ne HTML nahi bheja.");
+            let mTimeObj = new Date(rawTime);
+            let msTime = mTimeObj.getTime();
+            let engineWakeUp = msTime - 1200000; // 20 mins before
+            let mId = globalApiMatchId ? globalApiMatchId : "MATCH_" + Date.now();
+            let pData = {};
+            let safeT1 = t1.replace(/[^a-zA-Z0-9]/g, '');
+            let safeT2 = t2.replace(/[^a-zA-Z0-9]/g, '');
 
-            let parser = new DOMParser();
-            let doc = parser.parseFromString(htmlText, "text/html");
+            p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[safeT1 + "_" + i] = { name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
+            p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[safeT2 + "_" + i] = { name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
 
-            // --- 🏁 MATCH KHATAM? ---
-            let statusText = doc.querySelector('.cb-scrd-status')?.innerText || "";
-            if (statusText.toLowerCase().includes("won by") || statusText.toLowerCase().includes("result")) {
-                cLog('error', `🏁 [${matchId}] MATCH KHATAM HO GAYA HAI! Engine list se hata raha hoon.`);
-                // Engine list se delete taaki baar baar scan na kare
-                await db.ref(`Game/Kalyan11/LiveEngine/${matchId}`).remove();
-                return;
-            }
+            // 1. VIP Matches update
+            db.ref('Game/Kalyan11/VIPMatches/' + mId).set({ engineUrl: eUrl, name: mName, team1: t1, team2: t2, timestamp: msTime, status: "Upcoming" });
+            // 2. Players update
+            db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData);
+            // 3. ENGINE TRIGGER (CRITICAL)
+            db.ref('Game/Kalyan11/LiveEngine/' + mId).set({ matchId: mId, cricbuzzLink: eUrl, wakeUpTime: engineWakeUp })
+            .then(() => { alert("✅ Match & Engine Launched!"); location.reload(); });
+        }
 
-            let rows = doc.querySelectorAll('.cb-scrd-itms');
-            if(rows.length === 0) {
-                cLog('warn', `[${matchId}] Lineup abhi tak nahi aayi hai.`);
-                return;
-            }
-
-            // Firebase se existing players laao
-            let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
-            if(!dbSnap.exists()) throw new Error("Players DB mein nahi mile.");
-            let dbPlayers = dbSnap.val();
-            let playerIdMap = {}; 
-            Object.keys(dbPlayers).forEach(key => {
-                let cleanName = dbPlayers[key].name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                playerIdMap[cleanName] = key; 
+        db.ref('Game/Kalyan11/VIPMatches').on('value', snapshot => {
+            let container = document.getElementById('activeMatchesList'); container.innerHTML = "";
+            snapshot.forEach(child => {
+                let match = child.val();
+                container.innerHTML += `<div class="match-row">
+                    <div class="match-info"><h4>${match.team1} vs ${match.team2}</h4><p>${match.name}</p></div>
+                    <div class="action-btns">
+                        <button class="btn-toss" onclick="openLineupModal('${child.key}')">UPDATE TOSS</button>
+                        <button class="btn-delete" onclick="deleteMatch('${child.key}')">DELETE</button>
+                    </div>
+                </div>`;
             });
+        });
 
-            let playerUpdates = {}; 
-            rows.forEach(row => {
-                let nameElement = row.querySelector('a.cb-text-link');
-                if(!nameElement) return; 
-                
-                let cleanScrapedName = nameElement.innerText.toLowerCase().replace(/\(c\)/ig, '').replace(/\(wk\)/ig, '').replace(/[^a-z0-9]/g, '');
+        function deleteMatch(mId) { if(confirm("Delete?")) { db.ref('Game/Kalyan11/VIPMatches/'+mId).remove(); db.ref('Game/Kalyan11/LiveEngine/'+mId).remove(); } }
 
-                let matchedFirebaseKey = null;
-                for (let dbName in playerIdMap) {
-                    if (cleanScrapedName.includes(dbName) || dbName.includes(cleanScrapedName)) {
-                        matchedFirebaseKey = playerIdMap[dbName]; break;
-                    }
-                }
-
-                if(!matchedFirebaseKey) return; 
-
-                let cols = row.querySelectorAll('.cb-col');
-                let runs = 0, wickets = 0;
-                let isBowling = row.innerText.toUpperCase().includes('ECO') || cols.length >= 8;
-
-                if (isBowling) { 
-                    wickets = cols[4] ? parseInt(cols[4].innerText) || 0 : 0; 
-                } else { 
-                    runs = cols[2] ? parseInt(cols[2].innerText) || 0 : 0; 
-                }
-
-                if (!playerUpdates[matchedFirebaseKey]) { 
-                    playerUpdates[matchedFirebaseKey] = { runs: 0, wickets: 0, isPlaying: true }; 
-                }
-                playerUpdates[matchedFirebaseKey].runs += runs;
-                playerUpdates[matchedFirebaseKey].wickets += wickets;
-                playerUpdates[matchedFirebaseKey].points = (playerUpdates[matchedFirebaseKey].runs * 1) + (playerUpdates[matchedFirebaseKey].wickets * 25);
-            });
-
-            // Firebase me push
-            let keysToUpdate = Object.keys(playerUpdates);
-            if(keysToUpdate.length > 0) {
-                let firebasePayload = {};
-                keysToUpdate.forEach(key => { 
-                    firebasePayload[key + '/points'] = playerUpdates[key].points; 
-                    firebasePayload[key + '/runs'] = playerUpdates[key].runs; 
-                    firebasePayload[key + '/wickets'] = playerUpdates[key].wickets; 
-                    firebasePayload[key + '/playingStatus'] = "playing"; // App me true dikhane ke liye
+        function openLineupModal(matchId) {
+            currentEditingMatchId = matchId;
+            document.getElementById('lineupModal').style.display = 'flex';
+            db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', snap => {
+                currentPlayersData = snap.val();
+                let container = document.getElementById('modalPlayerList'); container.innerHTML = "";
+                Object.keys(currentPlayersData).forEach(pKey => {
+                    let p = currentPlayersData[pKey];
+                    let s = p.playingStatus === 'playing' ? 'playing' : (p.playingStatus === 'benched' ? 'benched' : '');
+                    container.innerHTML += `<div class="p-toggle ${s}" onclick="toggleStatus('${pKey}')">${p.name}</div>`;
                 });
-                await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(firebasePayload);
-                cLog('success', `✅ [${matchId}] ${keysToUpdate.length} Players Score & Lineup Updated!`);
-            }
-
-        } catch(e) { 
-            cLog('error', `[${matchId}] Error: ${e.message}`);
+            });
         }
-    }
-</script>
+        function toggleStatus(k) {
+            let p = currentPlayersData[k];
+            p.playingStatus = p.playingStatus === "playing" ? "benched" : "playing";
+            openLineupModal(currentEditingMatchId);
+        }
+        function saveLineupToFirebase() {
+            db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).update(currentPlayersData).then(() => { alert("Saved!"); closeLineupModal(); });
+        }
+        function closeLineupModal() { document.getElementById('lineupModal').style.display = 'none'; }
+    </script>
 </body>
 </html>
