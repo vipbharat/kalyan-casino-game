@@ -100,10 +100,8 @@
 
         let allCombinedTeams = [];
         let isMatchLive = false, isMatchCompleted = false, matchTimeMs = 0;
-        let sortedLivePlayers = []; // Global variable for bot logic
+        let sortedLivePlayers = []; 
 
-        // Generate a pseudo-random number generator that is seeded by an ID (like a phone number).
-        // This ensures the same bot always gets the same "random" sequence, making them static on refresh.
         function seededRandom(seed) {
             let x = Math.sin(seed++) * 10000;
             return x - Math.floor(x);
@@ -116,7 +114,6 @@
             return parts[0][0] + ". " + parts[parts.length - 1]; 
         }
 
-        // 🏆 PRIZE CALCULATOR
         function calculatePrize(rank, entry) {
             if(entry === 0) return 0;
             if(entry === 99) {
@@ -145,7 +142,6 @@
                 let now = new Date().getTime();
                 let diff = matchTimeMs - now;
                 
-                // If timestamp is extremely old (artificially set during payout), it means Completed.
                 isMatchCompleted = (now - matchTimeMs) > 10000000; 
                 isMatchLive = diff <= 0 && !isMatchCompleted; 
                 
@@ -179,7 +175,7 @@
 
                             Object.values(t.players || {}).forEach(pKey => {
                                 let p = playersObj[pKey] || {};
-                                let livePts = Math.floor(p.points || 0); // Solid points
+                                let livePts = Math.floor(p.points || 0);
                                 let bonus = (p.playingStatus === "playing") ? 4 : 0; 
                                 let totalPts = bonus + livePts;
 
@@ -188,7 +184,7 @@
                                 else { calcPts += totalPts; }
                             });
 
-                            let finalPts = (isMatchLive || isMatchCompleted) ? Math.floor(calcPts) : 0; // Solid points
+                            let finalPts = (isMatchLive || isMatchCompleted) ? Math.floor(calcPts) : 0;
                             if(finalPts > maxRealPoints) maxRealPoints = finalPts;
 
                             realTeams.push({ 
@@ -207,7 +203,6 @@
                     let botCount = 150 - realTeams.length; 
                     if(botCount < 0) botCount = 0;
 
-                    // Generate static bots using a fixed seed based on the matchId and index.
                     for(let i=0; i < botCount; i++) {
                         let seed = Array.from(matchId).reduce((acc, char) => acc + char.charCodeAt(0), 0) + i;
                         let staticRandomNum = seededRandom(seed);
@@ -216,32 +211,32 @@
                         let cp = "Player", vcp = "Player";
                         
                         if(isMatchLive || isMatchCompleted) {
-                            // Calculate bot points based on max real points, ensuring solid numbers
+                            // 🚀 THE FIX: Bots now start at minimum 50 points (Dream11 11-player lineup bonus)
+                            let startingBase = 50; 
+                            let extraPts = maxRealPoints > startingBase ? (maxRealPoints - startingBase) : 0;
+
                             if(i < 3) {
-                                bPoints = maxRealPoints + Math.floor(staticRandomNum * 10);
+                                bPoints = startingBase + extraPts + Math.floor(staticRandomNum * 10);
                             } else {
-                                bPoints = Math.floor(staticRandomNum * (maxRealPoints + 5));
+                                bPoints = startingBase + Math.floor(staticRandomNum * (extraPts + 5));
                             }
                             
-                            // Assign realistic names if available
                             if(i < 10 && sortedLivePlayers.length > 2) {
                                 cp = formatName(sortedLivePlayers[Math.floor(seededRandom(seed+1) * 3)].name);
                                 vcp = formatName(sortedLivePlayers[Math.floor(seededRandom(seed+2) * 5)].name);
                             }
                         }
                         
-                        // Generate a static phone number for the bot
                         let botPhoneSuffix = Math.floor(1000 + seededRandom(seed+3) * 9000);
 
                         bots.push({ 
                             phone: "9999" + botPhoneSuffix, 
-                            points: Math.floor(bPoints), // Solid points
+                            points: Math.floor(bPoints), 
                             cName: cp, vcName: vcp, 
                             isBot: true 
                         });
                     }
 
-                    // Combine and sort by points. If tied, sort by phone number to keep order static.
                     let combined = [...realTeams, ...bots];
                     allCombinedTeams = combined.sort((a,b) => {
                         if (b.points !== a.points) return b.points - a.points;
