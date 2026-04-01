@@ -187,6 +187,7 @@
                     <div class="match-info"><h4>${match.team1} vs ${match.team2}</h4><p>${match.name}</p></div>
                     <div class="action-btns">
                         <button class="btn-toss" onclick="openLineupModal('${child.key}')">UPDATE TOSS</button>
+                        <button class="btn-payout" onclick="processPerfectPayout('${child.key}')">PAY WINNERS</button>
                         <button class="btn-delete" onclick="deleteMatch('${child.key}')">DELETE</button>
                     </div>
                 </div>`;
@@ -217,6 +218,119 @@
             db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).update(currentPlayersData).then(() => { alert("Saved!"); closeLineupModal(); });
         }
         function closeLineupModal() { document.getElementById('lineupModal').style.display = 'none'; }
+
+        // ==========================================
+        // 🏆 PAYOUT ENGINE LOGIC (Restored)
+        // ==========================================
+        function calculatePrizeLogic(rank, entry, totalSpots) {
+            if(entry === 0) return 0; 
+            if(entry === 99) { if(rank === 1) return 5000000; if(rank === 2) return 1000000; if(rank <= 10) return 100000; if(rank <= 50000) return 99; return 0; }
+            if(entry === 49) { if(rank === 1) return 20000; if(rank === 2) return 10000; if(rank <= 700) return 49; return 0; }
+            if(totalSpots <= 2) { if(rank === 1) return Math.floor(entry * 1.8); return 0;}
+            if(rank === 1) return Math.floor(entry * totalSpots * 0.4); 
+            if(rank === 2) return Math.floor(entry * totalSpots * 0.15); 
+            if(rank <= Math.floor(totalSpots * 0.4)) return entry; 
+            return 0; 
+        }
+
+        async function processPerfectPayout(matchId) {
+            if(!confirm("⚠️ DHYAN DEIN: Kya match khatam ho gaya hai aur aap sabhi jeetne walon ko paisa bhejna chahte hain?")) return;
+
+            const loader = document.getElementById('payoutLoader');
+            const loaderText = document.getElementById('payoutText');
+            loader.style.display = 'flex';
+
+            try {
+                loaderText.innerText = "Fetching Player Points...";
+                let pSnap = await db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value');
+                let playersObj = pSnap.val() || {};
+                let maxRealPoints = 0;
+
+                loaderText.innerText = "Scanning User Teams...";
+                let tSnap = await db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').once('value');
+                let allRealTeams = [];
+
+                if(tSnap.exists()) {
+                    tSnap.forEach(child => {
+                        let t = child.val();
+                        let calculatedPoints = 0;
+                        let teamPlayers = t.players || {};
+                        
+                        Object.values(teamPlayers).forEach(pKey => {
+                            let livePt = (playersObj[pKey] && playersObj[pKey].points) ? parseFloat(playersObj[pKey].points) : 0;
+                            if(pKey === t.captain) calculatedPoints += (livePt * 2);
+                            else if(pKey === t.viceCaptain) calculatedPoints += (livePt * 1.5);
+                            else calculatedPoints += livePt;
+                        });
+
+                        let finalPts = parseFloat(calculatedPoints.toFixed(1));
+                        if(finalPts > maxRealPoints) maxRealPoints = finalPts;
+
+                        allRealTeams.push({
+                            teamKey: child.key, phone: t.phone || child.key.split('_')[0], entry_paid: parseInt(t.entry_paid || 99), points: finalPts, payment_status: t.payment_status || "PENDING"
+                        });
+                        db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${child.key}`).update({total_points: finalPts});
+                    });
+                }
+
+                loaderText.innerText = "Ranking & Distributing Winnings...";
+                let contestsGrouped = {};
+                allRealTeams.forEach(t => {
+                    if(!contestsGrouped[t.entry_paid]) contestsGrouped[t.entry_paid] = [];
+                    contestsGrouped[t.entry_paid].push(t);
+                });
+
+                let totalPaidUsers = 0;
+                let totalAmountPaid = 0;
+
+                for (let entryFee in contestsGrouped) {
+                    entryFee = parseInt(entryFee);
+                    let realTeamsInContest = contestsGrouped[entryFee];
+                    let totalSpots = contestConfig[entryFee] || 1000;
+                    
+                    let bots = [];
+                    let targetBotsForList = (totalSpots <= 100) ? totalSpots - realTeamsInContest.length : 300 - realTeamsInContest.length;
+                    if(targetBotsForList < 0) targetBotsForList = 0;
+
+                    for(let i=0; i < targetBotsForList; i++) {
+                        let pseudoRandom = (Math.sin(i * 9999) + 1) / 2;
+                        let bPoints = (i < Math.max(2, targetBotsForList * 0.05)) ? maxRealPoints + (pseudoRandom * 20) + 1 : pseudoRandom * (maxRealPoints + 5); 
+                        bots.push({ points: parseFloat(bPoints.toFixed(1)), isBot: true });
+                    }
+
+                    let combined = [...realTeamsInContest, ...bots];
+                    combined.sort((a,b) => b.points - a.points);
+
+                    for(let r = 0; r < combined.length; r++) {
+                        let currentTeam = combined[r];
+                        if(!currentTeam.isBot) {
+                            let rank = r + 1;
+                            let prize = calculatePrizeLogic(rank, entryFee, totalSpots);
+
+                            if(prize > 0 && currentTeam.payment_status !== "PAID") {
+                                await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${currentTeam.teamKey}`).update({ payment_status: "PAID" });
+                                let wSnap = await db.ref(`users/${currentTeam.phone}`).once('value');
+                                let wData = wSnap.val() || {};
+                                let currentWinBal = parseFloat(wData.winning_balance || 0);
+                                await db.ref(`users/${currentTeam.phone}`).update({ winning_balance: currentWinBal + prize });
+                                await db.ref(`users/${currentTeam.phone}/Transactions`).push({ title: `🏆 Fantasy Winnings (Rank ${rank})`, amount: prize, type: "credit", date: new Date().toLocaleString() });
+
+                                totalPaidUsers++;
+                                totalAmountPaid += prize;
+                            }
+                        }
+                    }
+                }
+
+                await db.ref(`Game/Kalyan11/VIPMatches/${matchId}`).update({ timestamp: new Date().getTime() - 15000000 });
+                loader.style.display = 'none';
+                alert(`✅ PAYOUT SUCCESSFUL!\n\n🏆 Total Winners Paid: ${totalPaidUsers}\n💰 Total Amount Given: ₹${totalAmountPaid.toLocaleString('en-IN')}`);
+
+            } catch (error) {
+                loader.style.display = 'none';
+                alert("❌ ERROR: " + error.message);
+            }
+        }
     </script>
 </body>
 </html>
