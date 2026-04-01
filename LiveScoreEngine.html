@@ -27,7 +27,6 @@
 
     <div class="header">
         <h1><i class="fa-solid fa-robot"></i> AUTO-PILOT ENGINE</h1>
-        <p style="color:#aaa; font-size:12px;">Unlimited Free Sync using your Google Script</p>
     </div>
 
     <div class="terminal" id="console-box">
@@ -35,11 +34,11 @@
     </div>
 
     <div class="add-box">
-        <label style="font-size:11px; color:#aaa;">1. Teri Google API Link</label>
-        <input type="text" id="g-api-link" placeholder="https://script.google.com/macros/s/.../exec">
+        <label style="font-size:11px; color:#aaa;">1. Teri Google API Link (Auto-Filled)</label>
+        <input type="text" id="g-api-link" value="https://script.google.com/macros/s/AKfycbyCsBcyJ7HIIBQPULR1RNQs5FU1QIzmNRKDQQ54s61c1Ni4cH_1EtFqaOlSrzLMBj0yfA/exec">
         
         <label style="font-size:11px; color:#aaa;">2. Match Details</label>
-        <input type="text" id="m-id" placeholder="Firebase Match ID">
+        <input type="text" id="m-id" placeholder="Firebase Match ID (e.g., MATCH_123)">
         <input type="text" id="m-link" placeholder="Paste Cricbuzz Scorecard Link Here">
         
         <button class="btn" id="start-btn" onclick="startAutoSync()"><i class="fa-solid fa-play"></i> START AUTO-SYNC</button>
@@ -58,11 +57,6 @@
 
     let autoSyncTimer = null;
 
-    window.onload = function() {
-        let savedApi = localStorage.getItem('my_google_api');
-        if(savedApi) document.getElementById('g-api-link').value = savedApi;
-    }
-
     function cLog(type, msg) {
         let box = document.getElementById('console-box');
         let time = new Date().toLocaleTimeString();
@@ -75,15 +69,14 @@
         let link = document.getElementById('m-link').value.trim();
         let apiLink = document.getElementById('g-api-link').value.trim();
         
-        if(!id || !link || !apiLink) return alert("Saari details bhar do!");
-        localStorage.setItem('my_google_api', apiLink);
+        if(!id || !link || !apiLink) return alert("Match ID aur Cricbuzz Link bhar do!");
 
         document.getElementById('start-btn').style.display = "none";
         document.getElementById('stop-btn').style.display = "block";
         document.getElementById('sync-status').innerText = "Status: AUTO-SYNC ACTIVE";
         document.getElementById('sync-status').classList.add("active");
 
-        cLog('success', `🚀 ENGINE ON: Fetching data...`);
+        cLog('success', `🚀 ENGINE ON: Fetching Score & Lineup...`);
         fetchAndSync(id, link, apiLink);
         autoSyncTimer = setInterval(() => { fetchAndSync(id, link, apiLink); }, 180000); 
     }
@@ -97,7 +90,6 @@
         cLog('error', `🛑 ENGINE STOPPED.`);
     }
 
-    // 🔥 THE FIXED SCRAPER LOGIC
     async function fetchAndSync(matchId, cricbuzzLink, myApiUrl) {
         try {
             cLog('info', `Google API call kar raha hai...`);
@@ -143,7 +135,6 @@
 
                 if(!matchedFirebaseKey) return; 
 
-                // YAHAN THEEK KIYA HAI (Runs aur Wickets sahi jagah se utha raha hai)
                 let cols = row.querySelectorAll('.cb-col');
                 let runs = 0, wickets = 0;
                 let isBowling = row.innerText.toUpperCase().includes('ECO') || cols.length >= 8;
@@ -155,7 +146,7 @@
                 }
 
                 if (!playerUpdates[matchedFirebaseKey]) { 
-                    playerUpdates[matchedFirebaseKey] = { runs: 0, wickets: 0 }; 
+                    playerUpdates[matchedFirebaseKey] = { runs: 0, wickets: 0, isPlaying: true }; // Yahan isPlaying true set kiya
                 }
                 
                 playerUpdates[matchedFirebaseKey].runs += runs;
@@ -170,10 +161,11 @@
                     firebasePayload[key + '/points'] = playerUpdates[key].points; 
                     firebasePayload[key + '/runs'] = playerUpdates[key].runs; 
                     firebasePayload[key + '/wickets'] = playerUpdates[key].wickets; 
+                    firebasePayload[key + '/isPlaying'] = playerUpdates[key].isPlaying; // Firebase me update karega
                 });
                 
                 await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(firebasePayload);
-                cLog('success', `✅ BOOM! ${keysToUpdate.length} Players Updated!`);
+                cLog('success', `✅ BOOM! ${keysToUpdate.length} Players Score & Lineup Updated!`);
             } else {
                 cLog('error', `Data mila par naam match nahi hue.`);
             }
