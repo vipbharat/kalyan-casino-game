@@ -11,17 +11,13 @@
         body { background: #050510; color: #fff; font-family: 'Segoe UI', sans-serif; padding: 20px; margin: 0; }
         .header { text-align: center; border-bottom: 2px solid #00ff88; padding-bottom: 15px; margin-bottom: 20px; }
         .header h1 { margin: 0; color: #00ff88; font-size: 24px; text-transform: uppercase; text-shadow: 0 0 10px rgba(0,255,136,0.3);}
-        
         .add-box { background: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px;}
         input { width: calc(100% - 20px); padding: 10px; margin-bottom: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 5px; font-family: monospace;}
-        
         .btn { width: 100%; padding: 12px; background: #00ff88; color: #000; border: none; border-radius: 5px; font-weight: 900; cursor: pointer; text-transform: uppercase; margin-bottom: 10px;}
         .btn-stop { background: #ff004c; color: #fff; display: none; }
-        
         .terminal { background: #000; border: 1px solid #00ff88; padding: 10px; border-radius: 5px; height: 180px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-bottom: 20px;}
         .terminal p { margin: 2px 0; border-bottom: 1px dashed #111; padding-bottom: 2px;}
         .log-info { color: #00d2d3; } .log-success { color: #00ff88; } .log-error { color: #ff004c; }
-        
         .status-badge { display: inline-block; padding: 5px 10px; border-radius: 15px; font-size: 10px; font-weight: bold; background: #333; color: #aaa; margin-top: 10px;}
         .status-badge.active { background: #00ff88; color: #000; box-shadow: 0 0 10px rgba(0,255,136,0.5); animation: pulse 2s infinite;}
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -35,18 +31,18 @@
     </div>
 
     <div class="terminal" id="console-box">
-        <p class="log-info">> Auto-Pilot Engine Ready...</p>
+        <p class="log-info">> Google API Engine Ready...</p>
     </div>
 
     <div class="add-box">
-        <label style="font-size:11px; color:#aaa;">1. Teri Google API Link (Jo tune banayi thi)</label>
-        <input type="password" id="g-api-link" placeholder="https://script.google.com/macros/s/.../exec">
+        <label style="font-size:11px; color:#aaa;">1. Teri Google API Link</label>
+        <input type="text" id="g-api-link" placeholder="https://script.google.com/macros/s/.../exec">
         
         <label style="font-size:11px; color:#aaa;">2. Match Details</label>
-        <input type="text" id="m-id" placeholder="Firebase Match ID (e.g., MATCH_1711...)">
+        <input type="text" id="m-id" placeholder="Firebase Match ID">
         <input type="text" id="m-link" placeholder="Paste Cricbuzz Scorecard Link Here">
         
-        <button class="btn" id="start-btn" onclick="startAutoSync()"><i class="fa-solid fa-play"></i> START AUTO-SYNC (EVERY 3 MIN)</button>
+        <button class="btn" id="start-btn" onclick="startAutoSync()"><i class="fa-solid fa-play"></i> START AUTO-SYNC</button>
         <button class="btn btn-stop" id="stop-btn" onclick="stopAutoSync()"><i class="fa-solid fa-stop"></i> STOP SYNC</button>
         
         <div style="text-align: center;">
@@ -55,13 +51,13 @@
     </div>
 
 <script>
+    // Firebase Setup
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
 
     let autoSyncTimer = null;
 
-    // Load saved API link
     window.onload = function() {
         let savedApi = localStorage.getItem('my_google_api');
         if(savedApi) document.getElementById('g-api-link').value = savedApi;
@@ -79,7 +75,7 @@
         let link = document.getElementById('m-link').value.trim();
         let apiLink = document.getElementById('g-api-link').value.trim();
         
-        if(!id || !link || !apiLink) return alert("Bhai saari details bhar do!");
+        if(!id || !link || !apiLink) return alert("Saari details bhar do!");
         localStorage.setItem('my_google_api', apiLink);
 
         document.getElementById('start-btn').style.display = "none";
@@ -87,15 +83,9 @@
         document.getElementById('sync-status').innerText = "Status: AUTO-SYNC ACTIVE";
         document.getElementById('sync-status').classList.add("active");
 
-        cLog('success', `🚀 AUTO-PILOT ON: Engine will fetch data every 3 minutes.`);
-        
-        // Pehli baar turant chalega
+        cLog('success', `🚀 ENGINE ON: Fetching data...`);
         fetchAndSync(id, link, apiLink);
-
-        // Phir har 3 minute (180000 milliseconds) mein khud chalega
-        autoSyncTimer = setInterval(() => {
-            fetchAndSync(id, link, apiLink);
-        }, 180000); 
+        autoSyncTimer = setInterval(() => { fetchAndSync(id, link, apiLink); }, 180000); 
     }
 
     function stopAutoSync() {
@@ -104,15 +94,14 @@
         document.getElementById('stop-btn').style.display = "none";
         document.getElementById('sync-status').innerText = "Status: OFF";
         document.getElementById('sync-status').classList.remove("active");
-        cLog('error', `🛑 AUTO-PILOT STOPPED.`);
+        cLog('error', `🛑 ENGINE STOPPED.`);
     }
 
-    // Yahi wo logic hai jo pehle perfectly kaam kar raha tha (HTML Scraper)
+    // 🔥 THE FIXED SCRAPER LOGIC
     async function fetchAndSync(matchId, cricbuzzLink, myApiUrl) {
         try {
-            cLog('info', `Fetching Live Data for ${matchId}...`);
+            cLog('info', `Google API call kar raha hai...`);
             
-            // Firebase Players
             let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
             if(!dbSnap.exists()) throw new Error("Match ID DB mein nahi mili!");
             let dbPlayers = dbSnap.val();
@@ -122,18 +111,20 @@
                 playerIdMap[cleanName] = key; 
             });
 
-            // Fetch HTML via Your Custom Google Proxy
             let finalUrl = myApiUrl + "?url=" + encodeURIComponent(cricbuzzLink);
             let response = await fetch(finalUrl);
             let htmlText = await response.text();
             
-            if(!htmlText || htmlText.includes('URL missing')) throw new Error("Google ne HTML nahi bheja!");
+            if(!htmlText || htmlText.length < 500) throw new Error("Google ne HTML block kar diya.");
 
             let parser = new DOMParser();
             let doc = parser.parseFromString(htmlText, "text/html");
             let rows = doc.querySelectorAll('.cb-scrd-itms');
 
-            if(rows.length === 0) throw new Error("Scorecard khali hai! Agar match live nahi hai toh wait karo.");
+            if(rows.length === 0) {
+                cLog('error', `Scoreboard nahi mila.`);
+                return;
+            }
 
             let playerUpdates = {}; 
             
@@ -141,8 +132,7 @@
                 let nameElement = row.querySelector('a.cb-text-link');
                 if(!nameElement) return; 
                 
-                let pNameRaw = nameElement.innerText;
-                let cleanScrapedName = pNameRaw.toLowerCase().replace(/\(c\)/ig, '').replace(/\(wk\)/ig, '').replace(/[^a-z0-9]/g, '');
+                let cleanScrapedName = nameElement.innerText.toLowerCase().replace(/\(c\)/ig, '').replace(/\(wk\)/ig, '').replace(/[^a-z0-9]/g, '');
 
                 let matchedFirebaseKey = null;
                 for (let dbName in playerIdMap) {
@@ -153,29 +143,39 @@
 
                 if(!matchedFirebaseKey) return; 
 
+                // YAHAN THEEK KIYA HAI (Runs aur Wickets sahi jagah se utha raha hai)
                 let cols = row.querySelectorAll('.cb-col');
                 let runs = 0, wickets = 0;
-                let isBowling = row.innerHTML.includes('ECO') || row.innerHTML.includes('Maiden') || cols.length >= 8;
-                let boldStat = row.querySelector('.text-bold');
+                let isBowling = row.innerText.toUpperCase().includes('ECO') || cols.length >= 8;
 
-                if (isBowling) { wickets = boldStat ? parseInt(boldStat.innerText) : parseInt(cols[4]?.innerText || 0); } 
-                else { runs = boldStat ? parseInt(boldStat.innerText) : parseInt(cols[2]?.innerText || 0); }
+                if (isBowling) { 
+                    wickets = cols[4] ? parseInt(cols[4].innerText) || 0 : 0; 
+                } else { 
+                    runs = cols[2] ? parseInt(cols[2].innerText) || 0 : 0; 
+                }
 
-                if(isNaN(runs)) runs = 0; if(isNaN(wickets)) wickets = 0;
-
-                if (!playerUpdates[matchedFirebaseKey]) { playerUpdates[matchedFirebaseKey] = { runs: 0, wickets: 0, name: dbPlayers[matchedFirebaseKey].name }; }
+                if (!playerUpdates[matchedFirebaseKey]) { 
+                    playerUpdates[matchedFirebaseKey] = { runs: 0, wickets: 0 }; 
+                }
+                
                 playerUpdates[matchedFirebaseKey].runs += runs;
                 playerUpdates[matchedFirebaseKey].wickets += wickets;
                 playerUpdates[matchedFirebaseKey].points = (playerUpdates[matchedFirebaseKey].runs * 1) + (playerUpdates[matchedFirebaseKey].wickets * 25);
             });
 
-            // Update Firebase
             let keysToUpdate = Object.keys(playerUpdates);
             if(keysToUpdate.length > 0) {
                 let firebasePayload = {};
-                keysToUpdate.forEach(key => { firebasePayload[key + '/points'] = playerUpdates[key].points; });
+                keysToUpdate.forEach(key => { 
+                    firebasePayload[key + '/points'] = playerUpdates[key].points; 
+                    firebasePayload[key + '/runs'] = playerUpdates[key].runs; 
+                    firebasePayload[key + '/wickets'] = playerUpdates[key].wickets; 
+                });
+                
                 await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(firebasePayload);
-                cLog('success', `✅ Auto-Sync Complete: ${keysToUpdate.length} Players Updated!`);
+                cLog('success', `✅ BOOM! ${keysToUpdate.length} Players Updated!`);
+            } else {
+                cLog('error', `Data mila par naam match nahi hue.`);
             }
 
         } catch(e) { 
