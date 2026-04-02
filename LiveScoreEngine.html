@@ -122,7 +122,7 @@
         }
     }
 
-    // 🏏 CRICBUZZ LOGIC
+    // 🏏 CRICBUZZ LOGIC (WITH STRICT CHATNI MACHINE)
     async function parseCricbuzz(doc, matchId) {
         let status = doc.querySelector('.cb-scrd-status')?.innerText || "";
         if (status.toLowerCase().includes("won by") || status.toLowerCase().includes("result")) {
@@ -131,44 +131,77 @@
             return;
         }
 
+        // 🔥 1. CHATNI MACHINE: Sirf maidan par aane wale khiladiyon ki list nikalna
         let pageText = doc.body.innerText;
-        let xiMatch = pageText.match(/(?:Playing|XI):\s*(.*?)(?:Bench|$)/i);
-        let lineupNames = xiMatch ? xiMatch[1].toLowerCase() : "";
+        let playingMatch = pageText.match(/(?:Playing|XI)\s*:\s*(.*?)(?:Bench|Support Staff|$)/i);
+        
+        // Isme sirf khelne wale 22 khiladiyon ke naam honge
+        let playingList = playingMatch ? playingMatch[1].toLowerCase().split(',').map(n => n.trim().replace(/[^a-z ]/g, '')) : [];
 
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
         if(!dbSnap.exists()) return;
         
         let players = dbSnap.val();
-        let nameMap = {};
-        Object.keys(players).forEach(k => { nameMap[players[k].name.toLowerCase().replace(/[^a-z0-9]/g, '')] = k; });
-
         let updates = {};
-        doc.querySelectorAll('.cb-scrd-itms').forEach(row => {
-            let nameEl = row.querySelector('a.cb-text-link');
-            if(!nameEl) return;
-            let clean = nameEl.innerText.toLowerCase().replace(/\(c\)/ig, '').replace(/\(wk\)/ig, '').replace(/[^a-z0-9]/g, '');
+        let rows = doc.querySelectorAll('.cb-scrd-itms');
+
+        for (let key in players) {
+            // Khiladi ka naam aur uska aakhri naam (Surname) nikalna
+            let fbName = players[key].name.toLowerCase().replace(/[^a-z ]/g, '').trim();
+            let fbNameParts = fbName.split(' ');
+            let lastName = fbNameParts[fbNameParts.length - 1]; 
             
-            let key = null;
-            for (let n in nameMap) { if (clean.includes(n) || n.includes(clean)) { key = nameMap[n]; break; } }
+            let runs = 0, wickets = 0;
+            let inScorecard = false;
 
-            if(key) {
-                let cols = row.querySelectorAll('.cb-col');
-                let r = 0, w = 0;
-                if(row.innerText.toUpperCase().includes('ECO')) { w = parseInt(cols[4].innerText) || 0; }
-                else { r = parseInt(cols[2].innerText) || 0; }
+            // 🏏 Points Check (Runs aur Wickets)
+            rows.forEach(row => {
+                let nameEl = row.querySelector('a.cb-text-link');
+                if(!nameEl) return;
+                let webName = nameEl.innerText.toLowerCase().replace(/[^a-z ]/g, '').trim();
                 
-                let playerStatus = lineupNames.includes(clean.substring(0, 5)) ? "playing" : "bench";
+                if(webName.includes(lastName) || fbName.includes(webName)) {
+                    inScorecard = true;
+                    let cols = row.querySelectorAll('.cb-col');
+                    if(row.innerText.toUpperCase().includes('ECO')) { wickets = parseInt(cols[4].innerText) || 0; } 
+                    else { runs = parseInt(cols[2].innerText) || 0; }
+                }
+            });
 
-                updates[key + '/points'] = (r * 1) + (w * 25);
-                updates[key + '/runs'] = r;
-                updates[key + '/wickets'] = w;
-                updates[key + '/playingStatus'] = playerStatus;
+            // 🎯 2. ASLI CHATNI (FILTER LOGIC)
+            let currentStatus = "unannounced";
+
+            // Agar lineup (toss) ho chuka hai, tabhi chatni karenge
+            if (playingList.length > 5) {
+                let isPlaying = false;
+                
+                // Check karo kya khiladi ka naam Playing List me hai?
+                for (let pName of playingList) {
+                    if (pName.includes(lastName) || fbName.includes(pName)) {
+                        isPlaying = true;
+                        break;
+                    }
+                }
+                
+                // Agar list mein naam mila toh 'playing', nahi mila toh direct 'bench'
+                currentStatus = isPlaying ? "playing" : "bench";
+            } 
+            
+            // Backup: Agar match shuru ho gaya aur wo run bana raha hai, toh 100% playing hi hai
+            if (inScorecard) {
+                currentStatus = "playing";
             }
-        });
+
+            // 💾 Firebase me Data bhej do
+            updates[key + '/points'] = (runs * 1) + (wickets * 25);
+            updates[key + '/runs'] = runs;
+            updates[key + '/wickets'] = wickets;
+            updates[key + '/playingStatus'] = currentStatus;
+        }
 
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-            cLog('success', `✅ Cricbuzz: Points & Lineup Updated!`);
+            cLog('success', `✅ Asli Chatni (Lineup Filter) & Points Updated!`);
         }
     }
 
