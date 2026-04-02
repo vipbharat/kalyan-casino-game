@@ -78,7 +78,7 @@
         });
     }
 
-    // 📡 DATABASE SE MATCHES KI LIST PADHNA (Refresh ke baad yahi se wapas aayenge)
+    // 📡 DATABASE SE MATCHES KI LIST PADHNA
     db.ref(`Game/Kalyan11/LiveEngine`).on('value', (snapshot) => {
         activeMatches = snapshot.exists() ? snapshot.val() : {};
         let count = Object.keys(activeMatches).length;
@@ -118,6 +118,11 @@
                 return;
             }
 
+            // 🔥 Yahan Lineup / Playing XI dhoondhne ka logic fit kiya hai 🔥
+            let pageText = doc.body.innerText;
+            let xiMatch = pageText.match(/(?:Playing|XI):\s*(.*?)(?:Bench|$)/i);
+            let lineupNames = xiMatch ? xiMatch[1].toLowerCase() : "";
+
             // Scraping and Updating Firebase MatchPlayers
             let rows = doc.querySelectorAll('.cb-scrd-itms');
             let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
@@ -140,16 +145,23 @@
                     let r = 0, w = 0;
                     if(row.innerText.toUpperCase().includes('ECO')) { w = parseInt(cols[4].innerText) || 0; }
                     else { r = parseInt(cols[2].innerText) || 0; }
+                    
+                    // 🔥 Lineup Check: Agar khiladi lineup list mein hai tabhi "playing" warna "bench" 🔥
+                    let playerStatus = "bench";
+                    if (lineupNames.includes(clean.substring(0, 5))) {
+                        playerStatus = "playing";
+                    }
+
                     updates[key + '/points'] = (r * 1) + (w * 25);
                     updates[key + '/runs'] = r;
                     updates[key + '/wickets'] = w;
-                    updates[key + '/playingStatus'] = "playing";
+                    updates[key + '/playingStatus'] = playerStatus;
                 }
             });
 
             if(Object.keys(updates).length > 0) {
                 await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-                cLog('success', `✅ [${matchId}] Points Updated.`);
+                cLog('success', `✅ [${matchId}] Points & Lineups Updated.`);
             }
         } catch(e) { cLog('error', `Error syncing ${matchId}: ${e.message}`); }
     }
