@@ -120,7 +120,7 @@
             let m = activeMatches[id];
             if (now >= m.wakeUpTime) { await runSync(id, m.cricbuzzLink); }
         }
-    }, 120000);
+    }, 60000); // Har 1 minute mein check karega
 
     async function runSync(matchId, link) {
         try {
@@ -138,8 +138,7 @@
             let doc = new DOMParser().parseFromString(html, "text/html");
 
             if (link.includes("cricbuzz.com")) { await parseCricbuzz(doc, matchId); } 
-            else if (link.includes("espncricinfo.com")) { await parseESPN(doc, matchId); } 
-            else { cLog('error', `❌ Link invalid. Cricbuzz ya ESPN use karein.`); }
+            else { cLog('error', `❌ Link invalid. Cricbuzz use karein.`); }
         } catch (e) { cLog('error', `Sync Error: ${e.message}`); }
     }
 
@@ -177,7 +176,7 @@
         } catch(e) { cLog('error', `Leaderboard Error: ${e.message}`); }
     }
 
-    // 🔥 FIX: 100% ACCURATE CRICBUZZ SCRAPER 🔥
+    // 🔥 FIX: 100% ACCURATE POINT ACCUMULATOR 🔥
     async function parseCricbuzz(doc, matchId) {
         let status = doc.querySelector('.cb-scrd-status')?.innerText || "";
         if (status.toLowerCase().includes("won by") || status.toLowerCase().includes("result")) {
@@ -185,10 +184,6 @@
             await db.ref(`Game/Kalyan11/LiveEngine/${matchId}`).remove();
             return;
         }
-
-        let pageText = doc.body.innerText;
-        let playingMatch = pageText.match(/(?:Playing|XI)\s*:\s*(.*?)(?:Bench|Support Staff|$)/i);
-        let playingList = playingMatch ? playingMatch[1].toLowerCase().split(',').map(n => n.trim().replace(/[^a-z ]/g, '')) : [];
 
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
         if(!dbSnap.exists()) return;
@@ -199,8 +194,7 @@
 
         for (let key in players) {
             let fbName = players[key].name.toLowerCase().replace(/[^a-z ]/g, '').trim();
-            let fbNameParts = fbName.split(' ');
-            let lastName = fbNameParts[fbNameParts.length - 1]; 
+            let lastName = fbName.split(' ').pop(); 
             
             let runs = 0, wickets = 0;
             let inScorecard = false;
@@ -213,31 +207,22 @@
                 if(webName.includes(lastName) || fbName.includes(webName)) {
                     inScorecard = true;
                     let cols = row.querySelectorAll('.cb-col');
-                    
-                    // SMART CHECK: Bowling table hai ya Batting table?
-                    let isBowling = cols[1] && cols[1].className.includes('cb-col-8');
+                    let isBowling = row.parentNode.innerText.includes('WKTS') || row.parentNode.innerText.includes('Wickets');
                     
                     if(isBowling) {
-                        let w = parseInt(cols[4].innerText); // Wickets column
+                        let w = parseInt(cols[4]?.innerText);
                         if(!isNaN(w)) wickets = w;
                     } else {
-                        let r = parseInt(cols[2].innerText); // Runs column
+                        let r = parseInt(cols[2]?.innerText);
                         if(!isNaN(r)) runs = r;
                     }
                 }
             });
 
-            let currentStatus = "unannounced";
-            if (playingList.length > 5) {
-                let isPlaying = false;
-                for (let pName of playingList) {
-                    if (pName.includes(lastName) || fbName.includes(pName)) { isPlaying = true; break; }
-                }
-                currentStatus = isPlaying ? "playing" : "bench";
-            } 
-            if (inScorecard) currentStatus = "playing";
+            let currentStatus = inScorecard ? "playing" : (players[key].playingStatus || "unannounced");
+            let totalPoints = (runs * 1) + (wickets * 25);
 
-            updates[key + '/points'] = (runs * 1) + (wickets * 25);
+            updates[key + '/points'] = totalPoints;
             updates[key + '/runs'] = runs;
             updates[key + '/wickets'] = wickets;
             updates[key + '/playingStatus'] = currentStatus;
@@ -246,48 +231,6 @@
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
             cLog('success', `✅ Asli Chatni & Points Updated for ${matchId}!`);
-            await updateLiveLeaderboard(matchId);
-        }
-    }
-
-    async function parseESPN(doc, matchId) {
-        let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
-        if(!dbSnap.exists()) return;
-        let players = dbSnap.val();
-        let updates = {};
-
-        doc.querySelectorAll('table').forEach(table => {
-            table.querySelectorAll('tr').forEach(row => {
-                let nameCell = row.querySelector('td a'); 
-                if(nameCell && row.innerText.length > 10) {
-                    let clean = nameCell.innerText.toLowerCase().replace(/[^a-z0-9]/g, '');
-                    let key = null;
-                    for (let pKey in players) { 
-                        let fbName = players[pKey].name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                        if (clean.includes(fbName) || fbName.includes(clean)) { key = pKey; break; } 
-                    }
-
-                    if(key) {
-                        let tds = row.querySelectorAll('td');
-                        let r = 0, w = 0;
-                        if(table.innerHTML.includes('ECON') || table.innerHTML.includes('Econ')) {
-                            w = parseInt(tds[4]?.innerText || tds[3]?.innerText) || 0;
-                        } else {
-                            r = parseInt(tds[2]?.innerText || tds[3]?.innerText) || 0;
-                        }
-
-                        updates[key + '/points'] = (r * 1) + (w * 25);
-                        updates[key + '/runs'] = r;
-                        updates[key + '/wickets'] = w;
-                        updates[key + '/playingStatus'] = "playing";
-                    }
-                }
-            });
-        });
-
-        if(Object.keys(updates).length > 0) {
-            await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-            cLog('success', `✅ ESPN: Points Updated for ${matchId}!`);
             await updateLiveLeaderboard(matchId);
         }
     }
