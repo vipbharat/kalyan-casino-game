@@ -15,11 +15,17 @@
         h3 { margin-top: 0; font-size: 14px; color: #00d2d3; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 8px;}
         input { width: calc(100% - 22px); padding: 12px; margin-bottom: 10px; background: #000; border: 1px solid #444; color: #fff; border-radius: 5px; font-weight: bold;}
         .btn-start { width: 100%; padding: 12px; background: #00ff88; color: #000; font-weight: 900; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase;}
-        .terminal { background: #000; border: 1px solid #00ff88; padding: 15px; border-radius: 5px; height: 350px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-bottom: 20px;}
+        .terminal { background: #000; border: 1px solid #00ff88; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-bottom: 20px;}
         .terminal p { margin: 4px 0; border-bottom: 1px dashed #111; padding-bottom: 4px;}
         .log-info { color: #00d2d3; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ff9f43; }
         .status-badge { display: inline-block; padding: 8px 15px; border-radius: 15px; font-size: 12px; font-weight: bold; background: #333; color: #aaa; margin-top: 10px;}
         .status-badge.active { background: #00ff88; color: #000; box-shadow: 0 0 10px rgba(0,255,136,0.5); animation: pulse 2s infinite;}
+        
+        /* New Styles for Active Matches List */
+        .match-card { background: #000; border: 1px solid #00ff88; padding: 10px; border-radius: 5px; margin-bottom: 10px; position: relative; }
+        .match-card strong { color: #00ff88; font-size: 14px; }
+        .match-card a { color: #00d2d3; font-size: 11px; word-break: break-all; display: block; margin: 5px 0; text-decoration: none; }
+        .btn-stop { background: #ff004c; color: #fff; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: bold; text-transform: uppercase; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
@@ -36,7 +42,11 @@
         <input type="text" id="m-link" placeholder="Cricbuzz ya ESPN Scorecard Link Paste Karein">
         <input type="datetime-local" id="m-time">
         <button class="btn-start" onclick="saveMatchToDatabase()">SAVE & START SYNC</button>
-        <p style="font-size: 10px; color: #aaa; margin-top: 10px;">*Note: Cricbuzz best hai, par ab yeh ESPN bhi support karega.</p>
+    </div>
+
+    <div class="box" id="active-matches-container" style="display: none;">
+        <h3><i class="fa-solid fa-list"></i> Running Matches (Live Links)</h3>
+        <div id="active-matches-list"></div>
     </div>
 
     <div class="terminal" id="console-box">
@@ -66,28 +76,60 @@
 
         if(!id || !link || !time) return alert("Sari details bhariye!");
 
-        let wakeTime = new Date(time).getTime() - 1200000; // 20 min pehle chalega
+        let wakeTime = new Date(time).getTime() - 1200000; 
 
         db.ref(`Game/Kalyan11/LiveEngine/${id}`).set({
             matchId: id,
             cricbuzzLink: link,
             wakeUpTime: wakeTime
         }).then(() => {
-            alert("Match Saved! Engine apna kaam shuru kar raha hai.");
+            // Box khali karo taaki naya match dal sakein, purana wala niche list mein chala jayega
             document.getElementById('m-id').value = "";
             document.getElementById('m-link').value = "";
+            cLog('success', `Match ${id} Added! Niche list mein check karein.`);
         });
     }
 
-    // 3️⃣ Active Matches List Padhna
+    // 🔴 3️⃣ Stop Sync Button Logic (Manually rokne ke liye)
+    function stopMatch(id) {
+        if(confirm(`Kya aap sach mein Match ${id} ka sync rokna chahte hain?`)) {
+            db.ref(`Game/Kalyan11/LiveEngine/${id}`).remove();
+            cLog('warn', `🛑 Engine Stopped for Match: ${id}`);
+        }
+    }
+
+    // 4️⃣ Active Matches List Padhna aur Niche Dikhana
     db.ref(`Game/Kalyan11/LiveEngine`).on('value', (snapshot) => {
         activeMatches = snapshot.exists() ? snapshot.val() : {};
         let count = Object.keys(activeMatches).length;
+        
+        // Status Badge Update
         document.getElementById('sync-status').innerText = `Status: SYNCING ${count} MATCHES 🔥`;
         document.getElementById('sync-status').className = count > 0 ? "status-badge active" : "status-badge";
+
+        // Niche Wali List Update Karna
+        let listDiv = document.getElementById('active-matches-list');
+        let container = document.getElementById('active-matches-container');
+        
+        if (count > 0) {
+            container.style.display = "block";
+            let html = "";
+            for (let id in activeMatches) {
+                html += `
+                <div class="match-card">
+                    <strong>ID: ${id}</strong>
+                    <a href="${activeMatches[id].cricbuzzLink}" target="_blank">${activeMatches[id].cricbuzzLink}</a>
+                    <button class="btn-stop" onclick="stopMatch('${id}')"><i class="fa-solid fa-trash"></i> STOP SYNC</button>
+                </div>`;
+            }
+            listDiv.innerHTML = html;
+        } else {
+            container.style.display = "none";
+            listDiv.innerHTML = "";
+        }
     });
 
-    // 4️⃣ MAIN LOOP (Har 2 Minute Me)
+    // 5️⃣ MAIN ENGINE LOOP (Har 2 Minute Me)
     setInterval(async () => {
         let now = Date.now();
         let ids = Object.keys(activeMatches);
@@ -100,22 +142,20 @@
         }
     }, 120000);
 
-    // 5️⃣ SMART ROUTER ENGINE
+    // 6️⃣ SMART ROUTER ENGINE (Cricbuzz + ESPN)
     async function runSync(matchId, link) {
         try {
-            cLog('info', `🌐 Data fetch kar rahe hain for Match: ${matchId}`);
+            cLog('info', `🌐 Fetching data for Match: ${matchId}`);
             let res = await fetch(API_URL + "?url=" + encodeURIComponent(link));
             let html = await res.text();
             let doc = new DOMParser().parseFromString(html, "text/html");
 
             if (link.includes("cricbuzz.com")) {
                 await parseCricbuzz(doc, matchId);
-            } 
-            else if (link.includes("espncricinfo.com")) {
+            } else if (link.includes("espncricinfo.com")) {
                 await parseESPN(doc, matchId);
-            } 
-            else {
-                cLog('error', `❌ Link samajh nahi aaya. Cricbuzz ya ESPN use karein.`);
+            } else {
+                cLog('error', `❌ Link invalid. Cricbuzz ya ESPN use karein.`);
             }
         } catch (e) {
             cLog('error', `Sync Error: ${e.message}`);
@@ -126,16 +166,13 @@
     async function parseCricbuzz(doc, matchId) {
         let status = doc.querySelector('.cb-scrd-status')?.innerText || "";
         if (status.toLowerCase().includes("won by") || status.toLowerCase().includes("result")) {
-            cLog('error', `🏁 Match Finished. Sync stopped.`);
-            await db.ref(`Game/Kalyan11/LiveEngine/${matchId}`).remove();
+            cLog('error', `🏁 Match Finished. Automatically Stopping Sync.`);
+            await db.ref(`Game/Kalyan11/LiveEngine/${matchId}`).remove(); // Match list se automatic hatega
             return;
         }
 
-        // 🔥 1. CHATNI MACHINE: Sirf maidan par aane wale khiladiyon ki list nikalna
         let pageText = doc.body.innerText;
         let playingMatch = pageText.match(/(?:Playing|XI)\s*:\s*(.*?)(?:Bench|Support Staff|$)/i);
-        
-        // Isme sirf khelne wale 22 khiladiyon ke naam honge
         let playingList = playingMatch ? playingMatch[1].toLowerCase().split(',').map(n => n.trim().replace(/[^a-z ]/g, '')) : [];
 
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
@@ -146,7 +183,6 @@
         let rows = doc.querySelectorAll('.cb-scrd-itms');
 
         for (let key in players) {
-            // Khiladi ka naam aur uska aakhri naam (Surname) nikalna
             let fbName = players[key].name.toLowerCase().replace(/[^a-z ]/g, '').trim();
             let fbNameParts = fbName.split(' ');
             let lastName = fbNameParts[fbNameParts.length - 1]; 
@@ -154,7 +190,6 @@
             let runs = 0, wickets = 0;
             let inScorecard = false;
 
-            // 🏏 Points Check (Runs aur Wickets)
             rows.forEach(row => {
                 let nameEl = row.querySelector('a.cb-text-link');
                 if(!nameEl) return;
@@ -168,31 +203,21 @@
                 }
             });
 
-            // 🎯 2. ASLI CHATNI (FILTER LOGIC)
             let currentStatus = "unannounced";
 
-            // Agar lineup (toss) ho chuka hai, tabhi chatni karenge
             if (playingList.length > 5) {
                 let isPlaying = false;
-                
-                // Check karo kya khiladi ka naam Playing List me hai?
                 for (let pName of playingList) {
                     if (pName.includes(lastName) || fbName.includes(pName)) {
                         isPlaying = true;
                         break;
                     }
                 }
-                
-                // Agar list mein naam mila toh 'playing', nahi mila toh direct 'bench'
                 currentStatus = isPlaying ? "playing" : "bench";
             } 
             
-            // Backup: Agar match shuru ho gaya aur wo run bana raha hai, toh 100% playing hi hai
-            if (inScorecard) {
-                currentStatus = "playing";
-            }
+            if (inScorecard) currentStatus = "playing";
 
-            // 💾 Firebase me Data bhej do
             updates[key + '/points'] = (runs * 1) + (wickets * 25);
             updates[key + '/runs'] = runs;
             updates[key + '/wickets'] = wickets;
@@ -201,7 +226,7 @@
 
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-            cLog('success', `✅ Asli Chatni (Lineup Filter) & Points Updated!`);
+            cLog('success', `✅ Asli Chatni & Points Updated for ${matchId}!`);
         }
     }
 
@@ -235,7 +260,7 @@
                         updates[key + '/points'] = (r * 1) + (w * 25);
                         updates[key + '/runs'] = r;
                         updates[key + '/wickets'] = w;
-                        updates[key + '/playingStatus'] = "playing"; // ESPN fallback status
+                        updates[key + '/playingStatus'] = "playing";
                     }
                 }
             });
@@ -243,9 +268,7 @@
 
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-            cLog('success', `✅ ESPN: Points Updated!`);
-        } else {
-            cLog('warn', `⚠️ ESPN data nahi mila, Scorecard link check karein.`);
+            cLog('success', `✅ ESPN: Points Updated for ${matchId}!`);
         }
     }
 </script>
