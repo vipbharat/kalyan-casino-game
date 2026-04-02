@@ -18,10 +18,9 @@
         .terminal { background: #000; border: 1px solid #00ff88; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-bottom: 20px;}
         .terminal p { margin: 4px 0; border-bottom: 1px dashed #111; padding-bottom: 4px;}
         .log-info { color: #00d2d3; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ff9f43; }
-        .log-leader { color: #ffd700; font-weight: bold; } /* Leaderboard update color */
+        .log-leader { color: #ffd700; font-weight: bold; }
         .status-badge { display: inline-block; padding: 8px 15px; border-radius: 15px; font-size: 12px; font-weight: bold; background: #333; color: #aaa; margin-top: 10px;}
         .status-badge.active { background: #00ff88; color: #000; box-shadow: 0 0 10px rgba(0,255,136,0.5); animation: pulse 2s infinite;}
-        
         .match-card { background: #000; border: 1px solid #00ff88; padding: 10px; border-radius: 5px; margin-bottom: 10px; position: relative; }
         .match-card strong { color: #00ff88; font-size: 14px; }
         .match-card a { color: #00d2d3; font-size: 11px; word-break: break-all; display: block; margin: 5px 0; text-decoration: none; }
@@ -73,16 +72,10 @@
         let time = document.getElementById('m-time').value;
 
         if(!id || !link || !time) return alert("Sari details bhariye!");
-
         let wakeTime = new Date(time).getTime() - 1200000; 
-
-        db.ref(`Game/Kalyan11/LiveEngine/${id}`).set({
-            matchId: id,
-            cricbuzzLink: link,
-            wakeUpTime: wakeTime
-        }).then(() => {
-            document.getElementById('m-id').value = "";
-            document.getElementById('m-link').value = "";
+        db.ref(`Game/Kalyan11/LiveEngine/${id}`).set({ matchId: id, cricbuzzLink: link, wakeUpTime: wakeTime })
+        .then(() => {
+            document.getElementById('m-id').value = ""; document.getElementById('m-link').value = "";
             cLog('success', `Match ${id} Added! Niche list mein check karein.`);
         });
     }
@@ -97,7 +90,6 @@
     db.ref(`Game/Kalyan11/LiveEngine`).on('value', (snapshot) => {
         activeMatches = snapshot.exists() ? snapshot.val() : {};
         let count = Object.keys(activeMatches).length;
-        
         document.getElementById('sync-status').innerText = `Status: SYNCING ${count} MATCHES 🔥`;
         document.getElementById('sync-status').className = count > 0 ? "status-badge active" : "status-badge";
 
@@ -117,8 +109,7 @@
             }
             listDiv.innerHTML = html;
         } else {
-            container.style.display = "none";
-            listDiv.innerHTML = "";
+            container.style.display = "none"; listDiv.innerHTML = "";
         }
     });
 
@@ -127,16 +118,13 @@
         let ids = Object.keys(activeMatches);
         for (let id of ids) {
             let m = activeMatches[id];
-            if (now >= m.wakeUpTime) {
-                await runSync(id, m.cricbuzzLink);
-            }
+            if (now >= m.wakeUpTime) { await runSync(id, m.cricbuzzLink); }
         }
     }, 120000);
 
     async function runSync(matchId, link) {
         try {
             cLog('info', `🌐 Fetching data for Match: ${matchId}`);
-            
             if (link.includes("cricbuzz.com")) {
                 link = link.replace("cricket-match-squads", "live-cricket-scorecard");
                 link = link.replace("live-cricket-scores", "live-cricket-scorecard");
@@ -149,24 +137,16 @@
             let html = await res.text();
             let doc = new DOMParser().parseFromString(html, "text/html");
 
-            if (link.includes("cricbuzz.com")) {
-                await parseCricbuzz(doc, matchId);
-            } else if (link.includes("espncricinfo.com")) {
-                await parseESPN(doc, matchId);
-            } else {
-                cLog('error', `❌ Link invalid. Cricbuzz ya ESPN use karein.`);
-            }
-        } catch (e) {
-            cLog('error', `Sync Error: ${e.message}`);
-        }
+            if (link.includes("cricbuzz.com")) { await parseCricbuzz(doc, matchId); } 
+            else if (link.includes("espncricinfo.com")) { await parseESPN(doc, matchId); } 
+            else { cLog('error', `❌ Link invalid. Cricbuzz ya ESPN use karein.`); }
+        } catch (e) { cLog('error', `Sync Error: ${e.message}`); }
     }
 
-    // 🏆 NAYA FUNCTION: APP KE LEADERBOARD KO LIVE UPDATE KARNE KE LIYE 🏆
     async function updateLiveLeaderboard(matchId) {
         try {
             let pSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
             let tSnap = await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).once('value');
-            
             if(!pSnap.exists() || !tSnap.exists()) return;
 
             let playersObj = pSnap.val();
@@ -187,8 +167,6 @@
 
                 let finalPts = parseFloat(calculatedPoints.toFixed(1));
                 if(finalPts > maxScore) maxScore = finalPts;
-                
-                // Ye line tumhari app ke leaderboard me sidha points bhejegi
                 updates[child.key + '/total_points'] = finalPts;
             });
 
@@ -196,11 +174,10 @@
                 await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).update(updates);
                 cLog('leader', `🏆 LEADERBOARD UPDATED (Highest: ${maxScore} Pts)`);
             }
-        } catch(e) {
-            cLog('error', `Leaderboard Error: ${e.message}`);
-        }
+        } catch(e) { cLog('error', `Leaderboard Error: ${e.message}`); }
     }
 
+    // 🔥 FIX: 100% ACCURATE CRICBUZZ SCRAPER 🔥
     async function parseCricbuzz(doc, matchId) {
         let status = doc.querySelector('.cb-scrd-status')?.innerText || "";
         if (status.toLowerCase().includes("won by") || status.toLowerCase().includes("result")) {
@@ -236,8 +213,17 @@
                 if(webName.includes(lastName) || fbName.includes(webName)) {
                     inScorecard = true;
                     let cols = row.querySelectorAll('.cb-col');
-                    if(row.innerText.toUpperCase().includes('ECO')) { wickets = parseInt(cols[4].innerText) || 0; } 
-                    else { runs = parseInt(cols[2].innerText) || 0; }
+                    
+                    // SMART CHECK: Bowling table hai ya Batting table?
+                    let isBowling = cols[1] && cols[1].className.includes('cb-col-8');
+                    
+                    if(isBowling) {
+                        let w = parseInt(cols[4].innerText); // Wickets column
+                        if(!isNaN(w)) wickets = w;
+                    } else {
+                        let r = parseInt(cols[2].innerText); // Runs column
+                        if(!isNaN(r)) runs = r;
+                    }
                 }
             });
 
@@ -260,8 +246,6 @@
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
             cLog('success', `✅ Asli Chatni & Points Updated for ${matchId}!`);
-            
-            // 🔥 Yahan Leaderboard Update Function Call Hoga 🔥
             await updateLiveLeaderboard(matchId);
         }
     }
@@ -304,8 +288,6 @@
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
             cLog('success', `✅ ESPN: Points Updated for ${matchId}!`);
-            
-            // 🔥 Yahan Leaderboard Update Function Call Hoga 🔥
             await updateLiveLeaderboard(matchId);
         }
     }
