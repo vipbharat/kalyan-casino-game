@@ -159,6 +159,7 @@
                 
                 Object.values(teamPlayers).forEach(pKey => {
                     let livePt = (playersObj[pKey] && playersObj[pKey].points) ? parseFloat(playersObj[pKey].points) : 0;
+                    
                     if(pKey === t.captain) calculatedPoints += (livePt * 2);
                     else if(pKey === t.viceCaptain) calculatedPoints += (livePt * 1.5);
                     else calculatedPoints += livePt;
@@ -176,55 +177,66 @@
         } catch(e) { cLog('error', `Leaderboard Error: ${e.message}`); }
     }
 
-    // 🔥 PURE SMART ENGINE LOGIC (No Zero Points Anymore) 🔥
+    // 🔥 FIX FOR CRICBUZZ NEW DOM STRUCTURE 🔥
     async function parseCricbuzz(doc, matchId) {
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
         if(!dbSnap.exists()) return;
         
         let players = dbSnap.val();
         let updates = {};
-        let rows = doc.querySelectorAll('.cb-scrd-itms');
-
+        
+        // Cricbuzz ke naye structure mein classes alag hain
+        let innings = doc.querySelectorAll('.cb-col.cb-col-100.cb-ltst-wgt-hdr');
+        
         let totalMatchPoints = 0;
 
         for (let key in players) {
-            let originalName = players[key].name;
-            
-            // CLEAN NAME LOGIC: (c), (wk), special characters aur extra space sab hata dega
-            let fbClean = originalName.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
+            let fbClean = players[key].name.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
             let fbParts = fbClean.split(' ');
-            let fbLast = fbParts[fbParts.length - 1]; // Surname uthayega
+            let fbFirst = fbParts[0];
+            let fbLast = fbParts[fbParts.length - 1]; 
             
             let runs = 0, wickets = 0, isPlaying = false;
 
-            rows.forEach(row => {
-                let nameEl = row.querySelector('a.cb-text-link');
-                if(!nameEl) return;
-                
-                // Cricbuzz ke naam ko bhi clean karega
-                let webClean = nameEl.innerText.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
-                
-                // PERFECT MATCHING: Agar last name match hota hai, toh khiladi mil gaya!
-                if(webClean.includes(fbLast) || fbClean.includes(webClean)) {
-                    isPlaying = true;
-                    
-                    let rowText = row.parentNode.innerText.toLowerCase();
-                    let isBowling = rowText.includes('wkts') || rowText.includes('econ') || rowText.includes('bowler');
-                    
-                    let cols = row.querySelectorAll('.cb-col');
-                    if(cols.length >= 5) {
-                        if(isBowling) {
-                            let w = parseInt(cols[4].innerText); // Wicket column
-                            if(!isNaN(w)) wickets = w;
-                        } else {
-                            let r = parseInt(cols[2].innerText); // Runs column
-                            if(!isNaN(r)) runs = r;
+            innings.forEach(inning => {
+                // Batting table rows
+                let batRows = inning.querySelectorAll('.cb-scrd-itms');
+                batRows.forEach(row => {
+                    let nameEl = row.querySelector('.cb-col.cb-col-27 a'); // Batting name column
+                    if(nameEl) {
+                        let webClean = nameEl.innerText.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
+                        if(webClean.includes(fbLast) || fbClean.includes(webClean) || webClean.includes(fbFirst)) {
+                            isPlaying = true;
+                            let rCol = row.querySelector('.cb-col.cb-col-8.text-right.text-bold'); // Runs column
+                            if(rCol) {
+                                let r = parseInt(rCol.innerText);
+                                if(!isNaN(r)) runs = r;
+                            }
                         }
                     }
-                }
+                });
+
+                // Bowling table rows
+                let bowlRows = inning.querySelectorAll('.cb-scrd-itms'); // Re-using rows to check bowling
+                bowlRows.forEach(row => {
+                     // Check if it's a bowling row (often identified by different inner text or structure)
+                     if(row.innerHTML.includes('Econ') || row.parentNode.innerHTML.includes('Bowler')) {
+                        let nameEl = row.querySelector('.cb-col.cb-col-38 a') || row.querySelector('a.cb-text-link'); // Bowling name column
+                        if(nameEl) {
+                             let webClean = nameEl.innerText.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
+                             if(webClean.includes(fbLast) || fbClean.includes(webClean) || webClean.includes(fbFirst)) {
+                                isPlaying = true;
+                                let cols = row.querySelectorAll('.cb-col.cb-col-8.text-right');
+                                if(cols.length >= 4) {
+                                    let w = parseInt(cols[3].innerText); // Wickets column
+                                    if(!isNaN(w)) wickets = w;
+                                }
+                             }
+                        }
+                     }
+                });
             });
 
-            // Status aur Points
             let currentStatus = isPlaying ? "playing" : (players[key].playingStatus || "unannounced");
             let totalPoints = (runs * 1) + (wickets * 25) + (isPlaying ? 4 : 0);
             
@@ -238,7 +250,7 @@
 
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-            cLog('success', `✅ Asli Chatni & Points Updated for ${matchId}! (Total Pts: ${totalMatchPoints})`);
+            cLog('success', `✅ Points Updated! (Total Pts: ${totalMatchPoints})`);
             await updateLiveLeaderboard(matchId);
         }
     }
