@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KALYAN VIP - PERMANENT ENGINE 🚀</title>
+    <title>KALYAN VIP - UNIVERSAL ENGINE 🚀</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -26,24 +26,25 @@
 <body>
 
     <div class="header">
-        <h1><i class="fa-solid fa-server"></i> VIP PERMANENT ENGINE</h1>
+        <h1><i class="fa-solid fa-server"></i> VIP UNIVERSAL ENGINE</h1>
         <div class="status-badge" id="sync-status">Status: CONNECTING...</div>
     </div>
 
     <div class="box">
         <h3><i class="fa-solid fa-plus-circle"></i> Add New Match Sync</h3>
-        <input type="text" id="m-id" placeholder="Match ID (e.g. 20242)">
-        <input type="text" id="m-link" placeholder="Cricbuzz Scorecard Link Paste Karein">
+        <input type="text" id="m-id" placeholder="Match ID (e.g. 149020)">
+        <input type="text" id="m-link" placeholder="Cricbuzz ya ESPN Scorecard Link Paste Karein">
         <input type="datetime-local" id="m-time">
         <button class="btn-start" onclick="saveMatchToDatabase()">SAVE & START SYNC</button>
-        <p style="font-size: 10px; color: #aaa; margin-top: 10px;">*Note: Save karne ke baad ye refresh karne par bhi nahi hatega.</p>
+        <p style="font-size: 10px; color: #aaa; margin-top: 10px;">*Note: Cricbuzz best hai, par ab yeh ESPN bhi support karega.</p>
     </div>
 
     <div class="terminal" id="console-box">
-        <p class="log-info">> Engine Started. Monitoring Firebase...</p>
+        <p class="log-info">> Universal Engine Ready. Waiting for matches...</p>
     </div>
 
 <script>
+    // 1️⃣ Firebase & Proxy Setup
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -57,7 +58,7 @@
         box.scrollTop = box.scrollHeight; 
     }
 
-    // 💾 MATCH KO DATABASE ME SAVE KARNA (Taki Refresh pe na ude)
+    // 2️⃣ Match Ko Firebase Me Save Karna
     function saveMatchToDatabase() {
         let id = document.getElementById('m-id').value.trim();
         let link = document.getElementById('m-link').value.trim();
@@ -65,29 +66,28 @@
 
         if(!id || !link || !time) return alert("Sari details bhariye!");
 
-        let wakeTime = new Date(time).getTime() - 1200000; // 20 min pehle ka wake up
+        let wakeTime = new Date(time).getTime() - 1200000; // 20 min pehle chalega
 
         db.ref(`Game/Kalyan11/LiveEngine/${id}`).set({
             matchId: id,
             cricbuzzLink: link,
             wakeUpTime: wakeTime
         }).then(() => {
-            alert("Match Saved! Ye ab permanent sync hota rahega.");
+            alert("Match Saved! Engine apna kaam shuru kar raha hai.");
             document.getElementById('m-id').value = "";
             document.getElementById('m-link').value = "";
         });
     }
 
-    // 📡 DATABASE SE MATCHES KI LIST PADHNA
+    // 3️⃣ Active Matches List Padhna
     db.ref(`Game/Kalyan11/LiveEngine`).on('value', (snapshot) => {
         activeMatches = snapshot.exists() ? snapshot.val() : {};
         let count = Object.keys(activeMatches).length;
         document.getElementById('sync-status').innerText = `Status: SYNCING ${count} MATCHES 🔥`;
         document.getElementById('sync-status').className = count > 0 ? "status-badge active" : "status-badge";
-        cLog('success', `Database updated: ${count} matches found.`);
     });
 
-    // ⏱️ HAR 3 MINUTE KA MASTER LOOP
+    // 4️⃣ MAIN LOOP (Har 2 Minute Me)
     setInterval(async () => {
         let now = Date.now();
         let ids = Object.keys(activeMatches);
@@ -95,75 +95,125 @@
         for (let id of ids) {
             let m = activeMatches[id];
             if (now >= m.wakeUpTime) {
-                cLog('info', `Running Sync for Match: ${id}`);
                 await runSync(id, m.cricbuzzLink);
-            } else {
-                let diff = Math.floor((m.wakeUpTime - now) / 60000);
-                cLog('warn', `Match ${id} wait kar raha hai (${diff} mins remaining)`);
             }
         }
-    }, 180000);
+    }, 120000);
 
+    // 5️⃣ SMART ROUTER ENGINE
     async function runSync(matchId, link) {
         try {
+            cLog('info', `🌐 Data fetch kar rahe hain for Match: ${matchId}`);
             let res = await fetch(API_URL + "?url=" + encodeURIComponent(link));
             let html = await res.text();
             let doc = new DOMParser().parseFromString(html, "text/html");
 
-            // Match Finished Check
-            let status = doc.querySelector('.cb-scrd-status')?.innerText || "";
-            if (status.toLowerCase().includes("won by") || status.toLowerCase().includes("result")) {
-                cLog('error', `🏁 Match ${matchId} Finished. Deleting from sync...`);
-                await db.ref(`Game/Kalyan11/LiveEngine/${matchId}`).remove();
-                return;
+            if (link.includes("cricbuzz.com")) {
+                await parseCricbuzz(doc, matchId);
+            } 
+            else if (link.includes("espncricinfo.com")) {
+                await parseESPN(doc, matchId);
+            } 
+            else {
+                cLog('error', `❌ Link samajh nahi aaya. Cricbuzz ya ESPN use karein.`);
             }
+        } catch (e) {
+            cLog('error', `Sync Error: ${e.message}`);
+        }
+    }
 
-            // 🔥 Yahan Lineup / Playing XI dhoondhne ka logic fit kiya hai 🔥
-            let pageText = doc.body.innerText;
-            let xiMatch = pageText.match(/(?:Playing|XI):\s*(.*?)(?:Bench|$)/i);
-            let lineupNames = xiMatch ? xiMatch[1].toLowerCase() : "";
+    // 🏏 CRICBUZZ LOGIC
+    async function parseCricbuzz(doc, matchId) {
+        let status = doc.querySelector('.cb-scrd-status')?.innerText || "";
+        if (status.toLowerCase().includes("won by") || status.toLowerCase().includes("result")) {
+            cLog('error', `🏁 Match Finished. Sync stopped.`);
+            await db.ref(`Game/Kalyan11/LiveEngine/${matchId}`).remove();
+            return;
+        }
 
-            // Scraping and Updating Firebase MatchPlayers
-            let rows = doc.querySelectorAll('.cb-scrd-itms');
-            let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
-            if(!dbSnap.exists()) return;
+        let pageText = doc.body.innerText;
+        let xiMatch = pageText.match(/(?:Playing|XI):\s*(.*?)(?:Bench|$)/i);
+        let lineupNames = xiMatch ? xiMatch[1].toLowerCase() : "";
+
+        let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
+        if(!dbSnap.exists()) return;
+        
+        let players = dbSnap.val();
+        let nameMap = {};
+        Object.keys(players).forEach(k => { nameMap[players[k].name.toLowerCase().replace(/[^a-z0-9]/g, '')] = k; });
+
+        let updates = {};
+        doc.querySelectorAll('.cb-scrd-itms').forEach(row => {
+            let nameEl = row.querySelector('a.cb-text-link');
+            if(!nameEl) return;
+            let clean = nameEl.innerText.toLowerCase().replace(/\(c\)/ig, '').replace(/\(wk\)/ig, '').replace(/[^a-z0-9]/g, '');
             
-            let players = dbSnap.val();
-            let nameMap = {};
-            Object.keys(players).forEach(k => { nameMap[players[k].name.toLowerCase().replace(/[^a-z0-9]/g, '')] = k; });
+            let key = null;
+            for (let n in nameMap) { if (clean.includes(n) || n.includes(clean)) { key = nameMap[n]; break; } }
 
-            let updates = {};
-            rows.forEach(row => {
-                let nameEl = row.querySelector('a.cb-text-link');
-                if(!nameEl) return;
-                let clean = nameEl.innerText.toLowerCase().replace(/\(c\)/ig, '').replace(/\(wk\)/ig, '').replace(/[^a-z0-9]/g, '');
-                let key = null;
-                for (let n in nameMap) { if (clean.includes(n) || n.includes(clean)) { key = nameMap[n]; break; } }
+            if(key) {
+                let cols = row.querySelectorAll('.cb-col');
+                let r = 0, w = 0;
+                if(row.innerText.toUpperCase().includes('ECO')) { w = parseInt(cols[4].innerText) || 0; }
+                else { r = parseInt(cols[2].innerText) || 0; }
+                
+                let playerStatus = lineupNames.includes(clean.substring(0, 5)) ? "playing" : "bench";
 
-                if(key) {
-                    let cols = row.querySelectorAll('.cb-col');
-                    let r = 0, w = 0;
-                    if(row.innerText.toUpperCase().includes('ECO')) { w = parseInt(cols[4].innerText) || 0; }
-                    else { r = parseInt(cols[2].innerText) || 0; }
-                    
-                    // 🔥 Lineup Check: Agar khiladi lineup list mein hai tabhi "playing" warna "bench" 🔥
-                    let playerStatus = "bench";
-                    if (lineupNames.includes(clean.substring(0, 5))) {
-                        playerStatus = "playing";
+                updates[key + '/points'] = (r * 1) + (w * 25);
+                updates[key + '/runs'] = r;
+                updates[key + '/wickets'] = w;
+                updates[key + '/playingStatus'] = playerStatus;
+            }
+        });
+
+        if(Object.keys(updates).length > 0) {
+            await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
+            cLog('success', `✅ Cricbuzz: Points & Lineup Updated!`);
+        }
+    }
+
+    // 🏏 ESPN CRICINFO LOGIC
+    async function parseESPN(doc, matchId) {
+        let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
+        if(!dbSnap.exists()) return;
+        let players = dbSnap.val();
+        let updates = {};
+
+        doc.querySelectorAll('table').forEach(table => {
+            table.querySelectorAll('tr').forEach(row => {
+                let nameCell = row.querySelector('td a'); 
+                if(nameCell && row.innerText.length > 10) {
+                    let clean = nameCell.innerText.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    let key = null;
+                    for (let pKey in players) { 
+                        let fbName = players[pKey].name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        if (clean.includes(fbName) || fbName.includes(clean)) { key = pKey; break; } 
                     }
 
-                    updates[key + '/points'] = (r * 1) + (w * 25);
-                    updates[key + '/runs'] = r;
-                    updates[key + '/wickets'] = w;
-                    updates[key + '/playingStatus'] = playerStatus;
+                    if(key) {
+                        let tds = row.querySelectorAll('td');
+                        let r = 0, w = 0;
+                        if(table.innerHTML.includes('ECON') || table.innerHTML.includes('Econ')) {
+                            w = parseInt(tds[4]?.innerText || tds[3]?.innerText) || 0;
+                        } else {
+                            r = parseInt(tds[2]?.innerText || tds[3]?.innerText) || 0;
+                        }
+
+                        updates[key + '/points'] = (r * 1) + (w * 25);
+                        updates[key + '/runs'] = r;
+                        updates[key + '/wickets'] = w;
+                        updates[key + '/playingStatus'] = "playing"; // ESPN fallback status
+                    }
                 }
             });
+        });
 
-            if(Object.keys(updates).length > 0) {
-                await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-                cLog('success', `✅ [${matchId}] Points & Lineups Updated.`);
-            }
-        } catch(e) { cLog('error', `Error syncing ${matchId}: ${e.message}`); }
+        if(Object.keys(updates).length > 0) {
+            await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
+            cLog('success', `✅ ESPN: Points Updated!`);
+        } else {
+            cLog('warn', `⚠️ ESPN data nahi mila, Scorecard link check karein.`);
+        }
     }
 </script>
 </body>
