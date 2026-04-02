@@ -56,9 +56,11 @@
 <script>
     // 1️⃣ Firebase & Proxy Setup
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
-    const API_URL = "https://script.google.com/macros/s/AKfycbyCsBcyJ7HIIBQPULR1RNQs5FU1QIzmNRKDQQ54s61c1Ni4cH_1EtFqaOlSrzLMBj0yfA/exec";
+    
+    // 🔥 FIX: Free aur Fast CORS Proxy lagaya hai
+    const API_URL = "https://api.allorigins.win/get?url=";
 
     let activeMatches = {};
 
@@ -83,14 +85,13 @@
             cricbuzzLink: link,
             wakeUpTime: wakeTime
         }).then(() => {
-            // Box khali karo taaki naya match dal sakein, purana wala niche list mein chala jayega
             document.getElementById('m-id').value = "";
             document.getElementById('m-link').value = "";
             cLog('success', `Match ${id} Added! Niche list mein check karein.`);
         });
     }
 
-    // 🔴 3️⃣ Stop Sync Button Logic (Manually rokne ke liye)
+    // 🔴 3️⃣ Stop Sync Button Logic
     function stopMatch(id) {
         if(confirm(`Kya aap sach mein Match ${id} ka sync rokna chahte hain?`)) {
             db.ref(`Game/Kalyan11/LiveEngine/${id}`).remove();
@@ -98,16 +99,14 @@
         }
     }
 
-    // 4️⃣ Active Matches List Padhna aur Niche Dikhana
+    // 4️⃣ Active Matches List Padhna
     db.ref(`Game/Kalyan11/LiveEngine`).on('value', (snapshot) => {
         activeMatches = snapshot.exists() ? snapshot.val() : {};
         let count = Object.keys(activeMatches).length;
         
-        // Status Badge Update
         document.getElementById('sync-status').innerText = `Status: SYNCING ${count} MATCHES 🔥`;
         document.getElementById('sync-status').className = count > 0 ? "status-badge active" : "status-badge";
 
-        // Niche Wali List Update Karna
         let listDiv = document.getElementById('active-matches-list');
         let container = document.getElementById('active-matches-container');
         
@@ -146,8 +145,12 @@
     async function runSync(matchId, link) {
         try {
             cLog('info', `🌐 Fetching data for Match: ${matchId}`);
-            let res = await fetch(API_URL + "?url=" + encodeURIComponent(link));
-            let html = await res.text();
+            
+            // 🔥 FIX: Naya JSON format decode karna
+            let res = await fetch(API_URL + encodeURIComponent(link));
+            let data = await res.json();
+            let html = data.contents;
+            
             let doc = new DOMParser().parseFromString(html, "text/html");
 
             if (link.includes("cricbuzz.com")) {
@@ -162,12 +165,12 @@
         }
     }
 
-    // 🏏 CRICBUZZ LOGIC (WITH STRICT CHATNI MACHINE)
+    // 🏏 CRICBUZZ LOGIC 
     async function parseCricbuzz(doc, matchId) {
         let status = doc.querySelector('.cb-scrd-status')?.innerText || "";
         if (status.toLowerCase().includes("won by") || status.toLowerCase().includes("result")) {
-            cLog('error', `🏁 Match Finished. Automatically Stopping Sync.`);
-            await db.ref(`Game/Kalyan11/LiveEngine/${matchId}`).remove(); // Match list se automatic hatega
+            cLog('warn', `🏁 Match Finished. Sync Rok diya gaya hai.`);
+            await db.ref(`Game/Kalyan11/LiveEngine/${matchId}`).remove();
             return;
         }
 
