@@ -18,10 +18,10 @@
         .terminal { background: #000; border: 1px solid #00ff88; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-bottom: 20px;}
         .terminal p { margin: 4px 0; border-bottom: 1px dashed #111; padding-bottom: 4px;}
         .log-info { color: #00d2d3; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ff9f43; }
+        .log-leader { color: #ffd700; font-weight: bold; } /* Leaderboard update color */
         .status-badge { display: inline-block; padding: 8px 15px; border-radius: 15px; font-size: 12px; font-weight: bold; background: #333; color: #aaa; margin-top: 10px;}
         .status-badge.active { background: #00ff88; color: #000; box-shadow: 0 0 10px rgba(0,255,136,0.5); animation: pulse 2s infinite;}
         
-        /* New Styles for Active Matches List */
         .match-card { background: #000; border: 1px solid #00ff88; padding: 10px; border-radius: 5px; margin-bottom: 10px; position: relative; }
         .match-card strong { color: #00ff88; font-size: 14px; }
         .match-card a { color: #00d2d3; font-size: 11px; word-break: break-all; display: block; margin: 5px 0; text-decoration: none; }
@@ -54,14 +54,11 @@
     </div>
 
 <script>
-    // 1️⃣ Firebase & Proxy Setup
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
     
-    // 🔥 FINAL FIX: Naya aur Powerfull Proxy (Jo kabhi block nahi hoga)
     const API_URL = "https://api.codetabs.com/v1/proxy?quest=";
-
     let activeMatches = {};
 
     function cLog(type, msg) {
@@ -70,7 +67,6 @@
         box.scrollTop = box.scrollHeight; 
     }
 
-    // 2️⃣ Match Ko Firebase Me Save Karna
     function saveMatchToDatabase() {
         let id = document.getElementById('m-id').value.trim();
         let link = document.getElementById('m-link').value.trim();
@@ -91,7 +87,6 @@
         });
     }
 
-    // 🔴 3️⃣ Stop Sync Button Logic
     function stopMatch(id) {
         if(confirm(`Kya aap sach mein Match ${id} ka sync rokna chahte hain?`)) {
             db.ref(`Game/Kalyan11/LiveEngine/${id}`).remove();
@@ -99,7 +94,6 @@
         }
     }
 
-    // 4️⃣ Active Matches List Padhna
     db.ref(`Game/Kalyan11/LiveEngine`).on('value', (snapshot) => {
         activeMatches = snapshot.exists() ? snapshot.val() : {};
         let count = Object.keys(activeMatches).length;
@@ -128,11 +122,9 @@
         }
     });
 
-    // 5️⃣ MAIN ENGINE LOOP (Har 2 Minute Me)
     setInterval(async () => {
         let now = Date.now();
         let ids = Object.keys(activeMatches);
-
         for (let id of ids) {
             let m = activeMatches[id];
             if (now >= m.wakeUpTime) {
@@ -141,21 +133,18 @@
         }
     }, 120000);
 
-    // 6️⃣ SMART ROUTER ENGINE (Cricbuzz + ESPN)
     async function runSync(matchId, link) {
         try {
             cLog('info', `🌐 Fetching data for Match: ${matchId}`);
             
-            // 🔥 FINAL FIX: URL SMART CONVERTER (Koi bhi link dalo, auto scorecard banega)
             if (link.includes("cricbuzz.com")) {
                 link = link.replace("cricket-match-squads", "live-cricket-scorecard");
                 link = link.replace("live-cricket-scores", "live-cricket-scorecard");
                 link = link.replace("cricket-match-facts", "live-cricket-scorecard");
             }
 
-            // Naye Proxy ke through direct HTML fetch karna
             let res = await fetch(API_URL + encodeURIComponent(link));
-            if (!res.ok) throw new Error("Proxy Server Blocked ya Timeout");
+            if (!res.ok) throw new Error("Proxy Server Blocked");
             
             let html = await res.text();
             let doc = new DOMParser().parseFromString(html, "text/html");
@@ -172,7 +161,46 @@
         }
     }
 
-    // 🏏 CRICBUZZ LOGIC 
+    // 🏆 NAYA FUNCTION: APP KE LEADERBOARD KO LIVE UPDATE KARNE KE LIYE 🏆
+    async function updateLiveLeaderboard(matchId) {
+        try {
+            let pSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
+            let tSnap = await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).once('value');
+            
+            if(!pSnap.exists() || !tSnap.exists()) return;
+
+            let playersObj = pSnap.val();
+            let updates = {};
+            let maxScore = 0;
+
+            tSnap.forEach(child => {
+                let t = child.val();
+                let calculatedPoints = 0;
+                let teamPlayers = t.players || {};
+                
+                Object.values(teamPlayers).forEach(pKey => {
+                    let livePt = (playersObj[pKey] && playersObj[pKey].points) ? parseFloat(playersObj[pKey].points) : 0;
+                    if(pKey === t.captain) calculatedPoints += (livePt * 2);
+                    else if(pKey === t.viceCaptain) calculatedPoints += (livePt * 1.5);
+                    else calculatedPoints += livePt;
+                });
+
+                let finalPts = parseFloat(calculatedPoints.toFixed(1));
+                if(finalPts > maxScore) maxScore = finalPts;
+                
+                // Ye line tumhari app ke leaderboard me sidha points bhejegi
+                updates[child.key + '/total_points'] = finalPts;
+            });
+
+            if(Object.keys(updates).length > 0) {
+                await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).update(updates);
+                cLog('leader', `🏆 LEADERBOARD UPDATED (Highest: ${maxScore} Pts)`);
+            }
+        } catch(e) {
+            cLog('error', `Leaderboard Error: ${e.message}`);
+        }
+    }
+
     async function parseCricbuzz(doc, matchId) {
         let status = doc.querySelector('.cb-scrd-status')?.innerText || "";
         if (status.toLowerCase().includes("won by") || status.toLowerCase().includes("result")) {
@@ -186,10 +214,7 @@
         let playingList = playingMatch ? playingMatch[1].toLowerCase().split(',').map(n => n.trim().replace(/[^a-z ]/g, '')) : [];
 
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
-        if(!dbSnap.exists()) {
-             cLog('error', `⚠️ Firebase me Match ${matchId} ke players nahi mile!`);
-             return;
-        }
+        if(!dbSnap.exists()) return;
         
         let players = dbSnap.val();
         let updates = {};
@@ -217,18 +242,13 @@
             });
 
             let currentStatus = "unannounced";
-
             if (playingList.length > 5) {
                 let isPlaying = false;
                 for (let pName of playingList) {
-                    if (pName.includes(lastName) || fbName.includes(pName)) {
-                        isPlaying = true;
-                        break;
-                    }
+                    if (pName.includes(lastName) || fbName.includes(pName)) { isPlaying = true; break; }
                 }
                 currentStatus = isPlaying ? "playing" : "bench";
             } 
-            
             if (inScorecard) currentStatus = "playing";
 
             updates[key + '/points'] = (runs * 1) + (wickets * 25);
@@ -240,10 +260,12 @@
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
             cLog('success', `✅ Asli Chatni & Points Updated for ${matchId}!`);
+            
+            // 🔥 Yahan Leaderboard Update Function Call Hoga 🔥
+            await updateLiveLeaderboard(matchId);
         }
     }
 
-    // 🏏 ESPN CRICINFO LOGIC
     async function parseESPN(doc, matchId) {
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
         if(!dbSnap.exists()) return;
@@ -282,6 +304,9 @@
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
             cLog('success', `✅ ESPN: Points Updated for ${matchId}!`);
+            
+            // 🔥 Yahan Leaderboard Update Function Call Hoga 🔥
+            await updateLiveLeaderboard(matchId);
         }
     }
 </script>
