@@ -23,12 +23,11 @@
         .match-row { background: #1a1a2e; border: 1px solid #4a00e0; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
         .match-info h4 { margin: 0 0 5px; font-size: 16px; color: #ffd700; text-transform: uppercase;}
         .match-info p { margin: 0; font-size: 12px; color: #aaa;}
-        .saved-link { color: #00d2d3; font-size: 10px; margin-top: 5px; word-break: break-all; background: #0a0a14; padding: 6px; border-radius: 4px; border: 1px solid #333; }
         
         .action-btns { display: flex; gap: 8px; flex-direction: column;}
         .btn-delete { background: #ff004c; color: #fff; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 11px;}
         .btn-toss { background: #ffd700; color: #000; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: 900; font-size: 11px; }
-        .btn-payout { background: #00ff88; color: #000; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: 900; font-size: 11px; box-shadow: 0 0 10px rgba(0,255,136,0.3);}
+        .btn-payout { background: #00ff88; color: #000; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: 900; font-size: 11px; }
         
         #statusBox { text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 14px; margin-top: 10px;}
         .success { color: #00ff88; } .error { color: #ff004c; } .loading { color: #ffd700; }
@@ -94,7 +93,7 @@
                 <div class="close-btn" onclick="closeLineupModal()">&times;</div>
             </div>
             <div class="modal-body">
-                <p style="font-size: 11px; color: #aaa; text-align: center; margin-top: 0;">Click once for <b>Playing</b>. Click twice for <b>Benched</b>.</p>
+                <p style="font-size: 11px; color: #aaa; text-align: center; margin-top: 0;">Click to toggle Playing/Benched.</p>
                 <div class="player-toggle-list" id="modalPlayerList"></div>
             </div>
             <div class="modal-footer">
@@ -117,7 +116,7 @@
         let currentEditingMatchId = "";
         let currentPlayersData = {};
 
-        const contestConfig = { 99: 150000, 49: 5000, 39: 3000, 25: 2000, 999: 50, 499: 35, 299: 40, 199: 30, 125: 28, 75: 30, 35: 35, 15: 40, 25000: 2, 15000: 3, 10000: 5, 5000: 6, 5750: 2, 2875: 2, 1150: 2, 575: 2, 299: 2, 119: 2, 59: 2, 29: 2, 0: 100000 };
+        const contestConfig = { 99: 150000, 49: 5000, 39: 3000, 25: 2000, 0: 100000 };
 
         function clearLink() { document.getElementById('engineUrl').value = ''; document.getElementById('statusBox').innerHTML = ''; }
 
@@ -159,9 +158,8 @@
             let rawTime = document.getElementById('matchTime').value; 
             if(!mName || !t1 || !t2 || !p1Text || !p2Text || !rawTime) return alert("⚠️ Details bhariye!");
 
-            let mTimeObj = new Date(rawTime);
-            let msTime = mTimeObj.getTime();
-            let engineWakeUp = msTime - 1200000; // 20 mins before
+            let msTime = new Date(rawTime).getTime();
+            let engineWakeUp = msTime - 1200000; 
             let mId = globalApiMatchId ? globalApiMatchId : "MATCH_" + Date.now();
             let pData = {};
             let safeT1 = t1.replace(/[^a-zA-Z0-9]/g, '');
@@ -170,11 +168,8 @@
             p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[safeT1 + "_" + i] = { name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
             p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[safeT2 + "_" + i] = { name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
 
-            // 1. VIP Matches update
             db.ref('Game/Kalyan11/VIPMatches/' + mId).set({ engineUrl: eUrl, name: mName, team1: t1, team2: t2, timestamp: msTime, status: "Upcoming" });
-            // 2. Players update
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData);
-            // 3. ENGINE TRIGGER (CRITICAL)
             db.ref('Game/Kalyan11/LiveEngine/' + mId).set({ matchId: mId, cricbuzzLink: eUrl, wakeUpTime: engineWakeUp })
             .then(() => { alert("✅ Match & Engine Launched!"); location.reload(); });
         }
@@ -201,52 +196,49 @@
             document.getElementById('lineupModal').style.display = 'flex';
             db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', snap => {
                 currentPlayersData = snap.val();
-                let container = document.getElementById('modalPlayerList'); container.innerHTML = "";
-                Object.keys(currentPlayersData).forEach(pKey => {
-                    let p = currentPlayersData[pKey];
-                    let s = p.playingStatus === 'playing' ? 'playing' : (p.playingStatus === 'benched' ? 'benched' : '');
-                    container.innerHTML += `<div class="p-toggle ${s}" onclick="toggleStatus('${pKey}')">${p.name}</div>`;
-                });
+                renderModalList();
             });
         }
+        
+        // 🔥 LINEUP UI FIX 🔥
+        function renderModalList() {
+            let container = document.getElementById('modalPlayerList'); 
+            container.innerHTML = "";
+            Object.keys(currentPlayersData).forEach(pKey => {
+                let p = currentPlayersData[pKey];
+                let s = p.playingStatus === 'playing' ? 'playing' : (p.playingStatus === 'benched' ? 'benched' : '');
+                container.innerHTML += `<div class="p-toggle ${s}" onclick="toggleStatus('${pKey}')">${p.name}</div>`;
+            });
+        }
+
         function toggleStatus(k) {
             let p = currentPlayersData[k];
             p.playingStatus = p.playingStatus === "playing" ? "benched" : "playing";
-            openLineupModal(currentEditingMatchId);
+            renderModalList(); // Turant color change hoga
         }
+        
         function saveLineupToFirebase() {
             db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).update(currentPlayersData).then(() => { alert("Saved!"); closeLineupModal(); });
         }
         function closeLineupModal() { document.getElementById('lineupModal').style.display = 'none'; }
 
-        // ==========================================
-        // 🏆 PAYOUT ENGINE LOGIC (Restored)
-        // ==========================================
         function calculatePrizeLogic(rank, entry, totalSpots) {
             if(entry === 0) return 0; 
-            if(entry === 99) { if(rank === 1) return 5000000; if(rank === 2) return 1000000; if(rank <= 10) return 100000; if(rank <= 50000) return 99; return 0; }
-            if(entry === 49) { if(rank === 1) return 20000; if(rank === 2) return 10000; if(rank <= 700) return 49; return 0; }
-            if(totalSpots <= 2) { if(rank === 1) return Math.floor(entry * 1.8); return 0;}
+            if(entry === 99) { if(rank === 1) return 50000; if(rank <= 10) return 1000; return 0; }
             if(rank === 1) return Math.floor(entry * totalSpots * 0.4); 
-            if(rank === 2) return Math.floor(entry * totalSpots * 0.15); 
             if(rank <= Math.floor(totalSpots * 0.4)) return entry; 
             return 0; 
         }
 
+        // 🔥 PAYOUT SYNC FIX 🔥
         async function processPerfectPayout(matchId) {
-            if(!confirm("⚠️ DHYAN DEIN: Kya match khatam ho gaya hai aur aap sabhi jeetne walon ko paisa bhejna chahte hain?")) return;
-
+            if(!confirm("⚠️ PAYOUT KAREIN?")) return;
             const loader = document.getElementById('payoutLoader');
-            const loaderText = document.getElementById('payoutText');
             loader.style.display = 'flex';
 
             try {
-                loaderText.innerText = "Fetching Player Points...";
                 let pSnap = await db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value');
                 let playersObj = pSnap.val() || {};
-                let maxRealPoints = 0;
-
-                loaderText.innerText = "Scanning User Teams...";
                 let tSnap = await db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').once('value');
                 let allRealTeams = [];
 
@@ -254,78 +246,40 @@
                     tSnap.forEach(child => {
                         let t = child.val();
                         let calculatedPoints = 0;
-                        let teamPlayers = t.players || {};
-                        
-                        Object.values(teamPlayers).forEach(pKey => {
-                            let livePt = (playersObj[pKey] && playersObj[pKey].points) ? parseFloat(playersObj[pKey].points) : 0;
+                        Object.values(t.players || {}).forEach(pKey => {
+                            let livePt = parseFloat(playersObj[pKey]?.points || 0);
                             if(pKey === t.captain) calculatedPoints += (livePt * 2);
                             else if(pKey === t.viceCaptain) calculatedPoints += (livePt * 1.5);
                             else calculatedPoints += livePt;
                         });
-
-                        let finalPts = parseFloat(calculatedPoints.toFixed(1));
-                        if(finalPts > maxRealPoints) maxRealPoints = finalPts;
-
-                        allRealTeams.push({
-                            teamKey: child.key, phone: t.phone || child.key.split('_')[0], entry_paid: parseInt(t.entry_paid || 99), points: finalPts, payment_status: t.payment_status || "PENDING"
-                        });
-                        db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${child.key}`).update({total_points: finalPts});
+                        allRealTeams.push({ teamKey: child.key, phone: t.phone, entry_paid: parseInt(t.entry_paid || 99), points: parseFloat(calculatedPoints.toFixed(1)), payment_status: t.payment_status || "PENDING" });
+                        db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${child.key}`).update({total_points: calculatedPoints});
                     });
                 }
 
-                loaderText.innerText = "Ranking & Distributing Winnings...";
-                let contestsGrouped = {};
-                allRealTeams.forEach(t => {
-                    if(!contestsGrouped[t.entry_paid]) contestsGrouped[t.entry_paid] = [];
-                    contestsGrouped[t.entry_paid].push(t);
-                });
-
+                allRealTeams.sort((a,b) => b.points - a.points);
                 let totalPaidUsers = 0;
-                let totalAmountPaid = 0;
 
-                for (let entryFee in contestsGrouped) {
-                    entryFee = parseInt(entryFee);
-                    let realTeamsInContest = contestsGrouped[entryFee];
-                    let totalSpots = contestConfig[entryFee] || 1000;
-                    
-                    let bots = [];
-                    let targetBotsForList = (totalSpots <= 100) ? totalSpots - realTeamsInContest.length : 300 - realTeamsInContest.length;
-                    if(targetBotsForList < 0) targetBotsForList = 0;
+                for(let r = 0; r < allRealTeams.length; r++) {
+                    let currentTeam = allRealTeams[r];
+                    let rank = r + 1;
+                    let prize = calculatePrizeLogic(rank, currentTeam.entry_paid, 100); // Demo total spots
 
-                    for(let i=0; i < targetBotsForList; i++) {
-                        let pseudoRandom = (Math.sin(i * 9999) + 1) / 2;
-                        let bPoints = (i < Math.max(2, targetBotsForList * 0.05)) ? maxRealPoints + (pseudoRandom * 20) + 1 : pseudoRandom * (maxRealPoints + 5); 
-                        bots.push({ points: parseFloat(bPoints.toFixed(1)), isBot: true });
-                    }
+                    if(prize > 0 && currentTeam.payment_status !== "PAID") {
+                        await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${currentTeam.teamKey}`).update({ payment_status: "PAID" });
+                        
+                        // Seedha Winning Balance mein credit
+                        let wSnap = await db.ref(`users/${currentTeam.phone}`).once('value');
+                        let currentWinBal = parseFloat(wSnap.val()?.winning_balance || 0);
+                        await db.ref(`users/${currentTeam.phone}`).update({ winning_balance: currentWinBal + prize });
+                        await db.ref(`users/${currentTeam.phone}/Transactions`).push({ title: `🏆 Rank ${rank} Winnings`, amount: prize, type: "credit", date: new Date().toLocaleString() });
 
-                    let combined = [...realTeamsInContest, ...bots];
-                    combined.sort((a,b) => b.points - a.points);
-
-                    for(let r = 0; r < combined.length; r++) {
-                        let currentTeam = combined[r];
-                        if(!currentTeam.isBot) {
-                            let rank = r + 1;
-                            let prize = calculatePrizeLogic(rank, entryFee, totalSpots);
-
-                            if(prize > 0 && currentTeam.payment_status !== "PAID") {
-                                await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${currentTeam.teamKey}`).update({ payment_status: "PAID" });
-                                let wSnap = await db.ref(`users/${currentTeam.phone}`).once('value');
-                                let wData = wSnap.val() || {};
-                                let currentWinBal = parseFloat(wData.winning_balance || 0);
-                                await db.ref(`users/${currentTeam.phone}`).update({ winning_balance: currentWinBal + prize });
-                                await db.ref(`users/${currentTeam.phone}/Transactions`).push({ title: `🏆 Fantasy Winnings (Rank ${rank})`, amount: prize, type: "credit", date: new Date().toLocaleString() });
-
-                                totalPaidUsers++;
-                                totalAmountPaid += prize;
-                            }
-                        }
+                        totalPaidUsers++;
                     }
                 }
-
                 await db.ref(`Game/Kalyan11/VIPMatches/${matchId}`).update({ timestamp: new Date().getTime() - 15000000 });
                 loader.style.display = 'none';
-                alert(`✅ PAYOUT SUCCESSFUL!\n\n🏆 Total Winners Paid: ${totalPaidUsers}\n💰 Total Amount Given: ₹${totalAmountPaid.toLocaleString('en-IN')}`);
-
+                alert(`✅ PAYOUT SUCCESSFUL!\nTotal Winners Paid: ${totalPaidUsers}`);
             } catch (error) {
                 loader.style.display = 'none';
                 alert("❌ ERROR: " + error.message);
