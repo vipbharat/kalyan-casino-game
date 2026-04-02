@@ -59,8 +59,8 @@
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
     
-    // 🔥 FIX: Free aur Fast CORS Proxy lagaya hai
-    const API_URL = "https://api.allorigins.win/get?url=";
+    // 🔥 FINAL FIX: Naya aur Powerfull Proxy (Jo kabhi block nahi hoga)
+    const API_URL = "https://api.codetabs.com/v1/proxy?quest=";
 
     let activeMatches = {};
 
@@ -146,11 +146,18 @@
         try {
             cLog('info', `🌐 Fetching data for Match: ${matchId}`);
             
-            // 🔥 FIX: Naya JSON format decode karna
+            // 🔥 FINAL FIX: URL SMART CONVERTER (Koi bhi link dalo, auto scorecard banega)
+            if (link.includes("cricbuzz.com")) {
+                link = link.replace("cricket-match-squads", "live-cricket-scorecard");
+                link = link.replace("live-cricket-scores", "live-cricket-scorecard");
+                link = link.replace("cricket-match-facts", "live-cricket-scorecard");
+            }
+
+            // Naye Proxy ke through direct HTML fetch karna
             let res = await fetch(API_URL + encodeURIComponent(link));
-            let data = await res.json();
-            let html = data.contents;
+            if (!res.ok) throw new Error("Proxy Server Blocked ya Timeout");
             
+            let html = await res.text();
             let doc = new DOMParser().parseFromString(html, "text/html");
 
             if (link.includes("cricbuzz.com")) {
@@ -179,7 +186,10 @@
         let playingList = playingMatch ? playingMatch[1].toLowerCase().split(',').map(n => n.trim().replace(/[^a-z ]/g, '')) : [];
 
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
-        if(!dbSnap.exists()) return;
+        if(!dbSnap.exists()) {
+             cLog('error', `⚠️ Firebase me Match ${matchId} ke players nahi mile!`);
+             return;
+        }
         
         let players = dbSnap.val();
         let updates = {};
