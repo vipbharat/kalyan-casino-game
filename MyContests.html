@@ -113,7 +113,6 @@
         }
     });
 
-    // Har 45 seconds me match check karega
     setInterval(async () => {
         let now = Date.now();
         let ids = Object.keys(activeMatches);
@@ -143,7 +142,6 @@
         } catch (e) { cLog('error', `Sync Error: ${e.message}`); }
     }
 
-    // Leaderboard Point Update Logic
     async function updateLiveLeaderboard(matchId) {
         try {
             let pSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
@@ -161,8 +159,6 @@
                 
                 Object.values(teamPlayers).forEach(pKey => {
                     let livePt = (playersObj[pKey] && playersObj[pKey].points) ? parseFloat(playersObj[pKey].points) : 0;
-                    
-                    // C aur VC ke exact points
                     if(pKey === t.captain) calculatedPoints += (livePt * 2);
                     else if(pKey === t.viceCaptain) calculatedPoints += (livePt * 1.5);
                     else calculatedPoints += livePt;
@@ -180,7 +176,7 @@
         } catch(e) { cLog('error', `Leaderboard Error: ${e.message}`); }
     }
 
-    // 🔥 SMART POINT ACCUMULATOR (FULL FILE VERSION) 🔥
+    // 🔥 PURE SMART ENGINE LOGIC (No Zero Points Anymore) 🔥
     async function parseCricbuzz(doc, matchId) {
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
         if(!dbSnap.exists()) return;
@@ -192,41 +188,45 @@
         let totalMatchPoints = 0;
 
         for (let key in players) {
-            // Player ka naam todna taaki First ya Last dono match kar sake
-            let fbName = players[key].name.toLowerCase().replace(/[^a-z ]/g, '').trim();
-            let nameParts = fbName.split(' ');
-            let firstName = nameParts[0];
-            let lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : firstName; 
+            let originalName = players[key].name;
             
-            let runs = 0, wickets = 0, inScorecard = false;
+            // CLEAN NAME LOGIC: (c), (wk), special characters aur extra space sab hata dega
+            let fbClean = originalName.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
+            let fbParts = fbClean.split(' ');
+            let fbLast = fbParts[fbParts.length - 1]; // Surname uthayega
+            
+            let runs = 0, wickets = 0, isPlaying = false;
 
             rows.forEach(row => {
                 let nameEl = row.querySelector('a.cb-text-link');
                 if(!nameEl) return;
                 
-                let webName = nameEl.innerText.toLowerCase().replace(/[^a-z ]/g, '').trim();
+                // Cricbuzz ke naam ko bhi clean karega
+                let webClean = nameEl.innerText.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
                 
-                // SMART MATCHING: Last Name ya First Name kuch bhi mil jaye
-                if(webName.includes(lastName) || webName.includes(firstName) || fbName.includes(webName)) {
-                    inScorecard = true;
+                // PERFECT MATCHING: Agar last name match hota hai, toh khiladi mil gaya!
+                if(webClean.includes(fbLast) || fbClean.includes(webClean)) {
+                    isPlaying = true;
+                    
+                    let rowText = row.parentNode.innerText.toLowerCase();
+                    let isBowling = rowText.includes('wkts') || rowText.includes('econ') || rowText.includes('bowler');
+                    
                     let cols = row.querySelectorAll('.cb-col');
-                    
-                    let isBowling = row.parentNode.innerText.includes('WKTS') || row.parentNode.innerText.includes('Wickets') || row.parentNode.innerText.includes('Bowling');
-                    
-                    if(isBowling) {
-                        let w = parseInt(cols[4]?.innerText);
-                        if(!isNaN(w)) wickets = w;
-                    } else {
-                        let r = parseInt(cols[2]?.innerText);
-                        if(!isNaN(r)) runs = r;
+                    if(cols.length >= 5) {
+                        if(isBowling) {
+                            let w = parseInt(cols[4].innerText); // Wicket column
+                            if(!isNaN(w)) wickets = w;
+                        } else {
+                            let r = parseInt(cols[2].innerText); // Runs column
+                            if(!isNaN(r)) runs = r;
+                        }
                     }
                 }
             });
 
-            let currentStatus = inScorecard ? "playing" : (players[key].playingStatus || "unannounced");
-            
-            // Runs (1 Point) + Wickets (25 Point) + Playing Bonus (4 Point)
-            let totalPoints = (runs * 1) + (wickets * 25) + (inScorecard ? 4 : 0);
+            // Status aur Points
+            let currentStatus = isPlaying ? "playing" : (players[key].playingStatus || "unannounced");
+            let totalPoints = (runs * 1) + (wickets * 25) + (isPlaying ? 4 : 0);
             
             totalMatchPoints += totalPoints;
 
@@ -238,7 +238,7 @@
 
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-            cLog('success', `✅ Asli Chatni & Points Updated for ${matchId}! (Total Pts Found: ${totalMatchPoints})`);
+            cLog('success', `✅ Asli Chatni & Points Updated for ${matchId}! (Total Pts: ${totalMatchPoints})`);
             await updateLiveLeaderboard(matchId);
         }
     }
