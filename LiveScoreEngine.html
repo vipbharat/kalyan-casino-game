@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KALYAN VIP - ULTIMATE BRAHMASTRA ENGINE 🚀</title>
+    <title>KALYAN VIP - ULTIMATE ENGINE 🚀</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -27,7 +27,7 @@
 <body>
 
     <div class="header">
-        <h1><i class="fa-solid fa-bolt"></i> KALYAN BRAHMASTRA ENGINE</h1>
+        <h1><i class="fa-solid fa-bolt"></i> KALYAN VIP ENGINE</h1>
         <div class="status-badge" id="sync-status">Status: CONNECTING...</div>
     </div>
 
@@ -45,7 +45,7 @@
     </div>
 
     <div class="terminal" id="console-box">
-        <p class="log-info">> Brahmastra Engine Ready! Waiting for command...</p>
+        <p class="log-info">> Ultimate Engine Ready! Waiting for command...</p>
     </div>
 
 <script>
@@ -120,28 +120,22 @@
             let res = await fetch(finalUrl);
             let html = await res.text();
 
-            // YAHAN MAINE 'ERROR' WALA GALAT CHECK HATA DIYA HAI
-            if (!html) {
-                cLog('error', `❌ API se khali panna aaya.`);
+            if (!html || html.includes("<title>Just a moment...</title>") || html.includes("Cloudflare block")) {
+                cLog('error', `❌ Server Error: Panna khali aaya ya block hua.`);
                 return; 
-            }
-            // Sirf asali Cloudflare block check karega
-            if (html.includes("<title>Just a moment...</title>") || html.includes("Cloudflare block")) {
-                cLog('error', `❌ Cricbuzz Cloudflare ne Render ko block kiya hai.`);
-                return;
             }
 
             let doc = new DOMParser().parseFromString(html, "text/html");
             await parseCricbuzz(doc, matchId);
             
-        } catch (e) { cLog('warn', `Server Network Error: ${e.message}`); }
+        } catch (e) { cLog('warn', `Server Network Error, dobara try kar raha hoon...`); }
     }
 
-    // 🔥 BRAHMASTRA TARGET LOCK PARSER 🔥
+    // 🔥 LASER TARGET PARSER (BUG FIX - FINAL) 🔥
     async function parseCricbuzz(doc, matchId) {
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
         if(!dbSnap.exists()) {
-            cLog('error', `❌ Match ${matchId} ke players database (Firebase) mein nahi hain!`);
+            cLog('error', `❌ Match ${matchId} ke players Firebase mein nahi hain!`);
             return;
         }
 
@@ -149,75 +143,88 @@
         let updates = {};
         let scrapedData = {};
 
-        let playerLinks = doc.querySelectorAll('a[href*="profiles"]');
+        // Asli table rows ko pakdenge
+        let rows = doc.querySelectorAll('.cb-scrd-itms');
 
-        if(playerLinks.length === 0) {
-            let title = doc.title || "No Title Found";
-            cLog('error', `⚠️ Panna toh mila par players nahi dikhe! Page Title: "${title}"`);
-            return;
-        }
+        rows.forEach(row => {
+            // Check: Ye line Batsman ki hai ya Bowler ki? (Kachra hatao)
+            let isBatsman = row.querySelector('.cb-col-27') !== null;
+            let isBowler = row.querySelector('.cb-col-38') !== null;
 
-        playerLinks.forEach(link => {
-            let row = link.closest('.cb-scrd-itms') || link.closest('tr') || link.parentElement.parentElement;
-            if(!row) return;
+            if(!isBatsman && !isBowler) return; 
 
-            let nameText = link.textContent.trim();
-            let webClean = nameText.toLowerCase().replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
-            if(!webClean || webClean.length < 3) return;
+            let nameEl = row.querySelector('a.cb-text-link');
+            if(!nameEl) return;
+
+            let nameText = nameEl.textContent.trim();
+            let webClean = nameText.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
 
             if(!scrapedData[webClean]) scrapedData[webClean] = { runs: 0, wickets: 0 };
 
-            let isBowler = row.innerHTML.includes('cb-col-38') || row.innerText.includes('.'); 
-            let boldTextEl = row.querySelector('.text-bold'); 
-
-            if(boldTextEl) {
-                let val = parseInt(boldTextEl.textContent.trim());
-                if(!isNaN(val)) {
-                    if(isBowler) scrapedData[webClean].wickets = val; 
-                    else scrapedData[webClean].runs = val; 
-                }
-            } else {
-                let nums = row.innerText.match(/\b\d+\b/g);
-                if(nums) {
-                    if(isBowler && nums.length >= 4) scrapedData[webClean].wickets = parseInt(nums[3]); 
-                    else if(!isBowler && nums.length >= 1) scrapedData[webClean].runs = parseInt(nums[0]); 
+            let boldValueEl = row.querySelector('.text-bold'); 
+            if(boldValueEl) {
+                let value = parseInt(boldValueEl.textContent.trim());
+                if(!isNaN(value)) {
+                    if(isBowler) scrapedData[webClean].wickets = value; 
+                    else if (isBatsman) scrapedData[webClean].runs = value; 
                 }
             }
         });
 
-        cLog('info', `🎯 Brahmastra ne ${playerLinks.length} khiladiyo ka data nikaal liya!`);
+        cLog('info', `🎯 LASER ne sahi score padh liya hai! Match checking chalu...`);
 
         let matchedCount = 0;
         let totalPts = 0;
 
         for (let key in players) {
             let fbClean = players[key].name.toLowerCase().replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
-            let fbLast = fbClean.split(' ').pop(); 
+            let fbParts = fbClean.split(' ');
+            let fbFirst = fbParts[0];
+            let fbLast = fbParts[fbParts.length - 1]; 
 
+            let matchedStats = null;
+
+            // BUG FIX: Sabse pehle poora naam milane ki koshish (Taaki Khan, Sharma mix na ho)
             for (let sName in scrapedData) {
-                if (sName.includes(fbLast) || fbClean.includes(sName)) {
-                    let r = scrapedData[sName].runs;
-                    let w = scrapedData[sName].wickets;
-                    let p = (r * 1) + (w * 25) + 4; 
-
-                    updates[key + '/points'] = p;
-                    updates[key + '/runs'] = r;
-                    updates[key + '/wickets'] = w;
-                    updates[key + '/playingStatus'] = "playing";
-                    
-                    totalPts += p;
-                    matchedCount++;
+                if (sName === fbClean || sName.includes(fbClean) || fbClean.includes(sName)) {
+                    matchedStats = scrapedData[sName];
                     break;
                 }
+            }
+            
+            // Backup Plan: Agar lamba naam na mile toh pehla aur aakhiri naam match karo
+            if (!matchedStats) {
+                for (let sName in scrapedData) {
+                    if (sName.includes(fbFirst) && sName.includes(fbLast)) {
+                        matchedStats = scrapedData[sName];
+                        break;
+                    }
+                }
+            }
+
+            if (matchedStats) {
+                let r = matchedStats.runs || 0;
+                let w = matchedStats.wickets || 0;
+                let isPlaying = true;
+                
+                let p = (r * 1) + (w * 25) + 4; // Point Calculation System
+
+                updates[key + '/points'] = p;
+                updates[key + '/runs'] = r;
+                updates[key + '/wickets'] = w;
+                updates[key + '/playingStatus'] = "playing";
+                
+                totalPts += p;
+                matchedCount++;
             }
         }
 
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-            cLog('success', `✅ KAMAAL HO GAYA! ${matchedCount} khiladiyo ke ${totalPts} points update hue!`);
+            cLog('success', `✅ PERFECT SYNC: ${matchedCount} khiladiyo ke points update hue!`);
             await updateLiveLeaderboard(matchId);
         } else {
-            cLog('warn', `⚠️ Marksheet mili par Firebase ke kisi player ka naam match nahi hua.`);
+            cLog('warn', `⚠️ Scorecard scan hua par database se koi naam completely match nahi hua.`);
         }
     }
 
