@@ -3,60 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KALYAN VIP - JSON ENGINE 🚀</title>
+    <title>KALYAN VIP - MANUAL OFFLINE ENGINE 🚀</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
     <style>
         body { background: #050510; color: #fff; font-family: 'Segoe UI', sans-serif; padding: 20px; margin: 0; }
         .header { text-align: center; border-bottom: 2px solid #00ff88; padding-bottom: 15px; margin-bottom: 20px; }
         .header h1 { margin: 0; color: #00ff88; font-size: 24px; text-transform: uppercase; text-shadow: 0 0 10px rgba(0,255,136,0.3);}
-        .box { background: #1a1a2e; padding: 15px; border-radius: 10px; border: 1px solid #444; margin-bottom: 20px; }
-        h3 { margin-top: 0; font-size: 14px; color: #00d2d3; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 8px;}
-        input { width: calc(100% - 22px); padding: 12px; margin-bottom: 10px; background: #000; border: 1px solid #444; color: #fff; border-radius: 5px; font-weight: bold;}
-        .btn-start { width: 100%; padding: 12px; background: #00ff88; color: #000; font-weight: 900; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase;}
-        .terminal { background: #000; border: 1px solid #00ff88; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-bottom: 20px;}
-        .terminal p { margin: 4px 0; border-bottom: 1px dashed #111; padding-bottom: 4px;}
-        .log-info { color: #00d2d3; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ff9f43; }
-        .log-leader { color: #ffd700; font-weight: bold; }
-        .status-badge { display: inline-block; padding: 8px 15px; border-radius: 15px; font-size: 12px; font-weight: bold; background: #333; color: #aaa; margin-top: 10px;}
-        .status-badge.active { background: #00ff88; color: #000; box-shadow: 0 0 10px rgba(0,255,136,0.5); animation: pulse 2s infinite;}
-        .match-card { background: #000; border: 1px solid #00ff88; padding: 10px; border-radius: 5px; margin-bottom: 10px; position: relative; }
-        .match-card strong { color: #00ff88; font-size: 14px; }
-        .match-card a { color: #00d2d3; font-size: 11px; word-break: break-all; display: block; margin: 5px 0; text-decoration: none; }
-        .btn-stop { background: #ff004c; color: #fff; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .box { background: #1a1a2e; padding: 15px; border-radius: 10px; border: 1px solid #444; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        h3 { margin-top: 0; font-size: 14px; color: #ffd700; text-transform: uppercase; border-bottom: 1px dashed #333; padding-bottom: 8px;}
+        input[type="text"], textarea { width: 100%; box-sizing: border-box; padding: 12px; margin-bottom: 10px; background: #000; border: 1px solid #444; color: #fff; border-radius: 5px; font-weight: bold;}
+        textarea { height: 120px; resize: vertical; }
+        input[type="file"] { margin-bottom: 15px; color: #00ff88; }
+        
+        .btn-green { background: #00ff88; color: #000; font-weight: 900; width: 100%; padding: 12px; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase; margin-bottom: 10px; font-size: 16px;}
+        .btn-blue { background: #00d2d3; color: #000; font-weight: 900; width: 100%; padding: 12px; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase; font-size: 16px;}
+        
+        .terminal { background: #000; border: 1px solid #00ff88; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; margin-bottom: 20px;}
+        .terminal p { margin: 5px 0; border-bottom: 1px dashed #222; padding-bottom: 5px;}
+        .log-info { color: #00d2d3; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ffd700; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 10px; background: #222; color: #aaa; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .tab-btn.active { background: #ffd700; color: #000; box-shadow: 0 0 10px rgba(255,215,0,0.3); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        #loader { display: none; text-align: center; margin: 10px 0; color: #ffd700; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1><i class="fa-solid fa-server"></i> JSON VIP ENGINE</h1>
-        <div class="status-badge" id="sync-status">Status: CONNECTING...</div>
+        <h1><i class="fa-solid fa-camera"></i> OFFLINE POINT ENGINE</h1>
+        <p style="margin: 5px 0 0; color: #aaa; font-size: 12px;">Copy-Paste ya Screenshot se points jodein</p>
     </div>
 
     <div class="box">
-        <h3><i class="fa-solid fa-bolt"></i> Add Match (No Links, Only ID)</h3>
+        <h3><i class="fa-solid fa-crosshairs"></i> 1. Match Target</h3>
         <input type="text" id="m-id" placeholder="Match ID yahan daalein (e.g. 149673)">
-        <input type="datetime-local" id="m-time">
-        <button class="btn-start" onclick="saveMatchToDatabase()">SAVE & START SYNC</button>
     </div>
 
-    <div class="box" id="active-matches-container" style="display: none;">
-        <h3><i class="fa-solid fa-list"></i> Running Matches</h3>
-        <div id="active-matches-list"></div>
+    <div class="box">
+        <div class="tabs">
+            <button class="tab-btn active" id="tab1-btn" onclick="switchTab(1)"><i class="fa-solid fa-paste"></i> PASTE TEXT</button>
+            <button class="tab-btn" id="tab2-btn" onclick="switchTab(2)"><i class="fa-solid fa-image"></i> SCREENSHOT</button>
+        </div>
+
+        <div id="tab1" class="tab-content active">
+            <textarea id="raw-text" placeholder="Cricbuzz se scorecard ki lines copy karke yahan paste karein..."></textarea>
+            <button class="btn-green" onclick="processText()"><i class="fa-solid fa-bolt"></i> TEXT SE POINTS BANAO</button>
+        </div>
+
+        <div id="tab2" class="tab-content">
+            <p style="font-size: 12px; color: #aaa; margin-top: 0;">Scorecard ka clear screenshot select karein:</p>
+            <input type="file" id="image-upload" accept="image/*">
+            <div id="loader"><i class="fa-solid fa-cog fa-spin"></i> Photo se text nikal raha hoon, thoda rukiye...</div>
+            <button class="btn-blue" onclick="processImage()"><i class="fa-solid fa-camera-retro"></i> PHOTO SE POINTS BANAO</button>
+        </div>
     </div>
 
     <div class="terminal" id="console-box">
-        <p class="log-info">> Super JSON Engine Ready. No Cloudflare Blocks!</p>
+        <p class="log-info">> Offline Engine Ready. Intezaar hai...</p>
     </div>
 
 <script>
+    // FIREBASE SETUP
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
-    
-    let activeMatches = {};
 
     function cLog(type, msg) {
         let box = document.getElementById('console-box');
@@ -64,90 +83,141 @@
         box.scrollTop = box.scrollHeight; 
     }
 
-    function saveMatchToDatabase() {
-        let id = document.getElementById('m-id').value.trim();
-        let time = document.getElementById('m-time').value;
+    // TAB SWITCHER
+    function switchTab(num) {
+        document.getElementById('tab1').classList.remove('active');
+        document.getElementById('tab2').classList.remove('active');
+        document.getElementById('tab1-btn').classList.remove('active');
+        document.getElementById('tab2-btn').classList.remove('active');
 
-        if(!id || !time) return alert("Match ID aur Time bhariye!");
-        let wakeTime = new Date(time).getTime() - 1200000; 
-        db.ref(`Game/Kalyan11/LiveEngine/${id}`).set({ matchId: id, wakeUpTime: wakeTime })
-        .then(() => {
-            document.getElementById('m-id').value = ""; 
-            cLog('success', `Match ${id} Added successfully!`);
-        });
+        document.getElementById('tab' + num).classList.add('active');
+        document.getElementById('tab' + num + '-btn').classList.add('active');
     }
 
-    function stopMatch(id) {
-        if(confirm(`Kya aap sach mein Match ${id} ka sync rokna chahte hain?`)) {
-            db.ref(`Game/Kalyan11/LiveEngine/${id}`).remove();
-            cLog('warn', `🛑 Engine Stopped for Match: ${id}`);
-        }
-    }
-
-    db.ref(`Game/Kalyan11/LiveEngine`).on('value', (snapshot) => {
-        activeMatches = snapshot.exists() ? snapshot.val() : {};
-        let count = Object.keys(activeMatches).length;
-        document.getElementById('sync-status').innerText = `Status: SYNCING ${count} MATCHES 🔥`;
-        document.getElementById('sync-status').className = count > 0 ? "status-badge active" : "status-badge";
-
-        let listDiv = document.getElementById('active-matches-list');
-        let container = document.getElementById('active-matches-container');
+    // PROCESS 1: MANUAL TEXT
+    function processText() {
+        let matchId = document.getElementById('m-id').value.trim();
+        let text = document.getElementById('raw-text').value.trim();
+        if(!matchId) return alert("Bhai, pehle Match ID daaliye!");
+        if(!text) return alert("Pehle box mein text paste kariye!");
         
-        if (count > 0) {
-            container.style.display = "block";
-            let html = "";
-            for (let id in activeMatches) {
-                html += `
-                <div class="match-card">
-                    <strong>Match ID: ${id}</strong>
-                    <button class="btn-stop" onclick="stopMatch('${id}')" style="float: right;"><i class="fa-solid fa-trash"></i> STOP</button>
-                </div>`;
-            }
-            listDiv.innerHTML = html;
-        } else {
-            container.style.display = "none"; listDiv.innerHTML = "";
-        }
-    });
+        cLog('info', `📄 Text processing shuru...`);
+        calculatePointsAndPush(matchId, text);
+    }
 
-    setInterval(async () => {
-        let now = Date.now();
-        let ids = Object.keys(activeMatches);
-        for (let id of ids) {
-            let m = activeMatches[id];
-            if (now >= m.wakeUpTime) { await runJsonSync(id); }
-        }
-    }, 25000); 
+    // PROCESS 2: SCREENSHOT (AI SCANNER)
+    async function processImage() {
+        let matchId = document.getElementById('m-id').value.trim();
+        let fileInput = document.getElementById('image-upload');
+        
+        if(!matchId) return alert("Bhai, pehle Match ID daaliye!");
+        if(fileInput.files.length === 0) return alert("Pehle ek screenshot (photo) select kariye!");
 
-    // 🌐 THE SECRET API FETCHER (100% Block-Free)
-    async function runJsonSync(matchId) {
+        document.getElementById('loader').style.display = 'block';
+        cLog('info', `📸 Photo scan ho rahi hai. AI text nikal raha hai...`);
+
         try {
-            cLog('info', `🌐 Secret Mobile API se data nikal rahe hain (Match: ${matchId})...`);
+            const worker = await Tesseract.createWorker('eng');
+            const ret = await worker.recognize(fileInput.files[0]);
+            await worker.terminate();
             
-            // Cricbuzz ki hidden mobile API (Sirf JSON data aayega, koi HTML nahi)
-            let apiUrl = `http://mapps.cricbuzz.com/cbzios/match/${matchId}/scorecard.json`;
-            let proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}&disableCache=true`;
+            document.getElementById('loader').style.display = 'none';
+            let scannedText = ret.data.text;
             
-            let res = await fetch(proxyUrl);
-            let data = await res.json();
-            
-            if(!data || !data.contents || data.contents.includes("Cloudflare") || data.contents.includes("<html")) {
-                cLog('error', `❌ API Blocked. Yeh secret rasta bhi detect ho gaya hai.`);
-                return; 
-            }
+            cLog('success', `✅ Photo se text nikal gaya. Ab points update honge!`);
+            calculatePointsAndPush(matchId, scannedText);
 
-            let scorecardData;
-            try {
-                scorecardData = JSON.parse(data.contents);
-            } catch(e) {
-                cLog('error', `❌ Match ID ${matchId} ka data abhi API par aaya nahi hai.`);
+        } catch (e) {
+            document.getElementById('loader').style.display = 'none';
+            cLog('error', `❌ Photo scan mein error aaya: ${e.message}`);
+        }
+    }
+
+    // 🔥 MAIN BRAIN: TEXT TO POINTS CALCULATOR 🔥
+    async function calculatePointsAndPush(matchId, rawText) {
+        try {
+            let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
+            if(!dbSnap.exists() || !dbSnap.val()) {
+                cLog('error', `❌ Database mein Match ${matchId} ke khiladi nahi mile!`);
                 return;
             }
 
-            await parseJsonScorecard(scorecardData, matchId);
-            
-        } catch (e) { cLog('error', `Sync Error: ${e.message}`); }
+            let players = dbSnap.val();
+            let updates = {};
+            let matchedCount = 0;
+            let totalMatchPoints = 0;
+            let textLines = rawText.split('\n');
+
+            cLog('info', `🔍 Khiladi dhoondh raha hoon...`);
+
+            for (let key in players) {
+                let fbName = players[key].name;
+                let fbClean = fbName.toLowerCase().replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
+                let fbParts = fbClean.split(' ');
+                let lastName = fbParts[fbParts.length - 1]; // Surname (e.g. Kohli, Narine)
+
+                let runsFound = 0;
+                let wicketsFound = 0;
+                let isPlaying = false;
+
+                // Har ek line ko check karenge
+                for(let line of textLines) {
+                    let lowerLine = line.toLowerCase();
+                    
+                    // Agar line mein khiladi ka surname mil gaya
+                    if(lowerLine.includes(lastName)) {
+                        isPlaying = true;
+                        
+                        // Line me se saare numbers nikalo
+                        let numbers = line.match(/\b\d+\b/g); 
+                        
+                        if(numbers && numbers.length >= 2) {
+                            // BATTING LOGIC (Line mein c, b, run out, not out aadi ho)
+                            if(lowerLine.includes(' c ') || lowerLine.includes(' b ') || lowerLine.includes('run out') || lowerLine.includes('not out') || lowerLine.includes('st ')) {
+                                let r = parseInt(numbers[0]); // Batting mein pehla number Runs hota hai
+                                if(!isNaN(r) && r > runsFound) runsFound = r; 
+                            } 
+                            // BOWLING LOGIC (Aamtaur par 4-5 number hote hain: Overs, Maidens, Runs, Wickets)
+                            else if(numbers.length >= 4) {
+                                let w = parseInt(numbers[3]); // 4th number Wicket hota hai
+                                if(!isNaN(w) && w > wicketsFound) wicketsFound = w;
+                            }
+                        }
+                    }
+                }
+
+                // Agar is copy-paste ya photo mein khiladi nahi mila, toh uske purane points waise hi rahenge.
+                // Hum sirf UNKA data update karenge jo photo/text mein mile hain.
+                if(isPlaying) {
+                    matchedCount++;
+                    
+                    // Runs(1 pt) + Wickets(25 pt) + Playing Bonus(4 pt)
+                    let totalPoints = (runsFound * 1) + (wicketsFound * 25) + 4;
+                    totalMatchPoints += totalPoints;
+
+                    updates[key + '/points'] = totalPoints;
+                    updates[key + '/runs'] = runsFound;
+                    updates[key + '/wickets'] = wicketsFound;
+                    updates[key + '/playingStatus'] = "playing";
+                    
+                    cLog('success', `👉 ${fbName}: R:${runsFound}, W:${wicketsFound} = ${totalPoints} Pts`);
+                }
+            }
+
+            if(Object.keys(updates).length > 0) {
+                await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
+                cLog('warn', `✅ KAMAAL HO GAYA! ${matchedCount} khiladiyo ke points Firebase mein bhej diye!`);
+                await updateLiveLeaderboard(matchId);
+            } else {
+                cLog('warn', `⚠️ Is photo/text mein kisi bhi khiladi ka naam samajh nahi aaya.`);
+            }
+
+        } catch(e) {
+            cLog('error', `❌ Engine Error: ${e.message}`);
+        }
     }
 
+    // UPDATE LEADERBOARD (Rank & Total Points)
     async function updateLiveLeaderboard(matchId) {
         try {
             let pSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
@@ -177,77 +247,9 @@
 
             if(Object.keys(updates).length > 0) {
                 await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).update(updates);
-                cLog('leader', `🏆 LEADERBOARD UPDATED (Highest: ${maxScore} Pts)`);
+                cLog('leader', `🏆 LEADERBOARD UPDATED (Highest Pts: ${maxScore})`);
             }
         } catch(e) { cLog('error', `Leaderboard Error: ${e.message}`); }
-    }
-
-    // 🔥 PURE JSON PARSER 🔥
-    async function parseJsonScorecard(scorecardData, matchId) {
-        let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
-        if(!dbSnap.exists() || !dbSnap.val()) return;
-
-        let players = dbSnap.val();
-        let scrapedData = {};
-
-        // JSON ko sidha read karenge
-        if (scorecardData.Innings) {
-            scorecardData.Innings.forEach(inning => {
-                if(inning.batsmen) {
-                    inning.batsmen.forEach(bat => {
-                        let name = bat.name.toLowerCase().replace(/[^a-z]/g, ' ').trim();
-                        if(!scrapedData[name]) scrapedData[name] = { runs: 0, wickets: 0 };
-                        scrapedData[name].runs = parseInt(bat.r) || 0;
-                    });
-                }
-                if(inning.bowlers) {
-                    inning.bowlers.forEach(bowl => {
-                        let name = bowl.name.toLowerCase().replace(/[^a-z]/g, ' ').trim();
-                        if(!scrapedData[name]) scrapedData[name] = { runs: 0, wickets: 0 };
-                        scrapedData[name].wickets = parseInt(bowl.w) || 0;
-                    });
-                }
-            });
-        }
-
-        let totalMatchPoints = 0;
-        let matchedCount = 0;
-        let updates = {};
-
-        for (let key in players) {
-            let fbClean = players[key].name.toLowerCase().replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
-            let fbParts = fbClean.split(' ');
-            let fbFirst = fbParts[0];
-            let fbLast = fbParts[fbParts.length - 1]; 
-
-            let r = 0, w = 0, isPlaying = false;
-
-            for (let scrapedName in scrapedData) {
-                if (scrapedName.includes(fbLast) || fbClean.includes(scrapedName) || scrapedName.includes(fbFirst)) {
-                    r = scrapedData[scrapedName].runs || 0;
-                    w = scrapedData[scrapedName].wickets || 0;
-                    isPlaying = true;
-                    matchedCount++;
-                    break;
-                }
-            }
-
-            let currentStatus = isPlaying ? "playing" : (players[key].playingStatus || "unannounced");
-            let totalPoints = (r * 1) + (w * 25) + (isPlaying ? 4 : 0);
-
-            totalMatchPoints += totalPoints;
-
-            updates[key + '/points'] = totalPoints;
-            updates[key + '/runs'] = r;
-            updates[key + '/wickets'] = w;
-            updates[key + '/playingStatus'] = currentStatus;
-        }
-
-        if(Object.keys(updates).length > 0) {
-            await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-            cLog('success', `✅ PURE JSON SYNC: ${matchedCount} khiladiyo ke ${totalMatchPoints} Pts jode gaye!`);
-            await updateLiveLeaderboard(matchId);
-        }
     }
 </script>
 </body>
