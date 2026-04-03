@@ -37,7 +37,7 @@
 
     <div class="box">
         <h3><i class="fa-solid fa-plus-circle"></i> Add New Match Sync</h3>
-        <input type="text" id="m-id" placeholder="Match ID (e.g. 149020)">
+        <input type="text" id="m-id" placeholder="Match ID (e.g. 148375)">
         <input type="text" id="m-link" placeholder="Cricbuzz Scorecard Link Paste Karein">
         <input type="datetime-local" id="m-time">
         <button class="btn-start" onclick="saveMatchToDatabase()">SAVE & START SYNC</button>
@@ -125,6 +125,8 @@
     async function runSync(matchId, link) {
         try {
             cLog('info', `🌐 Fetching data for Match: ${matchId}`);
+            
+            // Link ko automatically scorecard mein badalna taaki structure sahi rahe
             if (link.includes("cricbuzz.com")) {
                 link = link.replace("cricket-match-squads", "live-cricket-scorecard");
                 link = link.replace("live-cricket-scores", "live-cricket-scorecard");
@@ -159,7 +161,6 @@
                 
                 Object.values(teamPlayers).forEach(pKey => {
                     let livePt = (playersObj[pKey] && playersObj[pKey].points) ? parseFloat(playersObj[pKey].points) : 0;
-                    
                     if(pKey === t.captain) calculatedPoints += (livePt * 2);
                     else if(pKey === t.viceCaptain) calculatedPoints += (livePt * 1.5);
                     else calculatedPoints += livePt;
@@ -177,7 +178,7 @@
         } catch(e) { cLog('error', `Leaderboard Error: ${e.message}`); }
     }
 
-    // 🔥 FIX FOR CRICBUZZ NEW DOM STRUCTURE 🔥
+    // 🔥 PERFECTED CRICBUZZ PARSER 🔥
     async function parseCricbuzz(doc, matchId) {
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
         if(!dbSnap.exists()) return;
@@ -185,72 +186,76 @@
         let players = dbSnap.val();
         let updates = {};
         
-        // Cricbuzz ke naye structure mein classes alag hain
-        let innings = doc.querySelectorAll('.cb-col.cb-col-100.cb-ltst-wgt-hdr');
+        // 1. STEP ONE: Scorecard se saare Run aur Wicket extract karo
+        let scrapedData = {};
+        let rows = doc.querySelectorAll('.cb-scrd-itms');
         
+        rows.forEach(row => {
+            let nameEl = row.querySelector('a.cb-text-link');
+            if(!nameEl) return;
+            
+            // Bracket wali cheezein (c) (wk) hata do
+            let webClean = nameEl.innerText.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
+            
+            if(!scrapedData[webClean]) {
+                scrapedData[webClean] = { runs: 0, wickets: 0 };
+            }
+
+            let cols8 = row.querySelectorAll('.cb-col-8');
+            
+            // Check if it's Batting Row (Has dismissal column .cb-col-33 or is specifically .cb-col-27)
+            if(row.querySelector('.cb-col-33') || row.querySelector('.cb-col-27')) {
+                if(cols8.length > 0) {
+                    let r = parseInt(cols8[0].innerText.trim());
+                    if(!isNaN(r)) scrapedData[webClean].runs = r;
+                }
+            }
+            
+            // Check if it's Bowling Row (Has overs/maidens etc. or is specifically .cb-col-38)
+            if(row.querySelector('.cb-col-38') || cols8.length >= 4) {
+                if(cols8.length >= 4) {
+                    let w = parseInt(cols8[3].innerText.trim());
+                    if(!isNaN(w)) scrapedData[webClean].wickets = w;
+                }
+            }
+        });
+
         let totalMatchPoints = 0;
 
+        // 2. STEP TWO: Apne Firebase players ko Scraped data se match karo
         for (let key in players) {
             let fbClean = players[key].name.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
             let fbParts = fbClean.split(' ');
             let fbFirst = fbParts[0];
             let fbLast = fbParts[fbParts.length - 1]; 
             
-            let runs = 0, wickets = 0, isPlaying = false;
+            let r = 0, w = 0, isPlaying = false;
 
-            innings.forEach(inning => {
-                // Batting table rows
-                let batRows = inning.querySelectorAll('.cb-scrd-itms');
-                batRows.forEach(row => {
-                    let nameEl = row.querySelector('.cb-col.cb-col-27 a'); // Batting name column
-                    if(nameEl) {
-                        let webClean = nameEl.innerText.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
-                        if(webClean.includes(fbLast) || fbClean.includes(webClean) || webClean.includes(fbFirst)) {
-                            isPlaying = true;
-                            let rCol = row.querySelector('.cb-col.cb-col-8.text-right.text-bold'); // Runs column
-                            if(rCol) {
-                                let r = parseInt(rCol.innerText);
-                                if(!isNaN(r)) runs = r;
-                            }
-                        }
-                    }
-                });
-
-                // Bowling table rows
-                let bowlRows = inning.querySelectorAll('.cb-scrd-itms'); // Re-using rows to check bowling
-                bowlRows.forEach(row => {
-                     // Check if it's a bowling row (often identified by different inner text or structure)
-                     if(row.innerHTML.includes('Econ') || row.parentNode.innerHTML.includes('Bowler')) {
-                        let nameEl = row.querySelector('.cb-col.cb-col-38 a') || row.querySelector('a.cb-text-link'); // Bowling name column
-                        if(nameEl) {
-                             let webClean = nameEl.innerText.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
-                             if(webClean.includes(fbLast) || fbClean.includes(webClean) || webClean.includes(fbFirst)) {
-                                isPlaying = true;
-                                let cols = row.querySelectorAll('.cb-col.cb-col-8.text-right');
-                                if(cols.length >= 4) {
-                                    let w = parseInt(cols[3].innerText); // Wickets column
-                                    if(!isNaN(w)) wickets = w;
-                                }
-                             }
-                        }
-                     }
-                });
-            });
+            // Match karna shuru karein
+            for (let scrapedName in scrapedData) {
+                // Agar Last name ya First name match hota hai
+                if (scrapedName.includes(fbLast) || fbClean.includes(scrapedName) || scrapedName.includes(fbFirst)) {
+                    r = scrapedData[scrapedName].runs;
+                    w = scrapedData[scrapedName].wickets;
+                    isPlaying = true;
+                    break; // Player mil gaya, aage check mat karo
+                }
+            }
 
             let currentStatus = isPlaying ? "playing" : (players[key].playingStatus || "unannounced");
-            let totalPoints = (runs * 1) + (wickets * 25) + (isPlaying ? 4 : 0);
+            let totalPoints = (r * 1) + (w * 25) + (isPlaying ? 4 : 0);
             
             totalMatchPoints += totalPoints;
 
             updates[key + '/points'] = totalPoints;
-            updates[key + '/runs'] = runs;
-            updates[key + '/wickets'] = wickets;
+            updates[key + '/runs'] = r;
+            updates[key + '/wickets'] = w;
             updates[key + '/playingStatus'] = currentStatus;
         }
 
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-            cLog('success', `✅ Points Updated! (Total Pts: ${totalMatchPoints})`);
+            cLog('success', `✅ Points Updated! (Total Found Pts: ${totalMatchPoints})`);
             await updateLiveLeaderboard(matchId);
         }
     }
