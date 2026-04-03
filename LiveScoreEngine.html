@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KALYAN VIP - UNIVERSAL ENGINE 🚀</title>
+    <title>KALYAN VIP - JSON ENGINE 🚀</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -31,25 +31,24 @@
 <body>
 
     <div class="header">
-        <h1><i class="fa-solid fa-server"></i> VIP UNIVERSAL ENGINE</h1>
+        <h1><i class="fa-solid fa-server"></i> JSON VIP ENGINE</h1>
         <div class="status-badge" id="sync-status">Status: CONNECTING...</div>
     </div>
 
     <div class="box">
-        <h3><i class="fa-solid fa-plus-circle"></i> Add New Match Sync</h3>
-        <input type="text" id="m-id" placeholder="Match ID (e.g. 149673)">
-        <input type="text" id="m-link" placeholder="Cricbuzz Scorecard Link Paste Karein">
+        <h3><i class="fa-solid fa-bolt"></i> Add Match (No Links, Only ID)</h3>
+        <input type="text" id="m-id" placeholder="Match ID yahan daalein (e.g. 149673)">
         <input type="datetime-local" id="m-time">
         <button class="btn-start" onclick="saveMatchToDatabase()">SAVE & START SYNC</button>
     </div>
 
     <div class="box" id="active-matches-container" style="display: none;">
-        <h3><i class="fa-solid fa-list"></i> Running Matches (Live Links)</h3>
+        <h3><i class="fa-solid fa-list"></i> Running Matches</h3>
         <div id="active-matches-list"></div>
     </div>
 
     <div class="terminal" id="console-box">
-        <p class="log-info">> Universal Engine Ready. Waiting for matches...</p>
+        <p class="log-info">> Super JSON Engine Ready. No Cloudflare Blocks!</p>
     </div>
 
 <script>
@@ -67,15 +66,14 @@
 
     function saveMatchToDatabase() {
         let id = document.getElementById('m-id').value.trim();
-        let link = document.getElementById('m-link').value.trim();
         let time = document.getElementById('m-time').value;
 
-        if(!id || !link || !time) return alert("Sari details bhariye!");
+        if(!id || !time) return alert("Match ID aur Time bhariye!");
         let wakeTime = new Date(time).getTime() - 1200000; 
-        db.ref(`Game/Kalyan11/LiveEngine/${id}`).set({ matchId: id, cricbuzzLink: link, wakeUpTime: wakeTime })
+        db.ref(`Game/Kalyan11/LiveEngine/${id}`).set({ matchId: id, wakeUpTime: wakeTime })
         .then(() => {
-            document.getElementById('m-id').value = ""; document.getElementById('m-link').value = "";
-            cLog('success', `Match ${id} Added! Niche list mein check karein.`);
+            document.getElementById('m-id').value = ""; 
+            cLog('success', `Match ${id} Added successfully!`);
         });
     }
 
@@ -101,9 +99,8 @@
             for (let id in activeMatches) {
                 html += `
                 <div class="match-card">
-                    <strong>ID: ${id}</strong>
-                    <a href="${activeMatches[id].cricbuzzLink}" target="_blank">${activeMatches[id].cricbuzzLink}</a>
-                    <button class="btn-stop" onclick="stopMatch('${id}')"><i class="fa-solid fa-trash"></i> STOP SYNC</button>
+                    <strong>Match ID: ${id}</strong>
+                    <button class="btn-stop" onclick="stopMatch('${id}')" style="float: right;"><i class="fa-solid fa-trash"></i> STOP</button>
                 </div>`;
             }
             listDiv.innerHTML = html;
@@ -117,36 +114,36 @@
         let ids = Object.keys(activeMatches);
         for (let id of ids) {
             let m = activeMatches[id];
-            if (now >= m.wakeUpTime) { await runSync(id, m.cricbuzzLink); }
+            if (now >= m.wakeUpTime) { await runJsonSync(id); }
         }
-    }, 30000); // Har 30 second me data uthayega
+    }, 25000); 
 
-    // 🌐 THE ORIGINAL RELIABLE PROXY (Jo Pehle Kaam Kar Raha Tha)
-    async function runSync(matchId, link) {
+    // 🌐 THE SECRET API FETCHER (100% Block-Free)
+    async function runJsonSync(matchId) {
         try {
-            cLog('info', `🌐 Fetching data for Match: ${matchId}`);
+            cLog('info', `🌐 Secret Mobile API se data nikal rahe hain (Match: ${matchId})...`);
             
-            if (link.includes("cricbuzz.com")) {
-                link = link.replace("cricket-match-squads", "live-cricket-scorecard")
-                           .replace("live-cricket-scores", "live-cricket-scorecard")
-                           .replace("cricket-match-facts", "live-cricket-scorecard");
-            }
-
-            // Using Codetabs Proxy which successfully bypassed Cloudflare in our earlier tests
-            let proxyUrl = "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(link);
+            // Cricbuzz ki hidden mobile API (Sirf JSON data aayega, koi HTML nahi)
+            let apiUrl = `http://mapps.cricbuzz.com/cbzios/match/${matchId}/scorecard.json`;
+            let proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}&disableCache=true`;
+            
             let res = await fetch(proxyUrl);
+            let data = await res.json();
             
-            if (!res.ok) throw new Error("Proxy Blocked by Server");
-            
-            let html = await res.text();
-
-            if (html.includes("Just a moment...") || html.includes("Cloudflare")) {
-                cLog('error', `❌ CRICBUZZ BLOCK: Scorecard open nahi hua. Security page aa gaya.`);
+            if(!data || !data.contents || data.contents.includes("Cloudflare") || data.contents.includes("<html")) {
+                cLog('error', `❌ API Blocked. Yeh secret rasta bhi detect ho gaya hai.`);
                 return; 
             }
 
-            let doc = new DOMParser().parseFromString(html, "text/html");
-            if (link.includes("cricbuzz.com")) { await parseCricbuzz(doc, matchId); } 
+            let scorecardData;
+            try {
+                scorecardData = JSON.parse(data.contents);
+            } catch(e) {
+                cLog('error', `❌ Match ID ${matchId} ka data abhi API par aaya nahi hai.`);
+                return;
+            }
+
+            await parseJsonScorecard(scorecardData, matchId);
             
         } catch (e) { cLog('error', `Sync Error: ${e.message}`); }
     }
@@ -185,57 +182,37 @@
         } catch(e) { cLog('error', `Leaderboard Error: ${e.message}`); }
     }
 
-    // 🔥 THE INVINCIBLE PARSER v3.0 🔥
-    async function parseCricbuzz(doc, matchId) {
+    // 🔥 PURE JSON PARSER 🔥
+    async function parseJsonScorecard(scorecardData, matchId) {
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
         if(!dbSnap.exists() || !dbSnap.val()) return;
 
         let players = dbSnap.val();
-        let totalFbPlayers = Object.keys(players).length;
-        cLog('info', `📊 Database me ${totalFbPlayers} khiladi mile. Scraping...`);
-
-        let updates = {};
         let scrapedData = {};
 
-        // Cricbuzz ki har table row uthao
-        let rows = doc.querySelectorAll('.cb-scrd-itms, .ui-table-row, tr');
-        cLog('info', `🔍 Cricbuzz page par ${rows.length} rows mili hain.`); 
-
-        rows.forEach(row => {
-            let cols = row.querySelectorAll('.cb-col, .ui-table-col, td');
-            if(cols.length < 5) return; // Agar row me data nahi hai toh chhod do
-
-            // Khiladi ka naam nikalo
-            let nameText = "";
-            let nameEl = row.querySelector('a');
-            if(nameEl) {
-                nameText = nameEl.innerText;
-            } else {
-                nameText = cols[0].innerText || cols[1].innerText;
-            }
-
-            let webClean = nameText.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
-            if(!webClean || webClean.length < 3) return;
-
-            let texts = [];
-            cols.forEach(c => texts.push(c.innerText.trim()));
-
-            if(!scrapedData[webClean]) scrapedData[webClean] = { runs: 0, wickets: 0 };
-
-            // Pehchano ki Bowling ki row hai ya Batting ki
-            let isBowling = /^[\d\.]+$/.test(texts[1]) && texts[1].includes('.'); // Agar 2nd column '4.0' jaisa hai toh Bowling
-
-            if(isBowling) {
-                let w = parseInt(texts[4]); 
-                if(!isNaN(w)) scrapedData[webClean].wickets = w;
-            } else {
-                let r = parseInt(texts[2]); 
-                if(!isNaN(r)) scrapedData[webClean].runs = r;
-            }
-        });
+        // JSON ko sidha read karenge
+        if (scorecardData.Innings) {
+            scorecardData.Innings.forEach(inning => {
+                if(inning.batsmen) {
+                    inning.batsmen.forEach(bat => {
+                        let name = bat.name.toLowerCase().replace(/[^a-z]/g, ' ').trim();
+                        if(!scrapedData[name]) scrapedData[name] = { runs: 0, wickets: 0 };
+                        scrapedData[name].runs = parseInt(bat.r) || 0;
+                    });
+                }
+                if(inning.bowlers) {
+                    inning.bowlers.forEach(bowl => {
+                        let name = bowl.name.toLowerCase().replace(/[^a-z]/g, ' ').trim();
+                        if(!scrapedData[name]) scrapedData[name] = { runs: 0, wickets: 0 };
+                        scrapedData[name].wickets = parseInt(bowl.w) || 0;
+                    });
+                }
+            });
+        }
 
         let totalMatchPoints = 0;
         let matchedCount = 0;
+        let updates = {};
 
         for (let key in players) {
             let fbClean = players[key].name.toLowerCase().replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -246,7 +223,6 @@
             let r = 0, w = 0, isPlaying = false;
 
             for (let scrapedName in scrapedData) {
-                // MATCH LOGIC: First naam ya Last naam match karna chahiye
                 if (scrapedName.includes(fbLast) || fbClean.includes(scrapedName) || scrapedName.includes(fbFirst)) {
                     r = scrapedData[scrapedName].runs || 0;
                     w = scrapedData[scrapedName].wickets || 0;
@@ -269,7 +245,7 @@
 
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-            cLog('success', `✅ SCORE SYNC: ${matchedCount} khiladiyo ke ${totalMatchPoints} Pts jode gaye!`);
+            cLog('success', `✅ PURE JSON SYNC: ${matchedCount} khiladiyo ke ${totalMatchPoints} Pts jode gaye!`);
             await updateLiveLeaderboard(matchId);
         }
     }
