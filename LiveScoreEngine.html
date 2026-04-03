@@ -57,7 +57,6 @@
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
     
-    const API_URL = "https://api.codetabs.com/v1/proxy?quest=";
     let activeMatches = {};
 
     function cLog(type, msg) {
@@ -122,25 +121,41 @@
         }
     }, 45000);
 
+    // 🔥 DUAL-PROXY ANTI-BLOCK SYSTEM 🔥
     async function runSync(matchId, link) {
         try {
             cLog('info', `🌐 Fetching data for Match: ${matchId}`);
             
-            // Link ko automatically scorecard mein badalna taaki structure sahi rahe
             if (link.includes("cricbuzz.com")) {
-                link = link.replace("cricket-match-squads", "live-cricket-scorecard");
-                link = link.replace("live-cricket-scores", "live-cricket-scorecard");
-                link = link.replace("cricket-match-facts", "live-cricket-scorecard");
+                link = link.replace("cricket-match-squads", "live-cricket-scorecard")
+                           .replace("live-cricket-scores", "live-cricket-scorecard")
+                           .replace("cricket-match-facts", "live-cricket-scorecard");
             }
 
-            let res = await fetch(API_URL + encodeURIComponent(link));
-            if (!res.ok) throw new Error("Proxy Server Blocked");
+            let html = "";
             
-            let html = await res.text();
-            let doc = new DOMParser().parseFromString(html, "text/html");
+            // PROXY 1 (CorsProxy - Best for bypassing security)
+            try {
+                let res = await fetch("https://corsproxy.io/?" + encodeURIComponent(link));
+                html = await res.text();
+                if(html.includes("Just a moment...") || html.includes("Cloudflare")) throw new Error("Blocked");
+            } catch(e) {
+                cLog('warn', `⚠️ Proxy 1 Blocked. Trying Backup Proxy...`);
+                // PROXY 2 (AllOrigins Backup)
+                let res2 = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(link));
+                html = await res2.text();
+            }
 
+            // Agar dono proxy fail ho jayein ya Cloudflare aa jaye
+            if (html.includes("Just a moment...") || html.includes("Cloudflare")) {
+                cLog('error', `❌ CRICBUZZ BLOCK: Scorecard load nahi hua. (Security Issue)`);
+                return; // 0 points update nahi karega, wahin ruk jayega
+            }
+
+            let doc = new DOMParser().parseFromString(html, "text/html");
             if (link.includes("cricbuzz.com")) { await parseCricbuzz(doc, matchId); } 
             else { cLog('error', `❌ Link invalid. Cricbuzz use karein.`); }
+            
         } catch (e) { cLog('error', `Sync Error: ${e.message}`); }
     }
 
@@ -178,7 +193,7 @@
         } catch(e) { cLog('error', `Leaderboard Error: ${e.message}`); }
     }
 
-    // 🔥 PERFECTED CRICBUZZ PARSER 🔥
+    // 🔥 AGGRESSIVE TEXT-BASED PARSER (Ignores Class Names) 🔥
     async function parseCricbuzz(doc, matchId) {
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
         if(!dbSnap.exists()) return;
@@ -186,59 +201,50 @@
         let players = dbSnap.val();
         let updates = {};
         
-        // 1. STEP ONE: Scorecard se saare Run aur Wicket extract karo
         let scrapedData = {};
-        let rows = doc.querySelectorAll('.cb-scrd-itms');
-        
-        rows.forEach(row => {
-            let nameEl = row.querySelector('a.cb-text-link');
-            if(!nameEl) return;
-            
-            // Bracket wali cheezein (c) (wk) hata do
-            let webClean = nameEl.innerText.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
-            
-            if(!scrapedData[webClean]) {
-                scrapedData[webClean] = { runs: 0, wickets: 0 };
-            }
+        let links = doc.querySelectorAll('a.cb-text-link'); // Sirf un links ko dhoondhega jo khiladiyon ke hain
 
-            let cols8 = row.querySelectorAll('.cb-col-8');
-            
-            // Check if it's Batting Row (Has dismissal column .cb-col-33 or is specifically .cb-col-27)
-            if(row.querySelector('.cb-col-33') || row.querySelector('.cb-col-27')) {
-                if(cols8.length > 0) {
-                    let r = parseInt(cols8[0].innerText.trim());
-                    if(!isNaN(r)) scrapedData[webClean].runs = r;
-                }
-            }
-            
-            // Check if it's Bowling Row (Has overs/maidens etc. or is specifically .cb-col-38)
-            if(row.querySelector('.cb-col-38') || cols8.length >= 4) {
-                if(cols8.length >= 4) {
-                    let w = parseInt(cols8[3].innerText.trim());
+        links.forEach(linkEl => {
+            // Find parent row
+            let row = linkEl.closest('.cb-scrd-itms') || linkEl.parentNode.parentNode;
+            if(!row) return;
+
+            // Name clean karo (remove (c), (wk), brackets)
+            let webClean = linkEl.innerText.toLowerCase().replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
+            if(!scrapedData[webClean]) scrapedData[webClean] = { runs: 0, wickets: 0 };
+
+            // Find all columns in this row
+            let cols = Array.from(row.querySelectorAll('.cb-col'));
+            if(cols.length >= 5) {
+                // Determine if batting or bowling by checking the 2nd column
+                let col1Text = cols[1].innerText.trim();
+                let isBowling = /^[\d\.]+$/.test(col1Text); // Agar 2nd column me "10.0" jaisa number hai toh wo overs (Bowling) hain
+
+                if (isBowling) {
+                    let w = parseInt(cols[4].innerText); // Bowling table me 5th column wickets ka hota hai
                     if(!isNaN(w)) scrapedData[webClean].wickets = w;
+                } else {
+                    let r = parseInt(cols[2].innerText); // Batting table me 3rd column runs ka hota hai
+                    if(!isNaN(r)) scrapedData[webClean].runs = r;
                 }
             }
         });
 
         let totalMatchPoints = 0;
 
-        // 2. STEP TWO: Apne Firebase players ko Scraped data se match karo
+        // Firebase ke players ko scraped data se map karo
         for (let key in players) {
-            let fbClean = players[key].name.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
-            let fbParts = fbClean.split(' ');
-            let fbFirst = fbParts[0];
-            let fbLast = fbParts[fbParts.length - 1]; 
+            let fbClean = players[key].name.toLowerCase().replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
+            let fbLast = fbClean.split(' ').pop(); 
             
             let r = 0, w = 0, isPlaying = false;
 
-            // Match karna shuru karein
             for (let scrapedName in scrapedData) {
-                // Agar Last name ya First name match hota hai
-                if (scrapedName.includes(fbLast) || fbClean.includes(scrapedName) || scrapedName.includes(fbFirst)) {
+                if (scrapedName.includes(fbLast) || fbClean.includes(scrapedName)) {
                     r = scrapedData[scrapedName].runs;
                     w = scrapedData[scrapedName].wickets;
                     isPlaying = true;
-                    break; // Player mil gaya, aage check mat karo
+                    break;
                 }
             }
 
