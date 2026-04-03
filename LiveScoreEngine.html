@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KALYAN VIP - ULTIMATE ENGINE 🚀</title>
+    <title>KALYAN VIP - ULTIMATE BRAHMASTRA ENGINE 🚀</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -15,7 +15,7 @@
         h3 { margin-top: 0; font-size: 14px; color: #00d2d3; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 8px;}
         input { width: calc(100% - 22px); padding: 12px; margin-bottom: 10px; background: #000; border: 1px solid #444; color: #fff; border-radius: 5px; font-weight: bold;}
         .btn-start { width: 100%; padding: 12px; background: #00ff88; color: #000; font-weight: 900; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase;}
-        .terminal { background: #000; border: 1px solid #00ff88; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-bottom: 20px;}
+        .terminal { background: #000; border: 1px solid #00ff88; padding: 15px; border-radius: 5px; height: 350px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-bottom: 20px;}
         .terminal p { margin: 4px 0; border-bottom: 1px dashed #111; padding-bottom: 4px;}
         .log-info { color: #00d2d3; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ffd700; }
         .status-badge { display: inline-block; padding: 8px 15px; border-radius: 15px; font-size: 12px; font-weight: bold; background: #333; color: #aaa; margin-top: 10px;}
@@ -27,30 +27,31 @@
 <body>
 
     <div class="header">
-        <h1><i class="fa-brands fa-python"></i> PYTHON VIP ENGINE</h1>
+        <h1><i class="fa-solid fa-bolt"></i> KALYAN BRAHMASTRA ENGINE</h1>
         <div class="status-badge" id="sync-status">Status: CONNECTING...</div>
     </div>
 
     <div class="box">
-        <h3><i class="fa-solid fa-server"></i> Add Match</h3>
+        <h3><i class="fa-solid fa-plus-circle"></i> Add New Match</h3>
         
         <input type="hidden" id="api-url" value="https://kalyan-point-enginee-2.onrender.com">
         
-        <input type="text" id="m-id" placeholder="Match ID yahan daalein (e.g. 149673)">
+        <input type="text" id="m-id" placeholder="Match ID (Cricbuzz se lein, e.g. 149673)">
         <input type="datetime-local" id="m-time">
-        <button class="btn-start" onclick="saveMatchToDatabase()">SAVE & START SYNC</button>
+        <button class="btn-start" onclick="saveMatchToDatabase()">SAVE & START AUTO-SYNC</button>
     </div>
 
     <div class="box" id="active-matches-container" style="display: none;">
-        <h3><i class="fa-solid fa-list"></i> Running Matches</h3>
+        <h3><i class="fa-solid fa-tower-broadcast"></i> Live Syncing...</h3>
         <div id="active-matches-list"></div>
     </div>
 
     <div class="terminal" id="console-box">
-        <p class="log-info">> Ultimate Python Engine Ready! 🚀</p>
+        <p class="log-info">> Brahmastra Engine Ready! Waiting for command...</p>
     </div>
 
 <script>
+    // FIREBASE SETUP
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
@@ -63,31 +64,32 @@
         box.scrollTop = box.scrollHeight; 
     }
 
+    // MATCH SAVE LOGIC
     function saveMatchToDatabase() {
         let id = document.getElementById('m-id').value.trim();
         let time = document.getElementById('m-time').value;
-
-        if(!id || !time) return alert("Sari details bhariye!");
+        if(!id || !time) return alert("Bhai, Match ID aur Time dono bhariye!");
         
         let wakeTime = new Date(time).getTime() - 1200000; 
         db.ref(`Game/Kalyan11/LiveEngine/${id}`).set({ matchId: id, wakeUpTime: wakeTime })
         .then(() => {
             document.getElementById('m-id').value = ""; 
-            cLog('success', `Match ${id} Added! Data aapke Python server se aayega.`);
+            cLog('success', `Match ${id} Database mein set ho gaya!`);
         });
     }
 
     function stopMatch(id) {
-        if(confirm(`Kya aap sach mein Match ${id} rokna chahte hain?`)) {
+        if(confirm(`Match ${id} ka sync rokna hai?`)) {
             db.ref(`Game/Kalyan11/LiveEngine/${id}`).remove();
-            cLog('error', `🛑 Engine Stopped for Match: ${id}`);
+            cLog('error', `🛑 Sync Stopped: ${id}`);
         }
     }
 
+    // LIVE MONITORING
     db.ref(`Game/Kalyan11/LiveEngine`).on('value', (snapshot) => {
         activeMatches = snapshot.exists() ? snapshot.val() : {};
         let count = Object.keys(activeMatches).length;
-        document.getElementById('sync-status').innerText = `Status: SYNCING ${count} MATCHES 🔥`;
+        document.getElementById('sync-status').innerText = `Status: ACTIVE SYNC (${count})`;
         document.getElementById('sync-status').className = count > 0 ? "status-badge active" : "status-badge";
 
         let listDiv = document.getElementById('active-matches-list');
@@ -97,88 +99,48 @@
             container.style.display = "block";
             let html = "";
             for (let id in activeMatches) {
-                html += `
-                <div class="match-card">
-                    <strong>Match ID: ${id}</strong>
-                    <button class="btn-stop" onclick="stopMatch('${id}')"><i class="fa-solid fa-trash"></i></button>
-                </div>`;
+                html += `<div class="match-card"><strong>Syncing ID: ${id}</strong><button class="btn-stop" onclick="stopMatch('${id}')">STOP</button></div>`;
             }
             listDiv.innerHTML = html;
         } else {
-            container.style.display = "none"; listDiv.innerHTML = "";
+            container.style.display = "none";
         }
     });
 
+    // SYNC LOOP (Every 25 Sec)
     setInterval(async () => {
         let now = Date.now();
-        let ids = Object.keys(activeMatches);
-        for (let id of ids) {
-            let m = activeMatches[id];
-            if (now >= m.wakeUpTime) { await runPythonSync(id); }
+        for (let id in activeMatches) {
+            if (now >= activeMatches[id].wakeUpTime) { await runPythonSync(id); }
         }
-    }, 25000); 
+    }, 25000);
 
-    // 🌐 PYTHON SERVER API CALL
+    // FETCH FROM PYTHON SERVER
     async function runPythonSync(matchId) {
         try {
-            cLog('info', `🌐 Aapke Server se data laa rahe hain (Match: ${matchId})...`);
-            
+            cLog('info', `🌐 Python Server se data mangwa rahe hain (Match: ${matchId})...`);
             let baseUrl = document.getElementById('api-url').value;
             let finalUrl = `${baseUrl}/get-scorecard?id=${matchId}`;
             
             let res = await fetch(finalUrl);
             let html = await res.text();
 
-            if (!html || html.includes("Exception:") || html.includes("Error:") || html.includes("Cloudflare")) {
-                cLog('error', `❌ API Error: Data fetch nahi hua. Thoda rukiye...`);
+            if (!html || html.includes("Cloudflare") || html.includes("Error")) {
+                cLog('error', `❌ Server Error: Cricbuzz ne block kiya ya link galat hai.`);
                 return; 
             }
 
             let doc = new DOMParser().parseFromString(html, "text/html");
             await parseCricbuzz(doc, matchId);
             
-        } catch (e) { cLog('warn', `Server thoda busy hai ya start ho raha hai, wait karein...`); }
+        } catch (e) { cLog('warn', `Server Connecting... Intezaar karein.`); }
     }
 
-    async function updateLiveLeaderboard(matchId) {
-        try {
-            let pSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
-            let tSnap = await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).once('value');
-            if(!pSnap.exists() || !tSnap.exists()) return;
-
-            let playersObj = pSnap.val();
-            let updates = {};
-            let maxScore = 0;
-
-            tSnap.forEach(child => {
-                let t = child.val();
-                let calculatedPoints = 0;
-                let teamPlayers = t.players || {};
-                
-                Object.values(teamPlayers).forEach(pKey => {
-                    let livePt = (playersObj[pKey] && playersObj[pKey].points) ? parseFloat(playersObj[pKey].points) : 0;
-                    if(pKey === t.captain) calculatedPoints += (livePt * 2);
-                    else if(pKey === t.viceCaptain) calculatedPoints += (livePt * 1.5);
-                    else calculatedPoints += livePt;
-                });
-
-                let finalPts = parseFloat(calculatedPoints.toFixed(1));
-                if(finalPts > maxScore) maxScore = finalPts;
-                updates[child.key + '/total_points'] = finalPts;
-            });
-
-            if(Object.keys(updates).length > 0) {
-                await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).update(updates);
-                cLog('success', `🏆 LEADERBOARD UPDATED (Highest: ${maxScore} Pts)`);
-            }
-        } catch(e) { cLog('error', `Leaderboard Error: ${e.message}`); }
-    }
-
-    // 🔥 THE BRAHMASTRA PARSER (ULTIMATE FIX) 🔥
+    // 🔥 BRAHMASTRA TARGET LOCK PARSER 🔥
     async function parseCricbuzz(doc, matchId) {
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
-        if(!dbSnap.exists() || !dbSnap.val()) {
-            cLog('error', `❌ Database mein Match ${matchId} ke khiladi nahi mile!`);
+        if(!dbSnap.exists()) {
+            cLog('error', `❌ Match ${matchId} ke players database mein nahi hain!`);
             return;
         }
 
@@ -186,92 +148,106 @@
         let updates = {};
         let scrapedData = {};
 
-        // Cricbuzz ki har table row ko scan karega
-        let rows = doc.querySelectorAll('.cb-scrd-itms');
-        let validRowsCount = 0;
+        // TARGET LOCK: Seedha players ke profile links pakdo
+        let playerLinks = doc.querySelectorAll('a[href*="profiles"]');
 
-        rows.forEach(row => {
-            // Asli Brahmastra: 'textContent' ka use kiya hai jo hidden HTML bhi padh leta hai
-            let nameEl = row.querySelector('a');
-            
-            // Sirf wahi link uthayega jisme khiladi ki profile ho
-            if(!nameEl || !nameEl.getAttribute('href') || !nameEl.getAttribute('href').includes('profiles')) return;
+        if(playerLinks.length === 0) {
+            // Agar 0 khiladi mile toh panna check karo kya hai
+            let title = doc.title || "No Title Found";
+            cLog('error', `⚠️ Panna toh mila par players nahi dikhe! Page Title: "${title}"`);
+            cLog('info', `💡 Tip: Check karein Match ID sahi hai ya match abhi shuru nahi hua.`);
+            return;
+        }
 
-            validRowsCount++;
-            let nameText = nameEl.textContent; // <--- Hidden text ko padhne ka tareeka
+        playerLinks.forEach(link => {
+            let row = link.closest('.cb-scrd-itms') || link.closest('tr') || link.parentElement.parentElement;
+            if(!row) return;
 
-            let webClean = nameText.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
+            let nameText = link.textContent.trim();
+            let webClean = nameText.toLowerCase().replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
             if(!webClean || webClean.length < 3) return;
 
             if(!scrapedData[webClean]) scrapedData[webClean] = { runs: 0, wickets: 0 };
 
-            // BATSMAN HAI YA BOWLER?
-            let isBowler = row.querySelector('.cb-col-38') !== null; 
-            
-            // RUNS AUR WICKETS NIKALNE KA SUPER TRICK
+            // Bowling ya Batting pehchano
+            let isBowler = row.innerHTML.includes('cb-col-38') || row.innerText.includes('.'); 
             let boldTextEl = row.querySelector('.text-bold'); 
 
             if(boldTextEl) {
-                let boldValue = parseInt(boldTextEl.textContent.trim());
-                if(!isNaN(boldValue)) {
-                    if(isBowler) {
-                        scrapedData[webClean].wickets = boldValue; 
-                    } else {
-                        scrapedData[webClean].runs = boldValue; 
-                    }
+                let val = parseInt(boldTextEl.textContent.trim());
+                if(!isNaN(val)) {
+                    if(isBowler) scrapedData[webClean].wickets = val; 
+                    else scrapedData[webClean].runs = val; 
                 }
             } else {
-                // Backup Plan
-                let cols = Array.from(row.querySelectorAll('.text-right, .cb-col-8')).map(c => c.textContent.trim());
-                if (isBowler && cols.length >= 4) {
-                    scrapedData[webClean].wickets = parseInt(cols[3]) || 0; 
-                } else if (!isBowler && cols.length >= 1) {
-                    scrapedData[webClean].runs = parseInt(cols[0]) || 0; 
+                // Backup numbers scan
+                let nums = row.innerText.match(/\b\d+\b/g);
+                if(nums) {
+                    if(isBowler && nums.length >= 4) scrapedData[webClean].wickets = parseInt(nums[3]); 
+                    else if(!isBowler && nums.length >= 1) scrapedData[webClean].runs = parseInt(nums[0]); 
                 }
             }
         });
 
-        cLog('info', `🔥 BRAHMASTRA ne ${validRowsCount} khiladiyo ki marksheet padh li.`);
+        cLog('info', `🎯 Brahmastra ne ${playerLinks.length} khiladiyo ka data nikaal liya!`);
 
-        let totalMatchPoints = 0;
         let matchedCount = 0;
+        let totalPts = 0;
 
         for (let key in players) {
             let fbClean = players[key].name.toLowerCase().replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
-            let fbParts = fbClean.split(' ');
-            let fbLast = fbParts[fbParts.length - 1]; // Sirf surname
+            let fbLast = fbClean.split(' ').pop(); 
 
-            let r = 0, w = 0, isPlaying = false;
+            for (let sName in scrapedData) {
+                if (sName.includes(fbLast) || fbClean.includes(sName)) {
+                    let r = scrapedData[sName].runs;
+                    let w = scrapedData[sName].wickets;
+                    let p = (r * 1) + (w * 25) + 4; // Points Logic
 
-            for (let scrapedName in scrapedData) {
-                // Matching system
-                if (scrapedName.includes(fbLast) || fbClean.includes(scrapedName)) {
-                    r = scrapedData[scrapedName].runs || 0;
-                    w = scrapedData[scrapedName].wickets || 0;
-                    isPlaying = true;
+                    updates[key + '/points'] = p;
+                    updates[key + '/runs'] = r;
+                    updates[key + '/wickets'] = w;
+                    updates[key + '/playingStatus'] = "playing";
+                    
+                    totalPts += p;
                     matchedCount++;
                     break;
                 }
             }
-
-            let currentStatus = isPlaying ? "playing" : (players[key].playingStatus || "unannounced");
-            let totalPoints = (r * 1) + (w * 25) + (isPlaying ? 4 : 0);
-
-            totalMatchPoints += totalPoints;
-
-            updates[key + '/points'] = totalPoints;
-            updates[key + '/runs'] = r;
-            updates[key + '/wickets'] = w;
-            updates[key + '/playingStatus'] = currentStatus;
         }
 
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-            cLog('success', `✅ MISSION SUCCESSFUL! ${matchedCount} khiladiyo ke ${totalMatchPoints} Pts jode gaye!`);
+            cLog('success', `✅ MISSION SUCCESS: ${matchedCount} khiladiyo ke ${totalPts} points update hue!`);
             await updateLiveLeaderboard(matchId);
-        } else {
-            cLog('error', `⚠️ Brahmastra ne data padha par database se kisi ka naam match nahi hua.`);
         }
+    }
+
+    // LEADERBOARD UPDATE
+    async function updateLiveLeaderboard(matchId) {
+        try {
+            let pSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
+            let tSnap = await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).once('value');
+            if(!pSnap.exists() || !tSnap.exists()) return;
+
+            let pObj = pSnap.val();
+            let updates = {};
+            
+            tSnap.forEach(child => {
+                let team = child.val();
+                let pts = 0;
+                Object.values(team.players || {}).forEach(pk => {
+                    let live = (pObj[pk] && pObj[pk].points) ? parseFloat(pObj[pk].points) : 0;
+                    if(pk === team.captain) pts += (live * 2);
+                    else if(pk === team.viceCaptain) pts += (live * 1.5);
+                    else pts += live;
+                });
+                updates[child.key + '/total_points'] = parseFloat(pts.toFixed(1));
+            });
+
+            await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).update(updates);
+            cLog('success', `🏆 Leaderboard Updated Successfully!`);
+        } catch(e) { console.log(e); }
     }
 </script>
 </body>
