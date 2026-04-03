@@ -119,9 +119,9 @@
             let m = activeMatches[id];
             if (now >= m.wakeUpTime) { await runSync(id, m.cricbuzzLink); }
         }
-    }, 30000); // Speed up: Har 30 second me update
+    }, 30000); // Har 30 second me data uthayega
 
-    // 🌐 JSON PROXY BYPASS (100% Anti-Block)
+    // 🌐 THE ORIGINAL RELIABLE PROXY (Jo Pehle Kaam Kar Raha Tha)
     async function runSync(matchId, link) {
         try {
             cLog('info', `🌐 Fetching data for Match: ${matchId}`);
@@ -132,22 +132,16 @@
                            .replace("cricket-match-facts", "live-cricket-scorecard");
             }
 
-            let html = "";
-            try {
-                // AllOrigins ke JSON version se data nikalenge, yeh block nahi hota
-                let res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(link)}`);
-                let data = await res.json();
-                html = data.contents;
-                
-                if(!html || html.includes("Just a moment...") || html.includes("Cloudflare")) throw new Error("Blocked");
-            } catch(e) {
-                cLog('warn', `⚠️ Proxy 1 Blocked. Using Backup Proxy...`);
-                let res2 = await fetch("https://corsproxy.io/?" + encodeURIComponent(link));
-                html = await res2.text();
-            }
+            // Using Codetabs Proxy which successfully bypassed Cloudflare in our earlier tests
+            let proxyUrl = "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(link);
+            let res = await fetch(proxyUrl);
+            
+            if (!res.ok) throw new Error("Proxy Blocked by Server");
+            
+            let html = await res.text();
 
-            if (!html || html.includes("Just a moment...") || html.includes("Cloudflare")) {
-                cLog('error', `❌ CRICBUZZ BLOCK: Scorecard open nahi hua.`);
+            if (html.includes("Just a moment...") || html.includes("Cloudflare")) {
+                cLog('error', `❌ CRICBUZZ BLOCK: Scorecard open nahi hua. Security page aa gaya.`);
                 return; 
             }
 
@@ -191,7 +185,7 @@
         } catch(e) { cLog('error', `Leaderboard Error: ${e.message}`); }
     }
 
-    // 🔥 THE INVINCIBLE PARSER v2.0 (NO LINK REQUIRED) 🔥
+    // 🔥 THE INVINCIBLE PARSER v3.0 🔥
     async function parseCricbuzz(doc, matchId) {
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
         if(!dbSnap.exists() || !dbSnap.val()) return;
@@ -203,15 +197,15 @@
         let updates = {};
         let scrapedData = {};
 
-        // Kisi bhi tarah ka row ho
+        // Cricbuzz ki har table row uthao
         let rows = doc.querySelectorAll('.cb-scrd-itms, .ui-table-row, tr');
-        cLog('info', `🔍 Cricbuzz page par ${rows.length} rows mili hain.`); // DEBUGGING LINE
+        cLog('info', `🔍 Cricbuzz page par ${rows.length} rows mili hain.`); 
 
         rows.forEach(row => {
             let cols = row.querySelectorAll('.cb-col, .ui-table-col, td');
-            if(cols.length < 5) return; // Agar row choti hai toh skip karo
+            if(cols.length < 5) return; // Agar row me data nahi hai toh chhod do
 
-            // NAYA LOGIC: Link mat dhoondo, seedha text uthao
+            // Khiladi ka naam nikalo
             let nameText = "";
             let nameEl = row.querySelector('a');
             if(nameEl) {
@@ -228,14 +222,14 @@
 
             if(!scrapedData[webClean]) scrapedData[webClean] = { runs: 0, wickets: 0 };
 
-            // SMART CHECK: Bowling hai ya Batting?
-            let isBowling = /^[\d\.]+$/.test(texts[1]) && texts[1].includes('.'); // Agar Overs likhe hain jaise 4.0
+            // Pehchano ki Bowling ki row hai ya Batting ki
+            let isBowling = /^[\d\.]+$/.test(texts[1]) && texts[1].includes('.'); // Agar 2nd column '4.0' jaisa hai toh Bowling
 
             if(isBowling) {
-                let w = parseInt(texts[4]); // Wickets 5th position pe
+                let w = parseInt(texts[4]); 
                 if(!isNaN(w)) scrapedData[webClean].wickets = w;
             } else {
-                let r = parseInt(texts[2]); // Runs 3rd position pe
+                let r = parseInt(texts[2]); 
                 if(!isNaN(r)) scrapedData[webClean].runs = r;
             }
         });
@@ -252,7 +246,7 @@
             let r = 0, w = 0, isPlaying = false;
 
             for (let scrapedName in scrapedData) {
-                // MATCHING: First Name + Last Name match karna
+                // MATCH LOGIC: First naam ya Last naam match karna chahiye
                 if (scrapedName.includes(fbLast) || fbClean.includes(scrapedName) || scrapedName.includes(fbFirst)) {
                     r = scrapedData[scrapedName].runs || 0;
                     w = scrapedData[scrapedName].wickets || 0;
