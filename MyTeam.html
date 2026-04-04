@@ -12,40 +12,28 @@
         .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #00ff88; position: sticky; top:0; z-index:100; box-shadow: 0 4px 15px rgba(0,255,136,0.3); }
         .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; color: #00ff88; }
         .title { font-weight: 900; font-size: 16px; text-transform: uppercase; flex-grow: 1; letter-spacing: 1px;}
-        
         .team-count-badge { background: #00ff88; color: #000; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
-
-        /* 🏆 ADVANCED MULTI-TEAM CARDS */
         .teams-container { padding: 15px; }
         .adv-team-card { background: #111; border: 1px solid #333; border-radius: 12px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: 0.3s; }
-        
         .tc-header { background: linear-gradient(90deg, #1a1a2e, #0f0f1a); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; }
         .tc-name { font-size: 16px; font-weight: 900; color: #ffd700; display: flex; align-items: center; gap: 8px;}
-        
         .tc-actions { display: flex; gap: 10px; }
         .btn-edit { background: transparent; color: #aaa; border: 1px solid #555; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;}
         .btn-edit.active { border-color: #ffd700; color: #ffd700; }
-        .btn-edit.active:active { background: rgba(255,215,0,0.2); }
-        
         .tc-body { padding: 15px; cursor: pointer; }
         .tc-stats { display: flex; justify-content: space-between; margin-bottom: 15px; }
         .stat-box { text-align: center; }
         .stat-val { font-size: 18px; font-weight: 900; color: #fff; }
         .stat-lbl { font-size: 10px; color: #888; text-transform: uppercase; }
-
         .cvc-display { display: flex; justify-content: space-around; background: #0a0a14; padding: 10px; border-radius: 8px; border: 1px solid #222;}
         .cvc-item { text-align: center; }
         .cvc-role { font-size: 10px; font-weight: bold; margin-bottom: 4px; }
         .c-color { color: #ffd700; } .vc-color { color: #c0c0c0; }
         .cvc-name { font-size: 13px; font-weight: bold; }
-
-        /* 🔽 EXPANDABLE PLAYER LIST */
         .player-list-wrap { display: none; background: #050510; padding: 10px; border-top: 2px solid #00ff88; }
         .p-row { background: #111; padding: 8px 10px; margin-bottom: 5px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border-left: 2px solid #555;}
         .p-name { font-size: 13px; font-weight: bold; }
         .p-pts { color: #00ff88; font-weight: bold; font-size: 14px;}
-
-        /* 🛡️ BACKUP PLAYERS SECTION */
         .backup-section { margin-top: 15px; background: #1a0b0b; border: 1px dashed #ff004c; border-radius: 8px; padding: 10px; }
         .backup-title { font-size: 11px; color: #ff004c; font-weight: 900; text-transform: uppercase; text-align: center; margin-bottom: 10px; letter-spacing: 1px;}
         .backup-grid { display: flex; justify-content: space-between; gap: 5px;}
@@ -53,8 +41,6 @@
         .b-badge { position: absolute; top: -5px; left: 50%; transform: translateX(-50%); background: #ff004c; color: #fff; font-size: 8px; padding: 2px 5px; border-radius: 10px; font-weight: bold;}
         .b-name { font-size: 10px; color: #aaa; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .b-active { border-color: #00ff88; } .b-active .b-badge { background: #00ff88; color: #000; } .b-active .b-name { color: #fff; font-weight: bold;}
-
-        /* 📱 BOTTOM NAVIGATION */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #333; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); }
         .nav-item { text-align: center; color: #888; font-size: 10px; cursor: pointer; flex: 1; font-weight: bold; text-transform: uppercase; transition: 0.3s;}
         .nav-item i { font-size: 20px; margin-bottom: 5px; display: block; }
@@ -88,7 +74,6 @@
         const matchId = urlParams.get('matchId');
         const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
-        // LEADERBOARD LINK ROUTER
         document.getElementById('btn-leaderboard').onclick = function() {
             if(matchId) window.location.href = `leader.html?matchId=${matchId}`;
             else window.location.href = `Matches.html`;
@@ -97,12 +82,11 @@
         if(!matchId || !userPhone) {
             document.getElementById('teamsContainer').innerHTML = "<div style='color:#ff004c; text-align:center; padding:30px; font-weight:bold;'><i class='fa-solid fa-triangle-exclamation fa-3x'></i><br><br>Match or User Details Missing!</div>";
         } else {
-            // 🕒 CHECK MATCH TIMING FOR LINEUP LOCK
             let isMatchEditable = false;
             db.ref('Game/Kalyan11/VIPMatches/' + matchId).once('value', mSnap => {
                 if(mSnap.exists()) {
                     let diff = mSnap.val().timestamp - Date.now();
-                    if(diff > 0) isMatchEditable = true; // Match abhi bacha hai, Edit allowed
+                    if(diff > 0) isMatchEditable = true; 
                 }
                 fetchAllMyTeams(isMatchEditable);
             });
@@ -111,13 +95,10 @@
         function fetchAllMyTeams(canEdit) {
             let container = document.getElementById('teamsContainer');
             
-            // 🔥 GET ALL TEAMS OF THIS USER
             db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', snap => {
                 let myTeamsArray = [];
-                
                 if(snap.exists()) {
                     snap.forEach(child => {
-                        // Agar team key user ke number se start hoti hai
                         if(child.key.includes(userPhone)) {
                             let tData = child.val();
                             tData.key = child.key;
@@ -134,23 +115,22 @@
 
                 document.getElementById('teamCount').innerText = `${myTeamsArray.length}/25 Teams`;
                 
-                // Get Player Data for Names
                 db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', pSnap => {
                     let allPlayers = pSnap.val() || {};
-                    container.innerHTML = ""; // Clear loader
+                    container.innerHTML = ""; 
 
                     myTeamsArray.forEach((team, index) => {
                         let tNumber = index + 1;
                         let cName = getPlayerShortName(allPlayers, team.captain);
                         let vcName = getPlayerShortName(allPlayers, team.viceCaptain);
-                        let totalPts = team.total_points || 0;
                         
-                        // EDIT BUTTON SMART LOGIC
+                        // 🔥 YAHAN BASE POINTS 50 ADD KIYE GAYE HAIN 🔥
+                        let totalPts = 50 + (parseFloat(team.total_points) || 0);
+                        
                         let editBtnHtml = canEdit 
                             ? `<button class="btn-edit active" onclick="editSpecificTeam('${team.key}', event)"><i class="fa-solid fa-pen"></i> EDIT</button>` 
                             : `<button class="btn-edit" onclick="alert('Match is LIVE. Lineup Locked! 🔒')"><i class="fa-solid fa-lock"></i> LOCKED</button>`;
 
-                        // 11 PLAYERS LIST
                         let playersListHtml = "";
                         if(team.players) {
                             team.players.forEach(pid => {
@@ -171,14 +151,12 @@
                             });
                         }
 
-                        // BACKUP PLAYERS (Dummy Check)
                         let backups = team.backups || []; 
                         let b1 = backups[0] ? getPlayerShortName(allPlayers, backups[0]) : "Empty Slot";
                         let b2 = backups[1] ? getPlayerShortName(allPlayers, backups[1]) : "Empty Slot";
                         let b3 = backups[2] ? getPlayerShortName(allPlayers, backups[2]) : "Empty Slot";
                         let b4 = backups[3] ? getPlayerShortName(allPlayers, backups[3]) : "Empty Slot";
 
-                        // GENERATE THE TEAM CARD
                         container.innerHTML += `
                         <div class="adv-team-card">
                             <div class="tc-header" onclick="toggleView('${team.key}')">
@@ -188,7 +166,7 @@
                             
                             <div class="tc-body" onclick="toggleView('${team.key}')">
                                 <div class="tc-stats">
-                                    <div class="stat-box"><div class="stat-lbl">Total Points</div><div class="stat-val" style="color:#00ff88;">${totalPts.toFixed(1)}</div></div>
+                                    <div class="stat-box"><div class="stat-lbl">Total Points <span style="color:#ffd700; font-size:8px;">(+50 Base)</span></div><div class="stat-val" style="color:#00ff88;">${totalPts.toFixed(1)}</div></div>
                                     <div class="stat-box"><div class="stat-lbl">Entry Paid</div><div class="stat-val" style="font-size:14px;">₹${team.entry_paid || 0}</div></div>
                                 </div>
                                 
@@ -242,7 +220,7 @@
         }
 
         function editSpecificTeam(teamKey, event) {
-            event.stopPropagation(); // Card expansion ko roke ga
+            event.stopPropagation();
             window.location.href = `Contests.html?matchId=${matchId}&editTeam=${teamKey}`;
         }
     </script>
