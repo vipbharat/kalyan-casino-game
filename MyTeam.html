@@ -34,6 +34,7 @@
         .player-pts-box { text-align: right; }
         .player-pts { color: #00ff88; font-weight: 900; font-size: 18px; }
         .player-pts-lbl { font-size: 9px; color: #aaa; text-transform: uppercase; }
+        .error-box { color: #ff004c; text-align: center; padding: 30px; font-weight: bold; background: #1a0000; border: 1px solid #ff004c; border-radius: 10px; margin: 20px; }
     </style>
 </head>
 <body>
@@ -69,20 +70,19 @@
         
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId');
-        const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
         
         // UNIQUE TEAM ID CATCHER
+        const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
         const teamId = urlParams.get('teamId') || userPhone;
 
         const container = document.getElementById('playerContainer');
 
-        if(!matchId || !userPhone) {
-            container.innerHTML = "<div style='color:#ff004c; text-align:center; padding: 20px; font-weight:bold;'>Error: Match Details Missing!</div>";
+        if(!matchId || !teamId) {
+            container.innerHTML = "<div class='error-box'>❌ Error: Match ya Team Details nahi mil rahi!</div>";
         } else {
-            // Yahan teamId se specific team dhoondhega (Chahe Team 1 ho ya Team 10)
             db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + teamId).once('value', teamSnap => {
                 if(!teamSnap.exists()) {
-                    container.innerHTML = "<div style='color:#ff004c; text-align:center; padding: 20px; font-weight:bold;'>Aapne is match ke liye koi team nahi banayi hai!</div>";
+                    container.innerHTML = "<div class='error-box'>⚠️ Aapne is match ke liye koi team nahi banayi hai!</div>";
                     return;
                 }
 
@@ -95,7 +95,6 @@
                     let totalTeamPoints = 0;
 
                     if(teamData.players && teamData.players.length > 0) {
-                        
                         teamData.players.forEach(pid => {
                             let pInfo = allPlayers[pid];
                             if(pInfo) {
@@ -112,7 +111,10 @@
                                 }
 
                                 totalTeamPoints += finalPts;
-                                let shortName = pInfo.name.split(' ')[0][0] + ". " + (pInfo.name.split(' ')[1] || pInfo.name);
+                                
+                                // Naam chhota karne ka safe tareeqa
+                                let nameParts = pInfo.name.split(' ');
+                                let shortName = nameParts.length > 1 ? nameParts[0][0] + ". " + nameParts[nameParts.length - 1] : pInfo.name;
 
                                 container.innerHTML += `
                                     <div class="p-row">
@@ -120,7 +122,7 @@
                                             <div class="p-img"><i class="fa-solid fa-user"></i></div>
                                             <div>
                                                 <div class="p-name">${shortName}</div>
-                                                <div class="p-role">${pInfo.team} | ${pInfo.role}</div>
+                                                <div class="p-role">${pInfo.team || 'Player'} | ${pInfo.role || 'Unknown'}</div>
                                             </div>
                                         </div>
                                         <div style="display:flex; align-items:center;">
@@ -137,11 +139,8 @@
 
                         document.getElementById('t-points').innerText = totalTeamPoints.toFixed(1);
 
-                        // HATA DI GAYI LINE: Yahan se Firebase update wala code nikal diya gaya hai
-                        // Kyunki ab Vercel apne aap Leaderboard points update kar dega!
-
                     } else {
-                        container.innerHTML = "<div style='text-align:center;'>No players found in your team.</div>";
+                        container.innerHTML = "<div class='error-box'>Team mein koi khiladi nahi mila.</div>";
                     }
                 });
             });
