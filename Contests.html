@@ -1,352 +1,226 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan 11 - Contests Market</title>
+    <title>Dream11 Style Leaderboard</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 30px; user-select: none; }
-        .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #ffd700; position: sticky; top:0; z-index:100; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
-        .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; color: #ffd700; }
-        .section-header { padding: 25px 15px 5px; color: #ffd700; font-size: 15px; text-transform: uppercase; font-weight: 900; letter-spacing: 1px; border-bottom: 1px solid #333; margin-bottom: 10px; }
+        body { background: #f5f5f5; color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; padding-bottom: 80px;}
         
-        .contest-card { background: #111; margin: 10px 15px; border-radius: 8px; border: 1px solid #333; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(0,0,0,0.5); position: relative;}
+        /* 👑 Header Design */
+        .header { background: #fff; padding: 15px; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 100; display: flex; align-items: center;}
+        .back-btn { font-size: 20px; color: #000; margin-right: 15px; cursor: pointer; }
+        .header-tabs { display: flex; justify-content: space-around; font-weight: bold; font-size: 14px; color: #666; width: 100%;}
+        .header-tabs .active { color: #d0021b; border-bottom: 3px solid #d0021b; padding-bottom: 5px;}
         
-        .mega-card { border: 2px solid #ff004c; background: linear-gradient(180deg, #2a0010, #111); box-shadow: 0 0 15px rgba(255, 0, 76, 0.4); }
-        .mega-title { background: #ff004c; color: #fff; text-align: center; font-size: 13px; font-weight: 900; padding: 5px; letter-spacing: 1px; animation: blink 1.5s infinite; }
-        @keyframes blink { 50% { opacity: 0.8; } }
+        /* 📊 Sub Header (Points/Rank labels) */
+        .sub-header { display: flex; justify-content: space-between; padding: 10px 15px; background: #fafafa; font-size: 12px; color: #888; border-bottom: 1px solid #ddd;}
+        .sub-header .left { flex: 2; font-weight: bold;}
+        .sub-header .center { flex: 1; text-align: center; font-weight: bold;}
+        .sub-header .right { flex: 1; text-align: right; font-weight: bold;}
 
-        .c-top { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .prize-label { font-size: 11px; color: #aaa; }
-        .prize-amt { font-size: 20px; font-weight: 900; color: #fff; display: block; }
-        .clickable-prize { cursor: pointer; text-decoration: underline; text-decoration-color: #555; }
-        .mega-card .prize-amt { font-size: 24px; text-shadow: 0 2px 5px rgba(255,215,0,0.6); text-decoration-color: #ff004c;}
+        /* 🏆 Leaderboard List */
+        .team-card { background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #eee; }
+        .team-card:hover { background: #f9f9f9; }
         
-        .join-btn { background: #00ff88; color: #000; padding: 8px 20px; border-radius: 5px; font-weight: bold; border:none; cursor: pointer; font-size: 15px; transition: 0.3s; z-index: 10; box-shadow: 0 2px 5px rgba(0,255,136,0.3); }
-        .join-btn.free { background: #fff; }
-        .join-btn.high-roller { background: linear-gradient(90deg, #ffd700, #ff8c00); color: #000; }
-        .join-btn.h2h { background: #00d2d3; color: #000; }
+        .team-info { display: flex; align-items: center; flex: 2; }
+        .avatar { width: 40px; height: 40px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #888; font-size: 20px; margin-right: 12px; }
+        .name-box h4 { margin: 0; font-size: 14px; color: #222; }
+        .team-badge { font-size: 10px; color: #888; background: #f0f0f0; padding: 2px 5px; border-radius: 3px; margin-left: 5px; font-weight: normal;}
         
-        .progress-container { padding: 0 15px 10px; }
-        .progress-text { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 4px; }
-        .spots-left { color: #ff004c; font-weight: bold; }
-        .progress-bar { width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
-        .progress-fill { height: 100%; background: #ff004c; width: 10%; transition: width 0.5s ease; }
-        .fast-fill { background: #ffd700; }
+        /* 💰 WINNING ZONE COLORS */
+        .winnings { margin: 4px 0 0; font-size: 11px; font-weight: bold; }
+        .win-zone { color: #00a05a; } /* Green text for winners */
+        .out-zone { color: #aaa; font-weight: normal; } /* Grey text for losers */
+        
+        .points-box { flex: 1; text-align: center; font-size: 14px; color: #555; font-weight: bold;}
+        .rank-box { flex: 1; text-align: right; font-size: 16px; font-weight: 900; color: #000; }
+        .rank-1 { background: #fff9e6; } /* Light yellow background for 1st Rank */
 
-        .c-footer { padding: 10px 15px; background: rgba(0,0,0,0.4); display: flex; justify-content: space-between; font-size: 11px; color: #aaa; border-top: 1px dashed #444; }
-        .tag { background: #ffd700; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; }
-        .tag.h2h-tag { background: #00d2d3; }
-        .tag.vip-tag { background: #ff004c; color: #fff; }
-
-        /* 🔥 DYNAMIC MODAL STYLING */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 200; justify-content: center; align-items: flex-end; }
-        .modal-content { background: #1a1a2e; width: 100%; max-height: 75vh; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; overflow-y: auto; animation: slideUp 0.3s ease-out; border-top: 2px solid #ffd700; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
-        .modal-title { font-size: 18px; font-weight: 900; color: #fff; }
-        .close-btn { color: #ff004c; font-size: 24px; font-weight: bold; cursor: pointer; }
-        
-        .rank-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #222; font-size: 14px; }
-        .rank-col { display: flex; align-items: center; gap: 10px; }
+        /* 📱 BOTTOM NAVIGATION */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #333; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); }
+        .nav-item { text-align: center; color: #888; font-size: 10px; cursor: pointer; flex: 1; font-weight: bold; text-transform: uppercase; }
+        .nav-item i { font-size: 20px; margin-bottom: 5px; display: block; }
+        .nav-item.active { color: #00ff88; }
     </style>
 </head>
 <body>
+
     <div class="header">
         <i class="fa-solid fa-arrow-left back-btn" onclick="window.location.href='Matches.html'"></i>
-        <div style="font-weight: 900; font-size: 16px;">SELECT CONTEST</div>
-    </div>
-
-    <div class="section-header"><i class="fa-solid fa-crown"></i> Grand Mega Contests</div>
-    
-    <div class="contest-card mega-card" data-spots="150000">
-        <div class="mega-title">🔥 1st: ₹50 LAKHS | 2nd: ₹10 LAKHS 🔥</div>
-        <div class="c-top">
-            <div onclick="openPrizeBreakdown('1cr')">
-                <span class="prize-label">Prize Pool <i class="fa-solid fa-circle-info"></i></span>
-                <span class="prize-amt clickable-prize">₹1,00,00,000</span>
-            </div>
-            <button class="join-btn" onclick="join(99, 150000)">₹99</button>
-        </div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>1,50,000 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Win Life Changing Amount!</div><div class="tag">Multy Entry</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="5000">
-        <div class="c-top">
-            <div onclick="openPrizeBreakdown('1lakh')">
-                <span class="prize-label">Prize Pool <i class="fa-solid fa-circle-info"></i></span>
-                <span class="prize-amt clickable-prize" style="font-size: 18px;">₹1,00,000</span>
-            </div>
-            <button class="join-btn" onclick="join(49, 5000)">₹49</button>
-        </div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>5000 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Hot Contest!</div><div class="tag">Multy Entry</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="3000">
-        <div class="c-top">
-            <div><span class="prize-label">Prize Pool</span><span class="prize-amt" style="font-size: 18px;">₹50,000</span></div>
-            <button class="join-btn" onclick="join(39, 3000)">₹39</button>
-        </div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>3000 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Guaranteed</div><div class="tag">Multy Entry</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="2000">
-        <div class="c-top">
-            <div><span class="prize-label">Prize Pool</span><span class="prize-amt" style="font-size: 18px;">₹20,000</span></div>
-            <button class="join-btn" onclick="join(25, 2000)">₹25</button>
-        </div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>2000 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Low Entry, Big Win</div><div class="tag">Multy Entry</div></div>
-    </div>
-
-    <div class="section-header"><i class="fa-solid fa-fire"></i> Small Leagues (20-50 Players)</div>
-
-    <div class="contest-card" data-spots="50">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹40,000</span></div><button class="join-btn" onclick="join(999, 50)">₹999</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>50 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>High Winning Chances</div><div class="tag">50 PLAYERS</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="35">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹15,000</span></div><button class="join-btn" onclick="join(499, 35)">₹499</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>35 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>High Winning Chances</div><div class="tag">35 PLAYERS</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="40">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹10,000</span></div><button class="join-btn" onclick="join(299, 40)">₹299</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>40 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>High Winning Chances</div><div class="tag">40 PLAYERS</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="30">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹5,000</span></div><button class="join-btn" onclick="join(199, 30)">₹199</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>30 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>High Winning Chances</div><div class="tag">30 PLAYERS</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="28">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹3,000</span></div><button class="join-btn" onclick="join(125, 28)">₹125</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>28 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>High Winning Chances</div><div class="tag">28 PLAYERS</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="30">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹2,000</span></div><button class="join-btn" onclick="join(75, 30)">₹75</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>30 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>High Winning Chances</div><div class="tag">30 PLAYERS</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="35">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹1,000</span></div><button class="join-btn" onclick="join(35, 35)">₹35</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>35 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>High Winning Chances</div><div class="tag">35 PLAYERS</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="40">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹500</span></div><button class="join-btn" onclick="join(15, 40)">₹15</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>40 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Beginner Friendly</div><div class="tag">40 PLAYERS</div></div>
-    </div>
-
-    <div class="section-header"><i class="fa-solid fa-gem"></i> VIP High Roller</div>
-
-    <div class="contest-card" data-spots="2">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹45,000</span></div><button class="join-btn high-roller" onclick="join(25000, 2)">₹25,000</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>2 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Ultimate VIP Battle</div><div class="tag vip-tag">H2H VIP</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="3">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹40,000</span></div><button class="join-btn high-roller" onclick="join(15000, 3)">₹15,000</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>3 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Elite 3-Player Clash</div><div class="tag vip-tag">3 PLAYERS</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="5">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹40,000</span></div><button class="join-btn high-roller" onclick="join(10000, 5)">₹10,000</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>5 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>High Stakes</div><div class="tag vip-tag">5 PLAYERS</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="6">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹25,000</span></div><button class="join-btn high-roller" onclick="join(5000, 6)">₹5,000</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>6 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Pro League</div><div class="tag vip-tag">6 PLAYERS</div></div>
-    </div>
-
-    <div class="section-header"><i class="fa-solid fa-user-ninja"></i> Head To Head (1 v 1)</div>
-
-    <div class="contest-card" data-spots="2">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹10,000</span></div><button class="join-btn h2h" onclick="join(5750, 2)">₹5,750</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>2 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Winner Takes All</div><div class="tag h2h-tag">H2H Battle</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="2">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹5,000</span></div><button class="join-btn h2h" onclick="join(2875, 2)">₹2,875</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>2 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Winner Takes All</div><div class="tag h2h-tag">H2H Battle</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="2">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹2,000</span></div><button class="join-btn h2h" onclick="join(1150, 2)">₹1,150</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>2 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Winner Takes All</div><div class="tag h2h-tag">H2H Battle</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="2">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹1,000</span></div><button class="join-btn h2h" onclick="join(575, 2)">₹575</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>2 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Winner Takes All</div><div class="tag h2h-tag">H2H Battle</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="2">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹500</span></div><button class="join-btn h2h" onclick="join(299, 2)">₹299</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>2 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Winner Takes All</div><div class="tag h2h-tag">H2H Battle</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="2">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹200</span></div><button class="join-btn h2h" onclick="join(119, 2)">₹119</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>2 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Winner Takes All</div><div class="tag h2h-tag">H2H Battle</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="2">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹100</span></div><button class="join-btn h2h" onclick="join(59, 2)">₹59</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>2 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Winner Takes All</div><div class="tag h2h-tag">H2H Battle</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="2">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹50</span></div><button class="join-btn h2h" onclick="join(29, 2)">₹29</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>2 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Winner Takes All</div><div class="tag h2h-tag">H2H Battle</div></div>
-    </div>
-
-    <div class="contest-card" data-spots="2">
-        <div class="c-top"><div><span class="prize-label">Winnings</span><span class="prize-amt">₹25</span></div><button class="join-btn h2h" onclick="join(15, 2)">₹15</button></div>
-        <div class="progress-container"><div class="progress-text"><span class="spots-left"><span class="dynamic-spots">...</span> spots left</span><span>2 Spots</span></div><div class="progress-bar"><div class="progress-fill"></div></div></div>
-        <div class="c-footer"><div>Winner Takes All</div><div class="tag h2h-tag">H2H Battle</div></div>
-    </div>
-
-    <div class="section-header"><i class="fa-solid fa-gamepad"></i> Practice Contests</div>
-    <div class="contest-card" data-spots="100000">
-        <div class="c-top">
-            <div><span class="prize-label">Skill Test</span><span class="prize-amt" style="text-decoration:none;">Glory</span></div>
-            <button class="join-btn free" onclick="join(0, 100000)">FREE</button>
-        </div>
-        <div class="progress-container">
-            <div class="progress-text"><span class="spots-left" style="color:#00ff88;">Unlimited Spots</span><span>Practice</span></div>
-            <div class="progress-bar"><div class="progress-fill" style="width:15%; background:#00ff88;"></div></div>
-        </div>
-        <div class="c-footer"><div>Improve Your Skills</div><div class="tag">PRACTICE</div></div>
-    </div>
-
-    <div id="prizeModalOverlay" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Winnings Breakdown</div>
-                <div class="close-btn" onclick="closePrizeBreakdown()">&times;</div>
-            </div>
-            <div id="modal-subtitle" style="font-size: 12px; color: #aaa; margin-bottom: 15px;"></div>
-            <div id="modal-ranks-container"></div>
-            <div id="modal-note" style="text-align: center; margin-top: 20px; font-size: 11px; color: #888;"></div>
+        <div class="header-tabs">
+            <div>Winnings</div>
+            <div class="active">Leaderboard</div>
+            <div>Commentary</div>
         </div>
     </div>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const matchId = urlParams.get('matchId');
+    <div style="background:#000; color:#ffd700; padding:8px 15px; font-size:12px; font-weight:bold; text-align:center;" id="active-contest-name">
+        Loading Contest...
+    </div>
 
-        function join(fee, maxPlayers) {
-            if(!matchId) { alert("Match Error!"); return; }
-            window.location.href = `CreateTeam.html?matchId=${matchId}&fee=${fee}&maxPlayers=${maxPlayers}`;
+    <div class="sub-header">
+        <div class="left">All Teams <span id="total-teams-count">(0)</span></div>
+        <div class="center">Points</div>
+        <div class="right">Rank</div>
+    </div>
+
+    <div id="leaderboard-list">
+        <p style="text-align: center; color: #888; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading Teams...</p>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="window.location.href='Matches.html'"><i class="fa-solid fa-house"></i><span>Matches</span></div>
+        <div class="nav-item" id="btn-myteam"><i class="fa-solid fa-users"></i><span>My Team</span></div>
+        <div class="nav-item active"><i class="fa-solid fa-trophy"></i><span>Leaderboard</span></div>
+    </div>
+
+<script>
+    const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.database();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const matchId = urlParams.get('matchId');
+    const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+
+    document.getElementById('btn-myteam').onclick = function() {
+        if(matchId) { window.location.href = `MyTeam.html?matchId=${matchId}&teamId=${userPhone}`; } 
+        else { window.location.href = `Matches.html`; }
+    };
+
+    // 🔥 DYNAMIC WINNING ZONE CALCULATOR (Aapki file se liya gaya exact data) 🔥
+    const prizeMap = {
+        99: [{max:1, p:"₹50,00,000"}, {max:2, p:"₹10,00,000"}, {max:3, p:"₹5,00,000"}, {max:10, p:"₹1,00,000"}, {max:100, p:"₹10,000"}, {max:50000, p:"₹99"}],
+        49: [{max:1, p:"₹20,000"}, {max:2, p:"₹10,000"}, {max:3, p:"₹5,000"}, {max:20, p:"₹1,000"}, {max:100, p:"₹200"}, {max:700, p:"₹49"}],
+        39: [{max:1, p:"₹10,000"}, {max:10, p:"₹1,000"}, {max:1500, p:"₹39"}],
+        25: [{max:1, p:"₹5,000"}, {max:5, p:"₹500"}, {max:1000, p:"₹25"}],
+        999: [{max:1, p:"₹20,000"}, {max:5, p:"₹2,000"}, {max:20, p:"₹999"}],
+        499: [{max:1, p:"₹7,000"}, {max:3, p:"₹1,500"}, {max:15, p:"₹499"}],
+        299: [{max:1, p:"₹4,000"}, {max:3, p:"₹1,000"}, {max:15, p:"₹299"}],
+        199: [{max:1, p:"₹2,000"}, {max:10, p:"₹199"}],
+        125: [{max:1, p:"₹1,000"}, {max:10, p:"₹125"}],
+        75: [{max:1, p:"₹500"}, {max:10, p:"₹75"}],
+        35: [{max:1, p:"₹300"}, {max:15, p:"₹35"}],
+        15: [{max:1, p:"₹100"}, {max:15, p:"₹15"}],
+        25000: [{max:1, p:"₹45,000"}],
+        15000: [{max:1, p:"₹40,000"}],
+        10000: [{max:1, p:"₹40,000"}],
+        5000: [{max:1, p:"₹25,000"}],
+        5750: [{max:1, p:"₹10,000"}],
+        2875: [{max:1, p:"₹5,000"}],
+        1150: [{max:1, p:"₹2,000"}],
+        575: [{max:1, p:"₹1,000"}],
+        299: [{max:1, p:"₹500"}],
+        119: [{max:1, p:"₹200"}],
+        59: [{max:1, p:"₹100"}],
+        29: [{max:1, p:"₹50"}],
+        0: [{max:100000, p:"Practice (Glory)"}]
+    };
+
+    function getPrizeForRank(fee, rank) {
+        let rules = prizeMap[fee];
+        if(!rules) return null;
+        for(let i=0; i<rules.length; i++) {
+            if(rank <= rules[i].max) return rules[i].p; // Winning Zone mein hai
         }
+        return null; // Out of winning zone
+    }
 
-        const prizeData = {
-            '1cr': {
-                pool: '₹1,00,00,000', spots: '1,50,000', note: 'Remaining players get ₹0. Better luck next time!',
-                ranks: [
-                    { rank: 'Rank 1', prize: '₹50,00,000', icon: 'fa-trophy', color: '#ffd700' },
-                    { rank: 'Rank 2', prize: '₹10,00,000', icon: 'fa-medal', color: '#c0c0c0' },
-                    { rank: 'Rank 3', prize: '₹5,00,000', icon: 'fa-medal', color: '#cd7f32' },
-                    { rank: 'Rank 4 - 10', prize: '₹1,00,000', color: '#fff' },
-                    { rank: 'Rank 11 - 100', prize: '₹10,000', color: '#fff' },
-                    { rank: 'Rank 101 - 50,000', prize: '₹99 (Entry Back)', icon: 'fa-gift', color: '#00ff88' }
-                ]
-            },
-            '1lakh': {
-                pool: '₹1,00,000', spots: '5,000', note: 'Remaining players get ₹0. Keep Playing!',
-                ranks: [
-                    { rank: 'Rank 1', prize: '₹20,000', icon: 'fa-trophy', color: '#ffd700' },
-                    { rank: 'Rank 2', prize: '₹10,000', icon: 'fa-medal', color: '#c0c0c0' },
-                    { rank: 'Rank 3', prize: '₹5,000', icon: 'fa-medal', color: '#cd7f32' },
-                    { rank: 'Rank 4 - 20', prize: '₹1,000', color: '#fff' },
-                    { rank: 'Rank 21 - 100', prize: '₹200', color: '#fff' },
-                    { rank: 'Rank 101 - 700', prize: '₹49 (Entry Back)', icon: 'fa-gift', color: '#00ff88' }
-                ]
+    if(!matchId) {
+        document.getElementById('leaderboard-list').innerHTML = "<p style='text-align:center; color:#d0021b; padding:20px;'>❌ Error: Match ID Missing!</p>";
+    } else {
+        db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).on('value', (snapshot) => {
+            let container = document.getElementById('leaderboard-list');
+            
+            if(!snapshot.exists()) {
+                container.innerHTML = "<p style='text-align:center; color:#888; padding:20px;'>No teams joined yet.</p>";
+                return;
             }
-        };
 
-        function openPrizeBreakdown(type) {
-            let data = prizeData[type];
-            if(!data) return;
-            document.getElementById('modal-subtitle').innerHTML = `Prize Pool: <span style="color:#fff; font-weight:bold;">${data.pool}</span> • Spots: <span style="color:#fff; font-weight:bold;">${data.spots}</span>`;
-            let html = '';
-            data.ranks.forEach((r, index) => {
-                let iconHtml = r.icon ? `<i class="fa-solid ${r.icon}"></i> ` : '';
-                let fontWeight = index < 3 ? '900' : (r.color === '#00ff88' ? 'bold' : 'normal');
-                html += `<div class="rank-row" style="color: ${r.color}; font-weight: ${fontWeight};"><div class="rank-col">${iconHtml}${r.rank}</div><div>${r.prize}</div></div>`;
+            let allTeams = [];
+            let currentContestFee = 0;
+
+            // 1. Pehle pata lagao ki is user ne kaunsa contest (fee) join kiya hai
+            if(snapshot.hasChild(userPhone)) {
+                currentContestFee = parseInt(snapshot.child(userPhone).val().entry_paid) || 0;
+            } else {
+                currentContestFee = parseInt(urlParams.get('entry')) || 0; // Agar user ne join nahi kiya, toh URL se lenge
+            }
+
+            document.getElementById('active-contest-name').innerText = currentContestFee > 0 ? `🏆 ₹${currentContestFee} Contest Leaderboard` : `🏆 Free Practice Contest`;
+
+            // 2. Data load karo aur SIRF wahi teams filter karo jinka fee currentContestFee ke barabar hai
+            snapshot.forEach(child => {
+                let teamData = child.val();
+                let feePaid = parseInt(teamData.entry_paid) || 0;
+                
+                // Privacy Filter: Agar main ₹49 me hu, toh sirf ₹49 wale dikhenge
+                if(feePaid === currentContestFee) {
+                    let uName = teamData.userName || teamData.teamName || child.key; 
+                    if(uName.length >= 10 && !isNaN(uName)) uName = uName.substring(0,5) + "*****"; // Number mask
+                    
+                    allTeams.push({
+                        id: child.key,
+                        name: uName.toUpperCase(), 
+                        points: parseFloat(teamData.total_points || 0)
+                    });
+                }
             });
-            document.getElementById('modal-ranks-container').innerHTML = html;
-            document.getElementById('modal-note').innerText = data.note;
-            document.getElementById('prizeModalOverlay').style.display = 'flex';
-        }
 
-        function closePrizeBreakdown() { document.getElementById('prizeModalOverlay').style.display = 'none'; }
+            document.getElementById('total-teams-count').innerText = `(${allTeams.length})`;
 
-        function initializeLiveSpots() {
-            let cards = document.querySelectorAll('.contest-card');
-            cards.forEach(card => {
-                let totalSpots = parseInt(card.getAttribute('data-spots'));
-                let spotsSpan = card.querySelector('.dynamic-spots');
-                let fillBar = card.querySelector('.progress-fill');
-                if(!spotsSpan || totalSpots === 100000) return; 
+            // 3. Sorting (Sabse zyada point wala Rank 1 par)
+            allTeams.sort((a, b) => b.points - a.points);
 
-                let initialFillPercent = Math.floor(Math.random() * (90 - 50 + 1)) + 50; 
-                if(totalSpots <= 4) initialFillPercent = Math.random() > 0.5 ? 50 : 33; 
+            // 4. Print Leaderboard with Winning Zone
+            let htmlContent = "";
+            
+            allTeams.forEach((team, index) => {
+                let rank = index + 1;
+                let rankClass = (rank === 1) ? "team-card rank-1" : "team-card"; 
+                
+                // Check if user is in winning zone
+                let prizeAmount = getPrizeForRank(currentContestFee, rank);
+                let prizeHtml = "";
+                
+                if(prizeAmount) {
+                    // Winning Zone (Green)
+                    prizeHtml = `<p class="winnings win-zone"><i class="fa-solid fa-trophy"></i> Won ${prizeAmount}</p>`;
+                } else {
+                    // Out of Winning Zone (Grey)
+                    prizeHtml = `<p class="winnings out-zone">₹0 (Out of zone)</p>`;
+                }
 
-                let filledSpots = Math.floor((initialFillPercent / 100) * totalSpots);
-                let currentSpotsLeft = totalSpots - filledSpots;
-                if(currentSpotsLeft < 1) currentSpotsLeft = 1;
+                // Highlight Your Team
+                let isMyTeam = (team.id === userPhone);
+                let myTeamBadge = isMyTeam ? `<span style="background:#00ff88; color:#000; font-size:9px; padding:2px 4px; border-radius:3px; margin-left:5px; font-weight:bold;">YOU</span>` : `<span class="team-badge">T1</span>`;
 
-                spotsSpan.innerText = currentSpotsLeft;
-                fillBar.style.width = initialFillPercent + "%";
-
-                setInterval(() => {
-                    if(currentSpotsLeft > 1) {
-                        let dropAmount = totalSpots > 100 ? Math.floor(Math.random() * 5) + 1 : 1; 
-                        if(Math.random() > 0.7) {
-                            currentSpotsLeft -= dropAmount;
-                            if(currentSpotsLeft < 1) currentSpotsLeft = 1; 
-                            let newFillPercent = ((totalSpots - currentSpotsLeft) / totalSpots) * 100;
-                            spotsSpan.innerText = currentSpotsLeft;
-                            fillBar.style.width = newFillPercent + "%";
-                            fillBar.classList.add('fast-fill');
-                            setTimeout(() => fillBar.classList.remove('fast-fill'), 500);
-                        }
-                    }
-                }, Math.floor(Math.random() * 5000) + 3000); 
+                htmlContent += `
+                <div class="${rankClass}" style="${isMyTeam ? 'border-left: 4px solid #00ff88;' : ''}">
+                    <div class="team-info">
+                        <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                        <div class="name-box">
+                            <h4>${team.name} ${myTeamBadge}</h4>
+                            ${prizeHtml}
+                        </div>
+                    </div>
+                    <div class="points-box">${team.points.toFixed(1)}</div>
+                    <div class="rank-box">#${rank}</div>
+                </div>`;
             });
-        }
-        window.onload = initializeLiveSpots;
-    </script>
+
+            if(allTeams.length === 0) {
+                htmlContent = "<p style='text-align:center; color:#888; padding:20px;'>No players in this contest yet.</p>";
+            }
+
+            container.innerHTML = htmlContent;
+        });
+    }
+</script>
+
 </body>
 </html>
