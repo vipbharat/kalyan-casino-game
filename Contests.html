@@ -1,226 +1,240 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dream11 Style Leaderboard</title>
+    <title>Kalyan 11 - Contests</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        body { background: #f5f5f5; color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; padding-bottom: 80px;}
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f2f2f2; color: #000; margin: 0; padding-bottom: 90px; user-select: none; }
         
-        /* 👑 Header Design */
-        .header { background: #fff; padding: 15px; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 100; display: flex; align-items: center;}
-        .back-btn { font-size: 20px; color: #000; margin-right: 15px; cursor: pointer; }
-        .header-tabs { display: flex; justify-content: space-around; font-weight: bold; font-size: 14px; color: #666; width: 100%;}
-        .header-tabs .active { color: #d0021b; border-bottom: 3px solid #d0021b; padding-bottom: 5px;}
-        
-        /* 📊 Sub Header (Points/Rank labels) */
-        .sub-header { display: flex; justify-content: space-between; padding: 10px 15px; background: #fafafa; font-size: 12px; color: #888; border-bottom: 1px solid #ddd;}
-        .sub-header .left { flex: 2; font-weight: bold;}
-        .sub-header .center { flex: 1; text-align: center; font-weight: bold;}
-        .sub-header .right { flex: 1; text-align: right; font-weight: bold;}
+        /* 👑 Header - Dark Theme */
+        .header { background: #1a0033; padding: 15px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); color: #fff; }
+        .back-btn { font-size: 20px; cursor: pointer; color: #00ff88; }
+        .match-info { text-align: center; font-weight: 900; font-size: 15px; flex-grow: 1; text-transform: uppercase;}
+        .wallet-icon { font-size: 18px; color: #00ff88; cursor: pointer; }
 
-        /* 🏆 Leaderboard List */
-        .team-card { background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #eee; }
-        .team-card:hover { background: #f9f9f9; }
-        
-        .team-info { display: flex; align-items: center; flex: 2; }
-        .avatar { width: 40px; height: 40px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #888; font-size: 20px; margin-right: 12px; }
-        .name-box h4 { margin: 0; font-size: 14px; color: #222; }
-        .team-badge { font-size: 10px; color: #888; background: #f0f0f0; padding: 2px 5px; border-radius: 3px; margin-left: 5px; font-weight: normal;}
-        
-        /* 💰 WINNING ZONE COLORS */
-        .winnings { margin: 4px 0 0; font-size: 11px; font-weight: bold; }
-        .win-zone { color: #00a05a; } /* Green text for winners */
-        .out-zone { color: #aaa; font-weight: normal; } /* Grey text for losers */
-        
-        .points-box { flex: 1; text-align: center; font-size: 14px; color: #555; font-weight: bold;}
-        .rank-box { flex: 1; text-align: right; font-size: 16px; font-weight: 900; color: #000; }
-        .rank-1 { background: #fff9e6; } /* Light yellow background for 1st Rank */
+        /* 📑 Filters Tab */
+        .filter-scroll { display: flex; overflow-x: auto; background: #fff; border-bottom: 1px solid #ddd; padding: 10px 15px; position: sticky; top: 52px; z-index: 99; white-space: nowrap; gap: 10px;}
+        .filter-scroll::-webkit-scrollbar { display: none; }
+        .filter-btn { padding: 6px 15px; border-radius: 20px; font-size: 11px; font-weight: bold; border: 1px solid #ccc; background: #fff; color: #555; cursor: pointer; transition: 0.2s;}
+        .filter-btn.active { background: #1a0033; color: #fff; border-color: #1a0033; }
 
-        /* 📱 BOTTOM NAVIGATION */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #333; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); }
+        /* 🏆 Contest Categories */
+        .category-title { font-size: 14px; font-weight: 900; color: #333; margin: 15px 15px 10px; text-transform: uppercase; display: flex; align-items: center; gap: 8px;}
+        .category-desc { font-size: 10px; color: #777; font-weight: normal; text-transform: none;}
+
+        /* 🎴 Contest Card Design (Dream11 Style) */
+        .contest-list { padding: 0 10px; }
+        .contest-card { background: #fff; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #e0e0e0;}
+        
+        .c-header { padding: 12px 15px 8px; display: flex; justify-content: space-between; align-items: flex-start;}
+        .prize-pool-lbl { font-size: 11px; color: #666; margin-bottom: 2px;}
+        .prize-pool-val { font-size: 18px; font-weight: 900; color: #000;}
+        
+        .entry-btn { background: #00a05a; color: #fff; padding: 6px 20px; border-radius: 4px; font-weight: 900; font-size: 14px; border: none; cursor: pointer; box-shadow: 0 2px 5px rgba(0,160,90,0.3);}
+        .entry-btn:active { transform: scale(0.95); }
+
+        /* Progress Bar */
+        .progress-section { padding: 0 15px; margin-top: 5px;}
+        .progress-bg { background: #fce4e4; height: 5px; border-radius: 3px; overflow: hidden; width: 100%; position: relative;}
+        .progress-fill { background: #d0021b; height: 100%; width: 20%; border-radius: 3px; position: absolute; left: 0;}
+        
+        .spots-info { display: flex; justify-content: space-between; font-size: 10px; color: #d0021b; font-weight: bold; margin-top: 5px; margin-bottom: 8px;}
+        .total-spots { color: #888; font-weight: normal;}
+
+        /* Bottom Info Bar */
+        .c-footer { background: #f9f9f9; padding: 8px 15px; display: flex; justify-content: space-between; font-size: 11px; color: #555; border-top: 1px solid #eee; align-items: center;}
+        .c-footer div { display: flex; align-items: center; gap: 5px; font-weight: bold;}
+        .first-prize { color: #000; font-size: 12px;}
+
+        /* 📱 Bottom Navigation */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
         .nav-item { text-align: center; color: #888; font-size: 10px; cursor: pointer; flex: 1; font-weight: bold; text-transform: uppercase; }
-        .nav-item i { font-size: 20px; margin-bottom: 5px; display: block; }
-        .nav-item.active { color: #00ff88; }
+        .nav-item i { font-size: 20px; margin-bottom: 4px; display: block; }
+        .nav-item.active { color: #d0021b; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <i class="fa-solid fa-arrow-left back-btn" onclick="window.location.href='Matches.html'"></i>
-        <div class="header-tabs">
-            <div>Winnings</div>
-            <div class="active">Leaderboard</div>
-            <div>Commentary</div>
+        <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
+        <div class="match-info" id="matchHeader">Loading Match...</div>
+        <i class="fa-solid fa-wallet wallet-icon"></i>
+    </div>
+
+    <div class="filter-scroll">
+        <div class="filter-btn active" onclick="filterContests('All', this)">All Contests</div>
+        <div class="filter-btn" onclick="filterContests('Mega', this)">Mega Contests</div>
+        <div class="filter-btn" onclick="filterContests('H2H', this)">Head to Head</div>
+        <div class="filter-btn" onclick="filterContests('Winner', this)">Winner Takes All</div>
+        <div class="filter-btn" onclick="filterContests('Small', this)">Small Leagues</div>
+    </div>
+
+    <div id="contests-container" style="padding-bottom: 20px;">
         </div>
-    </div>
-
-    <div style="background:#000; color:#ffd700; padding:8px 15px; font-size:12px; font-weight:bold; text-align:center;" id="active-contest-name">
-        Loading Contest...
-    </div>
-
-    <div class="sub-header">
-        <div class="left">All Teams <span id="total-teams-count">(0)</span></div>
-        <div class="center">Points</div>
-        <div class="right">Rank</div>
-    </div>
-
-    <div id="leaderboard-list">
-        <p style="text-align: center; color: #888; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading Teams...</p>
-    </div>
 
     <div class="bottom-nav">
         <div class="nav-item" onclick="window.location.href='Matches.html'"><i class="fa-solid fa-house"></i><span>Matches</span></div>
-        <div class="nav-item" id="btn-myteam"><i class="fa-solid fa-users"></i><span>My Team</span></div>
-        <div class="nav-item active"><i class="fa-solid fa-trophy"></i><span>Leaderboard</span></div>
+        <div class="nav-item active"><i class="fa-solid fa-trophy"></i><span>Contests</span></div>
+        <div class="nav-item" id="myTeamBtn"><i class="fa-solid fa-users"></i><span>My Team</span></div>
     </div>
 
-<script>
-    const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
-    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-    const db = firebase.database();
+    <script>
+        // URL se Match ID aur Teams nikalna
+        const urlParams = new URLSearchParams(window.location.search);
+        const matchId = urlParams.get('matchId');
+        const t1 = urlParams.get('t1') || 'TEAM 1';
+        const t2 = urlParams.get('t2') || 'TEAM 2';
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const matchId = urlParams.get('matchId');
-    const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+        document.getElementById('matchHeader').innerText = `${t1.substring(0,4)} VS ${t2.substring(0,4)}`;
+        
+        document.getElementById('myTeamBtn').onclick = function() {
+            window.location.href = `MyTeam.html?matchId=${matchId}`;
+        };
 
-    document.getElementById('btn-myteam').onclick = function() {
-        if(matchId) { window.location.href = `MyTeam.html?matchId=${matchId}&teamId=${userPhone}`; } 
-        else { window.location.href = `Matches.html`; }
-    };
+        // 🏆 GRAND CONTESTS LIST (Takriban 40 Contests)
+        const allContests = [
+            // MEGA CONTESTS (Aapki Exact Demand)
+            { cat: "Mega", fee: 99, pool: "₹5 Crore", spots: 500000, winners: 300000, topPrize: "₹1 Crore", maxM: 20, fillPct: 65 },
+            { cat: "Mega", fee: 39, pool: "₹25 Lakh", spots: 110000, winners: 45000, topPrize: "₹25 Lakh", maxM: 20, fillPct: 82 },
+            { cat: "Mega", fee: 49, pool: "₹15 Lakh", spots: 40000, winners: 22000, topPrize: "₹5 Lakh", maxM: 20, fillPct: 40 },
+            { cat: "Mega", fee: 59, pool: "₹5 Lakh", spots: 10000, winners: 5000, topPrize: "₹1 Lakh", maxM: 10, fillPct: 90 },
+            { cat: "Mega", fee: 29, pool: "₹1 Lakh", spots: 4000, winners: 2000, topPrize: "₹10,000", maxM: 10, fillPct: 30 },
 
-    // 🔥 DYNAMIC WINNING ZONE CALCULATOR (Aapki file se liya gaya exact data) 🔥
-    const prizeMap = {
-        99: [{max:1, p:"₹50,00,000"}, {max:2, p:"₹10,00,000"}, {max:3, p:"₹5,00,000"}, {max:10, p:"₹1,00,000"}, {max:100, p:"₹10,000"}, {max:50000, p:"₹99"}],
-        49: [{max:1, p:"₹20,000"}, {max:2, p:"₹10,000"}, {max:3, p:"₹5,000"}, {max:20, p:"₹1,000"}, {max:100, p:"₹200"}, {max:700, p:"₹49"}],
-        39: [{max:1, p:"₹10,000"}, {max:10, p:"₹1,000"}, {max:1500, p:"₹39"}],
-        25: [{max:1, p:"₹5,000"}, {max:5, p:"₹500"}, {max:1000, p:"₹25"}],
-        999: [{max:1, p:"₹20,000"}, {max:5, p:"₹2,000"}, {max:20, p:"₹999"}],
-        499: [{max:1, p:"₹7,000"}, {max:3, p:"₹1,500"}, {max:15, p:"₹499"}],
-        299: [{max:1, p:"₹4,000"}, {max:3, p:"₹1,000"}, {max:15, p:"₹299"}],
-        199: [{max:1, p:"₹2,000"}, {max:10, p:"₹199"}],
-        125: [{max:1, p:"₹1,000"}, {max:10, p:"₹125"}],
-        75: [{max:1, p:"₹500"}, {max:10, p:"₹75"}],
-        35: [{max:1, p:"₹300"}, {max:15, p:"₹35"}],
-        15: [{max:1, p:"₹100"}, {max:15, p:"₹15"}],
-        25000: [{max:1, p:"₹45,000"}],
-        15000: [{max:1, p:"₹40,000"}],
-        10000: [{max:1, p:"₹40,000"}],
-        5000: [{max:1, p:"₹25,000"}],
-        5750: [{max:1, p:"₹10,000"}],
-        2875: [{max:1, p:"₹5,000"}],
-        1150: [{max:1, p:"₹2,000"}],
-        575: [{max:1, p:"₹1,000"}],
-        299: [{max:1, p:"₹500"}],
-        119: [{max:1, p:"₹200"}],
-        59: [{max:1, p:"₹100"}],
-        29: [{max:1, p:"₹50"}],
-        0: [{max:100000, p:"Practice (Glory)"}]
-    };
+            // HEAD TO HEAD (2 Spots)
+            { cat: "H2H", fee: 25000, pool: "₹45,000", spots: 2, winners: 1, topPrize: "₹45,000", maxM: 1, fillPct: 50 },
+            { cat: "H2H", fee: 15000, pool: "₹27,000", spots: 2, winners: 1, topPrize: "₹27,000", maxM: 1, fillPct: 0 },
+            { cat: "H2H", fee: 10000, pool: "₹18,000", spots: 2, winners: 1, topPrize: "₹18,000", maxM: 1, fillPct: 50 },
+            { cat: "H2H", fee: 5750, pool: "₹10,000", spots: 2, winners: 1, topPrize: "₹10,000", maxM: 1, fillPct: 0 },
+            { cat: "H2H", fee: 2875, pool: "₹5,000", spots: 2, winners: 1, topPrize: "₹5,000", maxM: 1, fillPct: 50 },
+            { cat: "H2H", fee: 1749, pool: "₹3,000", spots: 2, winners: 1, topPrize: "₹3,000", maxM: 1, fillPct: 0 },
+            { cat: "H2H", fee: 1150, pool: "₹2,000", spots: 2, winners: 1, topPrize: "₹2,000", maxM: 1, fillPct: 50 },
+            { cat: "H2H", fee: 575, pool: "₹1,000", spots: 2, winners: 1, topPrize: "₹1,000", maxM: 1, fillPct: 0 },
+            { cat: "H2H", fee: 299, pool: "₹500", spots: 2, winners: 1, topPrize: "₹500", maxM: 1, fillPct: 50 },
+            { cat: "H2H", fee: 119, pool: "₹200", spots: 2, winners: 1, topPrize: "₹200", maxM: 1, fillPct: 0 },
+            { cat: "H2H", fee: 59, pool: "₹100", spots: 2, winners: 1, topPrize: "₹100", maxM: 1, fillPct: 50 },
+            { cat: "H2H", fee: 29, pool: "₹50", spots: 2, winners: 1, topPrize: "₹50", maxM: 1, fillPct: 0 },
+            { cat: "H2H", fee: 21, pool: "₹35", spots: 2, winners: 1, topPrize: "₹35", maxM: 1, fillPct: 50 },
+            { cat: "H2H", fee: 15, pool: "₹25", spots: 2, winners: 1, topPrize: "₹25", maxM: 1, fillPct: 0 },
 
-    function getPrizeForRank(fee, rank) {
-        let rules = prizeMap[fee];
-        if(!rules) return null;
-        for(let i=0; i<rules.length; i++) {
-            if(rank <= rules[i].max) return rules[i].p; // Winning Zone mein hai
+            // WINNER TAKES ALL (3 to 4 Players)
+            { cat: "Winner", fee: 9999, pool: "₹30,000", spots: 3, winners: 1, topPrize: "₹30,000", maxM: 1, fillPct: 33 },
+            { cat: "Winner", fee: 2999, pool: "₹10,000", spots: 4, winners: 1, topPrize: "₹10,000", maxM: 1, fillPct: 75 },
+            { cat: "Winner", fee: 899, pool: "₹2,500", spots: 3, winners: 1, topPrize: "₹2,500", maxM: 1, fillPct: 66 },
+            { cat: "Winner", fee: 387, pool: "₹1,000", spots: 3, winners: 1, topPrize: "₹1,000", maxM: 1, fillPct: 33 },
+            { cat: "Winner", fee: 299, pool: "₹1,000", spots: 4, winners: 1, topPrize: "₹1,000", maxM: 1, fillPct: 50 },
+            { cat: "Winner", fee: 125, pool: "₹325", spots: 3, winners: 1, topPrize: "₹325", maxM: 1, fillPct: 66 },
+            { cat: "Winner", fee: 49, pool: "₹170", spots: 4, winners: 1, topPrize: "₹170", maxM: 1, fillPct: 25 },
+            { cat: "Winner", fee: 27, pool: "₹70", spots: 3, winners: 1, topPrize: "₹70", maxM: 1, fillPct: 66 },
+            { cat: "Winner", fee: 19, pool: "₹66", spots: 4, winners: 1, topPrize: "₹66", maxM: 1, fillPct: 75 },
+            { cat: "Winner", fee: 17, pool: "₹44", spots: 3, winners: 1, topPrize: "₹44", maxM: 1, fillPct: 33 },
+
+            // SMALL LEAGUES (10 to 100 Players)
+            { cat: "Small", fee: 4999, pool: "₹45,000", spots: 10, winners: 3, topPrize: "₹20,000", maxM: 3, fillPct: 40 },
+            { cat: "Small", fee: 999, pool: "₹18,000", spots: 20, winners: 5, topPrize: "₹8,000", maxM: 5, fillPct: 80 },
+            { cat: "Small", fee: 499, pool: "₹15,000", spots: 35, winners: 15, topPrize: "₹4,000", maxM: 6, fillPct: 60 },
+            { cat: "Small", fee: 299, pool: "₹10,000", spots: 40, winners: 15, topPrize: "₹3,000", maxM: 6, fillPct: 90 },
+            { cat: "Small", fee: 199, pool: "₹5,000", spots: 30, winners: 10, topPrize: "₹1,500", maxM: 6, fillPct: 50 },
+            { cat: "Small", fee: 125, pool: "₹3,000", spots: 28, winners: 10, topPrize: "₹1,000", maxM: 6, fillPct: 85 },
+            { cat: "Small", fee: 77, pool: "₹1,500", spots: 25, winners: 10, topPrize: "₹500", maxM: 6, fillPct: 20 },
+            { cat: "Small", fee: 35, pool: "₹1,000", spots: 35, winners: 15, topPrize: "₹300", maxM: 6, fillPct: 70 },
+            { cat: "Small", fee: 25, pool: "₹2,000", spots: 100, winners: 40, topPrize: "₹500", maxM: 10, fillPct: 88 },
+            { cat: "Small", fee: 15, pool: "₹500", spots: 40, winners: 20, topPrize: "₹100", maxM: 6, fillPct: 45 }
+        ];
+
+        // Format Number (E.g. 500000 -> 5 Lakh)
+        function formatNumber(num) {
+            if (num >= 100000) return (num / 100000).toFixed(1).replace('.0','') + ' Lakh';
+            if (num >= 1000) return (num / 1000).toFixed(1).replace('.0','') + 'K';
+            return num;
         }
-        return null; // Out of winning zone
-    }
 
-    if(!matchId) {
-        document.getElementById('leaderboard-list').innerHTML = "<p style='text-align:center; color:#d0021b; padding:20px;'>❌ Error: Match ID Missing!</p>";
-    } else {
-        db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).on('value', (snapshot) => {
-            let container = document.getElementById('leaderboard-list');
-            
-            if(!snapshot.exists()) {
-                container.innerHTML = "<p style='text-align:center; color:#888; padding:20px;'>No teams joined yet.</p>";
+        function renderContests(filter) {
+            let container = document.getElementById('contests-container');
+            container.innerHTML = "";
+
+            let displayCats = filter === "All" ? ["Mega", "H2H", "Winner", "Small"] : [filter];
+
+            displayCats.forEach(cat => {
+                let catContests = allContests.filter(c => c.cat === cat);
+                if(catContests.length === 0) return;
+
+                // Add Category Title
+                let catTitle = cat === "Mega" ? "🔥 Mega Contests <span class='category-desc'>Get ready for mega prizes</span>" : 
+                               cat === "H2H" ? "⚔️ Head to Head <span class='category-desc'>The ultimate face-off</span>" : 
+                               cat === "Winner" ? "🏆 Winner Takes All <span class='category-desc'>Everything to the winner</span>" : 
+                               "👥 Small Leagues <span class='category-desc'>More chances to win</span>";
+                
+                container.innerHTML += `<div class="category-title">${catTitle}</div><div class="contest-list" id="list-${cat}"></div>`;
+                
+                let listContainer = document.getElementById(`list-${cat}`);
+
+                catContests.forEach(c => {
+                    let spotsLeft = Math.floor(c.spots - (c.spots * (c.fillPct / 100)));
+                    let winPct = Math.floor((c.winners / c.spots) * 100);
+                    
+                    // Safe entry click logic
+                    let clickCode = `joinContest(${c.fee})`;
+
+                    listContainer.innerHTML += `
+                        <div class="contest-card">
+                            <div class="c-header">
+                                <div>
+                                    <div class="prize-pool-lbl">Prize Pool</div>
+                                    <div class="prize-pool-val">${c.pool}</div>
+                                </div>
+                                <button class="entry-btn" onclick="${clickCode}">₹${c.fee}</button>
+                            </div>
+
+                            <div class="progress-section">
+                                <div class="progress-bg">
+                                    <div class="progress-fill" style="width: ${c.fillPct}%;"></div>
+                                </div>
+                                <div class="spots-info">
+                                    <span>${formatNumber(spotsLeft)} spots left</span>
+                                    <span class="total-spots">${formatNumber(c.spots)} spots</span>
+                                </div>
+                            </div>
+
+                            <div class="c-footer">
+                                <div><i class="fa-solid fa-medal" style="color:#ffd700;"></i> <span class="first-prize">${c.topPrize}</span></div>
+                                <div><i class="fa-solid fa-trophy" style="color:#888;"></i> ${winPct}%</div>
+                                <div><span style="border:1px solid #ccc; padding:1px 4px; border-radius:3px; font-size:9px;">M</span> Up to ${c.maxM}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function filterContests(type, btnElement) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+            renderContests(type);
+        }
+
+        // 🚀 JOIN BUTTON LOGIC 🚀
+        // Is button pe click karne se seedha Create Team khulega
+        function joinContest(fee) {
+            if(!matchId) {
+                alert("Match Error! Matches page se wapas aao.");
                 return;
             }
-
-            let allTeams = [];
-            let currentContestFee = 0;
-
-            // 1. Pehle pata lagao ki is user ne kaunsa contest (fee) join kiya hai
-            if(snapshot.hasChild(userPhone)) {
-                currentContestFee = parseInt(snapshot.child(userPhone).val().entry_paid) || 0;
-            } else {
-                currentContestFee = parseInt(urlParams.get('entry')) || 0; // Agar user ne join nahi kiya, toh URL se lenge
-            }
-
-            document.getElementById('active-contest-name').innerText = currentContestFee > 0 ? `🏆 ₹${currentContestFee} Contest Leaderboard` : `🏆 Free Practice Contest`;
-
-            // 2. Data load karo aur SIRF wahi teams filter karo jinka fee currentContestFee ke barabar hai
-            snapshot.forEach(child => {
-                let teamData = child.val();
-                let feePaid = parseInt(teamData.entry_paid) || 0;
-                
-                // Privacy Filter: Agar main ₹49 me hu, toh sirf ₹49 wale dikhenge
-                if(feePaid === currentContestFee) {
-                    let uName = teamData.userName || teamData.teamName || child.key; 
-                    if(uName.length >= 10 && !isNaN(uName)) uName = uName.substring(0,5) + "*****"; // Number mask
-                    
-                    allTeams.push({
-                        id: child.key,
-                        name: uName.toUpperCase(), 
-                        points: parseFloat(teamData.total_points || 0)
-                    });
-                }
-            });
-
-            document.getElementById('total-teams-count').innerText = `(${allTeams.length})`;
-
-            // 3. Sorting (Sabse zyada point wala Rank 1 par)
-            allTeams.sort((a, b) => b.points - a.points);
-
-            // 4. Print Leaderboard with Winning Zone
-            let htmlContent = "";
+            // User kis contest me ja raha hai, usko aage ke liye save karna
+            localStorage.setItem('kalyan_entry_fee', fee);
             
-            allTeams.forEach((team, index) => {
-                let rank = index + 1;
-                let rankClass = (rank === 1) ? "team-card rank-1" : "team-card"; 
-                
-                // Check if user is in winning zone
-                let prizeAmount = getPrizeForRank(currentContestFee, rank);
-                let prizeHtml = "";
-                
-                if(prizeAmount) {
-                    // Winning Zone (Green)
-                    prizeHtml = `<p class="winnings win-zone"><i class="fa-solid fa-trophy"></i> Won ${prizeAmount}</p>`;
-                } else {
-                    // Out of Winning Zone (Grey)
-                    prizeHtml = `<p class="winnings out-zone">₹0 (Out of zone)</p>`;
-                }
+            // Redirect to Create Team page
+            window.location.href = `CreateTeam.html?matchId=${matchId}&t1=${urlParams.get('t1')}&t2=${urlParams.get('t2')}&fee=${fee}`;
+        }
 
-                // Highlight Your Team
-                let isMyTeam = (team.id === userPhone);
-                let myTeamBadge = isMyTeam ? `<span style="background:#00ff88; color:#000; font-size:9px; padding:2px 4px; border-radius:3px; margin-left:5px; font-weight:bold;">YOU</span>` : `<span class="team-badge">T1</span>`;
+        // Initial Load
+        renderContests('All');
 
-                htmlContent += `
-                <div class="${rankClass}" style="${isMyTeam ? 'border-left: 4px solid #00ff88;' : ''}">
-                    <div class="team-info">
-                        <div class="avatar"><i class="fa-solid fa-user"></i></div>
-                        <div class="name-box">
-                            <h4>${team.name} ${myTeamBadge}</h4>
-                            ${prizeHtml}
-                        </div>
-                    </div>
-                    <div class="points-box">${team.points.toFixed(1)}</div>
-                    <div class="rank-box">#${rank}</div>
-                </div>`;
-            });
-
-            if(allTeams.length === 0) {
-                htmlContent = "<p style='text-align:center; color:#888; padding:20px;'>No players in this contest yet.</p>";
-            }
-
-            container.innerHTML = htmlContent;
-        });
-    }
-</script>
-
+    </script>
 </body>
 </html>
