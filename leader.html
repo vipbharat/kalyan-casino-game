@@ -1,48 +1,59 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dream11 Style Leaderboard</title>
+    <title>Kalyan 11 - Pro Leaderboard</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #f5f5f5; color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
-        
-        /* Header Design */
-        .header { background: #fff; padding: 15px; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 100;}
-        .header-tabs { display: flex; justify-content: space-around; font-weight: bold; font-size: 14px; color: #666; margin-bottom: 15px;}
+        body { background: #f5f5f5; color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; padding-bottom: 80px;}
+        .header { background: #fff; padding: 15px; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 100; display: flex; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);}
+        .back-btn { font-size: 20px; color: #000; margin-right: 15px; cursor: pointer; }
+        .header-tabs { display: flex; justify-content: space-around; font-weight: bold; font-size: 14px; color: #666; width: 100%;}
         .header-tabs .active { color: #d0021b; border-bottom: 3px solid #d0021b; padding-bottom: 5px;}
+        .contest-banner { background: linear-gradient(90deg, #111, #1a0033); color: #ffd700; padding: 10px 15px; font-size: 13px; font-weight: 900; text-align: center; letter-spacing: 1px; text-transform: uppercase;}
         
-        /* Sub Header (Points/Rank labels) */
-        .sub-header { display: flex; justify-content: space-between; padding: 10px 15px; background: #fafafa; font-size: 12px; color: #888; border-bottom: 1px solid #ddd;}
-        .sub-header .left { flex: 2; }
-        .sub-header .center { flex: 1; text-align: center; }
-        .sub-header .right { flex: 1; text-align: right; }
+        .progress-wrapper { background: #fff; padding: 12px 15px; border-bottom: 1px solid #ddd; }
+        .progress-text { display: flex; justify-content: space-between; font-size: 11px; color: #555; margin-bottom: 5px; font-weight: bold; text-transform: uppercase;}
+        .spots-left { color: #d0021b; font-weight: 900;}
+        .progress-bar-bg { width: 100%; height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: #d0021b; width: 0%; transition: width 0.5s ease-out; }
 
-        /* Leaderboard List */
-        .team-card { background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #eee; }
+        .sub-header { display: flex; justify-content: space-between; padding: 10px 15px; background: #fafafa; font-size: 12px; color: #888; border-bottom: 1px solid #ddd;}
+        .sub-header .left { flex: 2; font-weight: bold;}
+        .sub-header .center { flex: 1; text-align: center; font-weight: bold;}
+        .sub-header .right { flex: 1; text-align: right; font-weight: bold;}
+
+        .team-card { background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #eee; transition: background 0.2s;}
         .team-card:hover { background: #f9f9f9; }
+        .team-info { display: flex; align-items: center; flex: 2; overflow: hidden; }
+        .avatar { width: 40px; height: 40px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #888; font-size: 20px; margin-right: 12px; flex-shrink: 0;}
+        .name-box { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .name-box h4 { margin: 0; font-size: 14px; color: #222; font-weight: 900; text-transform: uppercase;}
+        .team-badge { font-size: 9px; color: #888; background: #f0f0f0; padding: 2px 5px; border-radius: 3px; margin-left: 5px; font-weight: bold;}
         
-        /* Avatar & Name */
-        .team-info { display: flex; align-items: center; flex: 2; }
-        .avatar { width: 40px; height: 40px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #888; font-size: 20px; margin-right: 12px; }
-        .name-box h4 { margin: 0; font-size: 14px; color: #222; }
-        .team-badge { font-size: 10px; color: #888; background: #f0f0f0; padding: 2px 5px; border-radius: 3px; margin-left: 5px; font-weight: normal;}
-        .winnings { margin: 3px 0 0; font-size: 11px; color: #00a05a; font-weight: bold; } /* Green color for winnings */
+        .winnings { margin: 4px 0 0; font-size: 11px; font-weight: bold; }
+        .win-zone { color: #00a05a; } 
+        .out-zone { color: #aaa; font-weight: normal; } 
         
-        /* Points & Rank */
-        .points-box { flex: 1; text-align: center; font-size: 14px; color: #555; }
-        .rank-box { flex: 1; text-align: right; font-size: 16px; font-weight: bold; color: #000; }
-        
-        /* Rank 1 Special Highlight */
-        .rank-1 { background: #fff9e6; } /* Light yellow background for 1st Rank */
+        .points-box { flex: 1; text-align: center; font-size: 15px; color: #555; font-weight: 900;}
+        .rank-box { flex: 1; text-align: right; font-size: 18px; font-weight: 900; color: #000; }
+        .rank-1 { background: #fff9e6; border-left: 4px solid #ffd700 !important;} 
+        .my-team-highlight { border-left: 4px solid #00ff88; background: #f0fff4; }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #333; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); }
+        .nav-item { text-align: center; color: #888; font-size: 10px; cursor: pointer; flex: 1; font-weight: bold; text-transform: uppercase; transition: 0.3s;}
+        .nav-item i { font-size: 20px; margin-bottom: 5px; display: block; transition: 0.3s;}
+        .nav-item.active { color: #00ff88; }
+        .nav-item.active i { transform: scale(1.1); text-shadow: 0 0 10px rgba(0,255,136,0.5); }
     </style>
 </head>
 <body>
 
     <div class="header">
+        <i class="fa-solid fa-arrow-left back-btn" onclick="window.location.href='Matches.html'"></i>
         <div class="header-tabs">
             <div>Winnings</div>
             <div class="active">Leaderboard</div>
@@ -50,80 +61,225 @@
         </div>
     </div>
 
+    <div class="contest-banner" id="active-contest-name">
+        <i class="fa-solid fa-spinner fa-spin"></i> Loading Contest Data...
+    </div>
+
+    <div class="progress-wrapper" id="progress-container" style="display: none;">
+        <div class="progress-text">
+            <span class="spots-left" id="spots-left-text">Loading...</span>
+            <span id="spots-total-text">-- Spots</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progress-fill-bar"></div>
+        </div>
+    </div>
+
     <div class="sub-header">
-        <div class="left">All Teams <span id="total-teams-count">(0)</span></div>
-        <div class="center">Points</div>
+        <div class="left">Live Ranks</div>
+        <div class="center">Points <span style="font-size:8px;">(+50 Base)</span></div>
         <div class="right">Rank</div>
     </div>
 
     <div id="leaderboard-list">
-        <p style="text-align: center; color: #888; padding: 20px;">Loading Teams...</p>
+        <p style="text-align: center; color: #888; padding: 40px; font-weight:bold;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Updating Leaderboard...</p>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="window.location.href='Matches.html'"><i class="fa-solid fa-house"></i><span>Matches</span></div>
+        <div class="nav-item" id="btn-myteam"><i class="fa-solid fa-users"></i><span>My Team</span></div>
+        <div class="nav-item active"><i class="fa-solid fa-trophy"></i><span>Leaderboard</span></div>
     </div>
 
 <script>
-    // 1. FIREBASE SETUP
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
 
-    // MATCH ID YAHAN SET KAREIN
-    const matchId = "149684"; 
+    const urlParams = new URLSearchParams(window.location.search);
+    const matchId = urlParams.get('matchId');
+    const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
-    // 2. LIVE DATA FETCHING
-    db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).on('value', (snapshot) => {
-        if(!snapshot.exists()) {
-            document.getElementById('leaderboard-list').innerHTML = "<p style='text-align:center; color:#888;'>No teams joined yet.</p>";
-            return;
+    document.getElementById('btn-myteam').onclick = function() {
+        if(matchId) { window.location.href = `MyTeam.html?matchId=${matchId}`; } 
+        else { window.location.href = `Matches.html`; }
+    };
+
+    const prizeMap = {
+        99: { spots: 150000, rules: [{max:1, p:"₹50,00,000"}, {max:2, p:"₹10,00,000"}, {max:3, p:"₹5,00,000"}, {max:10, p:"₹1,00,000"}, {max:100, p:"₹10,000"}, {max:50000, p:"₹99"}] },
+        49: { spots: 5000, rules: [{max:1, p:"₹20,000"}, {max:2, p:"₹10,000"}, {max:3, p:"₹5,000"}, {max:20, p:"₹1,000"}, {max:100, p:"₹200"}, {max:700, p:"₹49"}] },
+        39: { spots: 3000, rules: [{max:1, p:"₹10,000"}, {max:10, p:"₹1,000"}, {max:1500, p:"₹39"}] },
+        25: { spots: 2000, rules: [{max:1, p:"₹5,000"}, {max:5, p:"₹500"}, {max:1000, p:"₹25"}] },
+        999: { spots: 50, rules: [{max:1, p:"₹20,000"}, {max:5, p:"₹2,000"}, {max:20, p:"₹999"}] },
+        499: { spots: 35, rules: [{max:1, p:"₹7,000"}, {max:3, p:"₹1,500"}, {max:15, p:"₹499"}] },
+        299: { spots: 40, rules: [{max:1, p:"₹4,000"}, {max:3, p:"₹1,000"}, {max:15, p:"₹299"}] },
+        199: { spots: 30, rules: [{max:1, p:"₹2,000"}, {max:10, p:"₹199"}] },
+        125: { spots: 28, rules: [{max:1, p:"₹1,000"}, {max:10, p:"₹125"}] },
+        75: { spots: 30, rules: [{max:1, p:"₹500"}, {max:10, p:"₹75"}] },
+        35: { spots: 35, rules: [{max:1, p:"₹300"}, {max:15, p:"₹35"}] },
+        15: { spots: 40, rules: [{max:1, p:"₹100"}, {max:15, p:"₹15"}] },
+        25000: { spots: 2, rules: [{max:1, p:"₹45,000"}] },
+        15000: { spots: 3, rules: [{max:1, p:"₹40,000"}] },
+        10000: { spots: 5, rules: [{max:1, p:"₹40,000"}] },
+        5000: { spots: 6, rules: [{max:1, p:"₹25,000"}] },
+        5750: { spots: 2, rules: [{max:1, p:"₹10,000"}] },
+        2875: { spots: 2, rules: [{max:1, p:"₹5,000"}] },
+        1150: { spots: 2, rules: [{max:1, p:"₹2,000"}] },
+        575: { spots: 2, rules: [{max:1, p:"₹1,000"}] },
+        299: { spots: 2, rules: [{max:1, p:"₹500"}] },
+        119: { spots: 2, rules: [{max:1, p:"₹200"}] },
+        59: { spots: 2, rules: [{max:1, p:"₹100"}] },
+        29: { spots: 2, rules: [{max:1, p:"₹50"}] },
+        0: { spots: 100000, rules: [{max:100000, p:"Practice (Glory)"}] }
+    };
+
+    function getPrizeForRank(fee, rank) {
+        if(!prizeMap[fee]) return null;
+        let rules = prizeMap[fee].rules;
+        for(let i=0; i<rules.length; i++) {
+            if(rank <= rules[i].max) return rules[i].p; 
         }
+        return null; 
+    }
 
-        let teamsArray = [];
+    function getFakeSpots(matchId, fee, totalSpots) {
+        if(totalSpots <= 10) return 0; 
+        let hash = 0;
+        for (let i = 0; i < matchId.length; i++) { hash = matchId.charCodeAt(i) + ((hash << 5) - hash); }
+        let randomFactor = Math.abs(Math.sin(hash + fee)) * 0.35 + 0.6; 
+        return Math.floor(totalSpots * randomFactor);
+    }
+
+    if(!matchId) {
+        document.getElementById('leaderboard-list').innerHTML = "<div style='text-align:center; padding:50px;'><i class='fa-solid fa-triangle-exclamation fa-3x' style='color:#d0021b;'></i><br><br><b style='color:#000;'>Match Data Missing!</b></div>";
+        document.getElementById('active-contest-name').innerText = "System Error";
+    } else {
         
-        snapshot.forEach(child => {
-            let teamData = child.val();
-            // User ka naam nikalna (Agar user ka naam database me kisi aur key me hai, toh ise change kar lena)
-            let uName = teamData.userName || teamData.teamName || "Kalyan Player"; 
+        let isMatchLocked = false;
+        
+        db.ref('Game/Kalyan11/VIPMatches/' + matchId).once('value', mSnap => {
+            if(mSnap.exists()) {
+                if(mSnap.val().timestamp < Date.now()) {
+                    isMatchLocked = true; 
+                }
+            }
             
-            teamsArray.push({
-                id: child.key,
-                name: uName.toUpperCase(), 
-                points: teamData.total_points || 0
+            db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).on('value', (snapshot) => {
+                let container = document.getElementById('leaderboard-list');
+                
+                if(!snapshot.exists()) {
+                    container.innerHTML = "<div style='text-align:center; color:#888; padding:50px;'><i class='fa-solid fa-users-slash fa-3x'></i><br><br><b>No teams have joined this contest yet.</b></div>";
+                    document.getElementById('active-contest-name').innerText = "Contest Empty";
+                    return;
+                }
+
+                let allTeams = [];
+                let currentContestFee = 0;
+
+                let userTeamKey = Object.keys(snapshot.val()).find(key => key.includes(userPhone));
+                if(userTeamKey) currentContestFee = parseInt(snapshot.child(userTeamKey).val().entry_paid) || 0;
+                else currentContestFee = parseInt(urlParams.get('entry')) || 0; 
+
+                document.getElementById('active-contest-name').innerHTML = currentContestFee > 0 ? `<i class="fa-solid fa-crown"></i> Mega Contest (Entry: ₹${currentContestFee})` : `<i class="fa-solid fa-gamepad"></i> Free Practice Contest`;
+
+                snapshot.forEach(child => {
+                    let teamData = child.val();
+                    let feePaid = parseInt(teamData.entry_paid) || 0;
+                    
+                    if(feePaid === currentContestFee) {
+                        let originalId = teamData.phone || child.key; 
+                        let uName = teamData.userName || teamData.teamName || originalId; 
+
+                        if(uName.length >= 10 && !isNaN(uName.replace(/\D/g, ''))) {
+                            let cleanNum = uName.replace(/\D/g, '');
+                            uName = cleanNum.substring(0,2) + "******" + cleanNum.substring(cleanNum.length - 2); 
+                        }
+                        
+                        // 🔥 BASE 50 POINTS ADDED HERE 🔥
+                        let totalDisplayPoints = 50 + parseFloat(teamData.total_points || 0);
+
+                        allTeams.push({
+                            id: originalId,
+                            teamKey: child.key,
+                            name: uName.toUpperCase(), 
+                            points: totalDisplayPoints
+                        });
+                    }
+                });
+
+                let maxSpots = (prizeMap[currentContestFee] ? prizeMap[currentContestFee].spots : 100);
+                let actualJoined = allTeams.length;
+                let displayJoined = actualJoined;
+
+                if (isMatchLocked) {
+                    displayJoined = maxSpots; 
+                } else if (maxSpots > 10) {
+                    let fakeSpots = getFakeSpots(matchId, currentContestFee, maxSpots);
+                    displayJoined = Math.max(actualJoined, fakeSpots + actualJoined);
+                    if(displayJoined >= maxSpots) displayJoined = maxSpots - 1; 
+                }
+
+                document.getElementById('progress-container').style.display = 'block';
+                let pct = (displayJoined / maxSpots) * 100;
+                
+                if(isMatchLocked || displayJoined === maxSpots) {
+                    document.getElementById('spots-left-text').innerHTML = `<i class="fa-solid fa-lock"></i> Contest Full / Closed`;
+                    document.getElementById('spots-left-text').style.color = "#d0021b";
+                    document.getElementById('spots-total-text').innerText = `${maxSpots} Teams Joined`;
+                    document.getElementById('progress-fill-bar').style.width = "100%";
+                    document.getElementById('progress-fill-bar').style.background = "#d0021b";
+                } else {
+                    let spotsLeft = maxSpots - displayJoined;
+                    document.getElementById('spots-left-text').innerHTML = `Only ${spotsLeft} Spots Left!`;
+                    document.getElementById('spots-total-text').innerText = `${maxSpots} Spots`;
+                    document.getElementById('progress-fill-bar').style.width = `${pct}%`;
+                    if(pct > 80) document.getElementById('progress-fill-bar').style.background = "#ff8c00"; 
+                }
+
+                allTeams.sort((a, b) => b.points - a.points);
+
+                let htmlContent = "";
+                
+                allTeams.forEach((team, index) => {
+                    let rank = index + 1; 
+                    
+                    let cardClass = "team-card";
+                    if(rank === 1) cardClass += " rank-1";
+                    
+                    let isMyTeam = team.teamKey.includes(userPhone);
+                    if(isMyTeam) cardClass += " my-team-highlight"; 
+
+                    let prizeAmount = getPrizeForRank(currentContestFee, rank);
+                    let prizeHtml = prizeAmount 
+                        ? `<p class="winnings win-zone"><i class="fa-solid fa-money-bill-wave"></i> In Winning Zone (${prizeAmount})</p>` 
+                        : `<p class="winnings out-zone">Out of winning zone</p>`;
+
+                    let myTeamBadge = isMyTeam ? `<span style="background:#00ff88; color:#000; font-size:9px; padding:2px 4px; border-radius:3px; margin-left:5px; font-weight:bold;">YOUR TEAM</span>` : `<span class="team-badge">T1</span>`;
+                    
+                    let avatarIcon = rank === 1 ? `<i class="fa-solid fa-crown" style="color:#ffd700;"></i>` : `<i class="fa-solid fa-user"></i>`;
+
+                    htmlContent += `
+                    <div class="${cardClass}">
+                        <div class="team-info">
+                            <div class="avatar" style="${rank === 1 ? 'background:#000;' : ''}">${avatarIcon}</div>
+                            <div class="name-box">
+                                <h4>${team.name} ${myTeamBadge}</h4>
+                                ${prizeHtml}
+                            </div>
+                        </div>
+                        <div class="points-box">${team.points.toFixed(1)}</div>
+                        <div class="rank-box">#${rank}</div>
+                    </div>`;
+                });
+
+                if(allTeams.length === 0) {
+                    htmlContent = "<div style='text-align:center; color:#888; padding:50px;'><i class='fa-solid fa-ghost fa-3x'></i><br><br><b>No players in this segment.</b></div>";
+                }
+
+                document.getElementById('leaderboard-list').innerHTML = htmlContent;
             });
         });
-
-        // Total Teams Count Update karna
-        document.getElementById('total-teams-count').innerText = `(${teamsArray.length})`;
-
-        // 🔥 3. SORTING: Jiske point zyada, wo sabse upar (Rank #1) 🔥
-        teamsArray.sort((a, b) => b.points - a.points);
-
-        // 4. SCREEN PAR DIKHANA (HTML GENERATE KARNA)
-        let htmlContent = "";
-        
-        teamsArray.forEach((team, index) => {
-            let rank = index + 1;
-            let rankClass = (rank === 1) ? "team-card rank-1" : "team-card"; // Rank 1 wale ko peela background
-            
-            // Dummy Winnings logic (Aap isko apne hisaab se hata ya badal sakte hain)
-            let winText = "";
-            if(rank === 1) winText = "In Winning Zone";
-            else if(rank <= 5) winText = "Great Performance";
-
-            htmlContent += `
-            <div class="${rankClass}">
-                <div class="team-info">
-                    <div class="avatar"><i class="fa-solid fa-user"></i></div>
-                    <div class="name-box">
-                        <h4>${team.name} <span class="team-badge">T1</span></h4>
-                        <p class="winnings">${winText}</p>
-                    </div>
-                </div>
-                <div class="points-box">${team.points}</div>
-                <div class="rank-box">#${rank}</div>
-            </div>`;
-        });
-
-        document.getElementById('leaderboard-list').innerHTML = htmlContent;
-    });
+    }
 </script>
 
 </body>
