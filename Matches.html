@@ -51,7 +51,6 @@
         .nav-item { text-align: center; color: #888; font-size: 10px; cursor: pointer; flex: 1; font-weight: bold; text-transform: uppercase; transition: 0.3s; }
         .nav-item i { font-size: 20px; margin-bottom: 5px; display: block; transition: 0.3s; }
         .nav-item.active { color: #00ff88; }
-        .nav-item.active i { transform: scale(1.1); text-shadow: 0 0 10px rgba(0,255,136,0.5); }
     </style>
 </head>
 <body>
@@ -91,6 +90,14 @@
         let currentTab = 'upcoming'; 
         let timerInterval;
 
+        // 🛠️ SMART TIME PARSER: Admin Panel Date string bheje ya Number, yeh fix kar dega!
+        function getSafeTime(ts) {
+            if (!ts) return 0;
+            if (!isNaN(ts)) return Number(ts); 
+            let parsed = new Date(ts).getTime(); 
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
         db.ref('Game/Kalyan11/VIPMatches').on('value', snapshot => {
             allMatches = [];
             let hasLiveMatches = false;
@@ -102,7 +109,8 @@
                     m.id = child.key;
                     allMatches.push(m);
                     
-                    let diff = m.timestamp - now;
+                    let matchTime = getSafeTime(m.timestamp);
+                    let diff = matchTime - now;
                     if(diff <= 0 && diff > -14400000) { hasLiveMatches = true; }
                 });
             }
@@ -124,17 +132,20 @@
             let now = new Date().getTime();
 
             let filteredMatches = allMatches.filter(m => {
-                let diff = m.timestamp - now;
+                let matchTime = getSafeTime(m.timestamp);
+                let diff = matchTime - now;
+                
                 if(tabName === 'live') return diff <= 0 && diff > -14400000; 
                 if(tabName === 'completed') return diff <= -14400000;       
                 return diff > 0;                 
             });
 
-            if(tabName === 'upcoming') {
-                filteredMatches.sort((a, b) => a.timestamp - b.timestamp); 
-            } else {
-                filteredMatches.sort((a, b) => b.timestamp - a.timestamp); 
-            }
+            // Safe Sorting
+            filteredMatches.sort((a, b) => {
+                let tA = getSafeTime(a.timestamp);
+                let tB = getSafeTime(b.timestamp);
+                return tabName === 'upcoming' ? tA - tB : tB - tA;
+            });
 
             if(filteredMatches.length === 0) {
                 let msg = tabName === 'live' ? "Koi match abhi LIVE nahi hai." : tabName === 'completed' ? "Koi completed match nahi hai." : "Koi naya match schedule nahi hai.";
@@ -156,11 +167,15 @@
                     statusHtml = `<div class="time-box" id="timer-${m.id}">Loading...</div>`;
                 }
 
-                let t1_short = m.team1 ? m.team1.substring(0,3) : "TM1";
-                let t2_short = m.team2 ? m.team2.substring(0,3) : "TM2";
+                // 🛠️ BUG FIX: Names safe parsing
+                let safeT1Name = String(m.team1 || 'Team A');
+                let safeT2Name = String(m.team2 || 'Team B');
+                let t1_short = safeT1Name.substring(0,3);
+                let t2_short = safeT2Name.substring(0,3);
 
-                let safeT1 = m.team1 ? m.team1.replace(/'/g, "\\'") : "Team 1";
-                let safeT2 = m.team2 ? m.team2.replace(/'/g, "\\'") : "Team 2";
+                // Quotation marks ki wajah se button block na ho
+                let safeT1 = safeT1Name.replace(/'/g, "\\'");
+                let safeT2 = safeT2Name.replace(/'/g, "\\'");
 
                 container.innerHTML += `
                     <div class="match-card ${cardClass}" onclick="openMatch('${m.id}', '${safeT1}', '${safeT2}', '${tabName}')">
@@ -168,14 +183,14 @@
                         <div class="teams-row">
                             <div class="team">
                                 <div class="team-flag">${t1_short}</div>
-                                <div class="team-name">${m.team1}</div>
+                                <div class="team-name">${safeT1Name}</div>
                             </div>
                             <div class="match-time">
                                 ${statusHtml}
                             </div>
                             <div class="team">
                                 <div class="team-flag" style="border-color:#00ff88;">${t2_short}</div>
-                                <div class="team-name">${m.team2}</div>
+                                <div class="team-name">${safeT2Name}</div>
                             </div>
                         </div>
                         <div class="footer-banner">
@@ -200,10 +215,11 @@
                     let el = document.getElementById(`timer-${m.id}`);
                     if(!el) return;
 
-                    let diff = m.timestamp - now;
+                    let matchTime = getSafeTime(m.timestamp);
+                    let diff = matchTime - now;
                     
                     if (diff <= 0) {
-                        el.innerHTML = "🔴 MATCH STARTED";
+                        el.innerHTML = "🔴 STARTED";
                         el.className = "time-box time-live";
                         setTimeout(() => { if(currentTab === 'upcoming') renderMatches('upcoming'); }, 2000);
                         return;
@@ -214,7 +230,7 @@
                     let sec = Math.floor((diff % (1000 * 60)) / 1000);
                     
                     if (diff > 86400000) { 
-                        let days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                        let days = Math.floor(diff / 86400000);
                         el.innerText = `${days} Days Left`;
                     } else if (h > 0) { 
                         el.innerText = `${formatTime(h)}h ${formatTime(min)}m left`;
