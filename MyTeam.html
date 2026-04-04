@@ -54,9 +54,9 @@
         .b-name { font-size: 10px; color: #aaa; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .b-active { border-color: #00ff88; } .b-active .b-badge { background: #00ff88; color: #000; } .b-active .b-name { color: #fff; font-weight: bold;}
 
-        /* Bottom Nav */
+        /* 📱 BOTTOM NAVIGATION */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #333; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); }
-        .nav-item { text-align: center; color: #888; font-size: 10px; cursor: pointer; flex: 1; font-weight: bold; text-transform: uppercase; }
+        .nav-item { text-align: center; color: #888; font-size: 10px; cursor: pointer; flex: 1; font-weight: bold; text-transform: uppercase; transition: 0.3s;}
         .nav-item i { font-size: 20px; margin-bottom: 5px; display: block; }
         .nav-item.active { color: #00ff88; }
         .loader { text-align: center; padding: 50px 20px; color: #00ff88; font-size: 16px; font-weight: bold; }
@@ -64,7 +64,7 @@
 </head>
 <body>
     <div class="header">
-        <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
+        <i class="fa-solid fa-arrow-left back-btn" onclick="window.location.href='Matches.html'"></i>
         <div class="title">MY TEAMS</div>
         <div class="team-count-badge" id="teamCount">0/25 Teams</div>
     </div>
@@ -88,20 +88,21 @@
         const matchId = urlParams.get('matchId');
         const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
+        // LEADERBOARD LINK ROUTER
         document.getElementById('btn-leaderboard').onclick = function() {
             if(matchId) window.location.href = `leader.html?matchId=${matchId}`;
             else window.location.href = `Matches.html`;
         };
 
         if(!matchId || !userPhone) {
-            document.getElementById('teamsContainer').innerHTML = "<div style='color:#ff004c; text-align:center; padding:30px; font-weight:bold;'>Error: Match or User Details Missing!</div>";
+            document.getElementById('teamsContainer').innerHTML = "<div style='color:#ff004c; text-align:center; padding:30px; font-weight:bold;'><i class='fa-solid fa-triangle-exclamation fa-3x'></i><br><br>Match or User Details Missing!</div>";
         } else {
-            // 🕒 Check Match Timing for Edit Lock
+            // 🕒 CHECK MATCH TIMING FOR LINEUP LOCK
             let isMatchEditable = false;
             db.ref('Game/Kalyan11/VIPMatches/' + matchId).once('value', mSnap => {
                 if(mSnap.exists()) {
                     let diff = mSnap.val().timestamp - Date.now();
-                    if(diff > 0) isMatchEditable = true; // Match belum chalu, Edit Allowed
+                    if(diff > 0) isMatchEditable = true; // Match abhi bacha hai, Edit allowed
                 }
                 fetchAllMyTeams(isMatchEditable);
             });
@@ -110,13 +111,13 @@
         function fetchAllMyTeams(canEdit) {
             let container = document.getElementById('teamsContainer');
             
-            // 🔥 ADVANCED FETCH: Dhoondho user ki saari teams (T1, T2, T3...)
+            // 🔥 GET ALL TEAMS OF THIS USER
             db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', snap => {
                 let myTeamsArray = [];
                 
                 if(snap.exists()) {
                     snap.forEach(child => {
-                        // Agar team key userPhone se start hoti hai, toh wo apni team hai
+                        // Agar team key user ke number se start hoti hai
                         if(child.key.includes(userPhone)) {
                             let tData = child.val();
                             tData.key = child.key;
@@ -133,7 +134,7 @@
 
                 document.getElementById('teamCount').innerText = `${myTeamsArray.length}/25 Teams`;
                 
-                // Player data lo taaki naam dikha sakein
+                // Get Player Data for Names
                 db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', pSnap => {
                     let allPlayers = pSnap.val() || {};
                     container.innerHTML = ""; // Clear loader
@@ -144,11 +145,12 @@
                         let vcName = getPlayerShortName(allPlayers, team.viceCaptain);
                         let totalPts = team.total_points || 0;
                         
+                        // EDIT BUTTON SMART LOGIC
                         let editBtnHtml = canEdit 
                             ? `<button class="btn-edit active" onclick="editSpecificTeam('${team.key}', event)"><i class="fa-solid fa-pen"></i> EDIT</button>` 
                             : `<button class="btn-edit" onclick="alert('Match is LIVE. Lineup Locked! 🔒')"><i class="fa-solid fa-lock"></i> LOCKED</button>`;
 
-                        // 11 Players List HTML Generator
+                        // 11 PLAYERS LIST
                         let playersListHtml = "";
                         if(team.players) {
                             team.players.forEach(pid => {
@@ -169,14 +171,14 @@
                             });
                         }
 
-                        // Backup System UI (Dummy logic checking if backup exists, otherwise empty slot)
-                        let backups = team.backups || []; // Backend feature
+                        // BACKUP PLAYERS (Dummy Check)
+                        let backups = team.backups || []; 
                         let b1 = backups[0] ? getPlayerShortName(allPlayers, backups[0]) : "Empty Slot";
                         let b2 = backups[1] ? getPlayerShortName(allPlayers, backups[1]) : "Empty Slot";
                         let b3 = backups[2] ? getPlayerShortName(allPlayers, backups[2]) : "Empty Slot";
                         let b4 = backups[3] ? getPlayerShortName(allPlayers, backups[3]) : "Empty Slot";
 
-                        // Build the Card
+                        // GENERATE THE TEAM CARD
                         container.innerHTML += `
                         <div class="adv-team-card">
                             <div class="tc-header" onclick="toggleView('${team.key}')">
@@ -186,8 +188,8 @@
                             
                             <div class="tc-body" onclick="toggleView('${team.key}')">
                                 <div class="tc-stats">
-                                    <div class="stat-box"><div class="stat-lbl">Points</div><div class="stat-val" style="color:#00ff88;">${totalPts.toFixed(1)}</div></div>
-                                    <div class="stat-box"><div class="stat-lbl">Entry</div><div class="stat-val" style="font-size:14px;">₹${team.entry_paid || 0}</div></div>
+                                    <div class="stat-box"><div class="stat-lbl">Total Points</div><div class="stat-val" style="color:#00ff88;">${totalPts.toFixed(1)}</div></div>
+                                    <div class="stat-box"><div class="stat-lbl">Entry Paid</div><div class="stat-val" style="font-size:14px;">₹${team.entry_paid || 0}</div></div>
                                 </div>
                                 
                                 <div class="cvc-display">
@@ -204,7 +206,7 @@
                             </div>
 
                             <div class="player-list-wrap" id="view_${team.key}">
-                                <div style="font-size:11px; color:#aaa; margin-bottom:10px; text-align:center;">PLAYING 11</div>
+                                <div style="font-size:11px; color:#aaa; margin-bottom:10px; text-align:center;">YOUR PLAYING 11</div>
                                 ${playersListHtml}
                                 
                                 <div class="backup-section">
@@ -215,7 +217,7 @@
                                         <div class="b-slot ${backups[2] ? 'b-active' : ''}"><div class="b-badge">B3</div><div class="b-name">${b3}</div></div>
                                         <div class="b-slot ${backups[3] ? 'b-active' : ''}"><div class="b-badge">B4</div><div class="b-name">${b4}</div></div>
                                     </div>
-                                    <div style="font-size:8px; color:#555; text-align:center; margin-top:5px;">If unannounced, players will be replaced based on priority.</div>
+                                    <div style="font-size:8px; color:#555; text-align:center; margin-top:5px;">Unannounced players will be replaced automatically.</div>
                                 </div>
                             </div>
                         </div>`;
@@ -230,20 +232,17 @@
             return nameParts.length > 1 ? nameParts[0][0] + ". " + nameParts[nameParts.length - 1] : allPlayers[pid].name;
         }
 
-        // Toggle Expand View
         function toggleView(teamKey) {
             let el = document.getElementById('view_' + teamKey);
             if(el.style.display === 'block') { el.style.display = 'none'; } 
             else { 
-                // Hide others first
                 document.querySelectorAll('.player-list-wrap').forEach(d => d.style.display = 'none');
                 el.style.display = 'block'; 
             }
         }
 
-        // Action: Edit specific team
         function editSpecificTeam(teamKey, event) {
-            event.stopPropagation(); // Card click ko roko
+            event.stopPropagation(); // Card expansion ko roke ga
             window.location.href = `Contests.html?matchId=${matchId}&editTeam=${teamKey}`;
         }
     </script>
