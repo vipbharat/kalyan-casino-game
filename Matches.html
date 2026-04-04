@@ -11,38 +11,33 @@
     
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 80px; user-select: none; }
-        
-        /* 👑 VIP Header */
         .header { background: linear-gradient(135deg, #1a0033, #00ff88); padding: 15px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,255,136,0.3); color: #000; }
         .app-title { text-align: center; font-weight: 900; font-size: 18px; flex-grow: 1; text-transform: uppercase; letter-spacing: 2px;}
-
-        /* 📑 TABS SYSTEM */
+        
         .tabs-container { background: #111; display: flex; border-bottom: 2px solid #333; position: sticky; top: 54px; z-index: 99;}
         .tab { flex: 1; text-align: center; padding: 12px 5px; font-size: 11px; font-weight: 900; color: #aaa; cursor: pointer; border-bottom: 3px solid transparent; text-transform: uppercase; }
         .tab.active { color: #00ff88; border-bottom: 3px solid #00ff88; background: linear-gradient(to top, rgba(0,255,136,0.1), transparent); }
 
-        /* 🏏 MATCH CARDS */
         .match-list { padding: 15px; }
         .match-card { background: linear-gradient(145deg, #1a1a2e, #111); border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; cursor: pointer; position: relative; overflow: hidden; transition: 0.2s;}
         .match-card:active { transform: scale(0.98); }
         .match-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #00ff88; }
         
-        .tour-name { font-size: 10px; color: #aaa; margin-bottom: 15px; border-bottom: 1px dashed #333; padding-bottom: 5px; font-weight: bold; text-transform: uppercase; text-align: center;}
-        
-        .teams-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px;}
-        .team { width: 33%; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
-        .team-flag { width: 45px; height: 45px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 12px; color: #fff; border: 2px solid #555; margin-bottom: 8px;}
-        .team-name { font-size: 11px; font-weight: 900; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+        .tour-name { font-size: 10px; color: #aaa; margin-bottom: 12px; border-bottom: 1px dashed #333; padding-bottom: 5px; font-weight: bold; text-transform: uppercase; text-align: center;}
+        .teams-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px;}
+        .team { width: 32%; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
+        .team-flag { width: 42px; height: 42px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 11px; color: #fff; border: 2px solid #555; margin-bottom: 6px; text-transform: uppercase;}
+        .team-name { font-size: 10px; font-weight: 900; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
 
-        .match-time { width: 34%; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;}
-        .time-box { background: rgba(0,255,136,0.1); border: 1px solid #00ff88; color: #00ff88; padding: 6px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; white-space: nowrap; }
+        .match-time { width: 34%; text-align: center; }
+        .time-box { background: rgba(0,255,136,0.1); border: 1px solid #00ff88; color: #00ff88; padding: 5px 8px; border-radius: 15px; font-size: 10px; font-weight: bold; display: inline-block;}
 
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #333; z-index: 1000; }
         .nav-item { text-align: center; color: #888; font-size: 10px; cursor: pointer; flex: 1; font-weight: bold; text-transform: uppercase; }
-        .nav-item i { font-size: 20px; margin-bottom: 5px; display: block; }
+        .nav-item i { font-size: 18px; margin-bottom: 4px; display: block; }
         .nav-item.active { color: #00ff88; }
         
-        .loader { text-align: center; padding: 50px 20px; color: #00ff88; font-size: 18px; font-weight: bold; }
+        .loader { text-align: center; padding: 50px 20px; color: #00ff88; font-size: 16px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -59,7 +54,7 @@
     </div>
 
     <div class="match-list" id="match-container">
-        <div class="loader">Loading Matches...</div>
+        <div class="loader">Scanning Matches...</div>
     </div>
 
     <div class="bottom-nav">
@@ -69,10 +64,7 @@
     </div>
 
     <script>
-        const firebaseConfig = { 
-            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
-            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" 
-        };
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -116,33 +108,36 @@
             }
 
             filtered.forEach(m => {
-                let statusText = tabName === 'upcoming' ? "UPCOMING" : tabName === 'live' ? "🔴 LIVE" : "FINISHED";
+                let statusText = tabName === 'upcoming' ? "JOIN NOW" : tabName === 'live' ? "🔴 LIVE" : "FINISHED";
                 
-                // Card generate karte waqt hum 'data-' attributes ka use karenge click safe rakhne ke liye
                 let card = document.createElement('div');
                 card.className = "match-card";
                 card.innerHTML = `
                     <div class="tour-name">${m.name || 'CRICKET LEAGUE'}</div>
                     <div class="teams-row">
                         <div class="team">
-                            <div class="team-flag">${m.team1.substring(0,3).toUpperCase()}</div>
-                            <div class="team-name">${m.team1}</div>
+                            <div class="team-flag">${(m.team1 || "T1").substring(0,3)}</div>
+                            <div class="team-name">${m.team1 || "Team 1"}</div>
                         </div>
                         <div class="match-time">
                             <div class="time-box">${statusText}</div>
                         </div>
                         <div class="team">
-                            <div class="team-flag">${m.team2.substring(0,3).toUpperCase()}</div>
-                            <div class="team-name">${m.team2}</div>
+                            <div class="team-flag">${(m.team2 || "T2").substring(0,3)}</div>
+                            <div class="team-name">${m.team2 || "Team 2"}</div>
                         </div>
                     </div>
                 `;
                 
-                // 🔥 THE FIX: Click handler directly attach kar rahe hain bina strings ke lafde ke
+                // 🔥 FIXED ROUTER: Tab ke hisaab se redirection
                 card.onclick = function() {
-                    let url = "Contests.html?matchId=" + m.id + "&t1=" + encodeURIComponent(m.team1) + "&t2=" + encodeURIComponent(m.team2);
-                    console.log("Navigating to: ", url);
-                    window.location.href = url;
+                    if (tabName === 'upcoming') {
+                        // Upcoming matches strictly go to Contests.html
+                        window.location.href = "Contests.html?matchId=" + m.id + "&t1=" + encodeURIComponent(m.team1) + "&t2=" + encodeURIComponent(m.team2);
+                    } else {
+                        // Live and Completed go to leaderboard
+                        window.location.href = "leader.html?matchId=" + m.id;
+                    }
                 };
                 
                 container.appendChild(card);
