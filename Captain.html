@@ -70,7 +70,6 @@
         
         const contestFee = parseInt(localStorage.getItem('kalyan_entry_fee')) || parseInt(urlParams.get('fee')) || 49;
         
-        // Agar edit mode hai toh fee ₹0 dikhegi
         const isEditMode = localStorage.getItem('kalyan_edit_team_key');
         if(isEditMode) {
             document.getElementById('feeDisplay').innerText = `Editing Team (Free)`;
@@ -140,7 +139,6 @@
             else saveBtn.classList.remove('active');
         }
 
-        // 🚀 THE WALLET DEDUCTION & SAVE TEAM ENGINE 🚀
         function processPaymentAndSaveTeam() {
             if(!captainId || !viceCaptainId || selectedPlayers.length !== 11) return;
             if(!userPhone) { alert("Please pehle Login karein!"); return; }
@@ -149,43 +147,33 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PROCESSING...';
             btn.classList.remove('active');
 
-            // Agar Edit mode hai, toh no payment, direct save
             if(isEditMode) {
                 saveFinalDataToDB(true);
                 return;
             }
 
-            // Wallet Check & Deduction Logic
             let walletRef = db.ref('users/' + userPhone);
-            
             walletRef.once('value', snapshot => {
                 let userData = snapshot.val();
-                
-                // Agar user ka data hi nahi bana, toh error do
                 if(!userData) {
                     alert("⚠️ ERROR: Aapka account nahi mila. Kripya dhyan se login karein.");
                     resetBtn(btn);
                     return;
                 }
                 
-                // Ensure balance is read properly as a number
                 let currentBalance = parseFloat(userData.balance || 0);
 
                 if (contestFee === 0 || currentBalance >= contestFee) {
-                    
                     if(contestFee > 0) {
                         let newBalance = currentBalance - contestFee;
-                        
-                        // Paise kaato aur update karo
                         db.ref('users/' + userPhone + '/balance').set(newBalance).then(() => {
                             saveFinalDataToDB(false);
                         }).catch(err => {
                             alert("Payment Error: " + err.message);
                             resetBtn(btn);
                         });
-                        
                     } else {
-                        saveFinalDataToDB(false); // Free contest
+                        saveFinalDataToDB(false); 
                     }
                 } else {
                     alert(`⚠️ INSUFFICIENT BALANCE!\nAapke wallet mein ₹${currentBalance} hain. Entry fee ₹${contestFee} hai.\nKripya apne Dashboard se deposit karein!`);
@@ -199,11 +187,10 @@
             btn.classList.add('active');
         }
 
-        // 🎯 FIX: Yahan ID sirf 'userPhone' rakhi gayi hai, taaki MyTeam page dhoondh sake
         function saveFinalDataToDB(isUpdate) {
             let finalTeamData = {
                 phone: userPhone,
-                teamKey: userPhone, // ID ko fix kiya gaya hai MyTeam ke according
+                teamKey: userPhone, 
                 players: selectedPlayers,
                 captain: captainId,
                 viceCaptain: viceCaptainId,
@@ -223,7 +210,8 @@
                     alert("✅ TEAM UPDATED!");
                 }
                 
-                window.location.href = `matches.html`; // Team banane ke baad home wapas
+                // 🚀🔥 YAHI HAI WO JAADUI LINE JO ERROR THEEK KAREGI 🔥🚀
+                window.location.href = `MyTeam.html?matchId=${matchId}&teamId=${userPhone}`;
             })
             .catch(error => {
                 alert("Error: " + error.message);
