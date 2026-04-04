@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan VIP - Create Team</title>
+    <title>Kalyan 11 - Create Team</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -11,27 +11,41 @@
     
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 90px; user-select: none; }
+        
+        /* 👑 Header */
         .header { background: linear-gradient(135deg, #1a0033, #00ff88); padding: 15px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,255,136,0.3); color: #000; }
         .back-btn { font-size: 20px; cursor: pointer; font-weight: bold; }
         .match-info { text-align: center; font-weight: 900; font-size: 16px; flex-grow: 1; text-transform: uppercase; letter-spacing: 1px;}
-        .status-bar { display: flex; justify-content: space-between; background: #111; padding: 10px 15px; border-bottom: 1px solid #333; font-size: 13px; font-weight: bold; position: sticky; top: 54px; z-index: 99;}
-        .credits { color: #ffd700; }
-        .player-count { color: #00ff88; }
         
-        .split-view { display: flex; gap: 10px; padding: 10px; }
-        .team-column { flex: 1; background: #0a0a14; border-radius: 8px; border: 1px solid #333; overflow: hidden; }
-        .team-title { text-align: center; font-weight: 900; background: #222; padding: 10px; margin-bottom: 10px; color: #fff; font-size: 15px; border-bottom: 2px solid #555;}
+        /* 📊 Status Bar */
+        .status-bar { background: #111; padding: 15px; border-bottom: 2px solid #333; position: sticky; top: 54px; z-index: 99;}
+        .top-stats { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 10px;}
+        .credits { color: #ffd700; font-size: 16px;}
+        .player-count { color: #00ff88; font-size: 16px;}
         
-        .player-list { padding: 0 5px; }
-        .mini-card { background: #1a1a2e; border: 1px solid #444; padding: 10px; margin-bottom: 8px; border-radius: 6px; position: relative; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.5);}
-        .mini-card.selected { border-color: #00ff88; background: rgba(0, 255, 136, 0.1); box-shadow: 0 0 10px rgba(0, 255, 136, 0.2); }
+        /* Team Counters */
+        .team-counters { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 10px; border-radius: 8px; border: 1px solid #222;}
+        .t-count-box { text-align: center; width: 40%;}
+        .t-name-lbl { font-size: 10px; color: #aaa; text-transform: uppercase; margin-bottom: 3px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .t-count-val { font-size: 18px; font-weight: 900; color: #fff; }
+        .vs-lbl { font-size: 12px; color: #ff004c; font-weight: 900; font-style: italic;}
+
+        /* 👥 Players Split View */
+        .split-view { display: flex; gap: 8px; padding: 10px; }
+        .team-column { flex: 1; background: transparent; overflow: hidden; }
         
-        .p-name { font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 15px;}
-        .p-role { font-size: 10px; color: #aaa; margin-top: 3px;}
+        /* 🎴 Player Cards */
+        .mini-card { background: linear-gradient(145deg, #1a1a2e, #111); border: 1px solid #333; padding: 12px 10px; margin-bottom: 10px; border-radius: 8px; position: relative; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 8px rgba(0,0,0,0.4);}
+        .mini-card:active { transform: scale(0.95); }
+        .mini-card.selected { border-color: #00ff88; background: rgba(0, 255, 136, 0.05); box-shadow: 0 0 12px rgba(0, 255, 136, 0.3); }
+        .mini-card.disabled { opacity: 0.4; pointer-events: none; filter: grayscale(100%); }
         
-        /* 🟢🔴 Lineup Status Styles */
-        .play-status { font-size: 9px; margin-top: 4px; display: flex; align-items: center; font-weight: bold; text-transform: uppercase;}
-        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+        .p-name { font-size: 13px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px; color: #fff;}
+        .p-role { font-size: 10px; color: #aaa; margin-top: 4px; font-weight: bold; background: #000; padding: 2px 5px; border-radius: 3px; display: inline-block;}
+        
+        /* Lineup Status */
+        .play-status { font-size: 10px; margin-top: 6px; display: flex; align-items: center; font-weight: bold;}
+        .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; }
         .dot-green { background: #00ff88; box-shadow: 0 0 5px #00ff88; }
         .txt-green { color: #00ff88; }
         .dot-red { background: #ff004c; box-shadow: 0 0 5px #ff004c; }
@@ -39,14 +53,16 @@
         .dot-grey { background: #777; }
         .txt-grey { color: #999; }
 
-        .p-credits { font-size: 12px; color: #ffd700; font-weight: bold; margin-top: 5px; text-align: left;}
+        .p-credits { font-size: 14px; color: #ffd700; font-weight: 900; margin-top: 8px; text-align: left; background: #222; padding: 3px 5px; border-radius: 4px; border: 1px dashed #555;}
         
-        .check-icon { position: absolute; top: 8px; right: 8px; color: #00ff88; font-size: 16px; display: none; }
+        .check-icon { position: absolute; top: 10px; right: 10px; color: #00ff88; font-size: 18px; display: none; text-shadow: 0 0 5px #00ff88;}
         .mini-card.selected .check-icon { display: block; }
         
-        .footer { position: fixed; bottom: 0; width: 100%; background: #111; padding: 15px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 100; border-top: 2px solid #333;}
-        .next-btn { background: #00ff88; color: #000; padding: 12px 30px; border-radius: 5px; font-weight: 900; font-size: 16px; border: none; cursor: pointer; opacity: 0.5; pointer-events: none; transition: 0.3s; }
-        .next-btn.active { opacity: 1; pointer-events: auto; }
+        /* 🚀 Footer & Next Button */
+        .footer { position: fixed; bottom: 0; width: 100%; background: #111; padding: 15px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 100; border-top: 2px solid #333; box-shadow: 0 -5px 15px rgba(0,0,0,0.5);}
+        .next-btn { background: #333; color: #888; padding: 14px 40px; border-radius: 8px; font-weight: 900; font-size: 16px; border: none; cursor: not-allowed; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px;}
+        .next-btn.active { background: #00ff88; color: #000; cursor: pointer; box-shadow: 0 0 15px rgba(0,255,136,0.4);}
+        .next-btn.active:active { transform: scale(0.95); }
         
         .loader { text-align: center; margin-top: 50px; color: #00ff88; font-weight: bold; font-size: 16px; width: 100%;}
     </style>
@@ -55,21 +71,34 @@
 
     <div class="header">
         <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
-        <div class="match-info" id="matchHeader">Loading Match...</div>
+        <div class="match-info" id="matchHeader">Loading...</div>
         <div style="width: 20px;"></div>
     </div>
 
     <div class="status-bar">
-        <div class="player-count">Selected: <span id="pCount" style="font-size:16px;">0</span>/11</div>
-        <div class="credits">Credits: <span id="cCount" style="font-size:16px;">100</span></div>
+        <div class="top-stats">
+            <div>Players: <span class="player-count" id="pCount">0</span>/11</div>
+            <div>Credits: <span class="credits" id="cCount">100.0</span></div>
+        </div>
+        <div class="team-counters">
+            <div class="t-count-box">
+                <div class="t-name-lbl" id="lblT1">TEAM 1</div>
+                <div class="t-count-val" id="countT1">0</div>
+            </div>
+            <div class="vs-lbl">VS</div>
+            <div class="t-count-box">
+                <div class="t-name-lbl" id="lblT2">TEAM 2</div>
+                <div class="t-count-val" id="countT2">0</div>
+            </div>
+        </div>
     </div>
 
     <div class="split-view" id="mainSplitView">
-        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Khiladi aa rahe hain...</div>
+        <div class="loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Khiladi aa rahe hain...</div>
     </div>
 
     <div class="footer">
-        <div style="font-size: 12px; color: #aaa;">Team preview</div>
+        <div style="font-size: 11px; color: #888; font-weight:bold;">Max 7 players<br>from a team</div>
         <button class="next-btn" id="nextBtn" onclick="goToCaptain()">NEXT <i class="fa-solid fa-arrow-right"></i></button>
     </div>
 
@@ -80,73 +109,92 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId') || "DUMMY_MATCH";
-        const urlT1 = urlParams.get('t1') || "TEAM 1";
-        const urlT2 = urlParams.get('t2') || "TEAM 2";
+        let urlT1 = urlParams.get('t1') || "Team A";
+        let urlT2 = urlParams.get('t2') || "Team B";
         const contestFee = urlParams.get('fee') || 49; 
-        const isEditMode = urlParams.get('edit') === 'true'; // Check if user clicked Edit Team
+        const isEditMode = urlParams.get('editTeam');
 
-        document.getElementById('matchHeader').innerText = `${urlT1} vs ${urlT2}`;
+        document.getElementById('matchHeader').innerText = `${urlT1.substring(0,4)} VS ${urlT2.substring(0,4)}`;
+        document.getElementById('lblT1').innerText = urlT1;
+        document.getElementById('lblT2').innerText = urlT2;
 
         let allPlayers = [];
         let selectedPlayers = [];
-        let totalCredits = 100;
+        let totalCredits = 100.0;
+        let t1Count = 0;
+        let t2Count = 0;
         let initialLoadDone = false;
 
-        // Firebase Listener
+        // Fetch Live Players from Firebase
         db.ref('Game/Kalyan11/MatchPlayers/' + matchId).on('value', snapshot => {
             allPlayers = []; 
             if(snapshot.exists()) {
                 snapshot.forEach(child => { 
                     let pData = child.val();
-                    pData.id = child.key; // Ensure ID is correct
+                    pData.id = child.key; 
                     allPlayers.push(pData); 
                 });
             } else {
+                // FAKE PLAYERS GENERATOR (Agar DB empty ho toh test karne ke liye)
                 for(let i=1; i<=11; i++) {
-                    allPlayers.push({ id: urlT1+"_"+i, name: urlT1+" Player "+i, team: urlT1, role: "PLAYER", credits: 8.5 });
-                    allPlayers.push({ id: urlT2+"_"+i, name: urlT2+" Player "+i, team: urlT2, role: "PLAYER", credits: 8.5 });
+                    allPlayers.push({ id: "T1_"+i, name: urlT1+" Plyr "+i, team: urlT1, role: "BAT", credits: 8.5 });
+                    allPlayers.push({ id: "T2_"+i, name: urlT2+" Plyr "+i, team: urlT2, role: "BOWL", credits: 8.5 });
                 }
             }
 
-            // 🛠️ EDIT TEAM AUTO-LOAD LOGIC
-            if(isEditMode && !initialLoadDone) {
-                let savedTeam = JSON.parse(localStorage.getItem('kalyan_selected_team')) || [];
-                savedTeam.forEach(savedId => {
-                    let pObj = allPlayers.find(p => p.id === savedId);
-                    if(pObj) {
-                        selectedPlayers.push(savedId);
-                        totalCredits -= (pObj.credits || 8.5);
-                    }
-                });
-                updateCounters();
-                initialLoadDone = true;
+            // Real team names extract karna
+            let uniqueTeams = [...new Set(allPlayers.map(p => p.team))];
+            if(uniqueTeams.length >= 2) {
+                urlT1 = uniqueTeams[0]; urlT2 = uniqueTeams[1];
+                document.getElementById('lblT1').innerText = urlT1;
+                document.getElementById('lblT2').innerText = urlT2;
             }
 
-            renderSplitPlayers();
+            // 🛠️ EDIT TEAM LOGIC (Agar user team edit kar raha hai)
+            if(isEditMode && !initialLoadDone) {
+                let userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+                db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${isEditMode}`).once('value', teamSnap => {
+                    if(teamSnap.exists()) {
+                        let savedTeam = teamSnap.val().players || [];
+                        savedTeam.forEach(savedId => {
+                            let pObj = allPlayers.find(p => p.id === savedId);
+                            if(pObj) {
+                                selectedPlayers.push(savedId);
+                                totalCredits -= parseFloat(pObj.credits || 8.5);
+                                if(pObj.team === urlT1) t1Count++; else t2Count++;
+                            }
+                        });
+                        // Save the edit mode key so Captain.html knows we are updating
+                        localStorage.setItem('kalyan_edit_team_key', isEditMode);
+                    }
+                    updateCounters();
+                    renderSplitPlayers();
+                    initialLoadDone = true;
+                });
+            } else if(!initialLoadDone) {
+                // Clear old edit keys
+                localStorage.removeItem('kalyan_edit_team_key');
+                localStorage.removeItem('kalyan_selected_team');
+                initialLoadDone = true;
+                renderSplitPlayers();
+            } else {
+                renderSplitPlayers();
+            }
         });
 
+        // 🖼️ RENDER CARDS
         function renderSplitPlayers() {
             let container = document.getElementById('mainSplitView');
-            container.innerHTML = "";
+            let t1List = allPlayers.filter(p => p.team === urlT1);
+            let t2List = allPlayers.filter(p => p.team === urlT2);
 
-            let uniqueTeams = [...new Set(allPlayers.map(p => p.team))];
-            let team1Name = uniqueTeams[0] || urlT1;
-            let team2Name = uniqueTeams[1] || urlT2;
-
-            let t1List = allPlayers.filter(p => p.team === team1Name);
-            let t2List = allPlayers.filter(p => p.team === team2Name);
-
-            let t1HTML = `<div class="team-column">
-                            <div class="team-title" style="border-bottom-color:#ffd700;">${team1Name}</div>
-                            <div class="player-list">`;
+            let t1HTML = `<div class="team-column">`;
             t1List.forEach(p => { t1HTML += createPlayerCard(p); });
-            t1HTML += `</div></div>`;
+            t1HTML += `</div>`;
 
-            let t2HTML = `<div class="team-column">
-                            <div class="team-title" style="border-bottom-color:#00ff88;">${team2Name}</div>
-                            <div class="player-list">`;
+            let t2HTML = `<div class="team-column">`;
             t2List.forEach(p => { t2HTML += createPlayerCard(p); });
-            t2HTML += `</div></div>`;
+            t2HTML += `</div>`;
 
             container.innerHTML = t1HTML + t2HTML;
             checkNextButton();
@@ -154,17 +202,29 @@
 
         function createPlayerCard(p) {
             let isSelected = selectedPlayers.includes(p.id);
-            let cardClass = isSelected ? "mini-card selected" : "mini-card";
+            let cred = parseFloat(p.credits || 8.5);
             
-            // 🟢🔴 STATUS LOGIC
+            // 🛑 DISABLE LOGIC (Max 7 from 1 team OR Max 11 total OR Out of Credits)
+            let isDisabled = false;
+            if(!isSelected) {
+                if(selectedPlayers.length >= 11) isDisabled = true;
+                if(totalCredits - cred < 0) isDisabled = true;
+                if(p.team === urlT1 && t1Count >= 7) isDisabled = true;
+                if(p.team === urlT2 && t2Count >= 7) isDisabled = true;
+            }
+
+            let cardClass = isSelected ? "mini-card selected" : "mini-card";
+            if(isDisabled) cardClass += " disabled";
+
             let sClass = "dot-grey", tClass = "txt-grey", sText = "Unannounced";
             if(p.playingStatus === "playing") { sClass = "dot-green"; tClass = "txt-green"; sText = "Playing"; }
             else if(p.playingStatus === "benched") { sClass = "dot-red"; tClass = "txt-red"; sText = "Benched"; }
 
-            let cred = p.credits || 8.5;
+            // Safe String for ID in onclick
+            let safeId = p.id.replace(/'/g, "\\'");
 
             return `
-                <div class="${cardClass}" onclick="togglePlayer('${p.id}', ${cred})">
+                <div class="${cardClass}" onclick="togglePlayer('${safeId}', ${cred}, '${p.team}')">
                     <i class="fa-solid fa-circle-check check-icon"></i>
                     <div class="p-name">${p.name}</div>
                     <div class="p-role">${p.role || "PLAYER"}</div>
@@ -173,50 +233,68 @@
                         <span class="status-dot ${sClass}"></span> ${sText}
                     </div>
 
-                    <div class="p-credits">${cred} Cr</div>
+                    <div class="p-credits">${cred.toFixed(1)} Cr</div>
                 </div>
             `;
         }
 
-        function togglePlayer(id, credits) {
+        // 👆 TAP PLAYER LOGIC
+        function togglePlayer(id, credits, teamName) {
             let index = selectedPlayers.indexOf(id);
+            
+            // DESELECT
             if (index > -1) {
                 selectedPlayers.splice(index, 1);
                 totalCredits += credits;
-            } else {
+                if(teamName === urlT1) t1Count--; else t2Count--;
+            } 
+            // SELECT
+            else {
                 if (selectedPlayers.length >= 11) { alert("Aap maximum 11 players hi chun sakte hain!"); return; }
                 if (totalCredits - credits < 0) { alert("Aapke Credits khatam ho gaye hain!"); return; }
+                if (teamName === urlT1 && t1Count >= 7) { alert(`Aap ${urlT1} se max 7 players le sakte hain!`); return; }
+                if (teamName === urlT2 && t2Count >= 7) { alert(`Aap ${urlT2} se max 7 players le sakte hain!`); return; }
+                
                 selectedPlayers.push(id);
                 totalCredits -= credits;
+                if(teamName === urlT1) t1Count++; else t2Count++;
             }
             
             updateCounters();
-            renderSplitPlayers();
+            renderSplitPlayers(); // UI Refresh
         }
 
+        // 🔄 UPDATE UI COUNTERS
         function updateCounters() {
             document.getElementById('pCount').innerText = selectedPlayers.length;
             document.getElementById('cCount').innerText = totalCredits.toFixed(1);
+            document.getElementById('countT1').innerText = t1Count;
+            document.getElementById('countT2').innerText = t2Count;
             checkNextButton();
         }
 
+        // 🚦 ENABLE NEXT BUTTON
         function checkNextButton() {
             let nextBtn = document.getElementById('nextBtn');
             if(selectedPlayers.length === 11) { 
                 nextBtn.classList.add('active'); 
-                nextBtn.innerHTML = 'NEXT <i class="fa-solid fa-arrow-right fa-beat"></i>';
+                nextBtn.disabled = false;
             } else { 
                 nextBtn.classList.remove('active'); 
-                nextBtn.innerHTML = 'NEXT <i class="fa-solid fa-arrow-right"></i>';
+                nextBtn.disabled = true;
             }
         }
 
+        // 🚀 ROUTE TO CAPTAIN PAGE
         function goToCaptain() {
             if(selectedPlayers.length !== 11) return;
+            
+            // Save team to temporary local storage for Captain page
             localStorage.setItem('kalyan_selected_team', JSON.stringify(selectedPlayers));
             localStorage.setItem('kalyan_entry_fee', contestFee); 
             
-            window.location.href = `Captain.html?matchId=${matchId}&t1=${urlT1}&t2=${urlT2}&fee=${contestFee}`;
+            // Redirect to Captain Page
+            window.location.href = `Captain.html?matchId=${matchId}&fee=${contestFee}`;
         }
     </script>
 </body>
