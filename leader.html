@@ -3,81 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Player Stats</title>
+    <title>Dream11 Style Leaderboard</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #12122b; color: #fff; font-family: sans-serif; margin: 0; padding: 15px; }
-        .player-card { background: #1e1e38; padding: 15px; margin-bottom: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
-        .name-box { flex: 1; }
-        .p-name { font-size: 16px; font-weight: bold; margin: 0 0 5px 0; }
-        .p-status { font-size: 11px; color: #00ff88; font-weight: bold; }
-        .p-status.out { color: #ff004c; } /* Jo out ho gaya wo laal */
-        .stats { font-size: 12px; color: #aaa; background: #111; padding: 3px 8px; border-radius: 5px; display: inline-block; margin-top: 5px;}
-        .points-box { text-align: right; }
-        .pts-number { font-size: 22px; color: #ffd700; font-weight: 900; margin: 0; }
-        .pts-label { font-size: 10px; color: #888; }
+        body { background: #f5f5f5; color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+        
+        /* Header Design */
+        .header { background: #fff; padding: 15px; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 100;}
+        .header-tabs { display: flex; justify-content: space-around; font-weight: bold; font-size: 14px; color: #666; margin-bottom: 15px;}
+        .header-tabs .active { color: #d0021b; border-bottom: 3px solid #d0021b; padding-bottom: 5px;}
+        
+        /* Sub Header (Points/Rank labels) */
+        .sub-header { display: flex; justify-content: space-between; padding: 10px 15px; background: #fafafa; font-size: 12px; color: #888; border-bottom: 1px solid #ddd;}
+        .sub-header .left { flex: 2; }
+        .sub-header .center { flex: 1; text-align: center; }
+        .sub-header .right { flex: 1; text-align: right; }
+
+        /* Leaderboard List */
+        .team-card { background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #eee; }
+        .team-card:hover { background: #f9f9f9; }
+        
+        /* Avatar & Name */
+        .team-info { display: flex; align-items: center; flex: 2; }
+        .avatar { width: 40px; height: 40px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #888; font-size: 20px; margin-right: 12px; }
+        .name-box h4 { margin: 0; font-size: 14px; color: #222; }
+        .team-badge { font-size: 10px; color: #888; background: #f0f0f0; padding: 2px 5px; border-radius: 3px; margin-left: 5px; font-weight: normal;}
+        .winnings { margin: 3px 0 0; font-size: 11px; color: #00a05a; font-weight: bold; } /* Green color for winnings */
+        
+        /* Points & Rank */
+        .points-box { flex: 1; text-align: center; font-size: 14px; color: #555; }
+        .rank-box { flex: 1; text-align: right; font-size: 16px; font-weight: bold; color: #000; }
+        
+        /* Rank 1 Special Highlight */
+        .rank-1 { background: #fff9e6; } /* Light yellow background for 1st Rank */
     </style>
 </head>
 <body>
 
-    <h2 style="color: #ffd700; text-align: center;">🔥 LIVE RANKING 🔥</h2>
-    <div id="players-list">
-        <p style="text-align: center; color: #aaa;">Loading Live Stats...</p>
+    <div class="header">
+        <div class="header-tabs">
+            <div>Winnings</div>
+            <div class="active">Leaderboard</div>
+            <div>Commentary</div>
+        </div>
+    </div>
+
+    <div class="sub-header">
+        <div class="left">All Teams <span id="total-teams-count">(0)</span></div>
+        <div class="center">Points</div>
+        <div class="right">Rank</div>
+    </div>
+
+    <div id="leaderboard-list">
+        <p style="text-align: center; color: #888; padding: 20px;">Loading Teams...</p>
     </div>
 
 <script>
-    // Apni API key daalein
+    // 1. FIREBASE SETUP
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
 
-    // MATCH ID YAHAN DAALEIN
+    // MATCH ID YAHAN SET KAREIN
     const matchId = "149684"; 
 
-    // Firebase .on() lagane se ye har second auto-refresh hoga
-    db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).on('value', (snapshot) => {
-        if(!snapshot.exists()) return;
-
-        let playersObj = snapshot.val();
-        let playersArray = [];
-
-        // 1. Saare khiladiyon ko ek line (Array) mein lana
-        for (let key in playersObj) {
-            playersArray.push({
-                name: playersObj[key].name,
-                points: playersObj[key].points || 0,
-                runs: playersObj[key].runs || 0,
-                wickets: playersObj[key].wickets || 0,
-                status: playersObj[key].playingStatus || 'waiting'
-            });
+    // 2. LIVE DATA FETCHING
+    db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).on('value', (snapshot) => {
+        if(!snapshot.exists()) {
+            document.getElementById('leaderboard-list').innerHTML = "<p style='text-align:center; color:#888;'>No teams joined yet.</p>";
+            return;
         }
 
-        // 🔥 2. ASLI JAADU (SORTING): Jiske point zyada, wo upar! 🔥
-        playersArray.sort((a, b) => b.points - a.points);
+        let teamsArray = [];
+        
+        snapshot.forEach(child => {
+            let teamData = child.val();
+            // User ka naam nikalna (Agar user ka naam database me kisi aur key me hai, toh ise change kar lena)
+            let uName = teamData.userName || teamData.teamName || "Kalyan Player"; 
+            
+            teamsArray.push({
+                id: child.key,
+                name: uName.toUpperCase(), 
+                points: teamData.total_points || 0
+            });
+        });
 
-        // 3. Screen par dikhana
-        let listHtml = "";
-        playersArray.forEach(p => {
-            // Agar khiladi kuch nahi kar raha toh usko dim dikhayenge
-            let statusClass = (p.points > 0) ? "p-status" : "p-status out";
-            let statusText = (p.points > 0) ? "🏏 Active" : "Waiting/Out";
+        // Total Teams Count Update karna
+        document.getElementById('total-teams-count').innerText = `(${teamsArray.length})`;
 
-            listHtml += `
-            <div class="player-card">
-                <div class="name-box">
-                    <p class="p-name">${p.name} <span class="${statusClass}">● ${statusText}</span></p>
-                    <div class="stats">🏏 R: ${p.runs} | 🎯 W: ${p.wickets}</div>
+        // 🔥 3. SORTING: Jiske point zyada, wo sabse upar (Rank #1) 🔥
+        teamsArray.sort((a, b) => b.points - a.points);
+
+        // 4. SCREEN PAR DIKHANA (HTML GENERATE KARNA)
+        let htmlContent = "";
+        
+        teamsArray.forEach((team, index) => {
+            let rank = index + 1;
+            let rankClass = (rank === 1) ? "team-card rank-1" : "team-card"; // Rank 1 wale ko peela background
+            
+            // Dummy Winnings logic (Aap isko apne hisaab se hata ya badal sakte hain)
+            let winText = "";
+            if(rank === 1) winText = "In Winning Zone";
+            else if(rank <= 5) winText = "Great Performance";
+
+            htmlContent += `
+            <div class="${rankClass}">
+                <div class="team-info">
+                    <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                    <div class="name-box">
+                        <h4>${team.name} <span class="team-badge">T1</span></h4>
+                        <p class="winnings">${winText}</p>
+                    </div>
                 </div>
-                <div class="points-box">
-                    <p class="pts-number">${p.points}</p>
-                    <p class="pts-label">PTS</p>
-                </div>
+                <div class="points-box">${team.points}</div>
+                <div class="rank-box">#${rank}</div>
             </div>`;
         });
 
-        document.getElementById('players-list').innerHTML = listHtml;
+        document.getElementById('leaderboard-list').innerHTML = htmlContent;
     });
 </script>
+
 </body>
 </html>
