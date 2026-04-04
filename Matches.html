@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan 11 - Matches</title>
+    <title>Kalyan VIP - Matches</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -12,19 +12,16 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 80px; user-select: none; }
         
-        /* 👑 VIP Header */
         .header { background: linear-gradient(135deg, #1a0033, #00ff88); padding: 15px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,255,136,0.3); color: #000; }
         .back-btn { font-size: 20px; cursor: pointer; font-weight: bold; }
         .app-title { text-align: center; font-weight: 900; font-size: 18px; flex-grow: 1; text-transform: uppercase; letter-spacing: 2px;}
 
-        /* 📑 TABS SYSTEM */
         .tabs-container { background: #111; display: flex; border-bottom: 2px solid #333; position: sticky; top: 54px; z-index: 99;}
         .tab { flex: 1; text-align: center; padding: 12px 5px; font-size: 11px; font-weight: 900; color: #aaa; cursor: pointer; border-bottom: 3px solid transparent; text-transform: uppercase; }
         .tab.active { color: #00ff88; border-bottom: 3px solid #00ff88; background: linear-gradient(to top, rgba(0,255,136,0.1), transparent); }
         .live-dot { display: inline-block; width: 6px; height: 6px; background: #ff004c; border-radius: 50%; margin-left: 5px; margin-bottom: 2px; animation: blink 1s infinite; display: none; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
-        /* 🏏 MATCH CARDS - OVERFLOW FIX */
         .match-list { padding: 15px; }
         .match-card { background: linear-gradient(145deg, #1a1a2e, #111); border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; cursor: pointer; position: relative; overflow: hidden; transition: 0.2s;}
         .match-card:active { transform: scale(0.98); }
@@ -34,17 +31,11 @@
 
         .tour-name { font-size: 10px; color: #aaa; margin-bottom: 15px; border-bottom: 1px dashed #333; padding-bottom: 5px; font-weight: bold; text-transform: uppercase; text-align: center;}
         
-        /* 🔥 FIXED LAYOUT: Flags Upar, Naam Neeche */
         .teams-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px;}
-        
-        /* Team ko fix 30% jagah di gayi hai */
         .team { width: 30%; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
         .team-flag { width: 45px; height: 45px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 12px; color: #fff; border: 2px solid #555; margin-bottom: 8px;}
-        
-        /* Lamba naam hone par dot-dot (...) lag jayega par bahar nahi aayega */
         .team-name { font-size: 11px; font-weight: 900; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
 
-        /* Timer ko fix 35% jagah di gayi hai beech mein */
         .match-time { width: 35%; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;}
         .time-box { background: rgba(0,255,136,0.1); border: 1px solid #00ff88; color: #00ff88; padding: 6px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; white-space: nowrap; }
         .time-live { background: rgba(255,0,76,0.1); border-color: #ff004c; color: #ff004c; }
@@ -56,7 +47,6 @@
         .no-matches { text-align: center; padding: 40px 20px; color: #aaa; font-size: 14px; font-weight: bold; }
         .loader { text-align: center; padding: 50px 20px; color: #00ff88; font-size: 18px; font-weight: bold; }
 
-        /* 📱 BOTTOM NAVIGATION BAR */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #333; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); }
         .nav-item { text-align: center; color: #888; font-size: 10px; cursor: pointer; flex: 1; font-weight: bold; text-transform: uppercase; transition: 0.3s; }
         .nav-item i { font-size: 20px; margin-bottom: 5px; display: block; transition: 0.3s; }
@@ -121,6 +111,7 @@
                     let m = child.val();
                     m.id = child.key;
                     allMatches.push(m);
+                    
                     let diff = m.timestamp - now;
                     if(diff <= 0 && diff > -14400000) { hasLiveMatches = true; }
                 });
@@ -146,13 +137,20 @@
 
             let filteredMatches = allMatches.filter(m => {
                 let diff = m.timestamp - now;
-                if(tabName === 'live') return diff <= 0 && diff > -14400000; 
-                if(tabName === 'completed') return diff <= -14400000;       
-                return diff > 0;                 
+                let isLive = diff <= 0 && diff > -14400000; 
+                let isCompleted = diff <= -14400000;       
+                let isUpcoming = diff > 0;                 
+
+                if(tabName === 'live') return isLive;
+                if(tabName === 'completed') return isCompleted;
+                return isUpcoming;
             });
 
-            if(tabName === 'upcoming') filteredMatches.sort((a, b) => a.timestamp - b.timestamp); 
-            else filteredMatches.sort((a, b) => b.timestamp - a.timestamp); 
+            if(tabName === 'upcoming') {
+                filteredMatches.sort((a, b) => a.timestamp - b.timestamp); 
+            } else {
+                filteredMatches.sort((a, b) => b.timestamp - a.timestamp); 
+            }
 
             if(filteredMatches.length === 0) {
                 let msg = tabName === 'live' ? "Koi match abhi LIVE nahi hai." : tabName === 'completed' ? "Koi completed match nahi hai." : "Koi naya match schedule nahi hai.";
@@ -183,20 +181,27 @@
                 container.innerHTML += `
                     <div class="match-card ${cardClass}" onclick="openMatch('${m.id}', '${safeT1}', '${safeT2}', '${tabName}')">
                         <div class="tour-name">${m.name || 'Fantasy Cricket League'}</div>
+                        
                         <div class="teams-row">
                             <div class="team">
                                 <div class="team-flag">${t1_short}</div>
                                 <div class="team-name">${m.team1}</div>
                             </div>
+                            
                             <div class="match-time">
                                 ${statusHtml}
                             </div>
+                            
                             <div class="team">
                                 <div class="team-flag" style="border-color:#00ff88;">${t2_short}</div>
                                 <div class="team-name">${m.team2}</div>
                             </div>
                         </div>
-                        <div class="footer-banner"><span>🏆 Mega Contests</span><span>⚡ Live Fantasy</span></div>
+
+                        <div class="footer-banner">
+                            <span>🏆 Mega Contests</span>
+                            <span>⚡ Live Fantasy</span>
+                        </div>
                     </div>
                 `;
             });
@@ -207,39 +212,46 @@
         function updateTimers(matches) {
             clearInterval(timerInterval);
             const formatTime = (num) => num < 10 ? "0" + num : num;
+            
             timerInterval = setInterval(() => {
                 let now = new Date().getTime();
+                
                 matches.forEach(m => {
                     let el = document.getElementById(`timer-${m.id}`);
                     if(!el) return;
+
                     let diff = m.timestamp - now;
+                    
                     if (diff <= 0) {
-                        el.innerHTML = "🔴 STARTED";
+                        el.innerHTML = "🔴 MATCH STARTED";
                         el.className = "time-box time-live";
                         setTimeout(() => { if(currentTab === 'upcoming') renderMatches('upcoming'); }, 2000);
                         return;
                     }
+
                     let h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                     let min = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                     let sec = Math.floor((diff % (1000 * 60)) / 1000);
+                    
                     if (diff > 86400000) { 
-                        el.innerText = `${Math.floor(diff / 86400000)} Days Left`;
+                        let days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                        el.innerText = `${days} Days Left`;
                     } else if (h > 0) { 
                         el.innerText = `${formatTime(h)}h ${formatTime(min)}m left`;
                     } else { 
                         el.innerText = `${formatTime(min)}m ${formatTime(sec)}s left`;
-                        el.style.color = "#ff004c"; el.style.borderColor = "#ff004c"; el.style.background = "rgba(255,0,76,0.1)";
+                        el.style.color = "#ff004c"; 
+                        el.style.borderColor = "#ff004c";
+                        el.style.background = "rgba(255,0,76,0.1)";
                     }
                 });
             }, 1000);
         }
 
-        // 🚀 THE MAGIC ROUTER 🚀
         function openMatch(matchId, t1, t2, status) {
             if (status === 'completed' || status === 'live') {
                 window.location.href = `leader.html?matchId=${matchId}`;
             } else {
-                // 🎯 FIX: Upcoming match dabane par ab seedha CONTESTS (Market) khulega
                 window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`;
             }
         }
