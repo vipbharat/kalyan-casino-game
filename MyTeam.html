@@ -11,14 +11,18 @@
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 30px;}
         .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #00ff88; position: sticky; top:0; z-index:100; box-shadow: 0 4px 15px rgba(0,255,136,0.3); }
         .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; color: #00ff88; }
-        .title { font-weight: 900; font-size: 18px; text-transform: uppercase; }
+        .title { font-weight: 900; font-size: 18px; text-transform: uppercase; flex-grow: 1; }
         
+        /* ✏️ EDIT BUTTON STYLE */
+        .edit-btn { background: #ffd700; color: #000; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 900; cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 10px rgba(255,215,0,0.5); display: none; /* Pehle chhupa rahega, agar time bacha hoga tab dikhega */ }
+        .edit-btn:active { transform: scale(0.95); }
+
         .summary-card { background: linear-gradient(145deg, #1e1e2e, #111); margin: 15px; padding: 15px; border-radius: 12px; border: 1px solid #333; display: flex; justify-content: space-around; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-top: 3px solid #ffd700;}
         .summary-item { text-align: center; }
         .summary-item h3 { margin: 0; color: #aaa; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;}
         .summary-item p { margin: 5px 0 0; font-size: 22px; font-weight: 900; color: #fff; }
         
-        .team-title { margin: 20px 15px 10px; font-size: 14px; font-weight: 900; color: #ffd700; text-transform: uppercase; border-bottom: 1px dashed #333; padding-bottom: 5px;}
+        .team-title { margin: 20px 15px 10px; font-size: 14px; font-weight: 900; color: #ffd700; text-transform: uppercase; border-bottom: 1px dashed #333; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;}
 
         .p-list { padding: 0 15px; }
         .p-row { background: #111; border: 1px solid #222; padding: 12px; margin-bottom: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);}
@@ -41,6 +45,9 @@
     <div class="header">
         <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
         <div class="title">MY PLAYING 11</div>
+        <div class="edit-btn" id="editTeamBtn" onclick="editMyTeam()">
+            <i class="fa-solid fa-pen"></i> EDIT
+        </div>
     </div>
     
     <div class="summary-card" id="teamSummary">
@@ -55,7 +62,9 @@
         </div>
     </div>
 
-    <div class="team-title"><i class="fa-solid fa-users"></i> Your Squad</div>
+    <div class="team-title">
+        <span><i class="fa-solid fa-users"></i> Your Squad</span>
+    </div>
 
     <div class="p-list" id="playerContainer">
         <div style="text-align:center; margin-top:50px; color:#00ff88;">
@@ -71,7 +80,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId');
         
-        // UNIQUE TEAM ID CATCHER
         const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
         const teamId = urlParams.get('teamId') || userPhone;
 
@@ -80,6 +88,18 @@
         if(!matchId || !teamId) {
             container.innerHTML = "<div class='error-box'>❌ Error: Match ya Team Details nahi mil rahi!</div>";
         } else {
+            // 🕒 SMART LOGIC: Match ka time bacha hai ya nahi check karega
+            db.ref('Game/Kalyan11/VIPMatches/' + matchId).once('value', mSnap => {
+                if(mSnap.exists()) {
+                    let matchData = mSnap.val();
+                    let diff = matchData.timestamp - Date.now();
+                    // Agar time bacha hai (> 0), tabhi Edit Button dikhao
+                    if(diff > 0) {
+                        document.getElementById('editTeamBtn').style.display = 'block';
+                    }
+                }
+            });
+
             db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + teamId).once('value', teamSnap => {
                 if(!teamSnap.exists()) {
                     container.innerHTML = "<div class='error-box'>⚠️ Aapne is match ke liye koi team nahi banayi hai!</div>";
@@ -112,7 +132,6 @@
 
                                 totalTeamPoints += finalPts;
                                 
-                                // Naam chhota karne ka safe tareeqa
                                 let nameParts = pInfo.name.split(' ');
                                 let shortName = nameParts.length > 1 ? nameParts[0][0] + ". " + nameParts[nameParts.length - 1] : pInfo.name;
 
@@ -136,14 +155,19 @@
                                 `;
                             }
                         });
-
                         document.getElementById('t-points').innerText = totalTeamPoints.toFixed(1);
-
                     } else {
                         container.innerHTML = "<div class='error-box'>Team mein koi khiladi nahi mila.</div>";
                     }
                 });
             });
+        }
+
+        // 🔗 EDIT BUTTON CLICK LOGIC
+        function editMyTeam() {
+            // Yahan se user wapas Contests/Team selection wale page par jayega
+            // Apna actual Team creation wali file ka naam yahan likhein (e.g., Contests.html)
+            window.location.href = `Contests.html?matchId=${matchId}&editTeam=true`;
         }
     </script>
 </body>
