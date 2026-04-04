@@ -70,7 +70,7 @@
         
         const contestFee = parseInt(localStorage.getItem('kalyan_entry_fee')) || parseInt(urlParams.get('fee')) || 49;
         
-        // Agar edit mode hai toh fee ₹0 dikhegi, kyunki paise pehle hi kat chuke hain
+        // Agar edit mode hai toh fee ₹0 dikhegi
         const isEditMode = localStorage.getItem('kalyan_edit_team_key');
         if(isEditMode) {
             document.getElementById('feeDisplay').innerText = `Editing Team (Free)`;
@@ -140,7 +140,7 @@
             else saveBtn.classList.remove('active');
         }
 
-        // 🚀 THE WALLET DEDUCTION ENGINE 🚀
+        // 🚀 THE WALLET DEDUCTION & SAVE TEAM ENGINE 🚀
         function processPaymentAndSaveTeam() {
             if(!captainId || !viceCaptainId || selectedPlayers.length !== 11) return;
             if(!userPhone) { alert("Please pehle Login karein!"); return; }
@@ -149,56 +149,61 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PROCESSING...';
             btn.classList.remove('active');
 
-            // Agar user Edit kar raha hai, toh seedha team save karo (No money cut)
+            // Agar Edit mode hai, toh no payment, direct save
             if(isEditMode) {
-                saveFinalDataToDB(isEditMode, true);
+                saveFinalDataToDB(true);
                 return;
             }
 
-            // 🎯 MAIN FIX: Tumhare Dashboard wala exact path 'users/{phone}'
+            // Wallet Check & Deduction Logic
             let walletRef = db.ref('users/' + userPhone);
             
             walletRef.once('value', snapshot => {
-                let userData = snapshot.val() || {};
+                let userData = snapshot.val();
                 
-                // Hum main Deposit balance se paise kat rahe hain
+                // Agar user ka data hi nahi bana, toh error do
+                if(!userData) {
+                    alert("⚠️ ERROR: Aapka account nahi mila. Kripya dhyan se login karein.");
+                    resetBtn(btn);
+                    return;
+                }
+                
+                // Ensure balance is read properly as a number
                 let currentBalance = parseFloat(userData.balance || 0);
 
-                // Agar contest Free hai (₹0) ya Wallet mein sufficient balance hai
                 if (contestFee === 0 || currentBalance >= contestFee) {
                     
-                    // Paise Kato!
                     if(contestFee > 0) {
                         let newBalance = currentBalance - contestFee;
-                        db.ref('users/' + userPhone + '/balance').set(newBalance); // Dashboard path updated
                         
-                        // Transaction History me entry (Agar tumhari app me history ka option hai toh kaam ayega)
-                        db.ref('users/' + userPhone + '/Transactions').push({
-                            title: `Fantasy Entry (₹${contestFee})`,
-                            amount: -contestFee,
-                            type: "debit",
-                            date: new Date().toLocaleString()
+                        // Paise kaato aur update karo
+                        db.ref('users/' + userPhone + '/balance').set(newBalance).then(() => {
+                            saveFinalDataToDB(false);
+                        }).catch(err => {
+                            alert("Payment Error: " + err.message);
+                            resetBtn(btn);
                         });
+                        
+                    } else {
+                        saveFinalDataToDB(false); // Free contest
                     }
-
-                    // Ab aage badho aur team save karo
-                    let newUniqueTeamId = userPhone + "_" + Date.now();
-                    saveFinalDataToDB(newUniqueTeamId, false);
-
                 } else {
-                    // Wallet me paise nahi hain!
-                    alert(`⚠️ INSUFFICIENT BALANCE!\nAapke wallet mein ₹${currentBalance} hain. Entry fee ₹${contestFee} hai.\nKripya apne Dashboard se pehle deposit karein!`);
-                    btn.innerHTML = 'PAY & SAVE TEAM';
-                    btn.classList.add('active');
+                    alert(`⚠️ INSUFFICIENT BALANCE!\nAapke wallet mein ₹${currentBalance} hain. Entry fee ₹${contestFee} hai.\nKripya apne Dashboard se deposit karein!`);
+                    resetBtn(btn);
                 }
             });
         }
 
-        // Team Save Karne wala final function
-        function saveFinalDataToDB(teamKeyId, isUpdate) {
+        function resetBtn(btn) {
+            btn.innerHTML = 'PAY & SAVE TEAM';
+            btn.classList.add('active');
+        }
+
+        // 🎯 FIX: Yahan ID sirf 'userPhone' rakhi gayi hai, taaki MyTeam page dhoondh sake
+        function saveFinalDataToDB(isUpdate) {
             let finalTeamData = {
                 phone: userPhone,
-                teamKey: teamKeyId,
+                teamKey: userPhone, // ID ko fix kiya gaya hai MyTeam ke according
                 players: selectedPlayers,
                 captain: captainId,
                 viceCaptain: viceCaptainId,
@@ -207,7 +212,7 @@
                 timestamp: Date.now()
             };
 
-            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + teamKeyId).set(finalTeamData)
+            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).set(finalTeamData)
             .then(() => {
                 localStorage.removeItem('kalyan_selected_team');
                 localStorage.removeItem('kalyan_edit_team_key');
@@ -218,13 +223,11 @@
                     alert("✅ TEAM UPDATED!");
                 }
                 
-                window.location.href = `MyContests.html?matchId=${matchId}`;
+                window.location.href = `matches.html`; // Team banane ke baad home wapas
             })
             .catch(error => {
                 alert("Error: " + error.message);
-                let btn = document.getElementById('saveBtn');
-                btn.innerHTML = 'TRY AGAIN';
-                btn.classList.add('active');
+                resetBtn(document.getElementById('saveBtn'));
             });
         }
     </script>
