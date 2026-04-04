@@ -90,11 +90,12 @@
         let currentTab = 'upcoming'; 
         let timerInterval;
 
-        // 🛠️ SMART TIME PARSER: Admin Panel Date string bheje ya Number, yeh fix kar dega!
+        // 🔥 ADMIN PANEL TIME FIX 🔥
         function getSafeTime(ts) {
             if (!ts) return 0;
-            if (!isNaN(ts)) return Number(ts); 
-            let parsed = new Date(ts).getTime(); 
+            if (typeof ts === 'number') return ts;
+            if (!isNaN(ts) && String(ts).length > 10) return Number(ts);
+            let parsed = new Date(ts).getTime();
             return isNaN(parsed) ? 0 : parsed;
         }
 
@@ -140,7 +141,6 @@
                 return diff > 0;                 
             });
 
-            // Safe Sorting
             filteredMatches.sort((a, b) => {
                 let tA = getSafeTime(a.timestamp);
                 let tB = getSafeTime(b.timestamp);
@@ -148,8 +148,7 @@
             });
 
             if(filteredMatches.length === 0) {
-                let msg = tabName === 'live' ? "Koi match abhi LIVE nahi hai." : tabName === 'completed' ? "Koi completed match nahi hai." : "Koi naya match schedule nahi hai.";
-                container.innerHTML = `<div class="no-matches"><i class="fa-solid fa-ghost" style="font-size:30px; color:#333; margin-bottom:10px;"></i><br>${msg}</div>`;
+                container.innerHTML = `<div class="no-matches"><i class="fa-solid fa-ghost" style="font-size:30px; color:#333; margin-bottom:10px;"></i><br>No matches found.</div>`;
                 return;
             }
 
@@ -167,18 +166,16 @@
                     statusHtml = `<div class="time-box" id="timer-${m.id}">Loading...</div>`;
                 }
 
-                // 🛠️ BUG FIX: Names safe parsing
                 let safeT1Name = String(m.team1 || 'Team A');
                 let safeT2Name = String(m.team2 || 'Team B');
                 let t1_short = safeT1Name.substring(0,3);
                 let t2_short = safeT2Name.substring(0,3);
 
-                // Quotation marks ki wajah se button block na ho
                 let safeT1 = safeT1Name.replace(/'/g, "\\'");
                 let safeT2 = safeT2Name.replace(/'/g, "\\'");
 
                 container.innerHTML += `
-                    <div class="match-card ${cardClass}" onclick="openMatch('${m.id}', '${safeT1}', '${safeT2}', '${tabName}')">
+                    <div class="match-card ${cardClass}" onclick="openMatch('${m.id}', '${safeT1}', '${safeT2}')">
                         <div class="tour-name">${m.name || 'Fantasy Cricket League'}</div>
                         <div class="teams-row">
                             <div class="team">
@@ -244,15 +241,11 @@
             }, 1000);
         }
 
-        // 🎯 FINAL ROUTER 🎯
-        function openMatch(matchId, t1, t2, status) {
-            if (status === 'completed' || status === 'live') {
-                window.location.href = `leader.html?matchId=${matchId}`;
-            } else {
-                let safeT1Url = encodeURIComponent(t1);
-                let safeT2Url = encodeURIComponent(t2);
-                window.location.href = `Contests.html?matchId=${matchId}&t1=${safeT1Url}&t2=${safeT2Url}`;
-            }
+        // 🔥 100% DIRECT LINK TO CONTESTS.HTML 🔥
+        function openMatch(matchId, t1, t2) {
+            let safeT1Url = encodeURIComponent(t1);
+            let safeT2Url = encodeURIComponent(t2);
+            window.location.href = `Contests.html?matchId=${matchId}&t1=${safeT1Url}&t2=${safeT2Url}`;
         }
     </script>
 </body>
