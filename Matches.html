@@ -30,7 +30,7 @@
         .team-name { font-size: 10px; font-weight: 900; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
 
         .match-time { width: 34%; text-align: center; }
-        .time-box { background: rgba(0,255,136,0.1); border: 1px solid #00ff88; color: #00ff88; padding: 5px 8px; border-radius: 15px; font-size: 10px; font-weight: bold; display: inline-block;}
+        .time-box { background: rgba(0,255,136,0.1); border: 1px solid #00ff88; color: #00ff88; padding: 5px 8px; border-radius: 15px; font-size: 10px; font-weight: bold; display: inline-block; min-width: 80px;}
 
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #333; z-index: 1000; }
         .nav-item { text-align: center; color: #888; font-size: 10px; cursor: pointer; flex: 1; font-weight: bold; text-transform: uppercase; }
@@ -44,7 +44,7 @@
 
     <div class="header">
         <div class="app-title">KALYAN 11</div>
-        <i class="fa-solid fa-wallet" onclick="alert('Balance: ₹0')"></i>
+        <i class="fa-solid fa-wallet" onclick="alert('Wallet balance check...')"></i>
     </div>
 
     <div class="tabs-container">
@@ -59,8 +59,8 @@
 
     <div class="bottom-nav">
         <div class="nav-item active"><i class="fa-solid fa-house"></i><span>Matches</span></div>
-        <div class="nav-item" onclick="alert('Join a match first!')"><i class="fa-solid fa-users"></i><span>My Team</span></div>
-        <div class="nav-item" onclick="alert('Select a match!')"><i class="fa-solid fa-trophy"></i><span>Leaderboard</span></div>
+        <div class="nav-item" onclick="alert('Pehle match join karein!')"><i class="fa-solid fa-users"></i><span>My Team</span></div>
+        <div class="nav-item" onclick="alert('Leaderboard match ke baad!')"><i class="fa-solid fa-trophy"></i><span>Leaderboard</span></div>
     </div>
 
     <script>
@@ -70,6 +70,15 @@
 
         let allMatches = [];
         let currentTab = 'upcoming';
+        let timerInterval;
+
+        // Admin Panel Time Fix (String ko number mein badalne ke liye)
+        function getSafeTime(ts) {
+            if (!ts) return 0;
+            if (typeof ts === 'number') return ts;
+            let parsed = new Date(ts).getTime();
+            return isNaN(parsed) ? 0 : parsed;
+        }
 
         db.ref('Game/Kalyan11/VIPMatches').on('value', snapshot => {
             allMatches = [];
@@ -96,7 +105,8 @@
             let now = Date.now();
 
             let filtered = allMatches.filter(m => {
-                let diff = m.timestamp - now;
+                let matchTime = getSafeTime(m.timestamp);
+                let diff = matchTime - now;
                 if(tabName === 'live') return diff <= 0 && diff > -14400000;
                 if(tabName === 'completed') return diff <= -14400000;
                 return diff > 0;
@@ -107,41 +117,74 @@
                 return;
             }
 
+            // Upcoming matches ko time ke hisaab se sort karein
+            filtered.sort((a, b) => getSafeTime(a.timestamp) - getSafeTime(b.timestamp));
+
             filtered.forEach(m => {
-                let statusText = tabName === 'upcoming' ? "JOIN NOW" : tabName === 'live' ? "🔴 LIVE" : "FINISHED";
-                
+                let statusBox = "";
+                if (tabName === 'upcoming') {
+                    statusBox = `<div class="time-box" id="timer-${m.id}">Loading...</div>`;
+                } else if (tabName === 'live') {
+                    statusBox = `<div class="time-box" style="color:#ff004c; border-color:#ff004c;">🔴 LIVE</div>`;
+                } else {
+                    statusBox = `<div class="time-box" style="color:#ffd700; border-color:#ffd700;">FINISHED</div>`;
+                }
+
+                let t1Name = m.team1 || "Team 1";
+                let t2Name = m.team2 || "Team 2";
+
                 let card = document.createElement('div');
                 card.className = "match-card";
                 card.innerHTML = `
                     <div class="tour-name">${m.name || 'CRICKET LEAGUE'}</div>
                     <div class="teams-row">
                         <div class="team">
-                            <div class="team-flag">${(m.team1 || "T1").substring(0,3)}</div>
-                            <div class="team-name">${m.team1 || "Team 1"}</div>
+                            <div class="team-flag">${t1Name.substring(0,3)}</div>
+                            <div class="team-name">${t1Name}</div>
                         </div>
-                        <div class="match-time">
-                            <div class="time-box">${statusText}</div>
-                        </div>
+                        <div class="match-time">${statusBox}</div>
                         <div class="team">
-                            <div class="team-flag">${(m.team2 || "T2").substring(0,3)}</div>
-                            <div class="team-name">${m.team2 || "Team 2"}</div>
+                            <div class="team-flag">${t2Name.substring(0,3)}</div>
+                            <div class="team-name">${t2Name}</div>
                         </div>
                     </div>
                 `;
                 
-                // 🔥 FIXED ROUTER: Tab ke hisaab se redirection
                 card.onclick = function() {
                     if (tabName === 'upcoming') {
-                        // Upcoming matches strictly go to Contests.html
-                        window.location.href = "Contests.html?matchId=" + m.id + "&t1=" + encodeURIComponent(m.team1) + "&t2=" + encodeURIComponent(m.team2);
+                        window.location.href = `Contests.html?matchId=${m.id}&t1=${encodeURIComponent(t1Name)}&t2=${encodeURIComponent(t2Name)}`;
                     } else {
-                        // Live and Completed go to leaderboard
-                        window.location.href = "leader.html?matchId=" + m.id;
+                        window.location.href = `leader.html?matchId=${m.id}`;
                     }
                 };
                 
                 container.appendChild(card);
             });
+
+            if(tabName === 'upcoming') startCountdown(filtered);
+        }
+
+        function startCountdown(matches) {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                let now = Date.now();
+                matches.forEach(m => {
+                    let el = document.getElementById(`timer-${m.id}`);
+                    if (!el) return;
+
+                    let diff = getSafeTime(m.timestamp) - now;
+                    if (diff <= 0) {
+                        el.innerText = "Started";
+                        return;
+                    }
+
+                    let h = Math.floor(diff / 3600000);
+                    let m_unit = Math.floor((diff % 3600000) / 60000);
+                    let s = Math.floor((diff % 60000) / 1000);
+
+                    el.innerText = `${h}h ${m_unit}m ${s}s`;
+                });
+            }, 1000);
         }
     </script>
 </body>
