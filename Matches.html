@@ -137,13 +137,9 @@
 
             let filteredMatches = allMatches.filter(m => {
                 let diff = m.timestamp - now;
-                let isLive = diff <= 0 && diff > -14400000; 
-                let isCompleted = diff <= -14400000;       
-                let isUpcoming = diff > 0;                 
-
-                if(tabName === 'live') return isLive;
-                if(tabName === 'completed') return isCompleted;
-                return isUpcoming;
+                if(tabName === 'live') return diff <= 0 && diff > -14400000; 
+                if(tabName === 'completed') return diff <= -14400000;       
+                return diff > 0;                 
             });
 
             if(tabName === 'upcoming') {
@@ -178,8 +174,9 @@
                 let safeT1 = encodeURIComponent(m.team1 || 'Team 1');
                 let safeT2 = encodeURIComponent(m.team2 || 'Team 2');
 
+                // 🛑 Yahan onClick mein sidha openMatch call ho raha hai bina kisi condition ke
                 container.innerHTML += `
-                    <div class="match-card ${cardClass}" onclick="openMatch('${m.id}', '${safeT1}', '${safeT2}', '${tabName}')">
+                    <div class="match-card ${cardClass}" onclick="openMatch('${m.id}', '${safeT1}', '${safeT2}')">
                         <div class="tour-name">${m.name || 'Fantasy Cricket League'}</div>
                         
                         <div class="teams-row">
@@ -248,12 +245,10 @@
             }, 1000);
         }
 
-        function openMatch(matchId, t1, t2, status) {
-            if (status === 'completed' || status === 'live') {
-                window.location.href = `leader.html?matchId=${matchId}`;
-            } else {
-                window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`;
-            }
+        // 🔥 THE MAGIC ROUTER FIX 🔥
+        // Ab koi condition nahi check hogi. Click karte hi seedha Contests par jayega.
+        function openMatch(matchId, t1, t2) {
+            window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`;
         }
     </script>
 </body>
