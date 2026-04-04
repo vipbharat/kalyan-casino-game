@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan VIP - Matches</title>
+    <title>Kalyan 11 - Matches</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -64,9 +64,8 @@
 
     <div class="tabs-container">
         <div class="tab active" id="tab-upcoming" onclick="switchTab('upcoming')">Upcoming</div>
-        <div class="tab tab-live" id="tab-live" onclick="switchTab('live')">Live <span class="live-dot" id="live-indicator"></span></div>
+        <div class="tab" id="tab-live" onclick="switchTab('live')">Live <span class="live-dot" id="live-indicator"></span></div>
         <div class="tab" id="tab-completed" onclick="switchTab('completed')">Completed</div>
-        <div class="tab" style="color: #ffd700;" onclick="alert('Kripya neeche list mein se koi match select karein!')">My Matches</div>
     </div>
 
     <div class="match-list" id="match-container">
@@ -74,18 +73,9 @@
     </div>
 
     <div class="bottom-nav">
-        <div class="nav-item active">
-            <i class="fa-solid fa-house"></i>
-            <span>Matches</span>
-        </div>
-        <div class="nav-item" onclick="alert('Kripya pehle upar list mein se ek match select karein!')">
-            <i class="fa-solid fa-users"></i>
-            <span>My Team</span>
-        </div>
-        <div class="nav-item" onclick="alert('Kripya pehle upar list mein se ek match select karein!')">
-            <i class="fa-solid fa-trophy"></i>
-            <span>Leaderboard</span>
-        </div>
+        <div class="nav-item active"><i class="fa-solid fa-house"></i><span>Matches</span></div>
+        <div class="nav-item" onclick="alert('Kripya pehle upar list mein se ek match select karein!')"><i class="fa-solid fa-users"></i><span>My Team</span></div>
+        <div class="nav-item" onclick="alert('Kripya pehle upar list mein se ek match select karein!')"><i class="fa-solid fa-trophy"></i><span>Leaderboard</span></div>
     </div>
 
     <script>
@@ -123,9 +113,7 @@
 
         function switchTab(tabName) {
             currentTab = tabName;
-            document.getElementById('tab-upcoming').classList.remove('active');
-            document.getElementById('tab-live').classList.remove('active');
-            document.getElementById('tab-completed').classList.remove('active');
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.getElementById(`tab-${tabName}`).classList.add('active');
             renderMatches(tabName);
         }
@@ -171,30 +159,25 @@
                 let t1_short = m.team1 ? m.team1.substring(0,3) : "TM1";
                 let t2_short = m.team2 ? m.team2.substring(0,3) : "TM2";
 
-                let safeT1 = encodeURIComponent(m.team1 || 'Team 1');
-                let safeT2 = encodeURIComponent(m.team2 || 'Team 2');
+                let safeT1 = m.team1 ? m.team1.replace(/'/g, "\\'") : "Team 1";
+                let safeT2 = m.team2 ? m.team2.replace(/'/g, "\\'") : "Team 2";
 
-                // 🛑 Yahan onClick mein sidha openMatch call ho raha hai bina kisi condition ke
                 container.innerHTML += `
-                    <div class="match-card ${cardClass}" onclick="openMatch('${m.id}', '${safeT1}', '${safeT2}')">
+                    <div class="match-card ${cardClass}" onclick="openMatch('${m.id}', '${safeT1}', '${safeT2}', '${tabName}')">
                         <div class="tour-name">${m.name || 'Fantasy Cricket League'}</div>
-                        
                         <div class="teams-row">
                             <div class="team">
                                 <div class="team-flag">${t1_short}</div>
                                 <div class="team-name">${m.team1}</div>
                             </div>
-                            
                             <div class="match-time">
                                 ${statusHtml}
                             </div>
-                            
                             <div class="team">
                                 <div class="team-flag" style="border-color:#00ff88;">${t2_short}</div>
                                 <div class="team-name">${m.team2}</div>
                             </div>
                         </div>
-
                         <div class="footer-banner">
                             <span>🏆 Mega Contests</span>
                             <span>⚡ Live Fantasy</span>
@@ -245,10 +228,15 @@
             }, 1000);
         }
 
-        // 🔥 THE MAGIC ROUTER FIX 🔥
-        // Ab koi condition nahi check hogi. Click karte hi seedha Contests par jayega.
-        function openMatch(matchId, t1, t2) {
-            window.location.href = `Contests.html?matchId=${matchId}&t1=${t1}&t2=${t2}`;
+        // 🎯 FINAL ROUTER 🎯
+        function openMatch(matchId, t1, t2, status) {
+            if (status === 'completed' || status === 'live') {
+                window.location.href = `leader.html?matchId=${matchId}`;
+            } else {
+                let safeT1Url = encodeURIComponent(t1);
+                let safeT2Url = encodeURIComponent(t2);
+                window.location.href = `Contests.html?matchId=${matchId}&t1=${safeT1Url}&t2=${safeT2Url}`;
+            }
         }
     </script>
 </body>
