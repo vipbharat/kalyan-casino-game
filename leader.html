@@ -1,198 +1,83 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan 11 - Live Leaderboard & Stats</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Live Player Stats</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 90px; user-select: none; }
-        
-        .header { background: linear-gradient(135deg, #1a0033, #4a00e0); padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #ffd700; position: sticky; top:0; z-index:100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; color: #ffd700; }
-        .title { font-weight: 900; font-size: 18px; text-transform: uppercase; }
-        .sub-title { font-size: 11px; color: #00ff88; font-weight: bold; margin-top: 3px; display: flex; align-items: center; gap: 4px;}
-        
-        /* 🔘 TABS DESIGN */
-        .tab-box { display: flex; background: #111; padding: 10px 15px; border-bottom: 1px solid #333; position: sticky; top: 62px; z-index: 99; gap: 10px;}
-        .tab-btn { flex: 1; padding: 10px; font-weight: 900; font-size: 12px; border-radius: 8px; border: none; cursor: pointer; text-align: center; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.5);}
-        .tab-teams { background: #00ff88; color: #000; box-shadow: 0 0 10px rgba(0,255,136,0.3); }
-        .tab-players { background: #222; color: #aaa; }
-
-        .leaderboard-container { padding: 15px; }
-        
-        /* 🏆 TEAM ROW */
-        .user-row { background: linear-gradient(145deg, #1e1e2e, #111); border: 1px solid #333; border-radius: 10px; padding: 12px 15px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
-        .rank-1 { border: 1px solid #ffd700; background: linear-gradient(145deg, #332b00, #111); }
-        .user-row.my-team { border-left: 4px solid #00ff88; background: linear-gradient(145deg, #113322, #111);}
-        .rank-circle { width: 35px; height: 35px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; color: #aaa; border: 2px solid #555;}
-        .user-details { flex: 1; margin-left: 15px; }
-        .user-name { font-weight: bold; font-size: 14px; color: #fff; display: flex; align-items: center; gap: 5px;}
-        .my-tag { background: #00ff88; color: #000; font-size: 9px; padding: 2px 5px; border-radius: 3px; font-weight: bold; }
-        .cvc-info { font-size: 10.5px; color: #aaa; margin-top: 5px; display: flex; gap: 5px;}
-        .cvc-info span { background: #222; padding: 2px 5px; border-radius: 3px; border: 1px solid #444;}
-        .pts-value { font-size: 18px; font-weight: 900; color: #00ff88; text-align: right;}
-
-        /* 🏏 PLAYER STATS ROW */
-        .stat-row { background: #1a1a2e; border: 1px solid #444; border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5);}
-        .stat-name { font-weight: bold; font-size: 14px; color: #fff; display: flex; align-items: center; gap: 6px;}
-        .stat-team { font-size: 10px; color: #aaa; margin-top: 2px;}
-        .stat-details { display: flex; gap: 10px; font-size: 11px; color: #aaa; margin-top: 6px; }
-        .stat-details span { background: #000; padding: 3px 6px; border-radius: 4px; border: 1px solid #555; color: #fff; font-weight: bold;}
-        .stat-pts { font-size: 20px; font-weight: 900; color: #ffd700; text-align: center; line-height: 1;}
-        
-        .live-dot { display: inline-block; width: 8px; height: 8px; background: #ff004c; border-radius: 50%; animation: blink 1s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        body { background: #12122b; color: #fff; font-family: sans-serif; margin: 0; padding: 15px; }
+        .player-card { background: #1e1e38; padding: 15px; margin-bottom: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
+        .name-box { flex: 1; }
+        .p-name { font-size: 16px; font-weight: bold; margin: 0 0 5px 0; }
+        .p-status { font-size: 11px; color: #00ff88; font-weight: bold; }
+        .p-status.out { color: #ff004c; } /* Jo out ho gaya wo laal */
+        .stats { font-size: 12px; color: #aaa; background: #111; padding: 3px 8px; border-radius: 5px; display: inline-block; margin-top: 5px;}
+        .points-box { text-align: right; }
+        .pts-number { font-size: 22px; color: #ffd700; font-weight: 900; margin: 0; }
+        .pts-label { font-size: 10px; color: #888; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
-        <div>
-            <div class="title">LIVE LEADERBOARD</div>
-            <div class="sub-title" id="live-status"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>
-        </div>
+    <h2 style="color: #ffd700; text-align: center;">🔥 LIVE RANKING 🔥</h2>
+    <div id="players-list">
+        <p style="text-align: center; color: #aaa;">Loading Live Stats...</p>
     </div>
 
-    <div class="tab-box">
-        <button class="tab-btn tab-teams" id="btn-teams" onclick="switchTab('teams')">TEAMS RANK</button>
-        <button class="tab-btn tab-players" id="btn-players" onclick="switchTab('players')">PLAYER STATS</button>
-    </div>
+<script>
+    // Apni API key daalein
+    const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.database();
 
-    <div class="leaderboard-container" id="leaderboard-list">
-        <div style="text-align:center; padding: 50px; color: #00ff88;"><i class="fa-solid fa-cog fa-spin fa-2x"></i></div>
-    </div>
+    // MATCH ID YAHAN DAALEIN
+    const matchId = "149684"; 
 
-    <div class="leaderboard-container" id="player-stats-list" style="display: none;"></div>
+    // Firebase .on() lagane se ye har second auto-refresh hoga
+    db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).on('value', (snapshot) => {
+        if(!snapshot.exists()) return;
 
-    <script>
-        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-        const db = firebase.database();
-        
-        const myPhone = localStorage.getItem('userPhone') || "GUEST";
-        const matchId = new URLSearchParams(window.location.search).get('matchId') || "DUMMY";
-        let entryFee = parseInt(new URLSearchParams(window.location.search).get('entry')) || 99;
+        let playersObj = snapshot.val();
+        let playersArray = [];
 
-        let globalPlayersData = [];
-
-        // UI TAB SWITCHER
-        function switchTab(tab) {
-            let btnT = document.getElementById('btn-teams');
-            let btnP = document.getElementById('btn-players');
-            let listT = document.getElementById('leaderboard-list');
-            let listP = document.getElementById('player-stats-list');
-
-            if(tab === 'teams') {
-                listT.style.display = 'block'; listP.style.display = 'none';
-                btnT.style.background = '#00ff88'; btnT.style.color = '#000'; btnT.style.boxShadow = '0 0 10px rgba(0,255,136,0.3)';
-                btnP.style.background = '#222'; btnP.style.color = '#aaa'; btnP.style.boxShadow = 'none';
-            } else {
-                listT.style.display = 'none'; listP.style.display = 'block';
-                btnP.style.background = '#ffd700'; btnP.style.color = '#000'; btnP.style.boxShadow = '0 0 10px rgba(255,215,0,0.3)';
-                btnT.style.background = '#222'; btnT.style.color = '#aaa'; btnT.style.boxShadow = 'none';
-            }
+        // 1. Saare khiladiyon ko ek line (Array) mein lana
+        for (let key in playersObj) {
+            playersArray.push({
+                name: playersObj[key].name,
+                points: playersObj[key].points || 0,
+                runs: playersObj[key].runs || 0,
+                wickets: playersObj[key].wickets || 0,
+                status: playersObj[key].playingStatus || 'waiting'
+            });
         }
 
-        // FETCH DATA
-        db.ref('Game/Kalyan11/MatchPlayers/' + matchId).on('value', pSnap => {
-            let playersObj = pSnap.val() || {};
-            
-            // 1. Prepare Players List for STATS Tab
-            globalPlayersData = Object.values(playersObj).sort((a,b) => (b.points||0) - (a.points||0));
-            renderPlayerStats();
+        // 🔥 2. ASLI JAADU (SORTING): Jiske point zyada, wo upar! 🔥
+        playersArray.sort((a, b) => b.points - a.points);
 
-            // 2. Prepare Teams List for RANKS Tab
-            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', tSnap => {
-                let realTeams = [];
-                tSnap.forEach(child => {
-                    let t = child.val();
-                    if (parseInt(t.entry_paid || 99) === entryFee) {
-                        let calcPts = 0, cName = "Player", vcName = "Player";
+        // 3. Screen par dikhana
+        let listHtml = "";
+        playersArray.forEach(p => {
+            // Agar khiladi kuch nahi kar raha toh usko dim dikhayenge
+            let statusClass = (p.points > 0) ? "p-status" : "p-status out";
+            let statusText = (p.points > 0) ? "🏏 Active" : "Waiting/Out";
 
-                        Object.values(t.players || {}).forEach(pKey => {
-                            let p = playersObj[pKey] || {};
-                            let livePts = parseFloat(p.points || 0);
-                            
-                            if(pKey === t.captain) { calcPts += (livePts * 2); cName = p.name; }
-                            else if(pKey === t.viceCaptain) { calcPts += (livePts * 1.5); vcName = p.name; }
-                            else { calcPts += livePts; }
-                        });
-
-                        realTeams.push({ 
-                            phone: t.phone || child.key.split('_')[0], 
-                            points: parseFloat(calcPts.toFixed(1)), 
-                            cName: cName.split(' ')[0], 
-                            vcName: vcName.split(' ')[0]
-                        });
-                    }
-                });
-
-                realTeams.sort((a,b) => b.points - a.points);
-                renderTeamsLeaderboard(realTeams);
-            });
+            listHtml += `
+            <div class="player-card">
+                <div class="name-box">
+                    <p class="p-name">${p.name} <span class="${statusClass}">● ${statusText}</span></p>
+                    <div class="stats">🏏 R: ${p.runs} | 🎯 W: ${p.wickets}</div>
+                </div>
+                <div class="points-box">
+                    <p class="pts-number">${p.points}</p>
+                    <p class="pts-label">PTS</p>
+                </div>
+            </div>`;
         });
 
-        // 🔥 RENDER PLAYER STATS 🔥
-        function renderPlayerStats() {
-            let container = document.getElementById('player-stats-list');
-            container.innerHTML = "";
-            
-            globalPlayersData.forEach(p => {
-                let r = p.runs || 0;
-                let w = p.wickets || 0;
-                let pts = p.points || 0;
-                
-                // Playing Status Indicator
-                let sDot = p.playingStatus === 'playing' ? '<i class="fa-solid fa-circle" style="color:#00ff88; font-size:8px;"></i> <span style="color:#00ff88; font-size:10px;">Playing</span>' : '<i class="fa-solid fa-circle" style="color:#ff004c; font-size:8px;"></i> <span style="color:#aaa; font-size:10px;">Bench</span>';
-
-                container.innerHTML += `
-                    <div class="stat-row">
-                        <div>
-                            <div class="stat-name">${p.name} ${sDot}</div>
-                            <div class="stat-team">${p.team} | ${p.role || 'PLAYER'}</div>
-                            <div class="stat-details">
-                                <span>🏏 R: ${r}</span>
-                                <span>🎳 W: ${w}</span>
-                            </div>
-                        </div>
-                        <div class="stat-pts">
-                            ${pts} <br><span style="font-size:9px; color:#aaa; font-weight:bold;">PTS</span>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        // 🔥 RENDER TEAMS RANK 🔥
-        function renderTeamsLeaderboard(realTeams) {
-            let container = document.getElementById('leaderboard-list');
-            container.innerHTML = "";
-
-            if(realTeams.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 50px; color: #aaa;">Abhi tak kisi ne join nahi kiya!</div>`;
-                return;
-            }
-
-            realTeams.forEach((t, i) => {
-                let rank = i + 1;
-                let isMe = (t.phone === myPhone);
-                container.innerHTML += `
-                    <div class="user-row ${rank===1?'rank-1':''} ${isMe?'my-team':''}">
-                        <div class="rank-circle">#${rank}</div>
-                        <div class="user-details">
-                            <div class="user-name">${isMe ? 'YOU <span class="my-tag">MY TEAM</span>' : 'VIP_'+t.phone.slice(-4)}</div>
-                            <div class="cvc-info"><span>C: ${t.cName}</span><span>VC: ${t.vcName}</span></div>
-                        </div>
-                        <div class="pts-value">${t.points}</div>
-                    </div>`;
-            });
-
-            document.getElementById('live-status').innerHTML = `<span class="live-dot"></span> LIVE SYNCING ON`;
-        }
-    </script>
+        document.getElementById('players-list').innerHTML = listHtml;
+    });
+</script>
 </body>
 </html>
