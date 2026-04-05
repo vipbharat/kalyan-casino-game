@@ -63,7 +63,7 @@
         </div>
     </div>
 
-    <div class="contest-banner">
+    <div class="contest-banner" id="match-status-banner">
         <i class="fa-solid fa-trophy"></i> Live Leaderboard
     </div>
 
@@ -113,21 +113,30 @@
 
     let allTeamsData = [];
     let currentSelectedFee = 0;
+    let matchStartTime = 0; // 🔥 Match kab shuru hoga uska time
 
-    // Helper: Pata lagane ke liye ki contest H2H hai ya Mega
     function getContestDetails(fee) {
         const megaFees = [99, 39, 49, 59, 29];
         if (megaFees.includes(fee)) {
             let spots = fee === 99 ? 500000 : fee === 39 ? 110000 : fee === 49 ? 40000 : fee === 59 ? 10000 : 4000;
             return { type: 'mega', spots: spots, fillPct: 0.85 };
         }
-        // Baki sabko default H2H (2 spots) maan lenge
         return { type: 'h2h', spots: 2, fillPct: 1 };
     }
 
     if(!matchId) {
         document.getElementById('leaderboard-list').innerHTML = "<div class='loader-box'>Match Data Missing!</div>";
     } else {
+        // 🔥 PEHLE MATCH KA TIME NIKALO 🔥
+        db.ref(`Game/Kalyan11/VIPMatches/${matchId}`).on('value', snap => {
+            if(snap.exists() && snap.val().timestamp) {
+                let ts = snap.val().timestamp;
+                matchStartTime = (typeof ts === 'number') ? ts : new Date(ts).getTime();
+            }
+            if(allTeamsData.length > 0) renderLeaderboard(); // Time aane ke baad list update karo
+        });
+
+        // TEAMS NIKALO
         db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).on('value', (snapshot) => {
             allTeamsData = [];
             let uniqueFees = new Set();
@@ -184,6 +193,15 @@
         let listContainer = document.getElementById('leaderboard-list');
         listContainer.innerHTML = "";
 
+        // 🔥 MATCH START HUA HAI YA NAHI ISKA CHECK 🔥
+        let isMatchStarted = false;
+        if(matchStartTime > 0) {
+            isMatchStarted = Date.now() >= matchStartTime;
+        } else {
+            // Agar kisi wajah se time na mile, toh by default true maan lo taaki system atke nahi
+            isMatchStarted = true; 
+        }
+
         let filteredTeams = allTeamsData.filter(t => (parseInt(t.entry_paid) || 99) === currentSelectedFee);
         let cDetails = getContestDetails(currentSelectedFee);
         let maxSpots = cDetails.spots;
@@ -200,7 +218,6 @@
             document.getElementById('spots-total-text').innerText = `${formatNumber(maxSpots)} Spots`;
             document.getElementById('progress-fill-bar').style.width = `${pct}%`;
         } else {
-            // H2H progress bar hide kar do
             document.getElementById('progress-container').style.display = 'none';
         }
 
@@ -208,22 +225,19 @@
 
         // 🤖 BOTS LOGIC 🤖
         if(cDetails.type === 'mega') {
-            // Mega contest me list lambi dikhane ke liye random bots
             let botAmount = Math.floor(Math.random() * 20) + 30; 
             for(let i=0; i<botAmount; i++) {
                 extraUIBots.push({
                     teamName: indianNames[Math.floor(Math.random() * indianNames.length)] + "****",
-                    total_points: 40 + (Math.random() * 30), // Normal point
+                    total_points: isMatchStarted ? (40 + (Math.random() * 30)) : 0, // 🔥 Lock points if not started
                     is_bot: true, ui_only: true
                 });
             }
         } 
         else if (cDetails.type === 'h2h') {
-            // 🔥 H2H KILLER BOT LOGIC 🔥
             let botsNeeded = maxSpots - filteredTeams.length;
             
             if(botsNeeded > 0) {
-                // Find user's score to beat it
                 let maxRealScore = 0;
                 filteredTeams.forEach(t => {
                     if(parseFloat(t.total_points || 0) > maxRealScore) maxRealScore = parseFloat(t.total_points || 0);
@@ -232,18 +246,13 @@
                 for(let i=0; i<botsNeeded; i++) {
                     let botScore = 0;
                     
-                    // Agar user ke points 800 se kam hain (Yani uski team best nahi hai)
-                    // Toh Bot automatically user se thoda aage nikal jayega
-                    if (maxRealScore < 800 && maxRealScore > 0) {
+                    if (!isMatchStarted) {
+                        botScore = 0; // 🔥 Match start nahi hua toh point 0
+                    } else if (maxRealScore < 800 && maxRealScore > 0) {
                         botScore = maxRealScore + Math.floor(Math.random() * 25) + 5; 
-                    } 
-                    // Agar user ki team sach me kamaal ki hai (> 800 pts)
-                    // Toh bot ko 750-810 ke beech roko, taaki user top kar sake
-                    else if (maxRealScore >= 800) {
+                    } else if (maxRealScore >= 800) {
                         botScore = 750 + Math.floor(Math.random() * 60);
-                    } 
-                    // Match start nahi hua
-                    else {
+                    } else {
                         botScore = 50; 
                     }
 
@@ -256,13 +265,20 @@
             }
         }
 
+        // 🔥 Asli Teams ke points ko bhi 0 par lock karna agar match shuru nahi hua
         let finalDisplayList = filteredTeams.concat(extraUIBots);
-        finalDisplayList.sort((a, b) => parseFloat(b.total_points || 0) - parseFloat(a.total_points || 0));
+        finalDisplayList = finalDisplayList.map(t => {
+            let safePoints = isMatchStarted ? parseFloat(t.total_points || 0) : 0.0;
+            return { ...t, display_points: safePoints };
+        });
+
+        // Ab display_points ke hisaab se Sort karo
+        finalDisplayList.sort((a, b) => b.display_points - a.display_points);
 
         let htmlContent = "";
         finalDisplayList.forEach((team, index) => {
             let rank = index + 1; 
-            let pts = parseFloat(team.total_points || 0).toFixed(1);
+            let pts = team.display_points.toFixed(1); // Yahan safe points show honge
             let tName = team.teamName || team.userName || "Unknown";
             
             if(!team.is_bot && !team.ui_only && tName.length >= 10 && !isNaN(tName.replace(/\D/g, ''))) {
