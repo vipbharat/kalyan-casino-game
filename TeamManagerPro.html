@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ultimate Admin Master</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding: 10px; }
         .container { max-width: 800px; margin: 0 auto; background: #111; padding: 15px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 5px 20px rgba(0,255,136,0.1); }
@@ -71,7 +73,7 @@
 
         <div id="section-bot" class="section active">
             <div style="font-size: 11px; color: #ffd700; margin-bottom: 10px; border: 1px dashed #ffd700; padding: 8px; border-radius: 5px;">
-                <b>NEW BOT SYSTEM:</b> Ab aap Khiladiyon ki ginti dalenge. Agar aap 50 dalte hain, toh 50 naye naam banenge aur sabki 20-20 teams banegi (Total 1000 Teams)!
+                <b>REAL SQUAD BOTS:</b> Ab bot poori 11 khiladiyon ki team banayega, tab jaakar C & VC chunega. Koi aam user pakad nahi payega!
             </div>
             <div class="input-group">
                 <label>Entry Fee</label>
@@ -82,7 +84,7 @@
                 <input type="number" id="bot-count" value="10" placeholder="Jaise: 10, 50, 100">
             </div>
             <button class="btn-primary" onclick="generateBots()"><i class="fa-solid fa-bolt"></i> Generate Pro Bots</button>
-            <div class="loader" id="bot-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Generating... Do not close!</div>
+            <div class="loader" id="bot-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Creating 11-Player Squads... Wait!</div>
             <div class="success-alert" id="bot-success"><span id="bot-success-txt"></span></div>
         </div>
 
@@ -155,49 +157,80 @@
             document.getElementById('players-points-container').style.display = 'none';
         }
 
-        // ================== BOTS (PRO 1 KHILADI = 20 TEAMS LOGIC) ==================
+        // ================== BOTS (11 PLAYER SQUAD GENERATOR) ==================
         const botNames = ["Rahul", "Amit", "Vikram", "Pooja", "Neha", "Suresh", "Ramesh", "Deepak", "Ravi", "Sunil", "Karan", "Rohit", "Mohit", "Virat", "Sneha", "Kavita", "Sanjay", "Manoj", "Ajay", "Vijay", "Aman", "Rakesh", "Arjun", "Priya"];
         
+        // Custom function to shuffle an array (Khiladiyon ko mix karne ke liye)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
         function generateBots() {
             let matchId = document.getElementById('master-match-select').value;
             let fee = parseInt(document.getElementById('bot-fee').value) || 99;
-            let playersCount = parseInt(document.getElementById('bot-count').value); // Number of users
+            let playersCount = parseInt(document.getElementById('bot-count').value); 
             
             if(!matchId) return alert("Match select karein!");
             if(!playersCount || playersCount < 1) return alert("Kam se kam 1 khiladi dalein!");
 
             document.getElementById('bot-loader').style.display = "block";
 
+            // 🔥 ASLI KHILADIYON KA DATA UTHAO 🔥
             db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value').then(snap => {
-                let players = [];
-                if(snap.exists()) { snap.forEach(p => { players.push(p.val().name || p.key); }); }
-                if(players.length < 11) players = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10", "P11"];
+                let allMatchPlayers = [];
+                if(snap.exists()) { 
+                    snap.forEach(p => { 
+                        allMatchPlayers.push({ id: p.key, name: p.val().name || p.key }); 
+                    }); 
+                }
+                
+                // Agar match mein 11 khiladi bhi nahi dale hain admin ne, toh dummy bana do
+                if(allMatchPlayers.length < 11) {
+                    for(let i=1; i<=11; i++) {
+                        allMatchPlayers.push({ id: `P${i}`, name: `Player ${i}` });
+                    }
+                }
 
                 let updates = {};
                 let time = Date.now();
                 let generatedTotal = 0;
 
-                // 🔥 NAYA LOOP: Khiladiyon ke hisaab se 🔥
                 for(let b = 0; b < playersCount; b++) {
                     let randomNum = Math.floor(100 + Math.random() * 899); 
                     let currentBotName = botNames[Math.floor(Math.random() * botNames.length)] + randomNum;
 
-                    // Har ek khiladi ki exactly 20 team
+                    // Har ek user ki exactly 20 team
                     for(let t = 1; t <= 20; t++) {
                         let fakeId = "BOT_" + time + "_" + b + "_" + t;
-                        
-                        let cIdx = Math.floor(Math.random() * players.length);
-                        let vcIdx = Math.floor(Math.random() * players.length);
-                        while(cIdx === vcIdx) vcIdx = Math.floor(Math.random() * players.length);
-
                         let finalTeamName = `${currentBotName} Team ${t}`;
 
+                        // 🎯 JADU: 22 khiladiyon ko mix karo aur usme se pehle 11 utha lo!
+                        let shuffledPlayers = shuffleArray([...allMatchPlayers]);
+                        let selected11Players = shuffledPlayers.slice(0, 11);
+                        
+                        // Un 11 khiladiyon ki IDs ka Array banao database mein save karne ke liye
+                        let squadIds = selected11Players.map(p => p.id);
+
+                        // Ab inhi 11 chune hue khiladiyon mein se C aur VC chunna hai
+                        let cIdx = Math.floor(Math.random() * 11);
+                        let vcIdx = Math.floor(Math.random() * 11);
+                        while(cIdx === vcIdx) vcIdx = Math.floor(Math.random() * 11);
+
+                        let finalCaptainName = selected11Players[cIdx].name;
+                        let finalViceCaptainName = selected11Players[vcIdx].name;
+
+                        // 💥 POORI 11 KI TEAM SAVE HOGI 💥
                         updates[fakeId] = { 
                             userName: currentBotName, 
                             teamName: finalTeamName, 
-                            captain: players[cIdx], 
-                            vice_captain: players[vcIdx], 
-                            total_points: 50, 
+                            players: squadIds,         // <--- YAHAN POORI SQUAD SAVE HUI
+                            captain: finalCaptainName, 
+                            vice_captain: finalViceCaptainName, 
+                            total_points: 0,           // Match start se pehle 0.0 points
                             entry_paid: fee, 
                             is_bot: true 
                         };
@@ -207,7 +240,7 @@
                 
                 db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).update(updates).then(() => {
                     document.getElementById('bot-loader').style.display = "none";
-                    document.getElementById('bot-success-txt').innerText = `${playersCount} Khiladi x 20 Teams = ${generatedTotal} Teams Ban Gayi!`;
+                    document.getElementById('bot-success-txt').innerText = `Full Squad Ready: ${playersCount} Khiladi x 20 Teams = ${generatedTotal} Teams Ban Gayi!`;
                     document.getElementById('bot-success').style.display = "block";
                     setTimeout(() => document.getElementById('bot-success').style.display = "none", 5000);
                 });
@@ -250,7 +283,6 @@
 
             if(filtered.length === 0) { document.getElementById('teams-list').innerHTML = "<div style='color:#888; text-align:center;'>Koi team nahi mili.</div>"; return; }
 
-            // Limit rendering in Edit list to prevent crash here too
             filtered.slice(0, 150).forEach(t => {
                 let badge = t.is_bot ? `<span class="badge badge-bot">🤖 BOT</span>` : (t.is_edited ? `<span class="badge badge-edited">✏️ EDITED</span>` : `<span class="badge badge-real">👤 REAL</span>`);
                 html += `
