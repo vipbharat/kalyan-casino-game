@@ -20,17 +20,24 @@
 
         /* 🔥 MATCH CARDS 🔥 */
         .match-container { padding: 15px; }
-        .match-card { background: #111; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3);}
-        .match-card::before { content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: #00ff88; }
+        .match-card { background: #111; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;}
+        .match-card.upcoming::before { content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: #00ff88; }
+        .match-card.live::before { content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: #ff004c; }
+        .match-card.completed::before { content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: #ffd700; }
         
-        .tour-name { font-size: 11px; color: #aaa; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px dashed #333; padding-bottom: 5px;}
+        .tour-name { font-size: 11px; color: #aaa; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px dashed #333; padding-bottom: 5px; text-align: center;}
         .teams-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
         .team-box { text-align: center; width: 35%;}
         .team-name { font-size: 18px; font-weight: 900; color: #fff;}
         
         .vs-box { width: 30%; text-align: center; font-size: 12px; color: #ff004c; font-weight: bold; background: rgba(255,0,76,0.1); padding: 5px; border-radius: 20px;}
         
-        .time-box { text-align: center; font-size: 12px; color: #ffd700; font-weight: bold; background: #222; padding: 8px; border-radius: 5px; margin-top: 10px;}
+        .time-box { text-align: center; font-size: 13px; font-weight: bold; background: #222; padding: 8px; border-radius: 5px; margin-top: 10px;}
+        .time-box.countdown { color: #ffd700; }
+        .time-box.livenow { color: #fff; background: #ff004c; animation: pulse 1.5s infinite;}
+        .time-box.done { color: #fff; background: #555;}
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
         
         /* 🔥 BOTTOM NAVIGATION 🔥 */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #333; z-index: 1000;}
@@ -40,7 +47,6 @@
         
         .loader { text-align: center; color: #00ff88; font-size: 16px; margin-top: 50px; font-weight: bold;}
         .empty-msg { text-align: center; color: #aaa; margin-top: 50px; font-size: 14px;}
-
     </style>
 </head>
 <body>
@@ -59,17 +65,14 @@
     </div>
 
     <div class="bottom-nav">
-        <div class="nav-item active">
-            <i class="fa-solid fa-house"></i>
-            Home
+        <div class="nav-item active" onclick="window.location.href='Matches.html'">
+            <i class="fa-solid fa-house"></i> Home
         </div>
-        <div class="nav-item">
-            <i class="fa-solid fa-users"></i>
-            My Team
+        <div class="nav-item" onclick="window.location.href='MyTeam.html'">
+            <i class="fa-solid fa-users"></i> My Team
         </div>
-        <div class="nav-item">
-            <i class="fa-solid fa-chart-line"></i>
-            Dashboard
+        <div class="nav-item" onclick="window.location.href='leader.html'">
+            <i class="fa-solid fa-trophy"></i> Leaderboard
         </div>
     </div>
 
@@ -83,44 +86,45 @@
 
     let allMatches = [];
     let currentFilter = 'Upcoming';
+    let timerInterval;
 
-    // DATABASE SE MATCHES FETCH KAREIN (VIPMatches path se)
+    // DATABASE SE DATA FETCH KARNA
     db.ref('Game/Kalyan11/VIPMatches').on('value', (snapshot) => {
         allMatches = [];
         if (snapshot.exists()) {
             snapshot.forEach(child => {
                 let match = child.val();
                 match.id = child.key;
+                
+                // SMART AUTO-STATUS: Timer Check
+                let now = new Date().getTime();
+                if(match.status === "Upcoming" && match.timestamp <= now) {
+                    match.calculatedStatus = "Live";
+                } else {
+                    match.calculatedStatus = match.status; 
+                }
+                
                 allMatches.push(match);
             });
-            // Latest matches upar dikhane ke liye sort karein
             allMatches.sort((a, b) => a.timestamp - b.timestamp);
         }
         renderMatches();
+        startTimerEngine(); 
     });
 
-    // TABS PAR CLICK KARNE PAR FILTER KARNA
     function filterMatches(status, element) {
         currentFilter = status;
-        
-        // Tab UI change karna
         let tabs = document.querySelectorAll('.tab-btn');
         tabs.forEach(tab => tab.classList.remove('active'));
         element.classList.add('active');
-
         renderMatches();
     }
 
-    // MATCHES SCREEN PAR DIKHANA
     function renderMatches() {
         let container = document.getElementById('matches-list');
         container.innerHTML = "";
 
-        // Status ke hisaab se filter lagana
-        let filteredMatches = allMatches.filter(match => {
-            let matchStatus = match.status ? match.status.toLowerCase() : 'upcoming';
-            return matchStatus === currentFilter.toLowerCase();
-        });
+        let filteredMatches = allMatches.filter(match => match.calculatedStatus.toLowerCase() === currentFilter.toLowerCase());
 
         if (filteredMatches.length === 0) {
             container.innerHTML = `<div class="empty-msg"><i class="fa-solid fa-box-open" style="font-size:30px; margin-bottom:10px;"></i><br>No ${currentFilter} matches found.</div>`;
@@ -128,39 +132,88 @@
         }
 
         filteredMatches.forEach(match => {
-            // Time Format Karna
-            let matchDate = new Date(match.timestamp);
-            let timeString = matchDate.toLocaleString('en-IN', {
-                day: 'numeric', month: 'short', 
-                hour: '2-digit', minute: '2-digit', hour12: true
-            });
+            let cardClass = match.calculatedStatus.toLowerCase();
+            
+            let timeBoxHtml = "";
+            if (cardClass === "upcoming") {
+                timeBoxHtml = `<div class="time-box countdown" data-time="${match.timestamp}"><i class="fa-solid fa-clock"></i> Calculating...</div>`;
+            } else if (cardClass === "live") {
+                timeBoxHtml = `<div class="time-box livenow"><i class="fa-solid fa-circle-play"></i> LIVE NOW</div>`;
+            } else {
+                timeBoxHtml = `<div class="time-box done"><i class="fa-solid fa-check-double"></i> COMPLETED</div>`;
+            }
 
-            // Card HTML
             container.innerHTML += `
-                <div class="match-card" onclick="joinMatch('${match.id}')">
+                <div class="match-card ${cardClass}" onclick="handleMatchClick('${match.id}', '${cardClass}')">
                     <div class="tour-name">${match.name}</div>
                     <div class="teams-row">
-                        <div class="team-box">
-                            <div class="team-name">${match.team1}</div>
-                        </div>
+                        <div class="team-box"><div class="team-name">${match.team1}</div></div>
                         <div class="vs-box">V/S</div>
-                        <div class="team-box">
-                            <div class="team-name">${match.team2}</div>
-                        </div>
+                        <div class="team-box"><div class="team-name">${match.team2}</div></div>
                     </div>
-                    <div class="time-box">
-                        <i class="fa-solid fa-clock"></i> ${timeString}
-                    </div>
+                    ${timeBoxHtml}
                 </div>
             `;
         });
     }
 
-    // MATCH PAR CLICK KARNE PAR NEXT PAGE JANA (Contest/Team creation)
-    function joinMatch(matchId) {
-        // Aap user ko contest page par bhej sakte hain
-        // window.location.href = `contests.html?matchId=${matchId}`;
-        console.log("Match Clicked: ", matchId);
+    // 🔥 LIVE TIMER ENGINE 🔥
+    function startTimerEngine() {
+        if(timerInterval) clearInterval(timerInterval);
+        
+        timerInterval = setInterval(() => {
+            let now = new Date().getTime();
+            let timerElements = document.querySelectorAll('.countdown');
+            let needReRender = false;
+
+            timerElements.forEach(el => {
+                let matchTime = parseInt(el.getAttribute('data-time'));
+                let diff = matchTime - now;
+
+                if (diff <= 0) {
+                    el.innerHTML = "🔴 MATCH STARTED!";
+                    needReRender = true; 
+                } else {
+                    let hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    let minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    let seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    hours = (hours < 10) ? "0" + hours : hours;
+                    minutes = (minutes < 10) ? "0" + minutes : minutes;
+                    seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+                    el.innerHTML = `<i class="fa-solid fa-clock"></i> ${hours}h ${minutes}m ${seconds}s left`;
+                }
+            });
+
+            if(needReRender) {
+                allMatches.forEach(m => {
+                    if (m.status === "Upcoming" && m.timestamp <= now) m.calculatedStatus = "Live";
+                });
+                renderMatches();
+            }
+
+        }, 1000);
+    }
+
+    // 🔥 MATCH CLICK MANAGER (EXACT FILE LINKS SET) 🔥
+    function handleMatchClick(matchId, status) {
+        let cleanStatus = status.toLowerCase(); 
+
+        if (cleanStatus === 'upcoming') {
+            // Bhai, user Contests par jayega
+            console.log("Redirecting to: Contests.html?matchId=" + matchId);
+            window.location.href = "Contests.html?matchId=" + matchId; 
+        } 
+        else if (cleanStatus === 'live') {
+            // Time poora ho gaya, ab seedha leader.html
+            alert("🔒 Match start ho chuka hai! Ab aap sirf Leaderboard dekh sakte hain.");
+            window.location.href = "leader.html?matchId=" + matchId; 
+        } 
+        else if (cleanStatus === 'completed') {
+            // Match khatam, seedha leader.html
+            window.location.href = "leader.html?matchId=" + matchId;
+        }
     }
 </script>
 </body>
