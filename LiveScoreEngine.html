@@ -18,7 +18,7 @@
         .btn-start:active { transform: scale(0.98); }
         .terminal { background: #000; border: 1px solid #00ff88; padding: 15px; border-radius: 5px; height: 350px; overflow-y: auto; font-family: monospace; font-size: 12px; margin-bottom: 20px; line-height: 1.5;}
         .terminal p { margin: 4px 0; border-bottom: 1px dashed #222; padding-bottom: 4px;}
-        .log-info { color: #00d2d3; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ffd700; }
+        .log-info { color: #00d2d3; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ffd700; } .log-scan { color: #a29bfe; font-style: italic;}
         .status-badge { display: inline-block; padding: 8px 15px; border-radius: 15px; font-size: 12px; font-weight: bold; background: #333; color: #aaa; margin-top: 10px;}
         .status-badge.active { background: #00ff88; color: #000; box-shadow: 0 0 10px rgba(0,255,136,0.5); }
         .match-card { background: #000; border: 1px solid #00ff88; padding: 10px; border-radius: 5px; margin-bottom: 10px; position: relative; display: flex; justify-content: space-between; align-items: center;}
@@ -50,7 +50,6 @@
     </div>
 
 <script>
-    // FIREBASE SETUP
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
@@ -111,9 +110,8 @@
                 await runPythonSync(id); 
             }
         }
-    }, 20000); // Har 20 second mein data layega
+    }, 20000); 
 
-    // FETCH FROM PYTHON SERVER
     async function runPythonSync(matchId) {
         try {
             cLog('info', `🌐 Python Server ko request bheji (Match: ${matchId})...`);
@@ -136,7 +134,12 @@
         }
     }
 
-    // 🔥 SUPER SMART NAME SCANNER (FUZZY LOGIC) 🔥
+    // Helper to clean names
+    function cleanName(str) {
+        return str.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    // 🔥 SUPER SMART NAME SCANNER (LIVE + SCORECARD BOTH) 🔥
     async function parseCricbuzz(doc, matchId) {
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
         if(!dbSnap.exists()) {
@@ -148,65 +151,83 @@
         let updates = {};
         let scrapedData = {};
 
-        let rows = doc.querySelectorAll('.cb-scrd-itms');
-
-        rows.forEach(row => {
-            let isBatsman = row.querySelector('.cb-col-27') !== null;
-            let isBowler = row.querySelector('.cb-col-38') !== null;
-
-            if(!isBatsman && !isBowler) return; 
-
+        // 1. TRY FULL SCORECARD (Jab Match Khatam ho ya badi inning ho)
+        doc.querySelectorAll('.cb-scrd-itms').forEach(row => {
             let nameEl = row.querySelector('a.cb-text-link');
             if(!nameEl) return;
+            let name = cleanName(nameEl.textContent);
+            if(!scrapedData[name]) scrapedData[name] = {runs:0, wickets:0};
 
-            // Name clean karna (e.g. "V Kohli (c)" -> "v kohli")
-            let nameText = nameEl.textContent.trim();
-            let webClean = nameText.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
-
-            if(!scrapedData[webClean]) scrapedData[webClean] = { runs: 0, wickets: 0 };
-
-            let boldValueEl = row.querySelector('.text-bold'); 
-            if(boldValueEl) {
-                let value = parseInt(boldValueEl.textContent.trim());
-                if(!isNaN(value)) {
-                    if(isBowler) scrapedData[webClean].wickets = value; 
-                    else if (isBatsman) scrapedData[webClean].runs = value; 
-                }
+            if(row.querySelector('.cb-col-27')) {
+                let bold = row.querySelector('.text-bold');
+                if(bold) scrapedData[name].runs = parseInt(bold.textContent) || 0;
+            }
+            if(row.querySelector('.cb-col-38')) {
+                let bold = row.querySelector('.text-bold');
+                if(bold) scrapedData[name].wickets = parseInt(bold.textContent) || 0;
             }
         });
 
-        let scrapedCount = Object.keys(scrapedData).length;
+        // 2. TRY MINI SCORECARD (LIVE MATCH FIX 🔥)
+        // Batsmen
+        doc.querySelectorAll('.cb-min-bat-rw').forEach(row => {
+            let nameEl = row.querySelector('a.cb-text-link');
+            if(!nameEl) return;
+            let name = cleanName(nameEl.textContent);
+            if(!scrapedData[name]) scrapedData[name] = {runs:0, wickets:0};
+
+            let cols = row.querySelectorAll('.cb-col-10, .cb-col-8, .abtext');
+            if(cols.length > 0) {
+                let runs = parseInt(cols[0].textContent);
+                if(!isNaN(runs)) scrapedData[name].runs = runs;
+            }
+        });
+        
+        // Bowlers
+        doc.querySelectorAll('.cb-min-bowl-rw').forEach(row => {
+            let nameEl = row.querySelector('a.cb-text-link');
+            if(!nameEl) return;
+            let name = cleanName(nameEl.textContent);
+            if(!scrapedData[name]) scrapedData[name] = {runs:0, wickets:0};
+
+            let cols = row.querySelectorAll('.cb-col-10, .cb-col-8');
+            if(cols.length >= 4) { // O, M, R, W -> 4th is Wickets
+                let wkts = parseInt(cols[3].textContent);
+                if(!isNaN(wkts)) scrapedData[name].wickets = wkts;
+            }
+        });
+
+        let scrapedNamesList = Object.keys(scrapedData);
+        let scrapedCount = scrapedNamesList.length;
+        
         if(scrapedCount === 0) {
-            cLog('warn', `⚠️ Cricbuzz ka Scorecard khali aaya. Shayad match abhi shuru nahi hua hai.`);
+            cLog('warn', `⚠️ Cricbuzz ka page khali aaya. Shayad match abhi shuru nahi hua hai ya API ne block kiya.`);
             return;
         }
 
-        cLog('info', `🎯 Cricbuzz se ${scrapedCount} khiladiyo ka score mila. Matching chalu...`);
+        // Yeh aapko terminal me dikhayega ki Cricbuzz se kin khiladiyo ka data mila!
+        cLog('scan', `🔍 Scanner Found: ${scrapedNamesList.join(', ')}`);
 
         let matchedCount = 0;
 
         for (let key in players) {
-            let fbClean = (players[key].name || "").toLowerCase().replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
+            let fbClean = cleanName(players[key].name || "");
             let fbParts = fbClean.split(' ');
-            let fbLast = fbParts[fbParts.length - 1]; // Jaise "kohli"
+            let fbLast = fbParts[fbParts.length - 1]; 
             let fbFirst = fbParts[0];
 
             let matchedStats = null;
 
-            // 🤖 SMART MATCHING ALGORITHM
             for (let sName in scrapedData) {
                 let cbParts = sName.split(' ');
                 let cbLast = cbParts[cbParts.length - 1];
 
-                // 1. Agar naam ekdum same ho
                 if (sName === fbClean || sName.includes(fbClean) || fbClean.includes(sName)) {
                     matchedStats = scrapedData[sName]; break;
                 }
-                // 2. Agar dono ka Last Name match kare (E.g. Kohli == Kohli)
                 else if (fbLast === cbLast && fbLast.length >= 3) {
                     matchedStats = scrapedData[sName]; break;
                 }
-                // 3. Agar Firebase ka koi bhi word Cricbuzz me mil jaye
                 else if (fbParts.some(p => p.length >= 4 && sName.includes(p))) {
                     matchedStats = scrapedData[sName]; break;
                 }
@@ -217,7 +238,7 @@
                 let w = matchedStats.wickets || 0;
                 
                 // MAIN POINT FORMULA
-                let p = (r * 1) + (w * 25) + 4; // Playing 11 hone par +4 bonus
+                let p = (r * 1) + (w * 25) + 4; // Playing 11 bonus
 
                 updates[key + '/points'] = p;
                 updates[key + '/runs'] = r;
@@ -230,10 +251,10 @@
 
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-            cLog('success', `✅ LASER MATCH: ${matchedCount} khiladiyo ke Score pakde gaye! Leaderboard ban raha hai...`);
+            cLog('success', `✅ LASER MATCH: ${matchedCount} khiladiyo ke Score update hue! Leaderboard ban raha hai...`);
             await updateLiveLeaderboard(matchId, players);
         } else {
-            cLog('error', `❌ Scorecard aaya tha, par kisi bhi khiladi ka naam match nahi hua! (Database check karein)`);
+            cLog('error', `❌ Data aaya par Firebase ke naam se match nahi hua! (Scanner ki list check karein)`);
         }
     }
 
