@@ -14,14 +14,15 @@
         .box { background: #1a1a2e; padding: 15px; border-radius: 10px; border: 1px solid #444; margin-bottom: 20px; }
         h3 { margin-top: 0; font-size: 14px; color: #00d2d3; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 8px;}
         input { width: calc(100% - 22px); padding: 12px; margin-bottom: 10px; background: #000; border: 1px solid #444; color: #fff; border-radius: 5px; font-weight: bold;}
-        .btn-start { width: 100%; padding: 12px; background: #00ff88; color: #000; font-weight: 900; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase;}
-        .terminal { background: #000; border: 1px solid #00ff88; padding: 15px; border-radius: 5px; height: 350px; overflow-y: auto; font-family: monospace; font-size: 11px; margin-bottom: 20px;}
-        .terminal p { margin: 4px 0; border-bottom: 1px dashed #111; padding-bottom: 4px;}
+        .btn-start { width: 100%; padding: 12px; background: #00ff88; color: #000; font-weight: 900; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase; transition: 0.3s;}
+        .btn-start:active { transform: scale(0.98); }
+        .terminal { background: #000; border: 1px solid #00ff88; padding: 15px; border-radius: 5px; height: 350px; overflow-y: auto; font-family: monospace; font-size: 12px; margin-bottom: 20px; line-height: 1.5;}
+        .terminal p { margin: 4px 0; border-bottom: 1px dashed #222; padding-bottom: 4px;}
         .log-info { color: #00d2d3; } .log-success { color: #00ff88; } .log-error { color: #ff004c; } .log-warn { color: #ffd700; }
         .status-badge { display: inline-block; padding: 8px 15px; border-radius: 15px; font-size: 12px; font-weight: bold; background: #333; color: #aaa; margin-top: 10px;}
         .status-badge.active { background: #00ff88; color: #000; box-shadow: 0 0 10px rgba(0,255,136,0.5); }
-        .match-card { background: #000; border: 1px solid #00ff88; padding: 10px; border-radius: 5px; margin-bottom: 10px; position: relative; }
-        .btn-stop { background: #ff004c; color: #fff; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: bold; text-transform: uppercase; float: right;}
+        .match-card { background: #000; border: 1px solid #00ff88; padding: 10px; border-radius: 5px; margin-bottom: 10px; position: relative; display: flex; justify-content: space-between; align-items: center;}
+        .btn-stop { background: #ff004c; color: #fff; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 11px; font-weight: bold; text-transform: uppercase;}
     </style>
 </head>
 <body>
@@ -71,7 +72,7 @@
         db.ref(`Game/Kalyan11/LiveEngine/${id}`).set({ matchId: id, wakeUpTime: wakeTime })
         .then(() => {
             document.getElementById('m-id').value = ""; 
-            cLog('success', `Match ${id} Database mein set ho gaya!`);
+            cLog('success', `✅ Match ${id} Database mein set ho gaya! System wait karega.`);
         });
     }
 
@@ -95,7 +96,7 @@
             container.style.display = "block";
             let html = "";
             for (let id in activeMatches) {
-                html += `<div class="match-card"><strong>Syncing ID: ${id}</strong><button class="btn-stop" onclick="stopMatch('${id}')">STOP</button></div>`;
+                html += `<div class="match-card"><span>Syncing ID: <b>${id}</b></span><button class="btn-stop" onclick="stopMatch('${id}')">STOP</button></div>`;
             }
             listDiv.innerHTML = html;
         } else {
@@ -103,17 +104,20 @@
         }
     });
 
+    // Har 20 second mein chalne wala loop
     setInterval(async () => {
         let now = Date.now();
         for (let id in activeMatches) {
-            if (now >= activeMatches[id].wakeUpTime) { await runPythonSync(id); }
+            if (now >= activeMatches[id].wakeUpTime) { 
+                await runPythonSync(id); 
+            }
         }
-    }, 25000);
+    }, 20000);
 
     // FETCH FROM PYTHON SERVER
     async function runPythonSync(matchId) {
         try {
-            cLog('info', `🌐 Python Server se data mangwa rahe hain (Match: ${matchId})...`);
+            cLog('info', `🌐 Python Server ko request bheji (Match: ${matchId})...`);
             let baseUrl = document.getElementById('api-url').value;
             let finalUrl = `${baseUrl}/get-scorecard?id=${matchId}`;
             
@@ -121,17 +125,19 @@
             let html = await res.text();
 
             if (!html || html.includes("<title>Just a moment...</title>") || html.includes("Cloudflare block")) {
-                cLog('error', `❌ Server Error: Panna khali aaya ya block hua.`);
+                cLog('warn', `⚠️ Render Server sora raha hai ya block hai. Wait kijiye 30-40 seconds...`);
                 return; 
             }
 
             let doc = new DOMParser().parseFromString(html, "text/html");
             await parseCricbuzz(doc, matchId);
             
-        } catch (e) { cLog('warn', `Server Network Error, dobara try kar raha hoon...`); }
+        } catch (e) { 
+            cLog('warn', `⚠️ Server se judne mein dikkat. (Free server sleep mode mein ho sakta hai).`); 
+        }
     }
 
-    // 🔥 LASER TARGET PARSER (BUG FIX - FINAL) 🔥
+    // 🔥 LASER TARGET PARSER 🔥
     async function parseCricbuzz(doc, matchId) {
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
         if(!dbSnap.exists()) {
@@ -143,11 +149,9 @@
         let updates = {};
         let scrapedData = {};
 
-        // Asli table rows ko pakdenge
         let rows = doc.querySelectorAll('.cb-scrd-itms');
 
         rows.forEach(row => {
-            // Check: Ye line Batsman ki hai ya Bowler ki? (Kachra hatao)
             let isBatsman = row.querySelector('.cb-col-27') !== null;
             let isBowler = row.querySelector('.cb-col-38') !== null;
 
@@ -171,10 +175,7 @@
             }
         });
 
-        cLog('info', `🎯 LASER ne sahi score padh liya hai! Match checking chalu...`);
-
         let matchedCount = 0;
-        let totalPts = 0;
 
         for (let key in players) {
             let fbClean = players[key].name.toLowerCase().replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -184,7 +185,6 @@
 
             let matchedStats = null;
 
-            // BUG FIX: Sabse pehle poora naam milane ki koshish (Taaki Khan, Sharma mix na ho)
             for (let sName in scrapedData) {
                 if (sName === fbClean || sName.includes(fbClean) || fbClean.includes(sName)) {
                     matchedStats = scrapedData[sName];
@@ -192,7 +192,6 @@
                 }
             }
             
-            // Backup Plan: Agar lamba naam na mile toh pehla aur aakhiri naam match karo
             if (!matchedStats) {
                 for (let sName in scrapedData) {
                     if (sName.includes(fbFirst) && sName.includes(fbLast)) {
@@ -205,53 +204,76 @@
             if (matchedStats) {
                 let r = matchedStats.runs || 0;
                 let w = matchedStats.wickets || 0;
-                let isPlaying = true;
                 
-                let p = (r * 1) + (w * 25) + 4; // Point Calculation System
+                // MAIN POINT FORMULA
+                let p = (r * 1) + (w * 25) + 4; // Playing 11 hone par +4 bonus points milte hain normal fantasy me
 
                 updates[key + '/points'] = p;
                 updates[key + '/runs'] = r;
                 updates[key + '/wickets'] = w;
                 updates[key + '/playingStatus'] = "playing";
                 
-                totalPts += p;
                 matchedCount++;
             }
         }
 
         if(Object.keys(updates).length > 0) {
             await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
-            cLog('success', `✅ PERFECT SYNC: ${matchedCount} khiladiyo ke points update hue!`);
-            await updateLiveLeaderboard(matchId);
+            cLog('success', `🎯 LASER SYNC: ${matchedCount} khiladiyo ke Score update hue! Ab Leaderboard ban raha hai...`);
+            await updateLiveLeaderboard(matchId, players);
         } else {
-            cLog('warn', `⚠️ Scorecard scan hua par database se koi naam completely match nahi hua.`);
+            cLog('warn', `⚠️ Scorecard check kiya par points nahi badhe. Shayad match shuru nahi hua.`);
         }
     }
 
-    async function updateLiveLeaderboard(matchId) {
+    // 🔥 MAIN BUG FIX (CAPTAIN / VC CALCULATION) 🔥
+    async function updateLiveLeaderboard(matchId, playersDataObj) {
         try {
+            // Updated Player points Firebase se turant taaza uthao
             let pSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
             let tSnap = await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).once('value');
             if(!pSnap.exists() || !tSnap.exists()) return;
 
-            let pObj = pSnap.val();
+            let livePlayersData = pSnap.val();
             let updates = {};
             
             tSnap.forEach(child => {
                 let team = child.val();
                 let pts = 0;
-                Object.values(team.players || {}).forEach(pk => {
-                    let live = (pObj[pk] && pObj[pk].points) ? parseFloat(pObj[pk].points) : 0;
-                    if(pk === team.captain) pts += (live * 2);
-                    else if(pk === team.viceCaptain) pts += (live * 1.5);
-                    else pts += live;
+                
+                // Bot aur Real user me Vice Captain ki spelling alag ho sakti hai
+                let vcName = team.viceCaptain || team.vice_captain; 
+                let cName = team.captain;
+
+                Object.values(team.players || {}).forEach(playerId => {
+                    // Firebase ID se us player ka asli naam aur points nikalo
+                    if(livePlayersData[playerId]) {
+                        let pData = livePlayersData[playerId];
+                        let pName = pData.name; // Jaise "Virat Kohli"
+                        let livePoints = parseFloat(pData.points || 0);
+
+                        // Ab ID ki jagah NAAM (Name) ko match karo
+                        if(pName === cName) {
+                            pts += (livePoints * 2);    // Captain ko Double (2x)
+                        } 
+                        else if(pName === vcName) {
+                            pts += (livePoints * 1.5);  // Vice Captain ko Dedh Guna (1.5x)
+                        } 
+                        else {
+                            pts += livePoints;          // Normal Player
+                        }
+                    }
                 });
+
                 updates[child.key + '/total_points'] = parseFloat(pts.toFixed(1));
             });
 
             await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).update(updates);
-            cLog('success', `🏆 Leaderboard Updated Successfully!`);
-        } catch(e) { console.log(e); }
+            cLog('success', `🏆 Leaderboard Successfully Updated with 2x C & 1.5x VC Points!`);
+            
+        } catch(e) { 
+            cLog('error', `Leaderboard Update Error: ` + e); 
+        }
     }
 </script>
 </body>
