@@ -3,242 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan 11 - Antique My Teams</title>
+    <title>Kalyan 11 - My Teams</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
     <style>
-        /* ANTIQUE DARK & GOLD THEME */
-        body { font-family: 'Georgia', 'Segoe UI', serif; background: #0c0804; color: #f5f5f5; margin: 0; padding-bottom: 90px;}
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f2f2f2; color: #000; margin: 0; padding-bottom: 90px; }
         
-        .header { background: linear-gradient(180deg, #2a1b0a, #0c0804); padding: 15px; display: flex; align-items: center; border-bottom: 2px solid #d4af37; position: sticky; top:0; z-index:100; box-shadow: 0 4px 15px rgba(212,175,55,0.2); }
-        .back-btn { font-size: 20px; margin-right: 15px; cursor: pointer; color: #d4af37; }
-        .title { font-weight: 900; font-size: 16px; text-transform: uppercase; flex-grow: 1; letter-spacing: 2px; color: #d4af37; text-shadow: 1px 1px 2px #000;}
+        .header { background: #1a0033; padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.2);}
+        .back-btn { font-size: 20px; cursor: pointer; color: #00ff88; margin-right: 15px; }
+        .title { font-weight: 900; font-size: 16px; flex-grow: 1; text-transform: uppercase;}
         
-        .team-count-badge { background: #d4af37; color: #000; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid #fff;}
+        .sub-header { background: #fff; padding: 10px 15px; font-size: 12px; color: #666; font-weight: bold; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between;}
 
-        /* OVERFLOW FIXES APPLIED GLOBALLY */
-        .teams-container { padding: 15px; }
-        .adv-team-card { background: #1a1410; border: 1px solid #d4af37; border-radius: 10px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.8); }
+        .team-container { padding: 10px 15px; }
         
-        .tc-header { background: linear-gradient(90deg, #2a1b0a, #1a1410); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #554422; }
+        .team-card { background: #fff; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #e0e0e0; overflow: hidden; position: relative;}
+        .team-card-header { background: #fafafa; padding: 10px 15px; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; font-weight: 900; font-size: 14px;}
         
-        /* Fixed long names overlapping */
-        .tc-name { font-size: 15px; font-weight: 900; color: #f9e596; display: flex; align-items: center; gap: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;}
+        .c-vc-row { display: flex; padding: 15px; justify-content: space-around; align-items: center;}
+        .player-box { text-align: center; }
+        .badge { display: inline-block; width: 24px; height: 24px; background: #000; color: #fff; border-radius: 50%; line-height: 24px; font-size: 12px; font-weight: bold; margin-bottom: 5px;}
+        .badge.c { background: #00ff88; color: #000; border: 2px solid #000;}
+        .badge.vc { background: #ff8c00; color: #000; border: 2px solid #000;}
+        .p-name { font-size: 12px; font-weight: bold; color: #333; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         
-        .tc-actions { display: flex; gap: 10px; flex-shrink: 0;}
-        .btn-edit { background: transparent; color: #aaa; border: 1px solid #555; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;}
-        .btn-edit.active { border-color: #d4af37; color: #d4af37; background: rgba(212,175,55,0.1);}
-        
-        .tc-body { padding: 15px; cursor: pointer; }
-        .tc-stats { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .stat-box { text-align: center; flex: 1; overflow: hidden;}
-        .stat-val { font-size: 18px; font-weight: 900; color: #fff; }
-        .stat-lbl { font-size: 10px; color: #d4af37; text-transform: uppercase; letter-spacing: 1px; }
+        .team-footer { display: flex; justify-content: space-between; padding: 10px 15px; background: #f9f9f9; border-top: 1px solid #eee; font-size: 12px; font-weight: bold;}
+        .edit-btn { background: none; border: none; color: #888; cursor: pointer; font-size: 14px;}
 
-        .cvc-display { display: flex; justify-content: space-around; background: #0c0804; padding: 10px; border-radius: 8px; border: 1px solid #3a2b18;}
-        .cvc-item { text-align: center; width: 45%; overflow: hidden;}
-        .cvc-role { font-size: 9px; font-weight: bold; margin-bottom: 4px; letter-spacing: 1px;}
-        .c-color { color: #f9e596; } .vc-color { color: #c0c0c0; }
-        .cvc-name { font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;}
+        /* Floating Create Button */
+        .floating-create-btn { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #000; color: #fff; padding: 12px 30px; border-radius: 30px; font-size: 14px; font-weight: 900; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 2px solid #00ff88; cursor: pointer; text-transform: uppercase; z-index: 1000;}
 
-        /* EXPANDABLE PLAYER LIST */
-        .player-list-wrap { display: none; background: #0c0804; padding: 10px; border-top: 1px solid #d4af37; }
-        .p-row { background: #1a1410; padding: 10px; margin-bottom: 6px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #d4af37;}
+        /* Bottom Nav */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+        .nav-item { text-align: center; color: #888; font-size: 10px; cursor: pointer; flex: 1; font-weight: bold; text-transform: uppercase; }
+        .nav-item i { font-size: 20px; margin-bottom: 4px; display: block; }
+        .nav-item.active { color: #d0021b; }
         
-        /* Overflow fix for player names */
-        .p-name { font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; color: #eee;}
-        .p-pts { color: #00ff88; font-weight: bold; font-size: 14px; flex-shrink: 0;}
-
-        /* BACKUP SECTION */
-        .backup-section { margin-top: 15px; background: #140d08; border: 1px solid #d4af37; border-radius: 8px; padding: 10px; }
-        .backup-title { font-size: 10px; color: #d4af37; font-weight: bold; text-transform: uppercase; text-align: center; margin-bottom: 12px; letter-spacing: 1px;}
-        .backup-grid { display: flex; justify-content: space-between; gap: 6px;}
-        .b-slot { flex: 1; background: #0c0804; border: 1px solid #3a2b18; border-radius: 6px; text-align: center; padding: 10px 2px 6px; position: relative; overflow: hidden;}
-        .b-badge { position: absolute; top: -2px; left: 50%; transform: translateX(-50%); background: #3a2b18; color: #d4af37; font-size: 8px; padding: 2px 5px; border-radius: 0 0 4px 4px; font-weight: bold;}
-        .b-name { font-size: 9px; color: #888; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px;}
-        .b-active { border-color: #d4af37; } .b-active .b-badge { background: #d4af37; color: #000; } .b-active .b-name { color: #fff; font-weight: bold;}
-
-        /* BOTTOM NAV */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #0c0804; display: flex; justify-content: space-around; padding: 12px 0; border-top: 2px solid #d4af37; z-index: 1000; }
-        .nav-item { text-align: center; color: #888; font-size: 10px; cursor: pointer; flex: 1; font-weight: bold; text-transform: uppercase;}
-        .nav-item i { font-size: 20px; margin-bottom: 5px; display: block; }
-        .nav-item.active { color: #d4af37; }
-        .loader { text-align: center; padding: 50px 20px; color: #d4af37; font-size: 16px; font-weight: bold; }
+        .no-team-msg { text-align: center; padding: 50px 20px; color: #888; font-size: 14px; font-weight: bold;}
     </style>
 </head>
 <body>
+
     <div class="header">
         <i class="fa-solid fa-arrow-left back-btn" onclick="window.location.href='Matches.html'"></i>
         <div class="title">My Teams</div>
-        <div class="team-count-badge" id="teamCount">0/25</div>
     </div>
 
-    <div class="teams-container" id="teamsContainer">
-        <div class="loader"><i class="fa-solid fa-gem fa-spin fa-2x"></i><br><br>Loading Antique Vault...</div>
+    <div class="sub-header">
+        <span>You can create up to 20 teams</span>
+        <span id="team-count-text">0 Teams</span>
     </div>
+
+    <div class="team-container" id="my-teams-list">
+        <div class="no-team-msg"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Loading Teams...</div>
+    </div>
+
+    <button class="floating-create-btn" onclick="createNewTeam()"><i class="fa-solid fa-plus"></i> CREATE TEAM</button>
 
     <div class="bottom-nav">
         <div class="nav-item" onclick="window.location.href='Matches.html'"><i class="fa-solid fa-house"></i><span>Matches</span></div>
         <div class="nav-item active"><i class="fa-solid fa-users"></i><span>My Team</span></div>
-        <div class="nav-item" id="btn-leaderboard"><i class="fa-solid fa-trophy"></i><span>Leaderboard</span></div>
+        <div class="nav-item" id="nav-leaderboard"><i class="fa-solid fa-trophy"></i><span>Leaderboard</span></div>
     </div>
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
-        
+
         const urlParams = new URLSearchParams(window.location.search);
         const matchId = urlParams.get('matchId');
         const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
-        document.getElementById('btn-leaderboard').onclick = function() {
+        document.getElementById('nav-leaderboard').onclick = function() {
             if(matchId) window.location.href = `leader.html?matchId=${matchId}`;
-            else window.location.href = `Matches.html`;
         };
 
         if(!matchId || !userPhone) {
-            document.getElementById('teamsContainer').innerHTML = "<div style='color:#ff004c; text-align:center; padding:30px; font-weight:bold;'>Match Details Missing!</div>";
+            document.getElementById('my-teams-list').innerHTML = "<div class='no-team-msg'>No Match Selected!</div>";
         } else {
-            let isMatchEditable = false;
-            db.ref('Game/Kalyan11/VIPMatches/' + matchId).once('value', mSnap => {
-                if(mSnap.exists()) {
-                    let diff = mSnap.val().timestamp - Date.now();
-                    if(diff > 0) isMatchEditable = true; 
-                }
-                fetchAllMyTeams(isMatchEditable);
-            });
-        }
-
-        function fetchAllMyTeams(canEdit) {
-            let container = document.getElementById('teamsContainer');
-            
-            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').on('value', snap => {
-                let myTeamsArray = [];
-                if(snap.exists()) {
-                    snap.forEach(child => {
-                        if(child.key.includes(userPhone)) {
-                            let tData = child.val();
-                            tData.key = child.key;
-                            myTeamsArray.push(tData);
+            // Sirf Asli User Ki Team Load Karo
+            db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).on('value', snapshot => {
+                let myTeams = [];
+                if(snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        // User phone check karo, aur Bot na ho
+                        if(child.key.includes(userPhone) && !child.val().is_bot) {
+                            let t = child.val();
+                            t.key = child.key;
+                            myTeams.push(t);
                         }
                     });
                 }
 
-                if(myTeamsArray.length === 0) {
-                    container.innerHTML = "<div style='text-align:center; color:#d4af37; margin-top:40px;'><i class='fa-solid fa-chess-knight fa-3x'></i><br><br>No teams forged yet.</div>";
-                    document.getElementById('teamCount').innerText = `0/25`;
+                document.getElementById('team-count-text').innerText = `${myTeams.length} Teams`;
+
+                if(myTeams.length === 0) {
+                    document.getElementById('my-teams-list').innerHTML = `
+                        <div class="no-team-msg">
+                            <i class="fa-solid fa-users-slash fa-3x" style="color:#ddd; margin-bottom:15px;"></i><br>
+                            Aapne abhi tak is match mein koi team nahi banayi hai.
+                        </div>`;
                     return;
                 }
 
-                document.getElementById('teamCount').innerText = `${myTeamsArray.length}/25`;
-                
-                db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', pSnap => {
-                    let allPlayers = pSnap.val() || {};
-                    container.innerHTML = ""; 
+                // Teams ko sort karna (Team 1, Team 2...)
+                myTeams.sort((a, b) => {
+                    let numA = parseInt(a.teamName.replace("Team ", "")) || 0;
+                    let numB = parseInt(b.teamName.replace("Team ", "")) || 0;
+                    return numA - numB;
+                });
 
-                    myTeamsArray.forEach((team, index) => {
-                        let tNumber = index + 1;
-                        let cName = getPlayerShortName(allPlayers, team.captain);
-                        let vcName = getPlayerShortName(allPlayers, team.viceCaptain);
-                        
-                        // BASE 50 POINTS ADDED HERE
-                        let totalPts = 50 + (parseFloat(team.total_points) || 0);
-                        
-                        let editBtnHtml = canEdit 
-                            ? `<button class="btn-edit active" onclick="editSpecificTeam('${team.key}', event)"><i class="fa-solid fa-pen"></i> EDIT</button>` 
-                            : `<button class="btn-edit" onclick="alert('Match Locked! 🔒')"><i class="fa-solid fa-lock"></i> LOCKED</button>`;
-
-                        let playersListHtml = "";
-                        if(team.players) {
-                            team.players.forEach(pid => {
-                                let pInfo = allPlayers[pid];
-                                if(pInfo) {
-                                    let isC = team.captain === pid;
-                                    let isVC = team.viceCaptain === pid;
-                                    let badge = isC ? "(C)" : isVC ? "(VC)" : "";
-                                    let pts = parseFloat(pInfo.points || 0);
-                                    if(isC) pts *= 2; if(isVC) pts *= 1.5;
-
-                                    playersListHtml += `
-                                    <div class="p-row">
-                                        <div class="p-name">${getPlayerShortName(allPlayers, pid)} <span style="color:#d4af37; font-size:10px;">${badge}</span></div>
-                                        <div class="p-pts">${pts.toFixed(1)}</div>
-                                    </div>`;
-                                }
-                            });
-                        }
-
-                        let backups = team.backups || []; 
-                        let b1 = backups[0] ? getPlayerShortName(allPlayers, backups[0]) : "Empty";
-                        let b2 = backups[1] ? getPlayerShortName(allPlayers, backups[1]) : "Empty";
-                        let b3 = backups[2] ? getPlayerShortName(allPlayers, backups[2]) : "Empty";
-                        let b4 = backups[3] ? getPlayerShortName(allPlayers, backups[3]) : "Empty";
-
-                        container.innerHTML += `
-                        <div class="adv-team-card">
-                            <div class="tc-header" onclick="toggleView('${team.key}')">
-                                <div class="tc-name"><i class="fa-solid fa-chess-rook"></i> SQUAD ${tNumber}</div>
-                                <div class="tc-actions">${editBtnHtml}</div>
+                let html = "";
+                myTeams.forEach(t => {
+                    html += `
+                        <div class="team-card">
+                            <div class="team-card-header">
+                                <span>${t.teamName || 'My Team'}</span>
+                                <button class="edit-btn" onclick="editTeam('${t.key}')"><i class="fa-solid fa-pen"></i></button>
                             </div>
                             
-                            <div class="tc-body" onclick="toggleView('${team.key}')">
-                                <div class="tc-stats">
-                                    <div class="stat-box"><div class="stat-lbl">Points <span style="font-size:7px;">(+50)</span></div><div class="stat-val" style="color:#00ff88;">${totalPts.toFixed(1)}</div></div>
-                                    <div class="stat-box"><div class="stat-lbl">Entry</div><div class="stat-val" style="font-size:14px; color:#d4af37;">₹${team.entry_paid || 0}</div></div>
+                            <div class="c-vc-row">
+                                <div class="player-box">
+                                    <div class="badge c">C</div>
+                                    <div class="p-name">${t.captain || 'Captain'}</div>
                                 </div>
-                                
-                                <div class="cvc-display">
-                                    <div class="cvc-item">
-                                        <div class="cvc-role c-color">CAPTAIN (2X)</div>
-                                        <div class="cvc-name">${cName}</div>
-                                    </div>
-                                    <div style="width:1px; background:#3a2b18;"></div>
-                                    <div class="cvc-item">
-                                        <div class="cvc-role vc-color">V-CAPTAIN (1.5X)</div>
-                                        <div class="cvc-name">${vcName}</div>
-                                    </div>
+                                <div style="font-size:20px; color:#ddd; font-weight:100;">|</div>
+                                <div class="player-box">
+                                    <div class="badge vc">VC</div>
+                                    <div class="p-name">${t.vice_captain || 'V. Captain'}</div>
                                 </div>
                             </div>
 
-                            <div class="player-list-wrap" id="view_${team.key}">
-                                <div style="font-size:11px; color:#d4af37; margin-bottom:10px; text-align:center; letter-spacing:1px;">PLAYING 11</div>
-                                ${playersListHtml}
-                                
-                                <div class="backup-section">
-                                    <div class="backup-title"><i class="fa-solid fa-shield"></i> Backups</div>
-                                    <div class="backup-grid">
-                                        <div class="b-slot ${backups[0] ? 'b-active' : ''}"><div class="b-badge">B1</div><div class="b-name">${b1}</div></div>
-                                        <div class="b-slot ${backups[1] ? 'b-active' : ''}"><div class="b-badge">B2</div><div class="b-name">${b2}</div></div>
-                                        <div class="b-slot ${backups[2] ? 'b-active' : ''}"><div class="b-badge">B3</div><div class="b-name">${b3}</div></div>
-                                        <div class="b-slot ${backups[3] ? 'b-active' : ''}"><div class="b-badge">B4</div><div class="b-name">${b4}</div></div>
-                                    </div>
-                                </div>
+                            <div class="team-footer">
+                                <span>Points: <span style="color:#00a05a;">${t.total_points || 0}</span></span>
+                                <span>Entry: ₹${t.entry_paid || 99}</span>
                             </div>
-                        </div>`;
-                    });
+                        </div>
+                    `;
                 });
+
+                document.getElementById('my-teams-list').innerHTML = html;
             });
         }
 
-        function getPlayerShortName(allPlayers, pid) {
-            if(!pid || !allPlayers[pid]) return "Not Selected";
-            let nameParts = allPlayers[pid].name.split(' ');
-            return nameParts.length > 1 ? nameParts[0][0] + ". " + nameParts[nameParts.length - 1] : allPlayers[pid].name;
-        }
-
-        function toggleView(teamKey) {
-            let el = document.getElementById('view_' + teamKey);
-            if(el.style.display === 'block') { el.style.display = 'none'; } 
-            else { 
-                document.querySelectorAll('.player-list-wrap').forEach(d => d.style.display = 'none');
-                el.style.display = 'block'; 
+        // Nayi Team Banane Jao (CreateTeam.html)
+        function createNewTeam() {
+            if(!matchId) return alert("Pehle match select karein!");
+            // Check limits
+            let currentTeams = parseInt(document.getElementById('team-count-text').innerText);
+            if(currentTeams >= 20) {
+                alert("Aap maximum 20 teams bana sakte hain!");
+                return;
             }
+            window.location.href = `CreateTeam.html?matchId=${matchId}`;
         }
 
-        function editSpecificTeam(teamKey, event) {
-            event.stopPropagation();
+        function editTeam(teamKey) {
+            // Edit Team Feature (Creates an edit parameter)
             window.location.href = `CreateTeam.html?matchId=${matchId}&editTeam=${teamKey}`;
         }
     </script>
