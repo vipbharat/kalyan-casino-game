@@ -3,82 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KALYAN VIP - MATCHES MANAGER 🏏</title>
+    <title>Kalyan VIP - Matches</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        body { background: #050510; color: #fff; font-family: 'Segoe UI', sans-serif; padding: 20px; margin: 0; }
-        .header { text-align: center; border-bottom: 2px solid #00b0ff; padding-bottom: 15px; margin-bottom: 20px; }
-        .header h1 { margin: 0; color: #00b0ff; font-size: 26px; text-transform: uppercase; text-shadow: 0 0 15px rgba(0, 176, 255, 0.5);}
-        .box { background: #1a1a2e; padding: 20px; border-radius: 10px; border: 1px solid #444; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);}
-        h3 { margin-top: 0; font-size: 16px; color: #00ff88; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 15px;}
+        body { background: #050510; color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; padding-bottom: 70px; padding-top: 120px;}
         
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 12px; color: #aaa; margin-bottom: 5px; text-transform: uppercase;}
-        input, select { width: calc(100% - 24px); padding: 12px; background: #000; border: 1px solid #555; color: #fff; border-radius: 5px; font-weight: bold; font-size: 14px;}
-        input:focus, select:focus { outline: none; border-color: #00b0ff; }
+        /* 🔥 TOP HEADER & TABS 🔥 */
+        .top-header { position: fixed; top: 0; left: 0; width: 100%; background: #111; z-index: 1000; border-bottom: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.5);}
+        .app-title { text-align: center; font-size: 20px; font-weight: 900; color: #00ff88; padding: 15px 0; margin: 0; text-transform: uppercase; letter-spacing: 1px;}
         
-        .btn-add { width: 100%; padding: 14px; background: linear-gradient(90deg, #00b0ff, #00e676); color: #000; font-weight: 900; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase; transition: 0.3s; box-shadow: 0 4px 10px rgba(0, 230, 118, 0.3);}
-        .btn-add:active { transform: scale(0.98); }
+        .top-tabs { display: flex; justify-content: space-around; background: #1a1a2e; padding: 0; margin: 0; list-style: none;}
+        .tab-btn { flex: 1; text-align: center; padding: 12px 0; color: #aaa; font-size: 14px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; border-bottom: 3px solid transparent;}
+        .tab-btn.active { color: #00ff88; border-bottom: 3px solid #00ff88; background: rgba(0,255,136,0.1);}
+
+        /* 🔥 MATCH CARDS 🔥 */
+        .match-container { padding: 15px; }
+        .match-card { background: #111; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3);}
+        .match-card::before { content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: #00ff88; }
         
-        .match-card { background: #000; border: 1px solid #555; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #00b0ff;}
-        .match-info h4 { margin: 0 0 5px 0; color: #fff; font-size: 18px;}
-        .match-info p { margin: 0; color: #aaa; font-size: 12px;}
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; margin-left: 10px;}
-        .badge.upcoming { background: #ffea00; color: #000; }
-        .badge.live { background: #ff004c; color: #fff; animation: blink 1.5s infinite;}
-        .badge.completed { background: #00e676; color: #000; }
+        .tour-name { font-size: 11px; color: #aaa; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px dashed #333; padding-bottom: 5px;}
+        .teams-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
+        .team-box { text-align: center; width: 35%;}
+        .team-name { font-size: 18px; font-weight: 900; color: #fff;}
         
-        @keyframes blink { 50% { opacity: 0.5; } }
+        .vs-box { width: 30%; text-align: center; font-size: 12px; color: #ff004c; font-weight: bold; background: rgba(255,0,76,0.1); padding: 5px; border-radius: 20px;}
         
-        .btn-delete { background: #ff1744; color: #fff; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.3s;}
-        .btn-delete:hover { background: #d50000; }
+        .time-box { text-align: center; font-size: 12px; color: #ffd700; font-weight: bold; background: #222; padding: 8px; border-radius: 5px; margin-top: 10px;}
         
-        #match-list-container { max-height: 500px; overflow-y: auto; padding-right: 5px;}
-        #match-list-container::-webkit-scrollbar { width: 6px; }
-        #match-list-container::-webkit-scrollbar-thumb { background: #00b0ff; border-radius: 3px; }
+        /* 🔥 BOTTOM NAVIGATION 🔥 */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #333; z-index: 1000;}
+        .nav-item { text-align: center; color: #777; cursor: pointer; font-size: 12px; flex: 1; transition: 0.3s;}
+        .nav-item i { font-size: 20px; display: block; margin-bottom: 4px;}
+        .nav-item.active { color: #00ff88; }
+        
+        .loader { text-align: center; color: #00ff88; font-size: 16px; margin-top: 50px; font-weight: bold;}
+        .empty-msg { text-align: center; color: #aaa; margin-top: 50px; font-size: 14px;}
+
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1><i class="fa-solid fa-trophy"></i> MATCHES MANAGER</h1>
+    <div class="top-header">
+        <h1 class="app-title">KALYAN VIP</h1>
+        <div class="top-tabs">
+            <div class="tab-btn active" onclick="filterMatches('Upcoming', this)">Upcoming</div>
+            <div class="tab-btn" onclick="filterMatches('Live', this)">Live</div>
+            <div class="tab-btn" onclick="filterMatches('Completed', this)">Completed</div>
+        </div>
     </div>
 
-    <div class="box">
-        <h3><i class="fa-solid fa-plus-circle"></i> Create New Match</h3>
-        <div class="form-group">
-            <label>Match ID (Same as Cricbuzz ID)</label>
-            <input type="text" id="match-id" placeholder="e.g. 149673">
-        </div>
-        <div class="form-group">
-            <label>Match Title (Teams)</label>
-            <input type="text" id="match-title" placeholder="e.g. RCB vs CSK">
-        </div>
-        <div class="form-group">
-            <label>Match Date & Time</label>
-            <input type="datetime-local" id="match-time">
-        </div>
-        <div class="form-group">
-            <label>Status</label>
-            <select id="match-status">
-                <option value="upcoming">Upcoming</option>
-                <option value="live">Live</option>
-                <option value="completed">Completed</option>
-            </select>
-        </div>
-        <button class="btn-add" onclick="addMatch()"><i class="fa-solid fa-check"></i> Add Match to App</button>
+    <div class="match-container" id="matches-list">
+        <div class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Matches...</div>
     </div>
 
-    <div class="box">
-        <h3><i class="fa-solid fa-list"></i> All Matches</h3>
-        <div id="match-list-container">
-            </div>
+    <div class="bottom-nav">
+        <div class="nav-item active">
+            <i class="fa-solid fa-house"></i>
+            Home
+        </div>
+        <div class="nav-item">
+            <i class="fa-solid fa-users"></i>
+            My Team
+        </div>
+        <div class="nav-item">
+            <i class="fa-solid fa-chart-line"></i>
+            Dashboard
+        </div>
     </div>
 
 <script>
-    // FIREBASE SETUP
     const firebaseConfig = { 
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" 
@@ -86,84 +81,87 @@
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
 
-    // MATCH ADD KARNE KA FUNCTION
-    function addMatch() {
-        let id = document.getElementById('match-id').value.trim();
-        let title = document.getElementById('match-title').value.trim();
-        let time = document.getElementById('match-time').value;
-        let status = document.getElementById('match-status').value;
+    let allMatches = [];
+    let currentFilter = 'Upcoming';
 
-        if(!id || !title || !time) {
-            alert("Bhai, saari details bharna zaroori hai!");
+    // DATABASE SE MATCHES FETCH KAREIN (VIPMatches path se)
+    db.ref('Game/Kalyan11/VIPMatches').on('value', (snapshot) => {
+        allMatches = [];
+        if (snapshot.exists()) {
+            snapshot.forEach(child => {
+                let match = child.val();
+                match.id = child.key;
+                allMatches.push(match);
+            });
+            // Latest matches upar dikhane ke liye sort karein
+            allMatches.sort((a, b) => a.timestamp - b.timestamp);
+        }
+        renderMatches();
+    });
+
+    // TABS PAR CLICK KARNE PAR FILTER KARNA
+    function filterMatches(status, element) {
+        currentFilter = status;
+        
+        // Tab UI change karna
+        let tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(tab => tab.classList.remove('active'));
+        element.classList.add('active');
+
+        renderMatches();
+    }
+
+    // MATCHES SCREEN PAR DIKHANA
+    function renderMatches() {
+        let container = document.getElementById('matches-list');
+        container.innerHTML = "";
+
+        // Status ke hisaab se filter lagana
+        let filteredMatches = allMatches.filter(match => {
+            let matchStatus = match.status ? match.status.toLowerCase() : 'upcoming';
+            return matchStatus === currentFilter.toLowerCase();
+        });
+
+        if (filteredMatches.length === 0) {
+            container.innerHTML = `<div class="empty-msg"><i class="fa-solid fa-box-open" style="font-size:30px; margin-bottom:10px;"></i><br>No ${currentFilter} matches found.</div>`;
             return;
         }
 
-        let matchData = {
-            matchId: id,
-            title: title.toUpperCase(),
-            dateTime: time,
-            timestamp: new Date(time).getTime(),
-            status: status
-        };
+        filteredMatches.forEach(match => {
+            // Time Format Karna
+            let matchDate = new Date(match.timestamp);
+            let timeString = matchDate.toLocaleString('en-IN', {
+                day: 'numeric', month: 'short', 
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
 
-        db.ref(`Game/Kalyan11/Matches/${id}`).set(matchData)
-        .then(() => {
-            alert("✅ Match Successfully Added!");
-            document.getElementById('match-id').value = "";
-            document.getElementById('match-title').value = "";
-            document.getElementById('match-time').value = "";
-        })
-        .catch(err => {
-            console.error(err);
-            alert("❌ Error aagaya match add karne mein.");
+            // Card HTML
+            container.innerHTML += `
+                <div class="match-card" onclick="joinMatch('${match.id}')">
+                    <div class="tour-name">${match.name}</div>
+                    <div class="teams-row">
+                        <div class="team-box">
+                            <div class="team-name">${match.team1}</div>
+                        </div>
+                        <div class="vs-box">V/S</div>
+                        <div class="team-box">
+                            <div class="team-name">${match.team2}</div>
+                        </div>
+                    </div>
+                    <div class="time-box">
+                        <i class="fa-solid fa-clock"></i> ${timeString}
+                    </div>
+                </div>
+            `;
         });
     }
 
-    // MATCH DELETE KARNE KA FUNCTION
-    function deleteMatch(id) {
-        if(confirm(`Kya aap sach mein Match ID ${id} ko delete karna chahte hain?`)) {
-            db.ref(`Game/Kalyan11/Matches/${id}`).remove()
-            .then(() => alert("🗑️ Match Deleted!"))
-            .catch(err => console.log(err));
-        }
+    // MATCH PAR CLICK KARNE PAR NEXT PAGE JANA (Contest/Team creation)
+    function joinMatch(matchId) {
+        // Aap user ko contest page par bhej sakte hain
+        // window.location.href = `contests.html?matchId=${matchId}`;
+        console.log("Match Clicked: ", matchId);
     }
-
-    // MATCHES DISPLAY KARNE KA FUNCTION
-    db.ref(`Game/Kalyan11/Matches`).orderByChild('timestamp').on('value', (snapshot) => {
-        let listContainer = document.getElementById('match-list-container');
-        listContainer.innerHTML = "";
-
-        if(snapshot.exists()) {
-            let matches = [];
-            snapshot.forEach(child => {
-                matches.push(child.val());
-            });
-            
-            // Latest match upar dikhane ke liye reverse
-            matches.reverse();
-
-            matches.forEach(match => {
-                let formattedTime = new Date(match.dateTime).toLocaleString('en-IN', {
-                    day: '2-digit', month: 'short', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit', hour12: true
-                });
-
-                let statusBadge = `<span class="badge ${match.status}">${match.status}</span>`;
-
-                listContainer.innerHTML += `
-                    <div class="match-card">
-                        <div class="match-info">
-                            <h4>${match.title} ${statusBadge}</h4>
-                            <p><i class="fa-solid fa-clock"></i> ${formattedTime} | ID: ${match.matchId}</p>
-                        </div>
-                        <button class="btn-delete" onclick="deleteMatch('${match.matchId}')"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                `;
-            });
-        } else {
-            listContainer.innerHTML = `<p style="color:#aaa; text-align:center;">Abhi tak koi match add nahi kiya gaya hai.</p>`;
-        }
-    });
 </script>
 </body>
 </html>
