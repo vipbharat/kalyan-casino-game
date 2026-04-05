@@ -187,35 +187,85 @@
             btn.classList.add('active');
         }
 
+        // 🔥 MULTI-TEAM AUR EDIT UPDATE WALA NAYA MAGIC CODE 🔥
         function saveFinalDataToDB(isUpdate) {
-            let finalTeamData = {
-                phone: userPhone,
-                teamKey: userPhone, 
-                players: selectedPlayers,
-                captain: captainId,
-                viceCaptain: viceCaptainId,
-                total_points: 0,
-                entry_paid: contestFee,
-                timestamp: Date.now()
-            };
+            let btn = document.getElementById('saveBtn');
 
-            db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams/' + userPhone).set(finalTeamData)
-            .then(() => {
-                localStorage.removeItem('kalyan_selected_team');
-                localStorage.removeItem('kalyan_edit_team_key');
+            // Captain aur VC ka asli naam nikalna (Leaderboard ke liye)
+            let cName = allPlayersData[captainId] ? allPlayersData[captainId].name : captainId;
+            let vcName = allPlayersData[viceCaptainId] ? allPlayersData[viceCaptainId].name : viceCaptainId;
+
+            // 👉 AGAR TEAM EDIT HO RAHI HAI 👈
+            if(isUpdate && isEditMode) {
+                let updateData = {
+                    players: selectedPlayers,
+                    captain: cName,
+                    vice_captain: vcName,
+                    timestamp: Date.now()
+                };
+
+                db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${isEditMode}`).update(updateData)
+                .then(() => {
+                    localStorage.removeItem('kalyan_selected_team');
+                    localStorage.removeItem('kalyan_edit_team_key');
+                    alert("✅ TEAM UPDATED SUCESSFULLY!");
+                    window.location.href = `MyTeam.html?matchId=${matchId}`;
+                })
+                .catch(error => {
+                    alert("Update Error: " + error.message);
+                    resetBtn(btn);
+                });
+                return;
+            }
+
+            // 👉 AGAR NAYI TEAM BAN RAHI HAI 👈
+            db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).once('value', snapshot => {
+                let teamCount = 1;
                 
-                if(!isUpdate && contestFee > 0) {
-                    alert(`✅ TEAM SAVED! ₹${contestFee} Wallet se kat gaye hain.`);
-                } else {
-                    alert("✅ TEAM UPDATED!");
+                // Pehle gino user ki kitni teams hain
+                if(snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        if(child.key.includes(userPhone) && !child.val().is_bot) {
+                            teamCount++;
+                        }
+                    });
                 }
-                
-                // 🚀🔥 YAHI HAI WO JAADUI LINE JO ERROR THEEK KAREGI 🔥🚀
-                window.location.href = `MyTeam.html?matchId=${matchId}&teamId=${userPhone}`;
-            })
-            .catch(error => {
-                alert("Error: " + error.message);
-                resetBtn(document.getElementById('saveBtn'));
+
+                // Nayi team ko tag dena (e.g., 9876543210_T1, 9876543210_T2)
+                let newTeamKey = `${userPhone}_T${teamCount}`;
+                let newTeamName = `Team ${teamCount}`;
+
+                let finalTeamData = {
+                    phone: userPhone,
+                    userName: userPhone, // Leaderboard ke liye mobile number
+                    teamName: newTeamName,
+                    teamKey: newTeamKey, 
+                    players: selectedPlayers,
+                    captain: cName,
+                    vice_captain: vcName,
+                    total_points: 0,
+                    entry_paid: contestFee,
+                    is_bot: false,
+                    timestamp: Date.now()
+                };
+
+                db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${newTeamKey}`).set(finalTeamData)
+                .then(() => {
+                    localStorage.removeItem('kalyan_selected_team');
+                    localStorage.removeItem('kalyan_edit_team_key');
+                    
+                    if(contestFee > 0) {
+                        alert(`✅ ${newTeamName} SAVED! ₹${contestFee} Wallet se kat gaye hain.`);
+                    } else {
+                        alert(`✅ ${newTeamName} SAVED SUCESSFULLY!`);
+                    }
+                    
+                    window.location.href = `MyTeam.html?matchId=${matchId}`;
+                })
+                .catch(error => {
+                    alert("Save Error: " + error.message);
+                    resetBtn(btn);
+                });
             });
         }
     </script>
