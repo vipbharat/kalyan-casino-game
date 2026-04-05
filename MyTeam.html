@@ -85,12 +85,10 @@
         if(!matchId || !userPhone) {
             document.getElementById('my-teams-list').innerHTML = "<div class='no-team-msg'>No Match Selected!</div>";
         } else {
-            // Sirf Asli User Ki Team Load Karo
             db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).on('value', snapshot => {
                 let myTeams = [];
                 if(snapshot.exists()) {
                     snapshot.forEach(child => {
-                        // User phone check karo, aur Bot na ho
                         if(child.key.includes(userPhone) && !child.val().is_bot) {
                             let t = child.val();
                             t.key = child.key;
@@ -110,19 +108,24 @@
                     return;
                 }
 
-                // Teams ko sort karna (Team 1, Team 2...)
+                // 🔥 SAFE SORTING LOGIC (Crash Fix) 🔥
                 myTeams.sort((a, b) => {
-                    let numA = parseInt(a.teamName.replace("Team ", "")) || 0;
-                    let numB = parseInt(b.teamName.replace("Team ", "")) || 0;
+                    let nameA = a.teamName || ""; 
+                    let nameB = b.teamName || ""; 
+                    let numA = parseInt(nameA.replace("Team ", "")) || 0;
+                    let numB = parseInt(nameB.replace("Team ", "")) || 0;
                     return numA - numB;
                 });
 
                 let html = "";
-                myTeams.forEach(t => {
+                myTeams.forEach((t, index) => {
+                    // Agar purani team ka naam na ho, toh default naam de do
+                    let displayTeamName = t.teamName || `Team ${index + 1}`; 
+                    
                     html += `
                         <div class="team-card">
                             <div class="team-card-header">
-                                <span>${t.teamName || 'My Team'}</span>
+                                <span>${displayTeamName}</span>
                                 <button class="edit-btn" onclick="editTeam('${t.key}')"><i class="fa-solid fa-pen"></i></button>
                             </div>
                             
@@ -150,10 +153,8 @@
             });
         }
 
-        // Nayi Team Banane Jao (CreateTeam.html)
         function createNewTeam() {
             if(!matchId) return alert("Pehle match select karein!");
-            // Check limits
             let currentTeams = parseInt(document.getElementById('team-count-text').innerText);
             if(currentTeams >= 20) {
                 alert("Aap maximum 20 teams bana sakte hain!");
@@ -163,7 +164,6 @@
         }
 
         function editTeam(teamKey) {
-            // Edit Team Feature (Creates an edit parameter)
             window.location.href = `CreateTeam.html?matchId=${matchId}&editTeam=${teamKey}`;
         }
     </script>
