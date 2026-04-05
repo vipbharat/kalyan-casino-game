@@ -36,7 +36,7 @@
     <div class="box">
         <h3><i class="fa-solid fa-crosshairs"></i> Target Live Match</h3>
         
-        <input type="hidden" id="api-url" value="https://script.google.com/macros/s/AKfycbz-a5vjg-SJvLCbY1tSNj5QLo17lPMJpV-7Px3hA2hONT8Jfh4P7voRIxEZpOn2aDOFFA/exec">
+        <input type="hidden" id="api-url" value="https://script.google.com/macros/s/AKfycbwqmbrHUINUVTZedfBd3qe1eqwsxuALOMQB5ld_Pipy1KJZmDFaGhJ4p7_k3VnFgxNtRA/exec">
         
         <input type="text" id="m-id" placeholder="Cricbuzz Match ID (e.g. 149673)">
         <input type="datetime-local" id="m-time">
@@ -109,7 +109,7 @@
         }
     });
 
-    // MASTER LOOP: Har 15 second mein attack karega
+    // HAR 15 SECOND MEIN ATTACK KAREGA
     setInterval(async () => {
         if(isFetching) return; 
         let now = Date.now();
@@ -120,26 +120,32 @@
         }
     }, 15000); 
 
-    // 🔥 THE BYPASS ATTACK (GOOGLE SCRIPT) 🔥
+    // 🔥 THE BYPASS ATTACK 🔥
     async function fetchFromGoogleScript(matchId) {
         isFetching = true;
         try {
             cLog('info', `🌐 Calling Google Server to fetch Match: ${matchId}...`);
             
             let baseUrl = document.getElementById('api-url').value.trim();
-            let targetUrl = `https://www.cricbuzz.com/live-cricket-scores/${matchId}`;
+            // Cricbuzz ke scorecard wale link par direct attack
+            let targetUrl = `https://www.cricbuzz.com/live-cricket-scorecard/${matchId}`;
             let finalUrl = `${baseUrl}?url=${encodeURIComponent(targetUrl)}`;
             
             let res = await fetch(finalUrl, { redirect: "follow" });
             let textData = await res.text();
 
-            if (!textData || textData.includes("Exception:") || textData.includes("Error:") || textData.includes("script.google.com/a/macros/")) {
-                cLog('error', `❌ Google Script Blocked/Error. Retrying in next cycle...`);
-                isFetching = false;
-                return; 
+            if (!textData || textData.includes("Exception:") || textData.includes("Error:")) {
+                cLog('error', `❌ Google Script Error. Retrying in next cycle...`);
+                isFetching = false; return; 
             }
 
-            cLog('info', `🔓 Security Bypassed! HTML received. Running Data Extraction...`);
+            // 🔥 CLOUDFLARE DETECTOR 🔥
+            if (textData.includes("Just a moment") || textData.includes("Cloudflare") || textData.includes("Security check")) {
+                cLog('error', `❌ Cricbuzz Cloudflare Shield Detected! Google Script blocked.`);
+                isFetching = false; return;
+            }
+
+            cLog('info', `🔓 Shield Broken! Scorecard HTML received. Parsing...`);
             let doc = new DOMParser().parseFromString(textData, "text/html");
             await extractDataAndMatch(doc, matchId);
             
@@ -153,7 +159,7 @@
         return str.toLowerCase().replace(/\(c\)/g,'').replace(/\(wk\)/g,'').replace(/[^a-z]/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
-    // 🔥 DATA EXTRACTION & FUZZY MATCHING LOGIC 🔥
+    // 🔥 ADVANCED DATA EXTRACTION 🔥
     async function extractDataAndMatch(doc, matchId) {
         let dbSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
         if(!dbSnap.exists()) {
@@ -165,52 +171,27 @@
         let updates = {};
         let scrapedData = {};
 
-        // 1. FULL SCORECARD SCRAPING
+        // 1. FULL SCORECARD SCAN
         doc.querySelectorAll('.cb-scrd-itms').forEach(row => {
-            let nameEl = row.querySelector('a.cb-text-link');
+            let nameEl = row.querySelector('a'); 
             if(!nameEl) return;
             let name = cleanName(nameEl.textContent);
             if(!scrapedData[name]) scrapedData[name] = {runs:0, wickets:0};
 
-            let runsCell = row.querySelector('.text-bold');
-            if(runsCell && row.querySelector('.cb-col-27')) {
-                scrapedData[name].runs = parseInt(runsCell.textContent) || 0;
-            }
-            if(runsCell && row.querySelector('.cb-col-38')) {
-                scrapedData[name].wickets = parseInt(runsCell.textContent) || 0;
-            }
-        });
-
-        // 2. LIVE ONGOING MATCH SCRAPING (Mini Scorecard)
-        doc.querySelectorAll('.cb-min-bat-rw').forEach(row => {
-            let nameEl = row.querySelector('a.cb-text-link');
-            if(!nameEl) return;
-            let name = cleanName(nameEl.textContent);
-            if(!scrapedData[name]) scrapedData[name] = {runs:0, wickets:0};
-
-            let boldText = row.querySelector('.text-bold, .abtext');
-            if(boldText) {
-                let runs = parseInt(boldText.textContent);
-                if(!isNaN(runs)) scrapedData[name].runs = runs;
-            }
-        });
-        
-        doc.querySelectorAll('.cb-min-bowl-rw').forEach(row => {
-            let nameEl = row.querySelector('a.cb-text-link');
-            if(!nameEl) return;
-            let name = cleanName(nameEl.textContent);
-            if(!scrapedData[name]) scrapedData[name] = {runs:0, wickets:0};
-
-            let cols = row.querySelectorAll('.cb-col-10, .cb-col-8');
-            if(cols.length >= 4) { 
-                let wkts = parseInt(cols[3].textContent);
-                if(!isNaN(wkts)) scrapedData[name].wickets = wkts;
+            let boldTexts = row.querySelectorAll('.text-bold');
+            if(boldTexts.length > 0) {
+                if(row.querySelector('.cb-col-27') || row.querySelector('.cb-col-25')) {
+                    scrapedData[name].runs = parseInt(boldTexts[0].textContent) || 0;
+                }
+                if(row.querySelector('.cb-col-38') || row.querySelector('.cb-col-40')) {
+                    scrapedData[name].wickets = parseInt(boldTexts[0].textContent) || 0;
+                }
             }
         });
 
         let scrapedNamesList = Object.keys(scrapedData);
         if(scrapedNamesList.length === 0) {
-            cLog('warn', `⚠️ Scorecard par abhi tak koi run/wicket nahi dikha (Match ya toh shuru nahi hua ya break par hai).`);
+            cLog('warn', `⚠️ Page par koi runs nahi mile (Shayad barish hai, ya match shuru nahi hua).`);
             return;
         }
 
@@ -218,7 +199,6 @@
 
         let matchedCount = 0;
 
-        // 🔥 THE SMART MATCHER 🔥
         for (let key in players) {
             let fbClean = cleanName(players[key].name || "");
             let fbParts = fbClean.split(' ');
@@ -245,8 +225,6 @@
                 let r = matchedStats.runs || 0;
                 let w = matchedStats.wickets || 0;
                 
-                // 💰 THE POINT FORMULA 💰
-                // 1 Run = 1 Pt | 1 Wicket = 25 Pts | Playing 11 = 4 Pts
                 let p = (r * 1) + (w * 25) + 4; 
 
                 updates[key + '/points'] = p;
@@ -267,7 +245,6 @@
         }
     }
 
-    // 🔥 LEADERBOARD RANKING ENGINE (C/VC 2x & 1.5x LOGIC) 🔥
     async function updateTeamsLeaderboard(matchId) {
         try {
             let pSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
@@ -300,7 +277,7 @@
             });
 
             await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).update(updates);
-            cLog('success', `🏆 LEADERBOARD LIVE: Rankings and (2x/1.5x) Multipliers updated!`);
+            cLog('success', `🏆 LEADERBOARD LIVE: Rankings and Multipliers updated!`);
             
         } catch(e) { 
             cLog('error', `Leaderboard Crash: ` + e); 
