@@ -109,7 +109,6 @@
         }
     });
 
-    // HAR 15 SECOND MEIN ATTACK KAREGA
     setInterval(async () => {
         if(isFetching) return; 
         let now = Date.now();
@@ -127,7 +126,6 @@
             cLog('info', `🌐 Calling Google Server to fetch Match: ${matchId}...`);
             
             let baseUrl = document.getElementById('api-url').value.trim();
-            // Cricbuzz ke scorecard wale link par direct attack
             let targetUrl = `https://www.cricbuzz.com/live-cricket-scorecard/${matchId}`;
             let finalUrl = `${baseUrl}?url=${encodeURIComponent(targetUrl)}`;
             
@@ -139,14 +137,21 @@
                 isFetching = false; return; 
             }
 
-            // 🔥 CLOUDFLARE DETECTOR 🔥
-            if (textData.includes("Just a moment") || textData.includes("Cloudflare") || textData.includes("Security check")) {
+            let doc = new DOMParser().parseFromString(textData, "text/html");
+
+            // 🔥 NAYA JADOO: PAGE KA NAAM PADHO 🔥
+            let pageTitle = doc.querySelector('title') ? doc.querySelector('title').textContent : "Unknown Page";
+
+            // Cloudflare Detector
+            if (pageTitle.includes("Just a moment") || pageTitle.includes("Cloudflare") || pageTitle.includes("Security check") || textData.includes("Access Denied")) {
                 cLog('error', `❌ Cricbuzz Cloudflare Shield Detected! Google Script blocked.`);
                 isFetching = false; return;
             }
 
+            // Asli Page ka naam Terminal par print karega
+            cLog('scan', `📄 Opened Page: "${pageTitle.substring(0, 45)}..."`);
             cLog('info', `🔓 Shield Broken! Scorecard HTML received. Parsing...`);
-            let doc = new DOMParser().parseFromString(textData, "text/html");
+            
             await extractDataAndMatch(doc, matchId);
             
         } catch (e) { 
