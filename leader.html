@@ -191,7 +191,6 @@
         let listContainer = document.getElementById('leaderboard-list');
         listContainer.innerHTML = "";
 
-        // 🔥 CHECK IF MATCH HAS STARTED 🔥
         let isMatchStarted = false;
         if(matchStartTime > 0) {
             isMatchStarted = Date.now() >= matchStartTime;
@@ -224,8 +223,11 @@
         if(cDetails.type === 'mega') {
             let botAmount = Math.floor(Math.random() * 20) + 30; 
             for(let i=0; i<botAmount; i++) {
+                let randomNum = Math.floor(100 + Math.random() * 899); 
+                let fakeName = indianNames[Math.floor(Math.random() * indianNames.length)] + randomNum;
+                
                 extraUIBots.push({
-                    teamName: indianNames[Math.floor(Math.random() * indianNames.length)] + "****",
+                    teamName: fakeName,
                     total_points: isMatchStarted ? (40 + (Math.random() * 30)) : 0, 
                     is_bot: true, ui_only: true
                 });
@@ -242,19 +244,16 @@
 
                 for(let i=0; i<botsNeeded; i++) {
                     let botScore = 0;
-                    
-                    if (!isMatchStarted) {
-                        botScore = 0; 
-                    } else if (maxRealScore < 800 && maxRealScore > 0) {
-                        botScore = maxRealScore + Math.floor(Math.random() * 25) + 5; 
-                    } else if (maxRealScore >= 800) {
-                        botScore = 750 + Math.floor(Math.random() * 60);
-                    } else {
-                        botScore = 50; 
-                    }
+                    if (!isMatchStarted) { botScore = 0; } 
+                    else if (maxRealScore < 800 && maxRealScore > 0) { botScore = maxRealScore + Math.floor(Math.random() * 25) + 5; } 
+                    else if (maxRealScore >= 800) { botScore = 750 + Math.floor(Math.random() * 60); } 
+                    else { botScore = 50; }
+
+                    let randomNum = Math.floor(100 + Math.random() * 899);
+                    let fakeName = indianNames[Math.floor(Math.random() * indianNames.length)] + randomNum;
 
                     extraUIBots.push({
-                        teamName: indianNames[Math.floor(Math.random() * indianNames.length)] + "****",
+                        teamName: fakeName,
                         total_points: botScore,
                         is_bot: true, ui_only: true
                     });
@@ -268,8 +267,33 @@
             return { ...t, display_points: safePoints };
         });
 
-        // Ab display_points ke hisaab se Sort karo
-        finalDisplayList.sort((a, b) => b.display_points - a.display_points);
+        // 🔥 MASTER SMART SORTING LOGIC 🔥
+        finalDisplayList.sort((a, b) => {
+            // 1. Pehle points dekho (High to Low)
+            if (b.display_points !== a.display_points) {
+                return b.display_points - a.display_points;
+            }
+            
+            // 2. Agar points same hain (Jaise 0.0 par), toh Asli "My Team" sabse upar
+            let isMineA = (!a.is_bot && !a.ui_only && userPhone && a.key && a.key.includes(userPhone)) ? 1 : 0;
+            let isMineB = (!b.is_bot && !b.ui_only && userPhone && b.key && b.key.includes(userPhone)) ? 1 : 0;
+            if (isMineA !== isMineB) return isMineB - isMineA;
+
+            // 3. Uske baad Admin Panel se banayi gayi Teams (Bots) ko upar rakho
+            let isAdminBotA = (a.is_bot && !a.ui_only) ? 1 : 0;
+            let isAdminBotB = (b.is_bot && !b.ui_only) ? 1 : 0;
+            if (isAdminBotA !== isAdminBotB) return isAdminBotB - isAdminBotA;
+
+            // 4. 🔥 JAADU: Agar dono Admin bot hain, toh unko naam ke hisaab se line me lagao
+            // (Jaise: Ravi Team 1, uske neeche Ravi Team 2, phir Ravi Team 3)
+            if (isAdminBotA && isAdminBotB) {
+                let nameA = a.teamName || "";
+                let nameB = b.teamName || "";
+                return nameA.localeCompare(nameB, undefined, {numeric: true, sensitivity: 'base'});
+            }
+
+            return 0; // Baaki UI bots mix rahenge
+        });
 
         let htmlContent = "";
         finalDisplayList.forEach((team, index) => {
@@ -277,17 +301,22 @@
             let pts = team.display_points.toFixed(1); 
             let tName = team.teamName || team.userName || "Unknown";
             
-            // 🔥 RANK CHHUPANE KA LOGIC 🔥
+            // 🔥 PROBLEM 1 FIX: " XI" ko hatana 🔥
+            // Agar purane database mein kisi naam ke aage " XI" likha hai, toh ye usko kaat dega
+            tName = tName.replace(/\s?XI$/i, '');
+
             let showRankText = isMatchStarted ? `Rank #${rank}` : `Rank --`;
             let isFirstRank = isMatchStarted && rank === 1;
 
-            if(!team.is_bot && !team.ui_only && tName.length >= 10 && !isNaN(tName.replace(/\D/g, ''))) {
+            // Phone number hide logic
+            if(!team.is_bot && !team.ui_only && tName.length >= 10 && /\d{10}/.test(tName.replace(/\D/g, ''))) {
                 let cleanNum = tName.replace(/\D/g, '');
-                tName = cleanNum.substring(0,2) + "******" + cleanNum.substring(cleanNum.length - 2); 
+                let suffix = tName.includes('_T') ? " (Team " + tName.split('_T')[1] + ")" : "";
+                tName = cleanNum.substring(0,2) + "******" + cleanNum.substring(cleanNum.length - 2) + suffix; 
             }
 
             let cardClass = "team-card";
-            if(isFirstRank) cardClass += " rank-1"; // Crown styling sirf match shuru hone par
+            if(isFirstRank) cardClass += " rank-1"; 
             
             let isMyTeam = !team.is_bot && !team.ui_only && userPhone && team.key && team.key.includes(userPhone);
             if(isMyTeam) cardClass += " my-team-highlight"; 
