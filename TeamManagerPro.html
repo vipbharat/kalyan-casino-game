@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Admin Master</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding: 10px; }
+        .container { max-width: 800px; margin: 0 auto; background: #111; padding: 15px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 5px 20px rgba(0,255,136,0.1); }
+        
+        .header { text-align: center; border-bottom: 2px dashed #444; padding-bottom: 10px; margin-bottom: 15px; }
+        .header h2 { color: #00ff88; margin: 0; font-weight: 900; text-transform: uppercase; font-size: 20px;}
+
+        /* Master Match Selector */
+        .match-select-box { background: #1a1a2e; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #444;}
+        .match-select-box label { font-weight: bold; color: #00ff88; display: block; margin-bottom: 5px; font-size: 12px; text-transform: uppercase;}
+        select { width: 100%; padding: 10px; background: #050510; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 15px; font-weight: bold; outline: none;}
+
+        /* Tab System (Fixed for Mobile) */
+        .tabs { display: flex; border-bottom: 2px solid #333; margin-bottom: 15px; overflow-x: auto; white-space: nowrap;}
+        .tab-btn { flex: 1; padding: 10px 5px; background: transparent; color: #888; border: none; font-size: 12px; font-weight: 900; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        .tab-btn.active { color: #00ff88; border-bottom: 3px solid #00ff88; background: rgba(0,255,136,0.05); }
+
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Inputs & Buttons */
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 11px; color: #aaa; margin-bottom: 5px; font-weight: bold; text-transform: uppercase;}
+        .input-group input { width: 100%; padding: 10px; background: #1a1a2e; border: 1px solid #444; border-radius: 6px; color: #fff; font-size: 14px; font-weight: bold; box-sizing: border-box; outline: none;}
+        
+        .btn-primary { width: 100%; background: linear-gradient(135deg, #00a05a, #00ff88); color: #000; border: none; padding: 12px; border-radius: 6px; font-size: 15px; font-weight: 900; cursor: pointer; text-transform: uppercase; margin-top: 10px; box-shadow: 0 4px 10px rgba(0,255,136,0.2);}
+        .btn-primary:active { transform: scale(0.98); }
+
+        /* 🏏 Advanced Player Stats Card (Fixes Screen Squish) */
+        .player-stat-card { background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 10px; margin-bottom: 12px; position: relative; border-left: 4px solid #00ff88;}
+        .player-stat-card .p-name { font-size: 14px; font-weight: 900; color: #fff; margin-bottom: 10px; display: flex; justify-content: space-between;}
+        .p-remove { color: #ff004c; background: none; border: none; font-size: 16px; cursor: pointer; }
+        
+        .stats-grid { display: flex; gap: 8px; justify-content: space-between; }
+        .stat-box { flex: 1; background: #050510; padding: 5px; border-radius: 5px; border: 1px solid #444; text-align: center;}
+        .stat-box label { display: block; font-size: 9px; color: #aaa; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;}
+        .stat-box input { width: 100%; background: transparent; border: none; color: #fff; font-size: 14px; font-weight: 900; text-align: center; outline: none; padding: 0;}
+        .stat-box input.total-pts { color: #ffd700; }
+
+        .loader { display: none; text-align: center; padding: 20px; color: #00ff88; font-weight: bold; font-size: 14px;}
+        .success-alert { display: none; background: #00a05a; color: #fff; padding: 12px; text-align: center; border-radius: 6px; margin-top: 15px; font-weight: 900; font-size: 14px;}
+
+        /* Edit Teams Simple List */
+        .edit-team-card { background: #1a1a2e; border: 1px solid #444; padding: 10px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
+        .edit-team-card div { font-size: 12px; color: #aaa;}
+        .edit-team-card strong { color: #fff; font-size: 14px; display: block;}
+        .btn-edit { background: #ff8c00; color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 900; font-size: 11px;}
+
+        /* Edit Modal Popup */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: #111; width: 90%; max-width: 350px; padding: 20px; border-radius: 12px; border: 1px solid #00ff88; position: relative; }
+        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 25px; cursor: pointer; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h2><i class="fa-solid fa-chess-board"></i> Admin Master</h2>
+        </div>
+
+        <div class="match-select-box">
+            <label>Select Match First</label>
+            <select id="master-match-select" onchange="clearData()">
+                <option value="">-- Matches Loading --</option>
+            </select>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" id="btn-bot" onclick="switchTab('bot')"><i class="fa-solid fa-robot"></i> Bots</button>
+            <button class="tab-btn" id="btn-edit" onclick="switchTab('edit')"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+            <button class="tab-btn" id="btn-pts" onclick="switchTab('pts')"><i class="fa-solid fa-chart-line"></i> Points</button>
+        </div>
+
+        <div id="section-bot" class="section active">
+            <div class="input-group">
+                <label>Entry Fee</label>
+                <input type="number" id="bot-fee" value="99">
+            </div>
+            <div class="input-group">
+                <label>Kitni Teams?</label>
+                <input type="number" id="bot-count" value="100" placeholder="10 to 1000">
+            </div>
+            <button class="btn-primary" onclick="generateBots()"><i class="fa-solid fa-bolt"></i> Generate Bots</button>
+            <div class="loader" id="bot-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Generating...</div>
+            <div class="success-alert" id="bot-success"><span id="bot-success-txt"></span></div>
+        </div>
+
+        <div id="section-edit" class="section">
+            <button class="btn-primary" style="background: #1a0033; color:#00ff88; border:1px solid #00ff88;" onclick="loadTeamsList()"><i class="fa-solid fa-magnifying-glass"></i> Load Teams</button>
+            <div class="loader" id="edit-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Fetching...</div>
+            <div id="teams-list" style="margin-top: 15px;"></div>
+        </div>
+
+        <div id="section-pts" class="section">
+            <div style="font-size: 11px; color: #ffd700; margin-bottom: 10px; border: 1px dashed #ffd700; padding: 8px; border-radius: 5px;">
+                <b>Formula:</b> 1 Run = 1 Pt | 1 Wicket = 25 Pts. <br>System khud Total calculate karega!
+            </div>
+            
+            <button class="btn-primary" style="background: #1a0033; color:#00ff88; border:1px solid #00ff88;" onclick="fetchPlayersForPoints()"><i class="fa-solid fa-cloud-arrow-down"></i> Load 22 Players</button>
+            
+            <div class="loader" id="pts-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Players Loading...</div>
+
+            <div id="players-points-container" style="margin-top: 15px; display: none;">
+                <div id="dynamic-players-list"></div>
+                <button class="btn-primary" style="background: transparent; color: #00ff88; border: 1px dashed #00ff88;" onclick="addBlankPlayerCard()"><i class="fa-solid fa-plus"></i> Add Extra Player</button>
+                <button class="btn-primary" onclick="saveAllDetailedPoints()"><i class="fa-solid fa-floppy-disk"></i> Save Live Points</button>
+                <div class="success-alert" id="pts-success">Points Saved Successfully!</div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div style="color:#00ff88; font-weight:bold; margin-bottom:15px;">Edit Team</div>
+            <input type="hidden" id="edit-team-key">
+            <div class="input-group"><label>Name</label><input type="text" id="edit-name"></div>
+            <div class="input-group"><label>Points</label><input type="number" id="edit-points"></div>
+            <div class="input-group"><label>Captain</label><input type="text" id="edit-captain"></div>
+            <div class="input-group"><label>Vice Captain</label><input type="text" id="edit-vcaptain"></div>
+            <button class="btn-primary" onclick="updateSingleTeam()">Update</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
+
+        // Load Matches
+        db.ref('Game/Kalyan11/VIPMatches').on('value', snapshot => {
+            let select = document.getElementById('master-match-select');
+            select.innerHTML = '<option value="">-- Select Match --</option>';
+            if(snapshot.exists()){
+                snapshot.forEach(child => {
+                    select.innerHTML += `<option value="${child.key}">${child.val().team1} vs ${child.val().team2}</option>`;
+                });
+            }
+        });
+
+        function switchTab(tab) {
+            ['bot', 'edit', 'pts'].forEach(t => {
+                document.getElementById('btn-' + t).classList.remove('active');
+                document.getElementById('section-' + t).classList.remove('active');
+            });
+            document.getElementById('btn-' + tab).classList.add('active');
+            document.getElementById('section-' + tab).classList.add('active');
+        }
+        function clearData() {
+            document.getElementById('teams-list').innerHTML = '';
+            document.getElementById('players-points-container').style.display = 'none';
+        }
+
+        // ==========================================
+        // 1. AUTO BOTS
+        // ==========================================
+        const botNames = ["Rahul", "Amit", "Vikram", "Pooja", "Neha", "Suresh", "Ramesh", "Deepak", "Ravi", "Sunil", "Karan", "Rohit", "Mohit", "Virat", "Sneha"];
+        function generateBots() {
+            let matchId = document.getElementById('master-match-select').value;
+            let fee = parseInt(document.getElementById('bot-fee').value) || 99;
+            let count = parseInt(document.getElementById('bot-count').value);
+            if(!matchId) return alert("Match select karein!");
+
+            document.getElementById('bot-loader').style.display = "block";
+
+            // Sahi Rasta: MatchPlayers
+            db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value').then(snap => {
+                let players = [];
+                if(snap.exists()) { snap.forEach(p => { players.push(p.val().name || p.key); }); }
+                if(players.length < 11) players = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10", "P11"];
+
+                let updates = {};
+                let time = Date.now();
+                for(let i=0; i<count; i++) {
+                    let rName = botNames[Math.floor(Math.random() * botNames.length)] + Math.floor(Math.random() * 999);
+                    let fakeId = "BOT_" + time + "_" + i;
+                    let cIdx = Math.floor(Math.random() * players.length);
+                    let vcIdx = Math.floor(Math.random() * players.length);
+                    while(cIdx === vcIdx) vcIdx = Math.floor(Math.random() * players.length);
+
+                    updates[fakeId] = { userName: rName, teamName: rName+" XI", captain: players[cIdx], vice_captain: players[vcIdx], total_points: 50, entry_paid: fee, is_bot: true };
+                }
+                db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).update(updates).then(() => {
+                    document.getElementById('bot-loader').style.display = "none";
+                    document.getElementById('bot-success-txt').innerText = `${count} Bots Generated!`;
+                    document.getElementById('bot-success').style.display = "block";
+                    setTimeout(() => document.getElementById('bot-success').style.display = "none", 3000);
+                });
+            });
+        }
+
+        // ==========================================
+        // 2. EDIT TEAMS
+        // ==========================================
+        function loadTeamsList() {
+            let matchId = document.getElementById('master-match-select').value;
+            if(!matchId) return alert("Match select karein!");
+            document.getElementById('edit-loader').style.display = 'block';
+            document.getElementById('teams-list').innerHTML = "";
+
+            db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).once('value', snapshot => {
+                document.getElementById('edit-loader').style.display = 'none';
+                if(!snapshot.exists()) return alert("Koi team nahi mili!");
+
+                let html = "";
+                snapshot.forEach(child => {
+                    let t = child.val();
+                    html += `
+                        <div class="edit-team-card">
+                            <div><strong>${t.teamName || t.userName}</strong> C: ${t.captain || 'N/A'} <br> Pts: <span style="color:#00ff88">${t.total_points || 0}</span></div>
+                            <button class="btn-edit" onclick="openEditModal('${child.key}', '${matchId}')">EDIT</button>
+                        </div>
+                    `;
+                });
+                document.getElementById('teams-list').innerHTML = html;
+            });
+        }
+        function openEditModal(key, matchId) {
+            db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${key}`).once('value', snap => {
+                let t = snap.val();
+                document.getElementById('edit-team-key').value = key;
+                document.getElementById('edit-name').value = t.teamName || "";
+                document.getElementById('edit-points').value = t.total_points || 0;
+                document.getElementById('edit-captain').value = t.captain || "";
+                document.getElementById('edit-vcaptain').value = t.vice_captain || "";
+                document.getElementById('editModal').style.display = 'flex';
+            });
+        }
+        function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+        function updateSingleTeam() {
+            let matchId = document.getElementById('master-match-select').value;
+            let teamKey = document.getElementById('edit-team-key').value;
+            db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${teamKey}`).update({
+                teamName: document.getElementById('edit-name').value, userName: document.getElementById('edit-name').value,
+                total_points: parseFloat(document.getElementById('edit-points').value),
+                captain: document.getElementById('edit-captain').value, vice_captain: document.getElementById('edit-vcaptain').value
+            }).then(() => { alert("Updated!"); closeModal(); loadTeamsList(); });
+        }
+
+        // ==========================================
+        // 3. ADVANCED LIVE POINTS (Runs + Wickets)
+        // ==========================================
+        let pCount = 0;
+        function fetchPlayersForPoints() {
+            let matchId = document.getElementById('master-match-select').value;
+            if(!matchId) return alert("Match select karein!");
+            document.getElementById('pts-loader').style.display = 'block';
+            document.getElementById('players-points-container').style.display = 'none';
+            document.getElementById('dynamic-players-list').innerHTML = '';
+            pCount = 0;
+
+            // Load Existing Points & Stats to fill inputs
+            db.ref(`Game/Kalyan11/LiveStats/${matchId}`).once('value').then(statsSnap => {
+                let existingStats = statsSnap.exists() ? statsSnap.val() : {};
+
+                db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value').then(playerSnap => {
+                    document.getElementById('pts-loader').style.display = 'none';
+                    document.getElementById('players-points-container').style.display = 'block';
+
+                    if(playerSnap.exists()) {
+                        playerSnap.forEach(child => {
+                            let name = child.val().name || child.key;
+                            let safe = name.replace(/[.#$[\]]/g, "");
+                            let stats = existingStats[safe] || { runs: 0, wickets: 0, other: 0, total: 0 };
+                            addPlayerStatCard(name, stats.runs, stats.wickets, stats.other, stats.total);
+                        });
+                    } else {
+                        for(let i=0; i<3; i++) addPlayerStatCard("", 0, 0, 0, 0); // blanks
+                    }
+                });
+            });
+        }
+
+        function addPlayerStatCard(name, r, w, o, t) {
+            let list = document.getElementById('dynamic-players-list');
+            let cardId = `pcard-${pCount}`;
+            list.innerHTML += `
+                <div class="player-stat-card" id="${cardId}">
+                    <div class="p-name">
+                        <input type="text" class="card-pname" value="${name}" placeholder="Player Name" style="background:transparent; border:none; color:#fff; font-weight:900; width:80%; outline:none;">
+                        <button class="p-remove" onclick="removeCard('${cardId}')"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-box"><label>Runs</label><input type="number" class="in-r" value="${r||''}" oninput="calcTotal('${cardId}')" placeholder="0"></div>
+                        <div class="stat-box"><label>Wickets</label><input type="number" class="in-w" value="${w||''}" oninput="calcTotal('${cardId}')" placeholder="0"></div>
+                        <div class="stat-box"><label>Bonus</label><input type="number" class="in-o" value="${o||''}" oninput="calcTotal('${cardId}')" placeholder="0"></div>
+                        <div class="stat-box"><label>Total Pts</label><input type="number" class="in-t total-pts" value="${t||0}" readonly></div>
+                    </div>
+                </div>
+            `;
+            pCount++;
+        }
+
+        function addBlankPlayerCard() { addPlayerStatCard("", "", "", "", 0); }
+        function removeCard(id) { document.getElementById(id).remove(); }
+
+        // Magic Calculation Formula
+        function calcTotal(cardId) {
+            let card = document.getElementById(cardId);
+            let r = parseInt(card.querySelector('.in-r').value) || 0;
+            let w = parseInt(card.querySelector('.in-w').value) || 0;
+            let o = parseInt(card.querySelector('.in-o').value) || 0;
+            
+            // FORMULA: 1 Run = 1 Point, 1 Wicket = 25 Points
+            let total = (r * 1) + (w * 25) + o;
+            card.querySelector('.in-t').value = total;
+        }
+
+        function saveAllDetailedPoints() {
+            let matchId = document.getElementById('master-match-select').value;
+            let cards = document.querySelectorAll('.player-stat-card');
+            
+            let pointUpdates = {}; // For Leaderboard Total Calculation
+            let statsUpdates = {}; // For storing Runs/Wickets details
+
+            let c = 0;
+            cards.forEach(card => {
+                let name = card.querySelector('.card-pname').value.trim();
+                let r = parseInt(card.querySelector('.in-r').value) || 0;
+                let w = parseInt(card.querySelector('.in-w').value) || 0;
+                let o = parseInt(card.querySelector('.in-o').value) || 0;
+                let t = parseInt(card.querySelector('.in-t').value) || 0;
+
+                if(name !== "") {
+                    let safe = name.replace(/[.#$[\]]/g, "");
+                    pointUpdates[safe] = t; // Saving Total for Leaderboard
+                    statsUpdates[safe] = { runs: r, wickets: w, other: o, total: t }; // Saving detailed stats
+                    c++;
+                }
+            });
+
+            if(c === 0) return alert("Pehle data daaliye!");
+
+            // Save both totals and detailed stats
+            db.ref(`Game/Kalyan11/LivePoints/${matchId}`).update(pointUpdates);
+            db.ref(`Game/Kalyan11/LiveStats/${matchId}`).update(statsUpdates).then(() => {
+                let msg = document.getElementById('pts-success');
+                msg.style.display = 'block';
+                setTimeout(() => msg.style.display = 'none', 3000);
+            });
+        }
+    </script>
+</body>
+</html>
