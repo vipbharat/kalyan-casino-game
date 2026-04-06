@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalyan 11 - Scorecard & Stats</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding: 0; padding-bottom: 30px;}
+        
+        /* 👑 Header */
+        .header { background: linear-gradient(135deg, #1a0033, #00ff88); padding: 15px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,255,136,0.3); color: #000; }
+        .back-btn { font-size: 20px; cursor: pointer; font-weight: bold; }
+        .match-info { text-align: center; font-weight: 900; font-size: 16px; flex-grow: 1; text-transform: uppercase; letter-spacing: 1px;}
+        
+        /* 🗂️ Team Tabs */
+        .team-tabs { display: flex; background: #111; border-bottom: 2px solid #333; position: sticky; top: 54px; z-index: 99;}
+        .tab { flex: 1; text-align: center; padding: 12px 0; font-size: 14px; font-weight: bold; color: #aaa; cursor: pointer; text-transform: uppercase; transition: 0.3s;}
+        .tab.active { color: #00ff88; border-bottom: 3px solid #00ff88; background: rgba(0,255,136,0.1);}
+
+        /* 📊 Table Style */
+        .stats-container { padding: 15px; }
+        .stats-table { width: 100%; border-collapse: collapse; background: #1a1a2e; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.5);}
+        .stats-table th { background: #111; color: #aaa; font-size: 11px; text-transform: uppercase; padding: 12px 10px; text-align: center; border-bottom: 1px solid #333;}
+        .stats-table th:first-child { text-align: left; }
+        .stats-table td { padding: 12px 10px; text-align: center; border-bottom: 1px solid #222; font-size: 14px; font-weight: bold;}
+        .stats-table td:first-child { text-align: left; }
+        
+        .p-name { color: #fff; font-size: 13px; font-weight: 900;}
+        .p-role { font-size: 10px; color: #888; background: #000; padding: 2px 5px; border-radius: 3px; margin-top: 3px; display: inline-block;}
+        
+        .val-runs { color: #00b0ff; }
+        .val-wkts { color: #ff004c; }
+        .val-pts { color: #ffd700; font-size: 16px; font-weight: 900;}
+
+        .loader { text-align: center; color: #00ff88; font-size: 16px; margin-top: 50px; font-weight: bold;}
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
+        <div class="match-info" id="matchHeader">SCORECARD</div>
+        <div style="width: 20px;"></div>
+    </div>
+
+    <div class="team-tabs" id="tabs-container">
+        </div>
+
+    <div class="stats-container">
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    <th>Runs</th>
+                    <th>Wkts</th>
+                    <th>Pts</th>
+                </tr>
+            </thead>
+            <tbody id="stats-body">
+                <tr><td colspan="4" class="loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading Stats...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const matchId = urlParams.get('matchId');
+
+        let allPlayersData = [];
+        let teamNames = [];
+        let activeTeam = "";
+
+        if(!matchId) {
+            document.getElementById('stats-body').innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Match ID Missing!</td></tr>`;
+        } else {
+            // Live Engine jahan Runs/Wickets save karta hai, wahan se data fetch karna
+            db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).on('value', snap => {
+                if(snap.exists()) {
+                    allPlayersData = [];
+                    let uniqueTeams = new Set();
+
+                    snap.forEach(child => {
+                        let p = child.val();
+                        if(p.team) uniqueTeams.add(p.team);
+                        allPlayersData.push(p);
+                    });
+
+                    teamNames = Array.from(uniqueTeams);
+                    
+                    if(teamNames.length > 0 && activeTeam === "") {
+                        activeTeam = teamNames[0]; // Pehli team default select ho jayegi
+                    }
+
+                    renderTabs();
+                    renderStats();
+                } else {
+                    document.getElementById('stats-body').innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888;">Players data not found.</td></tr>`;
+                }
+            });
+        }
+
+        function renderTabs() {
+            let tabsHtml = "";
+            teamNames.forEach(team => {
+                let isActive = (team === activeTeam) ? "active" : "";
+                tabsHtml += `<div class="tab ${isActive}" onclick="switchTeam('${team}')">${team}</div>`;
+            });
+            document.getElementById('tabs-container').innerHTML = tabsHtml;
+        }
+
+        function switchTeam(team) {
+            activeTeam = team;
+            renderTabs();
+            renderStats();
+        }
+
+        function renderStats() {
+            let tbody = document.getElementById('stats-body');
+            tbody.innerHTML = "";
+
+            // Sirf active tab wali team ke players dikhana, jinke points sabse zyada hain wo upar
+            let teamPlayers = allPlayersData.filter(p => p.team === activeTeam);
+            teamPlayers.sort((a, b) => (b.points || 0) - (a.points || 0));
+
+            if(teamPlayers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888;">No players found for this team.</td></tr>`;
+                return;
+            }
+
+            teamPlayers.forEach(p => {
+                let runs = p.runs || 0;
+                let wkts = p.wickets || 0;
+                let pts = parseFloat(p.points || 0).toFixed(1);
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>
+                            <div class="p-name">${p.name}</div>
+                            <div class="p-role">${p.role || 'PLAYER'}</div>
+                        </td>
+                        <td class="val-runs">${runs}</td>
+                        <td class="val-wkts">${wkts}</td>
+                        <td class="val-pts">${pts}</td>
+                    </tr>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
