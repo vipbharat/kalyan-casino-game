@@ -32,7 +32,8 @@
         .sub-header .center { flex: 1; text-align: center; font-weight: bold;}
         .sub-header .right { flex: 1; text-align: right; font-weight: bold;}
 
-        .team-card { background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #eee;}
+        .team-card { background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s;}
+        .team-card:active { background: #f0f0f0; }
         .team-info { display: flex; align-items: center; flex: 2; overflow: hidden; }
         .avatar { width: 40px; height: 40px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #888; font-size: 20px; margin-right: 12px; flex-shrink: 0;}
         .name-box h4 { margin: 0; font-size: 13px; color: #222; font-weight: 900; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
@@ -50,6 +51,23 @@
         .nav-item.active { color: #00ff88; }
         
         .loader-box { text-align: center; padding: 50px; color: #d0021b; font-weight: bold; font-size: 14px;}
+
+        /* 👁️ VIEW TEAM MODAL (DARK POPUP) 👁️ */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center;}
+        .modal-content { background: #111; color: #fff; width: 90%; max-width: 400px; max-height: 80vh; border-radius: 12px; border: 2px solid #d0021b; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 20px rgba(208,2,27,0.3);}
+        .modal-header { padding: 15px; background: #1a1a2e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { margin: 0; color: #fff; font-size: 16px; font-weight: 900;}
+        .close-btn { color: #ff004c; font-size: 22px; font-weight: bold; cursor: pointer; }
+        .modal-body { padding: 10px; overflow-y: auto; flex: 1; }
+        
+        .preview-player { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #222; background: #0a0a1a; margin-bottom: 5px; border-radius: 5px;}
+        .pv-info { display: flex; align-items: center; gap: 10px; }
+        .pv-role-badge { background: #333; color: #aaa; font-size: 9px; padding: 2px 5px; border-radius: 3px; font-weight: bold;}
+        .pv-name { font-size: 13px; font-weight: 900; color: #fff;}
+        .pv-points { font-size: 14px; font-weight: 900; color: #ffd700;}
+        .cvc-badge { width: 20px; height: 20px; border-radius: 50%; font-size: 8px; font-weight: 900; display: flex; justify-content: center; align-items: center; color: #000; }
+        .c-badge { background: #00ff88; box-shadow: 0 0 8px rgba(0,255,136,0.5);}
+        .vc-badge { background: #00b0ff; box-shadow: 0 0 8px rgba(0,176,255,0.5);}
     </style>
 </head>
 <body>
@@ -89,6 +107,17 @@
         <div class="loader-box"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Teams Load Ho Rahi Hain...</div>
     </div>
 
+    <div id="viewTeamModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-team-title"><i class="fa-solid fa-eye"></i> Team Preview</h2>
+                <div class="close-btn" onclick="closeViewModal()">&times;</div>
+            </div>
+            <div class="modal-body" id="modalPlayersList">
+                </div>
+        </div>
+    </div>
+
     <div class="bottom-nav">
         <div class="nav-item" onclick="window.location.href='Matches.html'"><i class="fa-solid fa-house"></i><span>Matches</span></div>
         <div class="nav-item" id="btn-myteam"><i class="fa-solid fa-users"></i><span>My Team</span></div>
@@ -109,7 +138,6 @@
         else window.location.href = `Matches.html`;
     };
 
-    // 🔥 SCORECARD CLICK ACTION 🔥
     document.getElementById('btn-scorecard').onclick = function() {
         if(matchId) window.location.href = `Scorecard.html?matchId=${matchId}`; 
     };
@@ -119,6 +147,7 @@
     let allTeamsData = [];
     let currentSelectedFee = 0;
     let matchStartTime = 0; 
+    window.currentLeaderboard = []; // Yeh list Modal open karne ke kaam aayegi
 
     function getContestDetails(fee) {
         const megaFees = [99, 39, 49, 59, 29];
@@ -207,7 +236,6 @@
         let cDetails = getContestDetails(currentSelectedFee);
         let maxSpots = cDetails.spots;
         
-        // Progress Bar
         if(cDetails.type === 'mega') {
             document.getElementById('progress-container').style.display = 'block';
             let fakeJoined = Math.floor(maxSpots * cDetails.fillPct) + filteredTeams.length;
@@ -224,29 +252,25 @@
 
         let extraUIBots = [];
 
-        // 🤖 BOTS LOGIC 🤖
         if(cDetails.type === 'mega') {
             let botAmount = Math.floor(Math.random() * 20) + 30; 
             for(let i=0; i<botAmount; i++) {
                 let randomNum = Math.floor(100 + Math.random() * 899); 
                 let fakeName = indianNames[Math.floor(Math.random() * indianNames.length)] + randomNum;
-                
                 extraUIBots.push({
                     teamName: fakeName,
                     total_points: isMatchStarted ? (40 + (Math.random() * 30)) : 0, 
-                    is_bot: true, ui_only: true
+                    is_bot: true, ui_only: true // ⚠️ YEH WALE BOTS FAKE HAIN
                 });
             }
         } 
         else if (cDetails.type === 'h2h') {
             let botsNeeded = maxSpots - filteredTeams.length;
-            
             if(botsNeeded > 0) {
                 let maxRealScore = 0;
                 filteredTeams.forEach(t => {
                     if(parseFloat(t.total_points || 0) > maxRealScore) maxRealScore = parseFloat(t.total_points || 0);
                 });
-
                 for(let i=0; i<botsNeeded; i++) {
                     let botScore = 0;
                     if (!isMatchStarted) { botScore = 0; } 
@@ -260,7 +284,7 @@
                     extraUIBots.push({
                         teamName: fakeName,
                         total_points: botScore,
-                        is_bot: true, ui_only: true
+                        is_bot: true, ui_only: true // ⚠️ YEH WALE BOTS BHI FAKE HAIN
                     });
                 }
             }
@@ -272,31 +296,31 @@
             return { ...t, display_points: safePoints };
         });
 
-        // 🔥 MASTER SMART SORTING LOGIC 🔥
         finalDisplayList.sort((a, b) => {
-            // 1. Pehle points dekho (High to Low)
-            if (b.display_points !== a.display_points) {
-                return b.display_points - a.display_points;
-            }
-            
-            // 2. Agar points same hain (Jaise 0.0 par), toh Asli "My Team" sabse upar
+            if (b.display_points !== a.display_points) return b.display_points - a.display_points;
             let isMineA = (!a.is_bot && !a.ui_only && userPhone && a.key && a.key.includes(userPhone)) ? 1 : 0;
             let isMineB = (!b.is_bot && !b.ui_only && userPhone && b.key && b.key.includes(userPhone)) ? 1 : 0;
             if (isMineA !== isMineB) return isMineB - isMineA;
-
-            // 3. Uske baad Admin Panel se banayi gayi Teams (Bots) ko upar rakho
             let isAdminBotA = (a.is_bot && !a.ui_only) ? 1 : 0;
             let isAdminBotB = (b.is_bot && !b.ui_only) ? 1 : 0;
             if (isAdminBotA !== isAdminBotB) return isAdminBotB - isAdminBotA;
-
-            // 4. 🔥 JAADU: Agar dono Admin bot hain, toh unko naam ke hisaab se line me lagao
             if (isAdminBotA && isAdminBotB) {
                 let nameA = a.teamName || "";
                 let nameB = b.teamName || "";
                 return nameA.localeCompare(nameB, undefined, {numeric: true, sensitivity: 'base'});
             }
+            return 0; 
+        });
 
-            return 0; // Baaki UI bots mix rahenge
+        // Humesha ke liye save kar lo Modal Popup ke liye
+        window.currentLeaderboard = finalDisplayList;
+
+        let userTeamCounts = {};
+        finalDisplayList.forEach(t => {
+            let identifier = (t.is_bot || t.ui_only) ? t.teamName : (t.phone || "Unknown"); 
+            if(userTeamCounts[identifier]) userTeamCounts[identifier]++;
+            else userTeamCounts[identifier] = 1;
+            t.teamSessionCount = userTeamCounts[identifier]; 
         });
 
         let htmlContent = "";
@@ -304,30 +328,33 @@
             let rank = index + 1; 
             let pts = team.display_points.toFixed(1); 
             let tName = team.teamName || team.userName || "Unknown";
+            tName = tName.replace(/\s?XI$/i, '').trim();
+
+            let isMyTeam = !team.is_bot && !team.ui_only && userPhone && team.phone === userPhone;
             
-            // " XI" ko hatana
-            tName = tName.replace(/\s?XI$/i, '');
+            if(!team.is_bot && !team.ui_only) {
+                if(team.phone && team.phone.length >= 10 && /\d{10}/.test(team.phone)) {
+                    let cleanNum = team.phone.replace(/\D/g, '');
+                    tName = cleanNum.substring(0,2) + "******" + cleanNum.substring(cleanNum.length - 2); 
+                } else if(team.phone) { tName = team.phone; }
+            }
+
+            if(team.teamSessionCount > 1 || userTeamCounts[(team.is_bot || team.ui_only) ? team.teamName : (team.phone || "Unknown")] > 1) {
+                if(!tName.toLowerCase().includes("team")) {
+                    tName = `${tName} (Team ${team.teamSessionCount})`;
+                }
+            }
 
             let showRankText = isMatchStarted ? `Rank #${rank}` : `Rank --`;
             let isFirstRank = isMatchStarted && rank === 1;
-
-            // Phone number hide logic
-            if(!team.is_bot && !team.ui_only && tName.length >= 10 && /\d{10}/.test(tName.replace(/\D/g, ''))) {
-                let cleanNum = tName.replace(/\D/g, '');
-                let suffix = tName.includes('_T') ? " (Team " + tName.split('_T')[1] + ")" : "";
-                tName = cleanNum.substring(0,2) + "******" + cleanNum.substring(cleanNum.length - 2) + suffix; 
-            }
-
             let cardClass = "team-card";
             if(isFirstRank) cardClass += " rank-1"; 
-            
-            let isMyTeam = !team.is_bot && !team.ui_only && userPhone && team.key && team.key.includes(userPhone);
             if(isMyTeam) cardClass += " my-team-highlight"; 
-
             let myTeamBadge = isMyTeam ? `<span style="background:#00ff88; color:#000; font-size:9px; padding:2px 4px; border-radius:3px; margin-left:5px;">YOUR TEAM</span>` : ``;
 
+            // 🔥 CLICK ACTION LAGA DIYA 🔥
             htmlContent += `
-            <div class="${cardClass}">
+            <div class="${cardClass}" onclick="openTeamPreview(${index}, '${tName}')">
                 <div class="team-info">
                     <div class="avatar" style="${isFirstRank ? 'background:#000; color:#ffd700;' : ''}">
                         ${isFirstRank ? '<i class="fa-solid fa-crown"></i>' : '<i class="fa-solid fa-user"></i>'}
@@ -342,6 +369,86 @@
         });
 
         listContainer.innerHTML = htmlContent;
+    }
+
+    // 🕵️‍♂️ THE MASTERMIND MODAL SYSTEM (FAKE LOADER INCLUDED) 🕵️‍♂️
+    async function openTeamPreview(index, displayName) {
+        let team = window.currentLeaderboard[index];
+        
+        document.getElementById('viewTeamModal').style.display = 'flex';
+        document.getElementById('modal-team-title').innerHTML = `<i class="fa-solid fa-eye"></i> ${displayName}`;
+        let listContainer = document.getElementById('modalPlayersList');
+        
+        // Spinning Animation Dikhayenge Shuru Mein
+        listContainer.innerHTML = `
+            <div class="loader-box" style="margin-top:50px; color:#00ff88;">
+                <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>
+                Fetching Squad...<br>
+                <span style="font-size:10px; color:#888;">Please wait</span>
+            </div>`;
+
+        // 🛑 AGAR UI BOT HAI (Nakli team) -> To Net Slow ka Natak Karega! 🛑
+        if(team.ui_only || !team.players) {
+            setTimeout(() => {
+                let modal = document.getElementById('viewTeamModal');
+                if(modal.style.display === 'flex') {
+                    listContainer.innerHTML = `
+                        <div class="loader-box" style="margin-top:50px; color:#aaa;">
+                            <i class="fa-solid fa-server fa-2x" style="color:#ff004c; margin-bottom:10px;"></i><br>
+                            Server Connection Timeout<br>
+                            <span style="font-size:10px;">Network slow hone ke karan team open nahi ho pa rahi. Baad mein try karein.</span>
+                        </div>`;
+                }
+            }, 3000); // 3 second baad yeh natak karega ki server down hai 😂
+            return;
+        }
+
+        // ✅ AGAR ASLI TEAM YA ADMIN BOT HAI -> Toh Sahi Mein Khiladi Dikhayega ✅
+        try {
+            let pSnap = await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value');
+            let allPlayers = pSnap.val() || {};
+            
+            listContainer.innerHTML = "";
+            let playerIds = team.players || [];
+
+            playerIds.forEach(id => {
+                let p = allPlayers[id];
+                if(p) {
+                    let isC = (p.name === team.captain);
+                    let isVC = (p.name === (team.viceCaptain || team.vice_captain));
+                    
+                    let badgeHtml = "";
+                    let displayPoints = p.points || 0;
+                    
+                    if(isC) {
+                        badgeHtml = `<div class="cvc-badge c-badge">C</div>`;
+                        displayPoints = displayPoints * 2;
+                    } else if(isVC) {
+                        badgeHtml = `<div class="cvc-badge vc-badge">VC</div>`;
+                        displayPoints = displayPoints * 1.5;
+                    }
+
+                    listContainer.innerHTML += `
+                        <div class="preview-player">
+                            <div class="pv-info">
+                                ${badgeHtml}
+                                <div>
+                                    <div class="pv-name">${p.name}</div>
+                                    <div class="pv-role-badge">${p.team || 'UNK'} | ${p.role || 'PLY'}</div>
+                                </div>
+                            </div>
+                            <div class="pv-points">${displayPoints} Pts</div>
+                        </div>
+                    `;
+                }
+            });
+        } catch(e) {
+            listContainer.innerHTML = `<div style="color:red; text-align:center;">Database connection failed!</div>`;
+        }
+    }
+
+    function closeViewModal() {
+        document.getElementById('viewTeamModal').style.display = 'none';
     }
 </script>
 
