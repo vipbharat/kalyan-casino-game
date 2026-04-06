@@ -17,6 +17,7 @@
         textarea { width: calc(100% - 22px); height: 120px; padding: 12px; margin-bottom: 10px; background: #000; border: 1px dashed #00b0ff; color: #00b0ff; border-radius: 5px; font-family: monospace; resize: none;}
         .btn-load { width: 100%; padding: 12px; background: #00b0ff; color: #fff; font-weight: 900; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase; margin-bottom: 10px;}
         .btn-scan { width: 100%; padding: 12px; background: #ffea00; color: #000; font-weight: 900; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase; margin-bottom: 10px;}
+        .btn-clear { width: 100%; padding: 12px; background: #ff004c; color: #fff; font-weight: 900; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase; margin-bottom: 10px;}
         .btn-sync { width: 100%; padding: 15px; background: #00e676; color: #000; font-weight: 900; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; text-transform: uppercase; box-shadow: 0 0 15px rgba(0,230,118,0.4);}
         
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; background: #000; border-radius: 5px; overflow: hidden;}
@@ -24,6 +25,7 @@
         th { background: #222; color: #00ff88;}
         .num-input { width: 50px; padding: 5px; background: #111; border: 1px solid #555; color: #fff; text-align: center; border-radius: 3px; font-weight: bold;}
         .num-input:focus { border-color: #00ff88; outline: none; background: #222;}
+        .live-pts { color: #ffd700; font-weight: 900; font-size: 15px;}
         
         .terminal { background: #000; border: 1px solid #ff004c; padding: 15px; border-radius: 5px; height: 150px; overflow-y: auto; font-family: monospace; font-size: 12px; margin-bottom: 20px;}
         .terminal p { margin: 4px 0; border-bottom: 1px dashed #222; padding-bottom: 4px;}
@@ -46,17 +48,19 @@
         <h3><i class="fa-solid fa-2"></i> Step 2: Paste Cricbuzz Scorecard Here</h3>
         <textarea id="paste-box" placeholder="Cricbuzz se poora Scorecard copy karke yahan paste karein..."></textarea>
         <button class="btn-scan" onclick="magicScan()"><i class="fa-solid fa-wand-magic-sparkles"></i> Magic Auto-Fill</button>
+        <button class="btn-clear" onclick="resetAllBoxes()"><i class="fa-solid fa-rotate-left"></i> Sab Zero (0) Karein</button>
     </div>
 
     <div class="box" id="players-section" style="display:none;">
         <h3><i class="fa-solid fa-3"></i> Step 3: Verify & Sync Leaderboard</h3>
+        <div style="font-size:11px; color:#aaa; margin-bottom:10px;">Check karein ki points sahi hain ya nahi, fir Update dabayein.</div>
         <table>
             <thead>
                 <tr>
                     <th>Player Name</th>
-                    <th>Runs (1 Pt)</th>
-                    <th>Wickets (25 Pts)</th>
-                </tr>
+                    <th>Runs</th>
+                    <th>Wickets</th>
+                    <th>Total Pts</th> </tr>
             </thead>
             <tbody id="players-table-body">
                 </tbody>
@@ -103,12 +107,16 @@
             
             for(let key in loadedPlayers) {
                 let p = loadedPlayers[key];
-                // Table Row Banana
+                let r = parseInt(p.runs) || 0;
+                let w = parseInt(p.wickets) || 0;
+                let t = (r * 1) + (w * 25) + 4; // Playing 11 ke 4 point
+
                 tbody.innerHTML += `
                     <tr>
                         <td><b>${p.name}</b></td>
-                        <td><input type="number" class="num-input" id="runs-${key}" value="${p.runs || 0}"></td>
-                        <td><input type="number" class="num-input" id="wickets-${key}" value="${p.wickets || 0}"></td>
+                        <td><input type="number" class="num-input" id="runs-${key}" value="${r}" oninput="updateLivePoints('${key}')"></td>
+                        <td><input type="number" class="num-input" id="wickets-${key}" value="${w}" oninput="updateLivePoints('${key}')"></td>
+                        <td class="live-pts" id="pts-${key}">${t}</td>
                     </tr>
                 `;
             }
@@ -118,6 +126,25 @@
             cLog('success', `✅ ${Object.keys(loadedPlayers).length} Players Loaded!`);
             
         } catch(e) { cLog('error', `Error loading data.`); }
+    }
+
+    // ⚡ LIVE POINTS CALCULATOR ⚡
+    function updateLivePoints(key) {
+        let r = parseInt(document.getElementById(`runs-${key}`).value) || 0;
+        let w = parseInt(document.getElementById(`wickets-${key}`).value) || 0;
+        let t = (r * 1) + (w * 25) + 4;
+        document.getElementById(`pts-${key}`).innerText = t;
+    }
+
+    // 🧹 RESET ALL BOXES 🧹
+    function resetAllBoxes() {
+        for(let key in loadedPlayers) {
+            document.getElementById(`runs-${key}`).value = 0;
+            document.getElementById(`wickets-${key}`).value = 0;
+            updateLivePoints(key);
+        }
+        document.getElementById('paste-box').value = "";
+        cLog('info', `🧹 Sabhi boxes Zero (0) kar diye gaye hain.`);
     }
 
     // 🔥 2. MAGIC AUTO-FILL (READS PASTED TEXT) 🔥
@@ -133,28 +160,26 @@
             let nameParts = name.split(' ');
             let lastName = nameParts[nameParts.length - 1];
 
-            // Pata karo ki yeh line is khiladi ki hai kya
             let matchedLine = lines.find(l => l.includes(name) || (lastName.length > 3 && l.includes(lastName)));
             
             if(matchedLine) {
-                // Line mein se saare Numbers nikal lo
                 let nums = matchedLine.match(/\b\d+\b/g); 
                 if(nums && nums.length > 0) {
                     
-                    // Agar "c " ya "b " likha hai yani yeh Batsman hai
                     if(matchedLine.includes(' c ') || matchedLine.includes(' b ') || matchedLine.includes('not out')) {
-                        document.getElementById(`runs-${key}`).value = nums[0]; // Pehla number runs hota hai
+                        document.getElementById(`runs-${key}`).value = nums[0]; 
                         fillCount++;
+                        updateLivePoints(key); // Scan hone ke baad live points update
                     } 
-                    // Agar line mein 4 se zyada number hain (Over, Maiden, Run, Wicket) yani Bowler hai
                     else if (nums.length >= 4) {
-                        document.getElementById(`wickets-${key}`).value = nums[3]; // 4th number wicket hota hai
+                        document.getElementById(`wickets-${key}`).value = nums[3]; 
                         fillCount++;
+                        updateLivePoints(key); // Scan hone ke baad live points update
                     }
                 }
             }
         }
-        cLog('success', `✨ Magic Scan Done: ${fillCount} inputs auto-filled! (Ek baar check kar lijiye)`);
+        cLog('success', `✨ Magic Scan Done: ${fillCount} inputs auto-filled! (Ek baar Total Pts check kar lijiye)`);
     }
 
     // 🔥 3. SYNC POINTS TO FIREBASE & LEADERBOARD 🔥
@@ -164,12 +189,9 @@
         let updates = {};
         let updatedCount = 0;
 
-        // Har table row se data padho
         for(let key in loadedPlayers) {
             let r = parseInt(document.getElementById(`runs-${key}`).value) || 0;
             let w = parseInt(document.getElementById(`wickets-${key}`).value) || 0;
-            
-            // 💰 POINT FORMULA: Runs(1) + Wickets(25) + Playing(4) 💰
             let p = (r * 1) + (w * 25) + 4; 
 
             updates[key + '/points'] = p;
@@ -180,14 +202,12 @@
         }
 
         try {
-            // Update Player Points
             await db.ref(`Game/Kalyan11/MatchPlayers/${currentMatchId}`).update(updates);
             cLog('success', `⚡ ${updatedCount} Players ke points DB mein save ho gaye!`);
             
-            // Update Teams Leaderboard
             await updateTeamsLeaderboard(currentMatchId);
             
-            document.getElementById('paste-box').value = ""; // Text box khali kar do
+            document.getElementById('paste-box').value = ""; 
         } catch(e) { cLog('error', `Save karte waqt error aaya.`); }
     }
 
