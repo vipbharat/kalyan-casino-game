@@ -10,7 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding: 10px; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding: 10px; padding-bottom: 50px;}
         .container { max-width: 800px; margin: 0 auto; background: #111; padding: 15px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 5px 20px rgba(0,255,136,0.1); }
         .header { text-align: center; border-bottom: 2px dashed #444; padding-bottom: 10px; margin-bottom: 15px; }
         .header h2 { color: #00ff88; margin: 0; font-weight: 900; text-transform: uppercase; font-size: 20px;}
@@ -28,37 +28,29 @@
         .input-group input { width: 100%; padding: 10px; background: #1a1a2e; border: 1px solid #444; border-radius: 6px; color: #fff; font-size: 14px; font-weight: bold; box-sizing: border-box; outline: none;}
         .btn-primary { width: 100%; background: linear-gradient(135deg, #00a05a, #00ff88); color: #000; border: none; padding: 12px; border-radius: 6px; font-size: 15px; font-weight: 900; cursor: pointer; text-transform: uppercase; margin-top: 10px; box-shadow: 0 4px 10px rgba(0,255,136,0.2);}
         .btn-primary:active { transform: scale(0.98); }
+        
+        /* Players Selection Grid */
+        .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px;}
+        .player-label { background: #000; border: 1px solid #333; padding: 8px; border-radius: 5px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 11px; font-weight: bold;}
+        .player-label:hover { background: #222; }
+        .player-label input { width: auto; margin: 0; }
+        
         .player-stat-card { background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 10px; margin-bottom: 12px; position: relative; border-left: 4px solid #00ff88;}
         .player-stat-card .p-name { font-size: 14px; font-weight: 900; color: #fff; margin-bottom: 10px; display: flex; justify-content: space-between;}
-        .p-remove { color: #ff004c; background: none; border: none; font-size: 16px; cursor: pointer; }
         .stats-grid { display: flex; gap: 8px; justify-content: space-between; }
         .stat-box { flex: 1; background: #050510; padding: 5px; border-radius: 5px; border: 1px solid #444; text-align: center;}
         .stat-box label { display: block; font-size: 9px; color: #aaa; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;}
         .stat-box input { width: 100%; background: transparent; border: none; color: #fff; font-size: 14px; font-weight: 900; text-align: center; outline: none; padding: 0;}
         .stat-box input.total-pts { color: #ffd700; }
+        
         .loader { display: none; text-align: center; padding: 20px; color: #00ff88; font-weight: bold; font-size: 14px;}
         .success-alert { display: none; background: #00a05a; color: #fff; padding: 12px; text-align: center; border-radius: 6px; margin-top: 15px; font-weight: 900; font-size: 14px;}
-        .filter-row { display: flex; gap: 5px; margin-top: 10px; margin-bottom: 10px; overflow-x: auto; white-space: nowrap; padding-bottom: 5px;}
-        .filter-row::-webkit-scrollbar { display: none; }
-        .btn-filter { background: #222; color: #aaa; border: 1px solid #444; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; cursor: pointer;}
-        .btn-filter.active { background: #00ff88; color: #000; border-color: #00ff88;}
-        .edit-team-card { background: #1a1a2e; border: 1px solid #444; padding: 10px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
-        .edit-team-card div { font-size: 12px; color: #aaa;}
-        .edit-team-card strong { color: #fff; font-size: 14px; display: inline-block; margin-right: 5px;}
-        .btn-edit { background: #ff8c00; color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 900; font-size: 11px; cursor: pointer;}
-        .badge { padding: 2px 5px; border-radius: 3px; font-size: 9px; font-weight: bold; vertical-align: top;}
-        .badge-bot { background: #ff004c; color: #fff; }
-        .badge-edited { background: #ff8c00; color: #000; }
-        .badge-real { background: #00a05a; color: #fff; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: #111; width: 90%; max-width: 350px; padding: 20px; border-radius: 12px; border: 1px solid #00ff88; position: relative; }
-        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 25px; cursor: pointer; color: #fff; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <div class="header"><h2><i class="fa-solid fa-chess-board"></i> Admin Master</h2></div>
+        <div class="header"><h2><i class="fa-solid fa-chess-board"></i> Ultimate Admin</h2></div>
 
         <div class="match-select-box">
             <label>Select Match First</label>
@@ -67,64 +59,46 @@
 
         <div class="tabs">
             <button class="tab-btn active" id="btn-bot" onclick="switchTab('bot')"><i class="fa-solid fa-robot"></i> Bots</button>
-            <button class="tab-btn" id="btn-edit" onclick="switchTab('edit')"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
-            <button class="tab-btn" id="btn-pts" onclick="switchTab('pts')"><i class="fa-solid fa-chart-line"></i> Points</button>
+            <button class="tab-btn" id="btn-pts" onclick="switchTab('pts')"><i class="fa-solid fa-chart-line"></i> Update Points</button>
         </div>
 
         <div id="section-bot" class="section active">
-            <div style="font-size: 11px; color: #ffd700; margin-bottom: 10px; border: 1px dashed #ffd700; padding: 8px; border-radius: 5px;">
-                <b>REAL SQUAD BOTS:</b> Ab bot poori 11 khiladiyon ki team banayega, tab jaakar C & VC chunega. Koi aam user pakad nahi payega!
-            </div>
-            <div class="input-group">
-                <label>Entry Fee</label>
-                <input type="number" id="bot-fee" value="99">
-            </div>
-            <div class="input-group">
-                <label>Kitne Khiladi (Bots) Chahiye?</label>
-                <input type="number" id="bot-count" value="10" placeholder="Jaise: 10, 50, 100">
-            </div>
-            <button class="btn-primary" onclick="generateBots()"><i class="fa-solid fa-bolt"></i> Generate Pro Bots</button>
-            <div class="loader" id="bot-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Creating 11-Player Squads... Wait!</div>
-            <div class="success-alert" id="bot-success"><span id="bot-success-txt"></span></div>
-        </div>
+            <button class="btn-primary" style="background: #1a0033; color:#00b0ff; border:1px solid #00b0ff; margin-bottom: 15px;" onclick="fetchPlayersForBots()"><i class="fa-solid fa-users"></i> Load 22 Players</button>
+            
+            <div id="bot-selection-area" style="display: none;">
+                <div style="font-size: 11px; color: #ffd700; margin-bottom: 10px;">Select Players (Bot inhi mein se 11 ki team banayega):</div>
+                <div class="player-grid" id="bot-players-list"></div>
+                <div style="text-align:right; font-size:12px; color:#00ff88; font-weight:bold; margin-bottom:15px;" id="bot-selected-count">0 Selected</div>
 
-        <div id="section-edit" class="section">
-            <button class="btn-primary" style="background: #1a0033; color:#00ff88; border:1px solid #00ff88;" onclick="loadTeamsList()"><i class="fa-solid fa-magnifying-glass"></i> Load Teams</button>
-            <div class="filter-row" id="edit-filters" style="display:none;">
-                <button class="btn-filter active" onclick="applyFilter('all', this)">All</button>
-                <button class="btn-filter" onclick="applyFilter('real', this)">👤 Real Users</button>
-                <button class="btn-filter" onclick="applyFilter('edited', this)">✏️ Edited</button>
-                <button class="btn-filter" onclick="applyFilter('bot', this)">🤖 Bots</button>
+                <div class="input-group">
+                    <label>Contest Entry Fee</label>
+                    <input type="number" id="bot-fee" value="49">
+                </div>
+                <div class="input-group">
+                    <label>Kitne Bots Daalne Hain?</label>
+                    <input type="number" id="bot-count" value="10" placeholder="Jaise: 10, 50, 100">
+                </div>
+                <button class="btn-primary" onclick="generateBots()"><i class="fa-solid fa-bolt"></i> Inject Unique Bots</button>
             </div>
-            <div class="loader" id="edit-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Fetching...</div>
-            <div id="teams-list" style="margin-top: 5px;"></div>
+            
+            <div class="loader" id="bot-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Generating Unique Squads...</div>
+            <div class="success-alert" id="bot-success"><span id="bot-success-txt"></span></div>
         </div>
 
         <div id="section-pts" class="section">
             <div style="font-size: 11px; color: #ffd700; margin-bottom: 10px; border: 1px dashed #ffd700; padding: 8px; border-radius: 5px;">
-                <b>Formula:</b> 1 Run = 1 Pt | 1 Wicket = 25 Pts. <br>System khud Total calculate karega!
+                <b>Magic System:</b> Points update karte hi saari Teams ka score recalculate hoga aur Leaderboard hil jayega!
             </div>
-            <button class="btn-primary" style="background: #1a0033; color:#00ff88; border:1px solid #00ff88;" onclick="fetchPlayersForPoints()"><i class="fa-solid fa-cloud-arrow-down"></i> Load 22 Players</button>
-            <div class="loader" id="pts-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Players Loading...</div>
+            <button class="btn-primary" style="background: #1a0033; color:#00ff88; border:1px solid #00ff88;" onclick="fetchPlayersForPoints()"><i class="fa-solid fa-cloud-arrow-down"></i> Load Scorecard</button>
+            
+            <div class="loader" id="pts-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Loading Stats...</div>
+            
             <div id="players-points-container" style="margin-top: 15px; display: none;">
                 <div id="dynamic-players-list"></div>
-                <button class="btn-primary" style="background: transparent; color: #00ff88; border: 1px dashed #00ff88;" onclick="addBlankPlayerCard()"><i class="fa-solid fa-plus"></i> Add Extra Player</button>
-                <button class="btn-primary" onclick="saveAllDetailedPoints()"><i class="fa-solid fa-floppy-disk"></i> Save Live Points</button>
-                <div class="success-alert" id="pts-success">Points Saved Successfully!</div>
+                
+                <button class="btn-primary" onclick="saveAllDetailedPoints()"><i class="fa-solid fa-floppy-disk"></i> Update Points & Leaderboard</button>
+                <div class="success-alert" id="pts-success">Points Updated & Leaderboard Ranked Successfully!</div>
             </div>
-        </div>
-    </div>
-
-    <div class="modal" id="editModal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModal()">&times;</span>
-            <div style="color:#00ff88; font-weight:bold; margin-bottom:15px;">Edit Team Details</div>
-            <input type="hidden" id="edit-team-key">
-            <div class="input-group"><label>Name</label><input type="text" id="edit-name"></div>
-            <div class="input-group"><label>Points</label><input type="number" id="edit-points"></div>
-            <div class="input-group"><label>Captain</label><input type="text" id="edit-captain"></div>
-            <div class="input-group"><label>Vice Captain</label><input type="text" id="edit-vcaptain"></div>
-            <button class="btn-primary" onclick="updateSingleTeam()">Save & Mark as Edited</button>
         </div>
     </div>
 
@@ -133,7 +107,7 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
-        let loadedTeamsData = []; 
+        let allLoadedPlayers = []; 
 
         db.ref('Game/Kalyan11/VIPMatches').on('value', snapshot => {
             let select = document.getElementById('master-match-select');
@@ -144,191 +118,265 @@
         });
 
         function switchTab(tab) {
-            ['bot', 'edit', 'pts'].forEach(t => {
+            ['bot', 'pts'].forEach(t => {
                 document.getElementById('btn-' + t).classList.remove('active');
                 document.getElementById('section-' + t).classList.remove('active');
             });
             document.getElementById('btn-' + tab).classList.add('active');
             document.getElementById('section-' + tab).classList.add('active');
         }
+
         function clearData() {
-            document.getElementById('teams-list').innerHTML = '';
-            document.getElementById('edit-filters').style.display = 'none';
+            document.getElementById('bot-selection-area').style.display = 'none';
             document.getElementById('players-points-container').style.display = 'none';
+            allLoadedPlayers = [];
         }
 
-        // ================== BOTS (11 PLAYER SQUAD GENERATOR) ==================
-        const botNames = ["Rahul", "Amit", "Vikram", "Pooja", "Neha", "Suresh", "Ramesh", "Deepak", "Ravi", "Sunil", "Karan", "Rohit", "Mohit", "Virat", "Sneha", "Kavita", "Sanjay", "Manoj", "Ajay", "Vijay", "Aman", "Rakesh", "Arjun", "Priya"];
-        
-        // Custom function to shuffle an array (Khiladiyon ko mix karne ke liye)
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
+        // ================== BOTS ENGINE (100% UNIQUE SQUADS) ==================
+        const botNames = ["Rahul", "Amit", "Vikram", "Pooja", "Neha", "Suresh", "Ramesh", "Deepak", "Ravi", "Sunil", "Karan", "Rohit", "Mohit", "Virat", "Sneha", "Kavita", "Sanjay", "Manoj", "Ajay", "Vijay"];
 
-        function generateBots() {
+        function fetchPlayersForBots() {
             let matchId = document.getElementById('master-match-select').value;
-            let fee = parseInt(document.getElementById('bot-fee').value) || 99;
-            let playersCount = parseInt(document.getElementById('bot-count').value); 
+            if(!matchId) return alert("Select Match First!");
             
-            if(!matchId) return alert("Match select karein!");
-            if(!playersCount || playersCount < 1) return alert("Kam se kam 1 khiladi dalein!");
+            document.getElementById('bot-loader').style.display = 'block';
+            db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value', snap => {
+                document.getElementById('bot-loader').style.display = 'none';
+                if(!snap.exists()) return alert("Khiladi nahi mile! Pehle khiladi add karein.");
+                
+                allLoadedPlayers = [];
+                snap.forEach(c => { let p = c.val(); p.id = c.key; allLoadedPlayers.push(p); });
+                
+                let grid = document.getElementById('bot-players-list');
+                grid.innerHTML = "";
+                allLoadedPlayers.forEach(p => {
+                    grid.innerHTML += `
+                        <label class="player-label">
+                            <input type="checkbox" value="${p.id}" class="bot-p-checkbox" checked onchange="updateBotCount()">
+                            <div>${p.name} <br><span style="color:#aaa; font-size:9px;">${p.team}</span></div>
+                        </label>`;
+                });
+                
+                document.getElementById('bot-selection-area').style.display = 'block';
+                updateBotCount();
+            });
+        }
+
+        function updateBotCount() {
+            let count = document.querySelectorAll('.bot-p-checkbox:checked').length;
+            document.getElementById('bot-selected-count').innerText = `${count} Players Selected`;
+        }
+
+        function generateValid11(pool) {
+            while(true) {
+                let shuffled = [...pool].sort(() => 0.5 - Math.random());
+                let team11 = shuffled.slice(0, 11);
+                
+                let teamCounts = {};
+                let isValid = true;
+                team11.forEach(p => {
+                    let tName = p.team || "UNK";
+                    teamCounts[tName] = (teamCounts[tName] || 0) + 1;
+                    if(teamCounts[tName] > 7) isValid = false;
+                });
+                if(isValid) return team11;
+            }
+        }
+
+        async function generateBots() {
+            let matchId = document.getElementById('master-match-select').value;
+            let fee = parseInt(document.getElementById('bot-fee').value) || 49;
+            let botCount = parseInt(document.getElementById('bot-count').value); 
+            
+            let checkedIds = Array.from(document.querySelectorAll('.bot-p-checkbox:checked')).map(cb => cb.value);
+            if(checkedIds.length < 11) return alert("Kam se kam 11 khiladi select karein!");
 
             document.getElementById('bot-loader').style.display = "block";
+            let pool = allLoadedPlayers.filter(p => checkedIds.includes(p.id));
 
-            // 🔥 ASLI KHILADIYON KA DATA UTHAO 🔥
-            db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value').then(snap => {
-                let allMatchPlayers = [];
-                if(snap.exists()) { 
-                    snap.forEach(p => { 
-                        allMatchPlayers.push({ id: p.key, name: p.val().name || p.key }); 
-                    }); 
-                }
-                
-                // Agar match mein 11 khiladi bhi nahi dale hain admin ne, toh dummy bana do
-                if(allMatchPlayers.length < 11) {
-                    for(let i=1; i<=11; i++) {
-                        allMatchPlayers.push({ id: `P${i}`, name: `Player ${i}` });
+            let targetRef = db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`);
+            
+            // 🔥 FINGERPRINT (SIGNATURE) TRACKER: Duplicate Team rokne ke liye 🔥
+            let generatedSignatures = new Set();
+            let actualGenerated = 0;
+
+            for(let i = 0; i < botCount; i++) {
+                let uniqueTeamFound = false;
+                let team11, captain, viceCaptain, squadIds, signature;
+                let attempts = 0;
+
+                // Jab tak unique team na mil jaye, tab tak chalta rahega (Max 1000 try karega)
+                while(!uniqueTeamFound && attempts < 1000) {
+                    team11 = generateValid11(pool);
+                    
+                    let cIdx = Math.floor(Math.random() * 11);
+                    let vcIdx = Math.floor(Math.random() * 11);
+                    while(cIdx === vcIdx) vcIdx = Math.floor(Math.random() * 11);
+
+                    captain = team11[cIdx];
+                    viceCaptain = team11[vcIdx];
+                    squadIds = team11.map(p => p.id);
+
+                    // 🎯 SIGNATURE GENERATION: 11 khiladiyon ko alphabetical sort karke C aur VC jodo
+                    let sortedIds = [...squadIds].sort().join(",");
+                    signature = `${sortedIds}_C:${captain.id}_VC:${viceCaptain.id}`;
+
+                    // Agar ye signature (team) pehle nahi bani, toh aage badho
+                    if(!generatedSignatures.has(signature)) {
+                        generatedSignatures.add(signature);
+                        uniqueTeamFound = true;
                     }
+                    attempts++;
                 }
 
-                let updates = {};
-                let time = Date.now();
-                let generatedTotal = 0;
-
-                for(let b = 0; b < playersCount; b++) {
-                    let randomNum = Math.floor(100 + Math.random() * 899); 
-                    let currentBotName = botNames[Math.floor(Math.random() * botNames.length)] + randomNum;
-
-                    // Har ek user ki exactly 20 team
-                    for(let t = 1; t <= 20; t++) {
-                        let fakeId = "BOT_" + time + "_" + b + "_" + t;
-                        let finalTeamName = `${currentBotName} Team ${t}`;
-
-                        // 🎯 JADU: 22 khiladiyon ko mix karo aur usme se pehle 11 utha lo!
-                        let shuffledPlayers = shuffleArray([...allMatchPlayers]);
-                        let selected11Players = shuffledPlayers.slice(0, 11);
-                        
-                        // Un 11 khiladiyon ki IDs ka Array banao database mein save karne ke liye
-                        let squadIds = selected11Players.map(p => p.id);
-
-                        // Ab inhi 11 chune hue khiladiyon mein se C aur VC chunna hai
-                        let cIdx = Math.floor(Math.random() * 11);
-                        let vcIdx = Math.floor(Math.random() * 11);
-                        while(cIdx === vcIdx) vcIdx = Math.floor(Math.random() * 11);
-
-                        let finalCaptainName = selected11Players[cIdx].name;
-                        let finalViceCaptainName = selected11Players[vcIdx].name;
-
-                        // 💥 POORI 11 KI TEAM SAVE HOGI 💥
-                        updates[fakeId] = { 
-                            userName: currentBotName, 
-                            teamName: finalTeamName, 
-                            players: squadIds,         // <--- YAHAN POORI SQUAD SAVE HUI
-                            captain: finalCaptainName, 
-                            vice_captain: finalViceCaptainName, 
-                            total_points: 0,           // Match start se pehle 0.0 points
-                            entry_paid: fee, 
-                            is_bot: true 
-                        };
-                        generatedTotal++;
-                    }
+                // Agar combinations khatam ho gaye toh aage aur bot nahi banayega
+                if(!uniqueTeamFound) {
+                    console.log("Maximum possible unique teams generated!");
+                    break; 
                 }
-                
-                db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).update(updates).then(() => {
-                    document.getElementById('bot-loader').style.display = "none";
-                    document.getElementById('bot-success-txt').innerText = `Full Squad Ready: ${playersCount} Khiladi x 20 Teams = ${generatedTotal} Teams Ban Gayi!`;
-                    document.getElementById('bot-success').style.display = "block";
-                    setTimeout(() => document.getElementById('bot-success').style.display = "none", 5000);
+
+                let randomNum = Math.floor(100 + Math.random() * 899); 
+                let fakeName = botNames[Math.floor(Math.random() * botNames.length)] + randomNum;
+
+                // Live Points Calculate kar lo
+                let totalPts = 0;
+                team11.forEach(p => {
+                    let pts = parseFloat(p.points || 0);
+                    if(p.id === captain.id) totalPts += (pts * 2);
+                    else if(p.id === viceCaptain.id) totalPts += (pts * 1.5);
+                    else totalPts += pts;
                 });
-            });
+
+                let botTeamData = { 
+                    phone: "BOT_" + fakeName, 
+                    teamName: fakeName, 
+                    userName: fakeName,
+                    players: squadIds,
+                    captain: captain.name, 
+                    viceCaptain: viceCaptain.name, 
+                    total_points: parseFloat(totalPts.toFixed(1)),
+                    entry_paid: fee, 
+                    timestamp: Date.now() - Math.floor(Math.random()*50000),
+                    is_bot: true 
+                };
+
+                await targetRef.push(botTeamData);
+                actualGenerated++;
+            }
+
+            document.getElementById('bot-loader').style.display = "none";
+            document.getElementById('bot-success-txt').innerText = `SUCCESS! ${actualGenerated} 100% Unique Bots Injected!`;
+            document.getElementById('bot-success').style.display = "block";
+            setTimeout(() => document.getElementById('bot-success').style.display = "none", 5000);
         }
 
-        // ================== EDIT TEAMS & POINTS (REMAINS SAME) ==================
-        function loadTeamsList() {
+        // ================== MASTER POINTS ENGINE ==================
+        function fetchPlayersForPoints() {
             let matchId = document.getElementById('master-match-select').value;
-            if(!matchId) return alert("Match select karein!");
-            document.getElementById('edit-loader').style.display = 'block';
-            document.getElementById('teams-list').innerHTML = "";
-            document.getElementById('edit-filters').style.display = 'none';
-
-            db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).once('value', snapshot => {
-                document.getElementById('edit-loader').style.display = 'none';
-                if(!snapshot.exists()) return alert("Koi team nahi mili!");
-
-                loadedTeamsData = [];
-                snapshot.forEach(child => { let t = child.val(); t.key = child.key; loadedTeamsData.push(t); });
-                document.getElementById('edit-filters').style.display = 'flex';
-                renderEditList('all'); 
+            if(!matchId) return alert("Select Match First!");
+            
+            document.getElementById('pts-loader').style.display = 'block';
+            document.getElementById('dynamic-players-list').innerHTML = "";
+            
+            db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).once('value', snap => {
+                document.getElementById('pts-loader').style.display = 'none';
+                if(!snap.exists()) return alert("Khiladi nahi mile!");
+                
+                allLoadedPlayers = [];
+                snap.forEach(c => { let p = c.val(); p.id = c.key; allLoadedPlayers.push(p); });
+                
+                allLoadedPlayers.forEach(p => {
+                    addPlayerStatCard(p.id, p.name, p.team, p.runs || 0, p.wickets || 0, p.other_points || 0);
+                });
+                
+                document.getElementById('players-points-container').style.display = 'block';
             });
         }
 
-        function applyFilter(type, btnObj) {
-            document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-            btnObj.classList.add('active');
-            renderEditList(type);
+        function addPlayerStatCard(id, name, team, r, w, o) {
+            let total = r + (w * 25) + o;
+            let html = `
+                <div class="player-stat-card" id="card-${id}" data-id="${id}">
+                    <div class="p-name">${name} <span style="color:#aaa; font-size:10px;">${team}</span></div>
+                    <div class="stats-grid">
+                        <div class="stat-box"><label>Runs</label><input type="number" class="val-r" value="${r}" oninput="calcTotal('${id}')"></div>
+                        <div class="stat-box"><label>Wkts (x25)</label><input type="number" class="val-w" value="${w}" oninput="calcTotal('${id}')"></div>
+                        <div class="stat-box"><label>Other Pts</label><input type="number" class="val-o" value="${o}" oninput="calcTotal('${id}')"></div>
+                        <div class="stat-box"><label>Total</label><input type="number" class="total-pts val-t" value="${total}" readonly></div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('dynamic-players-list').innerHTML += html;
         }
 
-        function renderEditList(filterType) {
-            let html = "";
-            let filtered = loadedTeamsData.filter(t => {
-                if (filterType === 'bot') return t.is_bot === true;
-                if (filterType === 'edited') return t.is_edited === true;
-                if (filterType === 'real') return !t.is_bot && !t.is_edited;
-                return true; 
-            });
-
-            if(filtered.length === 0) { document.getElementById('teams-list').innerHTML = "<div style='color:#888; text-align:center;'>Koi team nahi mili.</div>"; return; }
-
-            filtered.slice(0, 150).forEach(t => {
-                let badge = t.is_bot ? `<span class="badge badge-bot">🤖 BOT</span>` : (t.is_edited ? `<span class="badge badge-edited">✏️ EDITED</span>` : `<span class="badge badge-real">👤 REAL</span>`);
-                html += `
-                    <div class="edit-team-card">
-                        <div><strong>${t.teamName || t.userName}</strong> ${badge} <br>C: ${t.captain || 'N/A'} | Pts: <span style="color:#00ff88">${t.total_points || 0}</span></div>
-                        <button class="btn-edit" onclick="openEditModal('${t.key}', '${document.getElementById('master-match-select').value}')">EDIT</button>
-                    </div>`;
-            });
-            document.getElementById('teams-list').innerHTML = html;
+        function calcTotal(id) {
+            let card = document.getElementById(`card-${id}`);
+            let r = parseFloat(card.querySelector('.val-r').value) || 0;
+            let w = parseFloat(card.querySelector('.val-w').value) || 0;
+            let o = parseFloat(card.querySelector('.val-o').value) || 0;
+            card.querySelector('.val-t').value = r + (w * 25) + o;
         }
 
-        function openEditModal(key, matchId) {
-            db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${key}`).once('value', snap => {
-                let t = snap.val();
-                document.getElementById('edit-team-key').value = key;
-                document.getElementById('edit-name').value = t.teamName || "";
-                document.getElementById('edit-points').value = t.total_points || 0;
-                document.getElementById('edit-captain').value = t.captain || "";
-                document.getElementById('edit-vcaptain').value = t.vice_captain || "";
-                document.getElementById('editModal').style.display = 'flex';
-            });
-        }
-
-        function closeModal() { document.getElementById('editModal').style.display = 'none'; }
-        
-        function updateSingleTeam() {
+        async function saveAllDetailedPoints() {
             let matchId = document.getElementById('master-match-select').value;
-            let teamKey = document.getElementById('edit-team-key').value;
-            db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${teamKey}`).update({
-                teamName: document.getElementById('edit-name').value, 
-                userName: document.getElementById('edit-name').value,
-                total_points: parseFloat(document.getElementById('edit-points').value),
-                captain: document.getElementById('edit-captain').value, 
-                vice_captain: document.getElementById('edit-vcaptain').value,
-                is_edited: true 
-            }).then(() => { alert("Updated!"); closeModal(); loadTeamsList(); });
-        }
+            let cards = document.querySelectorAll('.player-stat-card');
+            
+            document.getElementById('pts-loader').style.display = 'block';
+            document.getElementById('players-points-container').style.display = 'none';
 
-        // ================== POINTS ==================
-        let pCount = 0;
-        function fetchPlayersForPoints() { /* Same as before */ }
-        function addPlayerStatCard(name, r, w, o, t) { /* Same as before */ }
-        function addBlankPlayerCard() { /* Same as before */ }
-        function removeCard(id) { /* Same as before */ }
-        function calcTotal(cardId) { /* Same as before */ }
-        function saveAllDetailedPoints() { /* Same as before */ }
+            let updates = {};
+            let fastPointsDict = {}; 
+
+            cards.forEach(card => {
+                let pid = card.getAttribute('data-id');
+                let r = parseFloat(card.querySelector('.val-r').value) || 0;
+                let w = parseFloat(card.querySelector('.val-w').value) || 0;
+                let o = parseFloat(card.querySelector('.val-o').value) || 0;
+                let t = parseFloat(card.querySelector('.val-t').value) || 0;
+
+                updates[`${pid}/runs`] = r;
+                updates[`${pid}/wickets`] = w;
+                updates[`${pid}/other_points`] = o;
+                updates[`${pid}/points`] = t;
+
+                fastPointsDict[pid] = { name: card.querySelector('.p-name').innerText.split('\n')[0].trim(), pts: t };
+            });
+
+            await db.ref(`Game/Kalyan11/MatchPlayers/${matchId}`).update(updates);
+
+            let teamSnap = await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).once('value');
+            if(teamSnap.exists()) {
+                let teamUpdates = {};
+                
+                teamSnap.forEach(child => {
+                    let team = child.val();
+                    let teamKey = child.key;
+                    let newTotal = 0;
+
+                    if(team.players && Array.isArray(team.players)) {
+                        team.players.forEach(pid => {
+                            if(fastPointsDict[pid]) {
+                                let pName = fastPointsDict[pid].name;
+                                let pPts = fastPointsDict[pid].pts;
+
+                                if(pName === team.captain) newTotal += (pPts * 2);
+                                else if(pName === (team.viceCaptain || team.vice_captain)) newTotal += (pPts * 1.5);
+                                else newTotal += pPts;
+                            }
+                        });
+                    }
+                    
+                    teamUpdates[`${teamKey}/total_points`] = parseFloat(newTotal.toFixed(1));
+                });
+
+                await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams`).update(teamUpdates);
+            }
+
+            document.getElementById('pts-loader').style.display = 'none';
+            document.getElementById('players-points-container').style.display = 'block';
+            document.getElementById('pts-success').style.display = "block";
+            setTimeout(() => document.getElementById('pts-success').style.display = "none", 5000);
+        }
     </script>
 </body>
 </html>
