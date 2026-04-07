@@ -20,12 +20,20 @@
         .row .input-group { flex: 1; }
         .btn-live { background: #00ff88; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; margin-bottom: 10px; box-shadow: 0 0 15px rgba(0,255,136,0.3);}
         
-        /* 🔥 TAP TO MOVE CHIPS 🔥 */
-        .chip-box { background: #0a0a14; border: 1px dashed #555; min-height: 150px; border-radius: 8px; padding: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; margin-bottom: 8px;}
-        .chip { background: #1a1a2e; border: 1px solid #00ff88; color: #00ff88; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; user-select: none;}
-        .chip:active { transform: scale(0.9); }
-        .chip.t2 { border-color: #ffd700; color: #ffd700; }
+        /* 🔥 NEW TOSS-STYLE MOVE SYSTEM CSS 🔥 */
+        .split-move-container { display: flex; gap: 15px; width: 100%; margin-bottom: 15px; align-items: flex-start;}
+        .move-col-wrap { flex: 1; display: flex; flex-direction: column; width: 50%; }
+        .move-col { background: #0a0a14; border: 1px dashed #555; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; min-height: 150px; max-height: 300px; overflow-y: auto;}
         
+        .move-card { background: #1a1a2e; border: 1px solid #333; padding: 8px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: bold; }
+        .t1-move-card { border-left: 3px solid #00ff88; }
+        .t2-move-card { border-left: 3px solid #ffd700; }
+        
+        .move-btn { background: #222; border: 1px solid #444; color: #fff; padding: 5px 12px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        .move-btn:active { transform: scale(0.8); background: #333;}
+        .move-btn.to-right { color: #ffd700; }
+        .move-btn.to-left { color: #00ff88; }
+
         .match-row { background: #1a1a2e; border: 1px solid #4a00e0; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
         .match-info h4 { margin: 0 0 5px; font-size: 16px; color: #ffd700; text-transform: uppercase;}
         .match-info p { margin: 0; font-size: 12px; color: #aaa;}
@@ -39,7 +47,7 @@
         .success { color: #00ff88; } .error { color: #ff004c; } .loading { color: #ffd700; }
         .clear-btn { background: #ff004c; border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
 
-        /* 🔥 SPLIT MODAL STYLES 🔥 */
+        /* 🔥 TOSS MODAL STYLES 🔥 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: #111; width: 95%; max-width: 600px; max-height: 85vh; border-radius: 15px; border: 2px solid #00ff88; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0,255,136,0.2);}
         .modal-header { padding: 15px; background: #1a1a2e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
@@ -87,23 +95,24 @@
         </div>
         <div class="input-group"><label>⏱️ Match Start Time</label><input type="datetime-local" id="matchTime"></div>
         
-        <h3 style="margin-top:20px;"><i class="fa-solid fa-wand-magic-sparkles"></i> 2. Fix Squads (Tap to Move)</h3>
+        <h3 style="margin-top:20px;"><i class="fa-solid fa-wand-magic-sparkles"></i> 2. Fix Squads (Move Players)</h3>
+        <p style="font-size: 11px; color: #aaa; margin-top: 0; margin-bottom: 15px;">Toss wale design ki tarah, har player ke aage arrow (👉 👈) hai, us par click karte hi player saamne wali team mein chala jayega!</p>
         
-        <div class="row" style="flex-direction: column;">
-            <div class="input-group" style="margin-bottom: 5px;">
-                <label id="lblT1" style="color: #00ff88;">1 Team</label>
-                <div id="t1ChipBox" class="chip-box"></div>
-                <textarea id="t1Players" oninput="syncChips()" placeholder="Raw Data..." style="display:none;"></textarea> 
-            </div>
-            
-            <div style="text-align: center; color: #888; font-size: 20px; margin: 10px 0;"><i class="fa-solid fa-arrows-up-down"></i></div>
+        <textarea id="t1Players" style="display:none;"></textarea> 
+        <textarea id="t2Players" style="display:none;"></textarea> 
 
-            <div class="input-group">
-                <label id="lblT2" style="color: #ffd700;">2 Team</label>
-                <div id="t2ChipBox" class="chip-box" style="border-color: #ffd700;"></div>
-                <textarea id="t2Players" oninput="syncChips()" placeholder="Raw Data..." style="display:none;"></textarea> 
+        <div class="split-move-container">
+            <div class="move-col-wrap">
+                <label id="lblT1Move" style="color: #00ff88; text-align: center; text-transform: uppercase;">1 Team</label>
+                <div class="move-col" id="t1MoveCol" style="border-color: #00ff88;"></div>
+            </div>
+
+            <div class="move-col-wrap">
+                <label id="lblT2Move" style="color: #ffd700; text-align: center; text-transform: uppercase;">2 Team</label>
+                <div class="move-col" id="t2MoveCol" style="border-color: #ffd700;"></div>
             </div>
         </div>
+
         <button class="btn-live" onclick="launchSmartMatch()">🚀 LAUNCH VIP MATCH</button>
     </div>
 
@@ -168,37 +177,58 @@
                     document.getElementById('t2Players').value = data.t2Players;
                     document.getElementById('matchName').value = `${data.t1Name} vs ${data.t2Name} Live Match`;
                     status.innerHTML = "✅ Data Loaded!"; status.className = "success";
-                    syncChips();
+                    renderMoveSystem(); // Build UI automatically
                 }
             } catch(e) { status.innerHTML = "⚠️ Error"; status.className = "error"; }
         }
 
-        function syncChips() {
+        // 🔥 NAYA MOVE SYSTEM LOGIC (AAMNE SAAMNE) 🔥
+        function renderMoveSystem() {
             let t1Arr = parsePlayers(document.getElementById('t1Players').value);
             let t2Arr = parsePlayers(document.getElementById('t2Players').value);
             
             let t1Name = document.getElementById('t1Name').value || "Team 1";
             let t2Name = document.getElementById('t2Name').value || "Team 2";
             
-            // 🔥 YAHAN BHI 1 MUMBAI 2 RAJASTHAN LIKHA AAYEGA 🔥
-            document.getElementById('lblT1').innerText = `1 ${t1Name} (${t1Arr.length})`;
-            document.getElementById('lblT2').innerText = `2 ${t2Name} (${t2Arr.length})`;
+            document.getElementById('lblT1Move').innerText = `1 ${t1Name} (${t1Arr.length})`;
+            document.getElementById('lblT2Move').innerText = `2 ${t2Name} (${t2Arr.length})`;
             
-            let t1Html = ""; t1Arr.forEach((p, i) => { t1Html += `<div class="chip" onclick="movePlayer(1, ${i})">${p} <i class="fa-solid fa-turn-down"></i></div>`; }); 
-            document.getElementById('t1ChipBox').innerHTML = t1Html;
+            // Team 1 UI (Button on the right)
+            let t1Html = ""; 
+            t1Arr.forEach((p, i) => { 
+                t1Html += `<div class="move-card t1-move-card">
+                    <span>${p}</span>
+                    <button class="move-btn to-right" onclick="movePlayer(1, ${i})"><i class="fa-solid fa-arrow-right-long"></i></button>
+                </div>`; 
+            }); 
+            document.getElementById('t1MoveCol').innerHTML = t1Html;
             
-            let t2Html = ""; t2Arr.forEach((p, i) => { t2Html += `<div class="chip t2" onclick="movePlayer(2, ${i})"><i class="fa-solid fa-turn-up"></i> ${p}</div>`; }); 
-            document.getElementById('t2ChipBox').innerHTML = t2Html;
+            // Team 2 UI (Button on the left)
+            let t2Html = ""; 
+            t2Arr.forEach((p, i) => { 
+                t2Html += `<div class="move-card t2-move-card">
+                    <button class="move-btn to-left" onclick="movePlayer(2, ${i})"><i class="fa-solid fa-arrow-left-long"></i></button>
+                    <span>${p}</span>
+                </div>`; 
+            }); 
+            document.getElementById('t2MoveCol').innerHTML = t2Html;
         }
 
         function movePlayer(fromTeam, index) {
             let t1Arr = parsePlayers(document.getElementById('t1Players').value);
             let t2Arr = parsePlayers(document.getElementById('t2Players').value);
-            if (fromTeam === 1) { let p = t1Arr.splice(index, 1)[0]; t2Arr.push(p); } 
-            else { let p = t2Arr.splice(index, 1)[0]; t1Arr.push(p); }
+            
+            if (fromTeam === 1) { 
+                let p = t1Arr.splice(index, 1)[0]; 
+                t2Arr.push(p); // Send to Team 2
+            } else { 
+                let p = t2Arr.splice(index, 1)[0]; 
+                t1Arr.push(p); // Send to Team 1
+            }
+            
             document.getElementById('t1Players').value = t1Arr.join(', ');
             document.getElementById('t2Players').value = t2Arr.join(', ');
-            syncChips();
+            renderMoveSystem(); // Refresh UI
         }
 
         function getSmartRole(name) {
@@ -274,7 +304,6 @@
             let team1 = teams[0] || "Team 1";
             let team2 = teams[1] || "Team 2";
 
-            // 🔥 TOSS MODAL MEIN BHI 1 MUMBAI 2 RAJASTHAN AAYEGA 🔥
             let t1Html = `<div class="team-col"><h3 class="t1-header">1 ${team1}</h3>`;
             let t2Html = `<div class="team-col"><h3 class="t2-header">2 ${team2}</h3>`;
 
