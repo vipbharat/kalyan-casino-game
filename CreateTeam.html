@@ -8,76 +8,109 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        :root { --d11-red: #d0021b; --d11-green: #00a05a; --bg-grey: #f5f5f5; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-grey); color: #000; margin: 0; padding-bottom: 90px; user-select: none; }
+        :root { --d11-red: #d0021b; --d11-green: #00a05a; --bg-main: #fff; --text-dark: #111; --text-grey: #777;}
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f0f0; color: var(--text-dark); margin: 0; padding: 0; padding-bottom: 90px; user-select: none; }
         
-        /* 👑 Header */
-        .header { background: #fff; padding: 12px 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #ddd; box-shadow: 0 2px 10px rgba(0,0,0,0.05);}
-        .back-btn { font-size: 18px; cursor: pointer; color: #000; margin-right: 15px;}
-        .match-info { font-weight: 900; font-size: 14px; flex-grow: 1; text-align: center; text-transform: uppercase; padding-right: 33px;}
+        /* 👑 Header (Dark like Dream11) */
+        .header { background: #111; color: #fff; padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 100;}
+        .back-btn { font-size: 20px; cursor: pointer; color: #fff; margin-right: 15px;}
+        .header-info { flex-grow: 1; }
+        .match-title { font-weight: 900; font-size: 16px; margin: 0;}
+        .time-left { font-size: 11px; color: #ccc; margin-top: 2px;}
 
-        /* 📊 Stats Bar */
-        .stats-bar { background: #1a0033; color: #fff; padding: 10px 15px; position: sticky; top: 46px; z-index: 99;}
-        .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; font-weight: bold;}
-        .progress-container { display: flex; gap: 4px; justify-content: space-between;}
-        .p-box { flex: 1; height: 5px; background: rgba(255,255,255,0.2); border-radius: 2px;}
-        .p-box.active { background: var(--d11-green); box-shadow: 0 0 5px var(--d11-green);}
+        /* 📊 Stats Bar (White Background) */
+        .stats-bar { background: #fff; padding: 12px 15px; position: sticky; top: 54px; z-index: 99; border-bottom: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
+        .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; font-weight: bold;}
+        .team-vs-lbl { font-size: 15px; font-weight: 900; color: #333;}
+        .c-count { color: #d0021b; }
+        
+        /* Progress Bar (11 steps) */
+        .progress-container { display: flex; gap: 3px; justify-content: space-between; align-items: center;}
+        .p-text { font-size: 11px; font-weight: bold; color: #555; margin-right: 5px; width: 35px;}
+        .p-box { flex: 1; height: 6px; background: #eee; border-radius: 2px; transform: skewX(-15deg);}
+        .p-box.active { background: var(--d11-green); }
 
-        /* 👥 SPLIT VIEW CONTAINER */
-        .split-view { display: flex; gap: 8px; padding: 10px; align-items: flex-start;}
-        .team-column { flex: 1; width: 50%; }
-        
-        .team-title { text-align: center; font-size: 12px; font-weight: 900; background: #fff; color: #333; padding: 6px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #ddd; text-transform: uppercase;}
+        /* 📑 Tab Bar */
+        .tab-bar { display: flex; background: #fff; border-bottom: 1px solid #ddd;}
+        .tab-item { flex: 1; text-align: center; padding: 10px 0; font-size: 12px; font-weight: 900; color: #888; text-transform: uppercase;}
+        .tab-item.active { color: var(--d11-red); border-bottom: 3px solid var(--d11-red);}
 
-        /* 🎴 Player Cards (Aadha/Chota Size) */
-        .p-card { background: #fff; padding: 8px; margin-bottom: 6px; border-radius: 6px; border: 1px solid #ddd; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s; min-height: 50px;}
-        .p-card.selected { background: #f0fff4; border-color: #00a05a; }
-        .p-card.benched { background: #fafafa; opacity: 0.6; }
-        .p-card.disabled { opacity: 0.4; filter: grayscale(1); pointer-events: none;}
+        /* 👥 SPLIT VIEW CONTAINER (Strictly Side-by-Side) */
+        .split-view { display: flex; flex-direction: row; flex-wrap: nowrap; background: #fff; width: 100%; box-sizing: border-box; align-items: flex-start;}
         
-        .p-name { font-size: 11px; font-weight: 900; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 18px; margin-bottom: 2px;}
-        .p-role-badge { font-size: 8px; color: #555; background: #eee; display: inline-block; padding: 2px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px;}
+        /* Columns locked to 50% */
+        .team-column { flex: 0 0 50%; max-width: 50%; box-sizing: border-box; overflow: hidden;}
+        .team-column.left { border-right: 1px dashed #ccc; } /* The middle line */
         
-        .playing-status { font-size: 8px; margin-top: 4px; font-weight: bold; display: flex; align-items: center;}
-        .dot { width: 5px; height: 5px; border-radius: 50%; margin-right: 4px;}
-        .dot-green { background: var(--d11-green); }
-        .dot-red { background: var(--d11-red); }
+        .team-col-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #fafafa; border-bottom: 1px solid #eee; font-size: 11px; font-weight: bold; color: #555;}
 
-        .p-creds { font-weight: 900; font-size: 11px; margin-top: 4px; color: #555;}
+        /* 🎴 List Style Player Row (Exact D11 Match) */
+        .p-row { display: flex; align-items: center; padding: 10px 5px; border-bottom: 1px solid #f5f5f5; cursor: pointer; transition: 0.1s;}
+        .p-row:active { background: #f9f9f9; }
+        .p-row.selected { background: #f0fff4; }
+        .p-row.disabled { opacity: 0.4; pointer-events: none; filter: grayscale(1);}
         
-        .check-icon { position: absolute; right: 6px; top: 8px; font-size: 14px; color: var(--d11-green); display: none; }
-        .plus-icon { position: absolute; right: 6px; top: 8px; font-size: 14px; color: #ccc; }
+        .p-role { font-size: 9px; color: #888; font-weight: bold; width: 25px; text-align: center; text-transform: uppercase;}
         
-        .p-card.selected .check-icon { display: block; }
-        .p-card.selected .plus-icon { display: none; }
+        /* Player Image/Avatar */
+        .p-img-box { position: relative; margin: 0 5px; }
+        .p-img { width: 35px; height: 35px; border-radius: 50%; background: #eee; object-fit: cover;}
+        .playing-dot { position: absolute; bottom: 0; right: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--d11-green); border: 1.5px solid #fff; display: none;}
+        .p-row.is-playing .playing-dot { display: block; }
+        .p-row.is-benched .playing-dot { display: block; background: var(--d11-red); }
 
-        /* 🚀 Footer */
-        .footer { position: fixed; bottom: 0; width: 100%; background: #fff; padding: 12px 15px; box-sizing: border-box; text-align: center; border-top: 1px solid #ddd; z-index: 100;}
-        .next-btn { background: #ccc; color: #888; padding: 12px; border-radius: 5px; font-weight: 900; font-size: 15px; border: none; cursor: not-allowed; transition: 0.3s; width: 100%; text-transform: uppercase;}
-        .next-btn.active { background: var(--d11-green); color: #fff; cursor: pointer; box-shadow: 0 4px 10px rgba(0,160,90,0.3);}
+        /* Player Details */
+        .p-details { flex-grow: 1; overflow: hidden; }
+        .p-name { font-size: 12px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #222;}
+        .p-creds { font-size: 11px; color: #555; font-weight: bold; margin-top: 2px;}
+
+        /* Add/Remove Action Icon */
+        .p-action { width: 25px; text-align: center; font-size: 16px; color: var(--d11-green); }
+        .p-row.selected .p-action { color: var(--d11-red); } /* Red minus when selected */
+
+        /* 🚀 Bottom Footer Bar */
+        .footer { position: fixed; bottom: 0; width: 100%; background: #fff; padding: 10px 15px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; border-top: 1px solid #ddd; z-index: 100; gap: 10px;}
+        
+        .preview-btn { background: #1a1a2e; color: #fff; padding: 12px 25px; border-radius: 25px; font-weight: 900; font-size: 12px; border: none; flex: 1;}
+        .next-btn { background: #f0f0f0; color: #aaa; padding: 12px 25px; border-radius: 25px; font-weight: 900; font-size: 12px; border: none; flex: 1; transition: 0.3s; cursor: not-allowed;}
+        .next-btn.active { background: #fff; color: #111; border: 1px solid #ccc; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
     </style>
 </head>
 <body>
 
     <div class="header">
         <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
-        <div class="match-info" id="matchHeader">Loading...</div>
+        <div class="header-info">
+            <div class="match-title">Create Team</div>
+            <div class="time-left" id="matchHeader">Loading Teams...</div>
+        </div>
+        <div style="font-weight: 900; font-size: 12px; border: 1px solid #555; padding: 4px 8px; border-radius: 15px;">PTS</div>
     </div>
 
     <div class="stats-bar">
         <div class="top-row">
-            <div>Players: <span id="pCount" style="color:#00ff88; font-size: 14px;">0</span>/11</div>
-            <div id="teamCountDisplay" style="color:#ffd700;">--</div>
-            <div>Credits: <span id="cCount" style="color:#fff; font-size: 14px;">100.0</span></div>
+            <div class="team-vs-lbl" id="teamCountDisplay">TEAM A 0 - 0 TEAM B</div>
+            <div style="font-size: 11px; color: #555;">Credits <span class="c-count" id="cCount">100.0</span></div>
         </div>
-        <div class="progress-container" id="p-indicators">
-            </div>
+        <div class="progress-container">
+            <div class="p-text"><span id="pCount">0</span>/11</div>
+            <div id="p-indicators" style="display: flex; gap: 3px; flex: 1;">
+                </div>
+        </div>
+    </div>
+
+    <div class="tab-bar">
+        <div class="tab-item active">Teams Lineup</div>
     </div>
 
     <div class="split-view" id="mainSplitView">
+        <div style="text-align: center; width: 100%; padding: 50px; color:#888;">
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Loading Players...
         </div>
+    </div>
 
     <div class="footer">
+        <button class="preview-btn" onclick="togglePreview()"><i class="fa-solid fa-eye"></i> PREVIEW</button>
         <button class="next-btn" id="nextBtn" onclick="goToCaptain()">NEXT</button>
     </div>
 
@@ -95,9 +128,11 @@
         let creditsLeft = 100.0;
         let t1 = "T1", t2 = "T2";
 
+        // Progress indicators setup
         const indicators = document.getElementById('p-indicators');
         for(let i=0; i<11; i++) indicators.innerHTML += `<div class="p-box" id="dot-${i}"></div>`;
 
+        // Fetch Players
         db.ref('Game/Kalyan11/MatchPlayers/' + matchId).on('value', snapshot => {
             allPlayers = [];
             if(snapshot.exists()) {
@@ -105,18 +140,18 @@
                     let p = c.val(); p.id = c.key;
                     allPlayers.push(p);
                 });
+                
                 let teams = [...new Set(allPlayers.map(x => x.team))];
                 t1 = teams[0] || "T1"; t2 = teams[1] || "T2";
-                document.getElementById('matchHeader').innerText = `${t1} VS ${t2}`;
+                
+                document.getElementById('matchHeader').innerText = `${t1} vs ${t2}`;
                 renderSplitView();
             }
         });
 
-        // 🔥 MASTER ROLE SORTING LOGIC 🔥
+        // 🔥 SORTING LOGIC: Playing > Unannounced > Benched, then by Role 🔥
         const roleOrder = { "WK": 1, "BAT": 2, "AR": 3, "BOWL": 4 };
-
         const sortPlayers = (a, b) => {
-            // Priority 1: Playing Status (Playing > Unannounced > Benched)
             let getPriority = (status) => {
                 if (status === 'playing') return 2;
                 if (status === 'benched') return 0;
@@ -126,14 +161,12 @@
             let priB = getPriority(b.playingStatus);
             if (priA !== priB) return priB - priA;
 
-            // Priority 2: Role Category (WK -> BAT -> AR -> BOWL)
             let roleA = a.role ? a.role.toUpperCase() : "BAT";
             let roleB = b.role ? b.role.toUpperCase() : "BAT";
-            let orderA = roleOrder[roleA] || 5; // Agar role galat hai toh last me jayega
+            let orderA = roleOrder[roleA] || 5; 
             let orderB = roleOrder[roleB] || 5;
             if(orderA !== orderB) return orderA - orderB;
 
-            // Priority 3: Credits (Zyada credits wala upar)
             return parseFloat(b.credits || 9.0) - parseFloat(a.credits || 9.0);
         };
 
@@ -143,51 +176,69 @@
             let t1List = allPlayers.filter(p => p.team === t1).sort(sortPlayers);
             let t2List = allPlayers.filter(p => p.team === t2).sort(sortPlayers);
 
-            let t1HTML = `<div class="team-column"><div class="team-title">${t1}</div>`;
-            t1List.forEach(p => { t1HTML += createPlayerCard(p); });
+            // Left Column (Team 1)
+            let t1HTML = `<div class="team-column left">
+                            <div class="team-col-header">
+                                <div><i class="fa-solid fa-shield"></i> ${t1}</div>
+                                <div>Credits</div>
+                            </div>`;
+            t1List.forEach(p => { t1HTML += createPlayerRow(p, t1, t2); });
             t1HTML += `</div>`;
 
-            let t2HTML = `<div class="team-column"><div class="team-title">${t2}</div>`;
-            t2List.forEach(p => { t2HTML += createPlayerCard(p); });
+            // Right Column (Team 2)
+            let t2HTML = `<div class="team-column">
+                            <div class="team-col-header">
+                                <div>${t2} <i class="fa-solid fa-shield"></i></div>
+                                <div>Credits</div>
+                            </div>`;
+            t2List.forEach(p => { t2HTML += createPlayerRow(p, t1, t2); });
             t2HTML += `</div>`;
 
             container.innerHTML = t1HTML + t2HTML;
             updateUI();
         }
 
-        function createPlayerCard(p) {
+        // 🔥 LIST STYLE PLAYER ROW 🔥
+        function createPlayerRow(p, team1, team2) {
             let isSelected = selectedIds.includes(p.id);
             let cred = parseFloat(p.credits || 9.0);
-            let t1c = allPlayers.filter(x => selectedIds.includes(x.id) && x.team === t1).length;
-            let t2c = allPlayers.filter(x => selectedIds.includes(x.id) && x.team === t2).length;
+            
+            let t1c = allPlayers.filter(x => selectedIds.includes(x.id) && x.team === team1).length;
+            let t2c = allPlayers.filter(x => selectedIds.includes(x.id) && x.team === team2).length;
 
             let isDisabled = false;
             if(!isSelected) {
                 if(selectedIds.length >= 11 || creditsLeft - cred < 0) isDisabled = true;
-                if(p.team === t1 && t1c >= 7) isDisabled = true;
-                if(p.team === t2 && t2c >= 7) isDisabled = true;
+                if(p.team === team1 && t1c >= 7) isDisabled = true;
+                if(p.team === team2 && t2c >= 7) isDisabled = true;
             }
 
-            let isAnnounced = p.playingStatus === 'playing';
-            let isBenched = p.playingStatus === 'benched';
-            let statusHtml = isAnnounced ? `<div class="playing-status"><span class="dot dot-green"></span> Playing</div>` : 
-                             isBenched ? `<div class="playing-status" style="color:#d0021b;"><span class="dot dot-red"></span> Out</div>` : 
-                             `<div class="playing-status"><span class="dot" style="background:#aaa;"></span> --</div>`;
+            let playClass = p.playingStatus === 'playing' ? 'is-playing' : (p.playingStatus === 'benched' ? 'is-benched' : '');
+            let rowClass = `p-row ${playClass}`;
+            if(isSelected) rowClass += " selected";
+            if(isDisabled) rowClass += " disabled";
 
-            let cardClass = isSelected ? "p-card selected" : "p-card";
-            if(isBenched) cardClass += " benched";
-            if(isDisabled) cardClass += " disabled";
-
+            let safeId = p.id.replace(/'/g, "\\'");
             let displayRole = p.role ? p.role.toUpperCase() : "BAT";
+            
+            // Icon toggle: Green plus if not selected, Red minus if selected
+            let iconHtml = isSelected ? `<i class="fa-solid fa-circle-minus" style="color:var(--d11-red);"></i>` : `<i class="fa-regular fa-circle-check"></i>`;
+
+            // Default image placeholder
+            let defaultImg = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
             return `
-                <div class="${cardClass}" onclick="togglePlayer('${p.id}', ${cred})">
-                    <i class="fa-solid fa-circle-check check-icon"></i>
-                    <i class="fa-solid fa-circle-plus plus-icon"></i>
-                    <div class="p-name">${p.name}</div>
-                    <div class="p-role-badge">${displayRole}</div>
-                    ${statusHtml}
-                    <div class="p-creds">${cred} Cr</div>
+                <div class="${rowClass}" onclick="togglePlayer('${safeId}', ${cred})">
+                    <div class="p-role">${displayRole}</div>
+                    <div class="p-img-box">
+                        <img src="${defaultImg}" class="p-img">
+                        <div class="playing-dot"></div>
+                    </div>
+                    <div class="p-details">
+                        <div class="p-name">${p.name}</div>
+                        <div class="p-creds">${cred}</div>
+                    </div>
+                    <div class="p-action">${iconHtml}</div>
                 </div>`;
         }
 
@@ -209,15 +260,23 @@
         function updateUI() {
             document.getElementById('pCount').innerText = selectedIds.length;
             document.getElementById('cCount').innerText = creditsLeft.toFixed(1);
-            for(let i=0; i<11; i++) document.getElementById(`dot-${i}`).classList.toggle('active', i < selectedIds.length);
+            
+            for(let i=0; i<11; i++) {
+                document.getElementById(`dot-${i}`).classList.toggle('active', i < selectedIds.length);
+            }
 
             let t1c = allPlayers.filter(p => selectedIds.includes(p.id) && p.team === t1).length;
             let t2c = allPlayers.filter(p => selectedIds.includes(p.id) && p.team === t2).length;
-            document.getElementById('teamCountDisplay').innerText = `${t1} ${t1c} : ${t2c} ${t2}`;
+            
+            document.getElementById('teamCountDisplay').innerHTML = `<img src="https://cdn-icons-png.flaticon.com/512/532/532835.png" style="width:15px; vertical-align:middle; margin-right:5px;"> ${t1} <span style="color:#000;">${t1c} - ${t2c}</span> ${t2} <img src="https://cdn-icons-png.flaticon.com/512/532/532835.png" style="width:15px; vertical-align:middle; margin-left:5px;">`;
 
             let btn = document.getElementById('nextBtn');
             btn.classList.toggle('active', selectedIds.length === 11);
             btn.disabled = selectedIds.length !== 11;
+        }
+
+        function togglePreview() {
+            alert("Team Preview (Ground view) was removed as requested! Please verify lineup here.");
         }
 
         function goToCaptain() {
