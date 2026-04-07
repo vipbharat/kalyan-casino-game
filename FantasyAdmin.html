@@ -39,28 +39,29 @@
         .success { color: #00ff88; } .error { color: #ff004c; } .loading { color: #ffd700; }
         .clear-btn { background: #ff004c; border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
 
-        /* 🔥 SPLIT MODAL STYLES (TEAM 1 vs TEAM 2) 🔥 */
+        /* 🔥 SPLIT MODAL STYLES (SQUISH FIX) 🔥 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: #111; width: 95%; max-width: 600px; max-height: 85vh; border-radius: 15px; border: 2px solid #00ff88; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0,255,136,0.2);}
         .modal-header { padding: 15px; background: #1a1a2e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
         .modal-header h2 { margin: 0; color: #ffd700; font-size: 18px; text-transform: uppercase;}
         .close-btn { color: #ff004c; font-size: 24px; font-weight: bold; cursor: pointer; }
         
-        .modal-body { padding: 15px; overflow-y: auto; flex: 1; display: flex; gap: 15px; } /* Added Flex for split view */
+        /* FIX: Added align-items flex-start so columns don't force squash */
+        .modal-body { padding: 15px; overflow-y: auto; flex: 1; display: flex; gap: 15px; align-items: flex-start;} 
         
-        /* New Team Columns in Modal */
-        .team-col { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .team-col { flex: 1; display: flex; flex-direction: column; gap: 8px; width: 100%;}
         .team-col h3 { margin: 0 0 10px 0; text-align: center; font-size: 14px; padding-bottom: 5px; border-bottom: 1px dashed #555; text-transform: uppercase; }
         .t1-header { color: #00ff88; }
         .t2-header { color: #ffd700; }
 
-        .player-edit-card { background: #222; border: 1px solid #444; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;}
+        /* FIX: Added flex-shrink: 0 so cards never collapse to 0 height */
+        .player-edit-card { flex-shrink: 0; background: #222; border: 1px solid #444; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;}
         .p-toggle { padding: 10px; cursor: pointer; text-align: center; font-size: 11px; font-weight: bold; border-bottom: 1px solid #444; transition: 0.2s; user-select: none; }
         .p-toggle.playing { background: rgba(0,255,136,0.2); color: #00ff88; }
         .p-toggle.benched { background: rgba(255,0,76,0.2); color: #ff004c; }
         .p-toggle.unannounced { color: #fff; }
         
-        .role-select { background: #111; color: #ffd700; border: none; padding: 4px; font-size: 10px; font-weight: bold; text-align: center; outline: none; cursor: pointer; width: 100%;}
+        .role-select { background: #111; color: #ffd700; border: none; padding: 6px; font-size: 10px; font-weight: bold; text-align: center; outline: none; cursor: pointer; width: 100%;}
         
         .modal-footer { padding: 15px; background: #1a1a2e; border-top: 1px solid #333; }
         .btn-save-lineup { width: 100%; background: #00ff88; color: #000; font-weight: 900; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;}
@@ -89,20 +90,21 @@
         <div class="input-group"><label>⏱️ Match Start Time</label><input type="datetime-local" id="matchTime"></div>
         
         <h3 style="margin-top:20px;"><i class="fa-solid fa-wand-magic-sparkles"></i> 2. Fix Squads (Tap to Move)</h3>
-        <p style="font-size: 11px; color: #aaa; margin-top: 0;">Agar koi khiladi galat team mein aa gaya ho, toh bas uske naam par click karein. Wo ud-kar dusri team mein chala jayega!</p>
         
         <div class="row" style="flex-direction: column;">
             <div class="input-group" style="margin-bottom: 5px;">
                 <label id="lblT1" style="color: #00ff88;">Team 1 Players (0)</label>
                 <div id="t1ChipBox" class="chip-box"></div>
-                <textarea id="t1Players" oninput="syncChips()" placeholder="Raw Data..." style="display:none;"></textarea> </div>
+                <textarea id="t1Players" oninput="syncChips()" placeholder="Raw Data..." style="display:none;"></textarea> 
+            </div>
             
             <div style="text-align: center; color: #888; font-size: 20px; margin: 10px 0;"><i class="fa-solid fa-arrows-up-down"></i></div>
 
             <div class="input-group">
                 <label id="lblT2" style="color: #ffd700;">Team 2 Players (0)</label>
                 <div id="t2ChipBox" class="chip-box" style="border-color: #ffd700;"></div>
-                <textarea id="t2Players" oninput="syncChips()" placeholder="Raw Data..." style="display:none;"></textarea> </div>
+                <textarea id="t2Players" oninput="syncChips()" placeholder="Raw Data..." style="display:none;"></textarea> 
+            </div>
         </div>
         <button class="btn-live" onclick="launchSmartMatch()">🚀 LAUNCH VIP MATCH</button>
     </div>
@@ -142,6 +144,16 @@
 
         function clearLink() { document.getElementById('engineUrl').value = ''; document.getElementById('statusBox').innerHTML = ''; }
 
+        // 🔥 SMART PARSER FIX: Ab "Nandre Burger" jaise naam 2 hisso mein nahi tutenge 🔥
+        function parsePlayers(text) {
+            if (text.includes(',')) {
+                // Agar Cricbuzz ne comma ke sath enter de diya hai toh usko fix karega
+                return text.replace(/\n/g, ' ').split(',').map(n=>n.trim()).filter(n=>n);
+            } else {
+                return text.split('\n').map(n=>n.trim()).filter(n=>n);
+            }
+        }
+
         async function autoFetchPlayersFromLink() {
             let urlInput = document.getElementById('engineUrl').value.trim();
             let status = document.getElementById('statusBox');
@@ -166,21 +178,26 @@
         }
 
         function syncChips() {
-            let t1Arr = document.getElementById('t1Players').value.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n);
-            let t2Arr = document.getElementById('t2Players').value.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n);
+            let t1Arr = parsePlayers(document.getElementById('t1Players').value);
+            let t2Arr = parsePlayers(document.getElementById('t2Players').value);
+            
             document.getElementById('lblT1').innerText = `Team 1 Players (${t1Arr.length})`;
             document.getElementById('lblT2').innerText = `Team 2 Players (${t2Arr.length})`;
-            let t1Html = ""; t1Arr.forEach((p, i) => { t1Html += `<div class="chip" onclick="movePlayer(1, ${i})">${p} <i class="fa-solid fa-turn-down"></i></div>`; }); document.getElementById('t1ChipBox').innerHTML = t1Html;
-            let t2Html = ""; t2Arr.forEach((p, i) => { t2Html += `<div class="chip t2" onclick="movePlayer(2, ${i})"><i class="fa-solid fa-turn-up"></i> ${p}</div>`; }); document.getElementById('t2ChipBox').innerHTML = t2Html;
+            
+            let t1Html = ""; t1Arr.forEach((p, i) => { t1Html += `<div class="chip" onclick="movePlayer(1, ${i})">${p} <i class="fa-solid fa-turn-down"></i></div>`; }); 
+            document.getElementById('t1ChipBox').innerHTML = t1Html;
+            
+            let t2Html = ""; t2Arr.forEach((p, i) => { t2Html += `<div class="chip t2" onclick="movePlayer(2, ${i})"><i class="fa-solid fa-turn-up"></i> ${p}</div>`; }); 
+            document.getElementById('t2ChipBox').innerHTML = t2Html;
         }
 
         function movePlayer(fromTeam, index) {
-            let t1Arr = document.getElementById('t1Players').value.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n);
-            let t2Arr = document.getElementById('t2Players').value.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n);
+            let t1Arr = parsePlayers(document.getElementById('t1Players').value);
+            let t2Arr = parsePlayers(document.getElementById('t2Players').value);
             if (fromTeam === 1) { let p = t1Arr.splice(index, 1)[0]; t2Arr.push(p); } 
             else { let p = t2Arr.splice(index, 1)[0]; t1Arr.push(p); }
-            document.getElementById('t1Players').value = t1Arr.join('\n');
-            document.getElementById('t2Players').value = t2Arr.join('\n');
+            document.getElementById('t1Players').value = t1Arr.join(', ');
+            document.getElementById('t2Players').value = t2Arr.join(', ');
             syncChips();
         }
 
@@ -200,10 +217,12 @@
             let mName = document.getElementById('matchName').value.trim();
             let t1 = document.getElementById('t1Name').value.trim().toUpperCase();
             let t2 = document.getElementById('t2Name').value.trim().toUpperCase();
-            let p1Text = document.getElementById('t1Players').value.trim();
-            let p2Text = document.getElementById('t2Players').value.trim();
+            
+            let t1Arr = parsePlayers(document.getElementById('t1Players').value);
+            let t2Arr = parsePlayers(document.getElementById('t2Players').value);
             let rawTime = document.getElementById('matchTime').value; 
-            if(!mName || !t1 || !t2 || !p1Text || !p2Text || !rawTime) return alert("⚠️ Details bhariye!");
+            
+            if(!mName || !t1 || !t2 || t1Arr.length === 0 || t2Arr.length === 0 || !rawTime) return alert("⚠️ Details bhariye!");
 
             let msTime = new Date(rawTime).getTime();
             let engineWakeUp = msTime - 1200000; 
@@ -212,8 +231,8 @@
             let safeT1 = t1.replace(/[^a-zA-Z0-9]/g, '');
             let safeT2 = t2.replace(/[^a-zA-Z0-9]/g, '');
 
-            p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[safeT1 + "_" + i] = { name: cn, team: safeT1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
-            p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[safeT2 + "_" + i] = { name: cn, team: safeT2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
+            t1Arr.forEach((cn, i) => { pData[safeT1 + "_" + i] = { name: cn, team: safeT1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
+            t2Arr.forEach((cn, i) => { pData[safeT2 + "_" + i] = { name: cn, team: safeT2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
 
             db.ref('Game/Kalyan11/VIPMatches/' + mId).set({ engineUrl: eUrl, name: mName, team1: t1, team2: t2, timestamp: msTime, status: "Upcoming" });
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData);
@@ -247,19 +266,15 @@
             });
         }
         
-        // 🔥 NAYA RENDER LOGIC: TEAM 1 & TEAM 2 ALAG ALAG 🔥
         function renderModalList() {
             let container = document.getElementById('modalPlayerList'); 
             container.innerHTML = "";
             
-            // Teams detect karna
             let teams = [...new Set(Object.values(currentPlayersData).map(p => p.team))];
             let team1 = teams[0] || "Team 1";
             let team2 = teams[1] || "Team 2";
 
-            // Left Column (Team 1)
             let t1Html = `<div class="team-col"><h3 class="t1-header">${team1}</h3>`;
-            // Right Column (Team 2)
             let t2Html = `<div class="team-col"><h3 class="t2-header">${team2}</h3>`;
 
             Object.keys(currentPlayersData).forEach(pKey => {
@@ -285,7 +300,7 @@
             t1Html += `</div>`;
             t2Html += `</div>`;
 
-            container.innerHTML = t1Html + t2Html; // Dono columns daal diye
+            container.innerHTML = t1Html + t2Html; 
         }
 
         function toggleStatus(k) {
