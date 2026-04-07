@@ -15,11 +15,18 @@
         .input-group { margin-bottom: 15px; }
         label { display: block; font-size: 13px; color: #aaa; margin-bottom: 5px; font-weight: bold; }
         input, textarea { width: 100%; padding: 12px; box-sizing: border-box; background: #222; border: 1px solid #444; color: #fff; border-radius: 5px; font-size: 14px;}
-        textarea { height: 90px; resize: vertical; }
+        textarea { height: 60px; resize: vertical; font-size: 11px; color: #888; }
         .row { display: flex; gap: 15px; }
         .row .input-group { flex: 1; }
-        .btn-live { background: #00ff88; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; margin-bottom: 10px;}
+        .btn-live { background: #00ff88; color: #000; font-weight: 900; padding: 15px; border: none; border-radius: 8px; width: 100%; cursor: pointer; font-size: 18px; transition: 0.3s; margin-bottom: 10px; box-shadow: 0 0 15px rgba(0,255,136,0.3);}
         
+        /* 🔥 TAP TO MOVE (MAGIC CHIPS) CSS 🔥 */
+        .chip-box { background: #0a0a14; border: 1px dashed #555; min-height: 150px; border-radius: 8px; padding: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; margin-bottom: 8px;}
+        .chip { background: #1a1a2e; border: 1px solid #00ff88; color: #00ff88; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; user-select: none;}
+        .chip:active { transform: scale(0.9); }
+        .chip.t2 { border-color: #ffd700; color: #ffd700; }
+        .chip i { font-size: 10px; }
+
         .match-row { background: #1a1a2e; border: 1px solid #4a00e0; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
         .match-info h4 { margin: 0 0 5px; font-size: 16px; color: #ffd700; text-transform: uppercase;}
         .match-info p { margin: 0; font-size: 12px; color: #aaa;}
@@ -33,7 +40,7 @@
         .success { color: #00ff88; } .error { color: #ff004c; } .loading { color: #ffd700; }
         .clear-btn { background: #ff004c; border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
 
-        /* 🔥 MODAL & ROLE EDITOR STYLES 🔥 */
+        /* MODAL STYLES */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: #111; width: 95%; max-width: 500px; max-height: 85vh; border-radius: 15px; border: 2px solid #00ff88; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0,255,136,0.2);}
         .modal-header { padding: 15px; background: #1a1a2e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
@@ -42,19 +49,15 @@
         .modal-body { padding: 15px; overflow-y: auto; flex: 1; }
         
         .player-toggle-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        
         .player-edit-card { background: #222; border: 1px solid #444; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;}
         .p-toggle { padding: 10px; cursor: pointer; text-align: center; font-size: 12px; font-weight: bold; border-bottom: 1px solid #444; transition: 0.2s; user-select: none; }
         .p-toggle.playing { background: rgba(0,255,136,0.2); color: #00ff88; }
         .p-toggle.benched { background: rgba(255,0,76,0.2); color: #ff004c; }
         .p-toggle.unannounced { color: #fff; }
-        
         .role-select { background: #111; color: #ffd700; border: none; padding: 6px; font-size: 12px; font-weight: bold; text-align: center; outline: none; cursor: pointer; width: 100%;}
-        .role-select:focus { background: #333; }
         
         .modal-footer { padding: 15px; background: #1a1a2e; border-top: 1px solid #333; }
         .btn-save-lineup { width: 100%; background: #00ff88; color: #000; font-weight: 900; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;}
-
         #payoutLoader { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; flex-direction:column; justify-content:center; align-items:center; color:#00ff88; font-size:20px; font-weight:900; }
     </style>
 </head>
@@ -79,10 +82,23 @@
         </div>
         <div class="input-group"><label>⏱️ Match Start Time</label><input type="datetime-local" id="matchTime"></div>
         
-        <h3 style="margin-top:20px;">2. Auto Fetched Squads</h3>
-        <div class="row">
-            <div class="input-group"><label>Team 1 Players</label><textarea id="t1Players"></textarea></div>
-            <div class="input-group"><label>Team 2 Players</label><textarea id="t2Players"></textarea></div>
+        <h3 style="margin-top:20px;"><i class="fa-solid fa-wand-magic-sparkles"></i> 2. Fix Squads (Tap to Move)</h3>
+        <p style="font-size: 11px; color: #aaa; margin-top: 0;">Agar koi khiladi galat team mein aa gaya ho, toh bas uske naam par click karein. Wo ud-kar dusri team mein chala jayega!</p>
+        
+        <div class="row" style="flex-direction: column;">
+            <div class="input-group" style="margin-bottom: 5px;">
+                <label id="lblT1" style="color: #00ff88;">Team 1 Players (0)</label>
+                <div id="t1ChipBox" class="chip-box"></div>
+                <textarea id="t1Players" oninput="syncChips()" placeholder="Raw Data..."></textarea>
+            </div>
+            
+            <div style="text-align: center; color: #888; font-size: 20px; margin: 10px 0;"><i class="fa-solid fa-arrows-up-down"></i></div>
+
+            <div class="input-group">
+                <label id="lblT2" style="color: #ffd700;">Team 2 Players (0)</label>
+                <div id="t2ChipBox" class="chip-box" style="border-color: #ffd700;"></div>
+                <textarea id="t2Players" oninput="syncChips()" placeholder="Raw Data..."></textarea>
+            </div>
         </div>
         <button class="btn-live" onclick="launchSmartMatch()">🚀 LAUNCH VIP MATCH</button>
     </div>
@@ -99,7 +115,6 @@
                 <div class="close-btn" onclick="closeLineupModal()">&times;</div>
             </div>
             <div class="modal-body">
-                <p style="font-size: 11px; color: #aaa; text-align: center; margin-top: 0; margin-bottom: 15px;">Tap Name: Playing/Out <br> Dropdown: Change Role (WK/BAT/AR/BOWL)</p>
                 <div class="player-toggle-list" id="modalPlayerList"></div>
             </div>
             <div class="modal-footer">
@@ -136,31 +151,66 @@
                 let response = await fetch(`https://kalyan-point-enginee-rjkh.vercel.app/api/scout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiMatchId: globalApiMatchId }) });
                 let data = await response.json();
                 if(data.success) {
-                    document.getElementById('t1Name').value = data.t1Name; document.getElementById('t2Name').value = data.t2Name;
-                    document.getElementById('t1Players').value = data.t1Players; document.getElementById('t2Players').value = data.t2Players;
+                    document.getElementById('t1Name').value = data.t1Name; 
+                    document.getElementById('t2Name').value = data.t2Name;
+                    document.getElementById('t1Players').value = data.t1Players; 
+                    document.getElementById('t2Players').value = data.t2Players;
                     document.getElementById('matchName').value = `${data.t1Name} vs ${data.t2Name} Live Match`;
                     status.innerHTML = "✅ Data Loaded!"; status.className = "success";
+                    
+                    // 🔥 Load hotay hi Chips bana do 🔥
+                    syncChips();
                 }
             } catch(e) { status.innerHTML = "⚠️ Error"; status.className = "error"; }
         }
 
-        // 🔥 THE NEW MEGA SMART ROLE ENGINE 🔥
+        // 🔥 TAP TO MOVE (MAGIC ENGINE) 🔥
+        function syncChips() {
+            let t1Arr = document.getElementById('t1Players').value.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n);
+            let t2Arr = document.getElementById('t2Players').value.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n);
+
+            document.getElementById('lblT1').innerText = `Team 1 Players (${t1Arr.length})`;
+            document.getElementById('lblT2').innerText = `Team 2 Players (${t2Arr.length})`;
+
+            let t1Html = "";
+            t1Arr.forEach((p, i) => {
+                t1Html += `<div class="chip" onclick="movePlayer(1, ${i})">${p} <i class="fa-solid fa-turn-down"></i></div>`;
+            });
+            document.getElementById('t1ChipBox').innerHTML = t1Html;
+
+            let t2Html = "";
+            t2Arr.forEach((p, i) => {
+                t2Html += `<div class="chip t2" onclick="movePlayer(2, ${i})"><i class="fa-solid fa-turn-up"></i> ${p}</div>`;
+            });
+            document.getElementById('t2ChipBox').innerHTML = t2Html;
+        }
+
+        function movePlayer(fromTeam, index) {
+            let t1Arr = document.getElementById('t1Players').value.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n);
+            let t2Arr = document.getElementById('t2Players').value.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n);
+
+            if (fromTeam === 1) {
+                let p = t1Arr.splice(index, 1)[0];
+                t2Arr.push(p); // Move to Team 2
+            } else {
+                let p = t2Arr.splice(index, 1)[0];
+                t1Arr.push(p); // Move to Team 1
+            }
+
+            document.getElementById('t1Players').value = t1Arr.join('\n');
+            document.getElementById('t2Players').value = t2Arr.join('\n');
+            syncChips(); // Update UI
+        }
+
+        // Smart Role Engine
         function getSmartRole(name) {
             let n = name.toLowerCase();
-            
-            // WICKET KEEPERS (WK)
-            const wk = ["dhoni", "pant", "rahul", "samson", "kishan", "saha", "karthik", "de kock", "buttler", "pooran", "klaasen", "bairstow", "salt", "jurel", "gurbaz", "hope", "carey", "inglis", "rizwan"];
+            const wk = ["dhoni", "pant", "rahul", "samson", "kishan", "saha", "karthik", "de kock", "buttler", "pooran", "klaasen", "bairstow", "salt", "jurel"];
             if (wk.some(w => n.includes(w))) return "WK";
-
-            // ALL ROUNDERS (AR)
-            const ar = ["jadeja", "pandya", "maxwell", "narine", "russell", "stoinis", "curran", "marsh", "moeen", "axar", "tewatia", "washington", "ashwin", "santner", "livingstone", "nabi", "omarzai", "green", "romario", "bracewell", "shakib", "miraz", "hasaranga"];
+            const ar = ["jadeja", "pandya", "maxwell", "narine", "russell", "stoinis", "curran", "marsh", "moeen", "axar", "tewatia", "washington"];
             if (ar.some(a => n.includes(a))) return "AR";
-
-            // BOWLERS (BOWL)
-            const bowl = ["bumrah", "shami", "siraj", "rashid", "chahal", "boult", "rabada", "nortje", "arshdeep", "pathirana", "cummins", "starc", "hazlewood", "zampa", "kuldeep", "bishnoi", "chakravarthy", "topley", "ellis", "sandeep", "mohit", "bhuvi", "mukesh", "ferguson", "coetzee", "theekshana", "mustafizur", "natarajan", "umran", "nalkande", "madhwal", "afridi", "naseem", "rauf"];
+            const bowl = ["bumrah", "shami", "siraj", "rashid", "chahal", "boult", "rabada", "nortje", "arshdeep", "pathirana", "cummins", "starc", "kuldeep"];
             if (bowl.some(b => n.includes(b))) return "BOWL";
-
-            // DEFAULT -> BATSMEN (BAT)
             return "BAT";
         }
 
@@ -181,14 +231,13 @@
             let safeT1 = t1.replace(/[^a-zA-Z0-9]/g, '');
             let safeT2 = t2.replace(/[^a-zA-Z0-9]/g, '');
 
-            // 🔥 Yahan Auto-Engine Smart Role Assign Karega 🔥
             p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[safeT1 + "_" + i] = { name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
             p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[safeT2 + "_" + i] = { name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
 
             db.ref('Game/Kalyan11/VIPMatches/' + mId).set({ engineUrl: eUrl, name: mName, team1: t1, team2: t2, timestamp: msTime, status: "Upcoming" });
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData);
             db.ref('Game/Kalyan11/LiveEngine/' + mId).set({ matchId: mId, cricbuzzLink: eUrl, wakeUpTime: engineWakeUp })
-            .then(() => { alert("✅ Match & Engine Launched!"); location.reload(); });
+            .then(() => { alert("✅ Match Launched!"); location.reload(); });
         }
 
         db.ref('Game/Kalyan11/VIPMatches').on('value', snapshot => {
@@ -248,25 +297,15 @@
         
         function saveLineupToFirebase() {
             db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).update(currentPlayersData).then(() => { 
-                alert("✅ Lineup & Roles Updated Successfully!"); 
-                closeLineupModal(); 
+                alert("✅ Lineup Saved!"); closeLineupModal(); 
             });
         }
         function closeLineupModal() { document.getElementById('lineupModal').style.display = 'none'; }
-
-        function calculatePrizeLogic(rank, entry, totalSpots) {
-            if(entry === 0) return 0; 
-            if(entry === 99) { if(rank === 1) return 50000; if(rank <= 10) return 1000; return 0; }
-            if(rank === 1) return Math.floor(entry * totalSpots * 0.4); 
-            if(rank <= Math.floor(totalSpots * 0.4)) return entry; 
-            return 0; 
-        }
+        function calculatePrizeLogic(rank, entry, totalSpots) { if(entry === 0) return 0; if(entry === 99) { if(rank === 1) return 50000; if(rank <= 10) return 1000; return 0; } if(rank === 1) return Math.floor(entry * totalSpots * 0.4); if(rank <= Math.floor(totalSpots * 0.4)) return entry; return 0; }
 
         async function processPerfectPayout(matchId) {
             if(!confirm("⚠️ PAYOUT KAREIN?")) return;
-            const loader = document.getElementById('payoutLoader');
-            loader.style.display = 'flex';
-
+            const loader = document.getElementById('payoutLoader'); loader.style.display = 'flex';
             try {
                 let pSnap = await db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value');
                 let playersObj = pSnap.val() || {};
@@ -287,15 +326,12 @@
                         db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${child.key}`).update({total_points: calculatedPoints});
                     });
                 }
-
                 allRealTeams.sort((a,b) => b.points - a.points);
                 let totalPaidUsers = 0;
-
                 for(let r = 0; r < allRealTeams.length; r++) {
                     let currentTeam = allRealTeams[r];
                     let rank = r + 1;
                     let prize = calculatePrizeLogic(rank, currentTeam.entry_paid, 100); 
-
                     if(prize > 0 && currentTeam.payment_status !== "PAID") {
                         await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${currentTeam.teamKey}`).update({ payment_status: "PAID" });
                         let wSnap = await db.ref(`users/${currentTeam.phone}`).once('value');
@@ -306,12 +342,8 @@
                     }
                 }
                 await db.ref(`Game/Kalyan11/VIPMatches/${matchId}`).update({ timestamp: new Date().getTime() - 15000000 });
-                loader.style.display = 'none';
-                alert(`✅ PAYOUT SUCCESSFUL!\nTotal Winners Paid: ${totalPaidUsers}`);
-            } catch (error) {
-                loader.style.display = 'none';
-                alert("❌ ERROR: " + error.message);
-            }
+                loader.style.display = 'none'; alert(`✅ PAYOUT SUCCESSFUL!\nTotal Winners Paid: ${totalPaidUsers}`);
+            } catch (error) { loader.style.display = 'none'; alert("❌ ERROR: " + error.message); }
         }
     </script>
 </body>
