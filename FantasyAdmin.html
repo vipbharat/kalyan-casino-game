@@ -43,7 +43,6 @@
         
         .player-toggle-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         
-        /* 🔥 NAYA PLAYER CARD (TOSS + ROLE) 🔥 */
         .player-edit-card { background: #222; border: 1px solid #444; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;}
         .p-toggle { padding: 10px; cursor: pointer; text-align: center; font-size: 12px; font-weight: bold; border-bottom: 1px solid #444; transition: 0.2s; user-select: none; }
         .p-toggle.playing { background: rgba(0,255,136,0.2); color: #00ff88; }
@@ -123,8 +122,6 @@
         let currentEditingMatchId = "";
         let currentPlayersData = {};
 
-        const contestConfig = { 99: 150000, 49: 5000, 39: 3000, 25: 2000, 0: 100000 };
-
         function clearLink() { document.getElementById('engineUrl').value = ''; document.getElementById('statusBox').innerHTML = ''; }
 
         async function autoFetchPlayersFromLink() {
@@ -147,12 +144,23 @@
             } catch(e) { status.innerHTML = "⚠️ Error"; status.className = "error"; }
         }
 
-        // Basic default detector (Par ab aap manual theek kar sakte hain)
-        function getSmartRole(n) {
-            n = n.toLowerCase();
-            if (n.includes("bumrah") || n.includes("shami")) return "BOWL";
-            if (n.includes("dhoni") || n.includes("pant") || n.includes("rahul")) return "WK";
-            if (n.includes("jadeja") || n.includes("pandya") || n.includes("maxwell")) return "AR";
+        // 🔥 THE NEW MEGA SMART ROLE ENGINE 🔥
+        function getSmartRole(name) {
+            let n = name.toLowerCase();
+            
+            // WICKET KEEPERS (WK)
+            const wk = ["dhoni", "pant", "rahul", "samson", "kishan", "saha", "karthik", "de kock", "buttler", "pooran", "klaasen", "bairstow", "salt", "jurel", "gurbaz", "hope", "carey", "inglis", "rizwan"];
+            if (wk.some(w => n.includes(w))) return "WK";
+
+            // ALL ROUNDERS (AR)
+            const ar = ["jadeja", "pandya", "maxwell", "narine", "russell", "stoinis", "curran", "marsh", "moeen", "axar", "tewatia", "washington", "ashwin", "santner", "livingstone", "nabi", "omarzai", "green", "romario", "bracewell", "shakib", "miraz", "hasaranga"];
+            if (ar.some(a => n.includes(a))) return "AR";
+
+            // BOWLERS (BOWL)
+            const bowl = ["bumrah", "shami", "siraj", "rashid", "chahal", "boult", "rabada", "nortje", "arshdeep", "pathirana", "cummins", "starc", "hazlewood", "zampa", "kuldeep", "bishnoi", "chakravarthy", "topley", "ellis", "sandeep", "mohit", "bhuvi", "mukesh", "ferguson", "coetzee", "theekshana", "mustafizur", "natarajan", "umran", "nalkande", "madhwal", "afridi", "naseem", "rauf"];
+            if (bowl.some(b => n.includes(b))) return "BOWL";
+
+            // DEFAULT -> BATSMEN (BAT)
             return "BAT";
         }
 
@@ -173,6 +181,7 @@
             let safeT1 = t1.replace(/[^a-zA-Z0-9]/g, '');
             let safeT2 = t2.replace(/[^a-zA-Z0-9]/g, '');
 
+            // 🔥 Yahan Auto-Engine Smart Role Assign Karega 🔥
             p1Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[safeT1 + "_" + i] = { name: cn, team: t1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
             p2Text.split(/[,\n]+/).map(n=>n.trim()).filter(n=>n.length>0).forEach((cn, i) => { pData[safeT2 + "_" + i] = { name: cn, team: t2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced" }; });
 
@@ -208,14 +217,13 @@
             });
         }
         
-        // 🔥 NAYA TOSS & ROLE RENDER UI 🔥
         function renderModalList() {
             let container = document.getElementById('modalPlayerList'); 
             container.innerHTML = "";
             Object.keys(currentPlayersData).forEach(pKey => {
                 let p = currentPlayersData[pKey];
                 let s = p.playingStatus === 'playing' ? 'playing' : (p.playingStatus === 'benched' ? 'benched' : 'unannounced');
-                let r = p.role || 'BAT'; // Default to BAT
+                let r = p.role || 'BAT'; 
                 
                 container.innerHTML += `
                 <div class="player-edit-card">
@@ -236,10 +244,7 @@
             renderModalList(); 
         }
 
-        // 🔥 ROLE CHANGE FUNCTION 🔥
-        function changeRole(k, newRole) {
-            currentPlayersData[k].role = newRole;
-        }
+        function changeRole(k, newRole) { currentPlayersData[k].role = newRole; }
         
         function saveLineupToFirebase() {
             db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).update(currentPlayersData).then(() => { 
@@ -293,12 +298,10 @@
 
                     if(prize > 0 && currentTeam.payment_status !== "PAID") {
                         await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${currentTeam.teamKey}`).update({ payment_status: "PAID" });
-                        
                         let wSnap = await db.ref(`users/${currentTeam.phone}`).once('value');
                         let currentWinBal = parseFloat(wSnap.val()?.winning_balance || 0);
                         await db.ref(`users/${currentTeam.phone}`).update({ winning_balance: currentWinBal + prize });
                         await db.ref(`users/${currentTeam.phone}/Transactions`).push({ title: `🏆 Rank ${rank} Winnings`, amount: prize, type: "credit", date: new Date().toLocaleString() });
-
                         totalPaidUsers++;
                     }
                 }
