@@ -1,70 +1,71 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan 11 - Create Team</title>
+    <title>Kalyan 11 - Create Your Team</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #050510; color: #fff; margin: 0; padding-bottom: 90px; user-select: none; }
+        :root { --d11-red: #d0021b; --d11-green: #00a05a; --bg-grey: #f2f2f2; --card-white: #fff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-grey); color: #000; margin: 0; padding-bottom: 90px; user-select: none; }
         
         /* 👑 Header */
-        .header { background: linear-gradient(135deg, #1a0033, #00ff88); padding: 15px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,255,136,0.3); color: #000; }
-        .back-btn { font-size: 20px; cursor: pointer; font-weight: bold; }
-        .match-info { text-align: center; font-weight: 900; font-size: 16px; flex-grow: 1; text-transform: uppercase; letter-spacing: 1px;}
-        
-        /* 📊 Status Bar */
-        .status-bar { background: #111; padding: 15px; border-bottom: 2px solid #333; position: sticky; top: 54px; z-index: 99;}
-        .top-stats { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 10px;}
-        .credits { color: #ffd700; font-size: 16px;}
-        .player-count { color: #00ff88; font-size: 16px;}
-        
-        /* Team Counters */
-        .team-counters { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 10px; border-radius: 8px; border: 1px solid #222;}
-        .t-count-box { text-align: center; width: 40%;}
-        .t-name-lbl { font-size: 10px; color: #aaa; text-transform: uppercase; margin-bottom: 3px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-        .t-count-val { font-size: 18px; font-weight: 900; color: #fff; }
-        .vs-lbl { font-size: 12px; color: #ff004c; font-weight: 900; font-style: italic;}
+        .header { background: #fff; padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #ddd;}
+        .back-btn { font-size: 20px; cursor: pointer; color: #000; margin-right: 15px;}
+        .match-info { font-weight: 900; font-size: 15px; flex-grow: 1; text-transform: uppercase;}
 
-        /* 👥 Players Split View */
-        .split-view { display: flex; gap: 8px; padding: 10px; }
-        .team-column { flex: 1; background: transparent; overflow: hidden; }
-        
-        /* 🎴 Player Cards */
-        .mini-card { background: linear-gradient(145deg, #1a1a2e, #111); border: 1px solid #333; padding: 12px 10px; margin-bottom: 10px; border-radius: 8px; position: relative; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 8px rgba(0,0,0,0.4);}
-        .mini-card:active { transform: scale(0.95); }
-        .mini-card.selected { border-color: #00ff88; background: rgba(0, 255, 136, 0.05); box-shadow: 0 0 12px rgba(0, 255, 136, 0.3); }
-        .mini-card.disabled { opacity: 0.4; pointer-events: none; filter: grayscale(100%); }
-        
-        .p-name { font-size: 13px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px; color: #fff;}
-        .p-role { font-size: 10px; color: #aaa; margin-top: 4px; font-weight: bold; background: #000; padding: 2px 5px; border-radius: 3px; display: inline-block;}
-        
-        /* Lineup Status */
-        .play-status { font-size: 10px; margin-top: 6px; display: flex; align-items: center; font-weight: bold;}
-        .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; }
-        .dot-green { background: #00ff88; box-shadow: 0 0 5px #00ff88; }
-        .txt-green { color: #00ff88; }
-        .dot-red { background: #ff004c; box-shadow: 0 0 5px #ff004c; }
-        .txt-red { color: #ff004c; }
-        .dot-grey { background: #777; }
-        .txt-grey { color: #999; }
+        /* 📊 Stats Bar */
+        .stats-bar { background: #1a0033; color: #fff; padding: 15px; position: sticky; top: 52px; z-index: 99;}
+        .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12px;}
+        .progress-container { display: flex; gap: 4px; }
+        .p-box { width: 15px; height: 8px; background: rgba(255,255,255,0.2); border-radius: 2px;}
+        .p-box.active { background: var(--d11-green); box-shadow: 0 0 5px var(--d11-green);}
 
-        .p-credits { font-size: 14px; color: #ffd700; font-weight: 900; margin-top: 8px; text-align: left; background: #222; padding: 3px 5px; border-radius: 4px; border: 1px dashed #555;}
+        /* 📑 Role Tabs */
+        .role-tabs { display: flex; background: #fff; border-bottom: 1px solid #ddd; overflow-x: auto;}
+        .role-tab { flex: 1; text-align: center; padding: 12px 0; font-size: 11px; font-weight: 900; color: #666; cursor: pointer; text-transform: uppercase;}
+        .role-tab.active { color: var(--d11-red); border-bottom: 3px solid var(--d11-red);}
+
+        /* 👥 Players List */
+        .player-list { padding: 10px; }
+        .p-card { background: #fff; display: flex; align-items: center; padding: 12px; margin-bottom: 8px; border-radius: 8px; border: 1px solid #eee; position: relative;}
+        .p-card.selected { background: #fff9e6; border-color: #ffd700; }
         
-        .check-icon { position: absolute; top: 10px; right: 10px; color: #00ff88; font-size: 18px; display: none; text-shadow: 0 0 5px #00ff88;}
-        .mini-card.selected .check-icon { display: block; }
+        /* 🔥 BENCHED PLAYERS KA LOOK 🔥 */
+        .p-card.benched { background: #fafafa; opacity: 0.6; border-color: #ddd; }
+        .p-card.disabled { opacity: 0.4; filter: grayscale(1); pointer-events: none;}
         
-        /* 🚀 Footer & Next Button */
-        .footer { position: fixed; bottom: 0; width: 100%; background: #111; padding: 15px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 100; border-top: 2px solid #333; box-shadow: 0 -5px 15px rgba(0,0,0,0.5);}
-        .next-btn { background: #333; color: #888; padding: 14px 40px; border-radius: 8px; font-weight: 900; font-size: 16px; border: none; cursor: not-allowed; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px;}
-        .next-btn.active { background: #00ff88; color: #000; cursor: pointer; box-shadow: 0 0 15px rgba(0,255,136,0.4);}
-        .next-btn.active:active { transform: scale(0.95); }
+        .p-img { width: 45px; height: 45px; background: #eee; border-radius: 50%; margin-right: 12px;}
+        .p-info { flex-grow: 1; }
+        .p-name { font-size: 14px; font-weight: 900; color: #000; }
+        .p-team-role { font-size: 10px; color: #777; margin-top: 2px;}
         
-        .loader { text-align: center; margin-top: 50px; color: #00ff88; font-weight: bold; font-size: 16px; width: 100%;}
+        .playing-status { font-size: 9px; margin-top: 4px; display: flex; align-items: center; font-weight: bold;}
+        .dot { width: 6px; height: 6px; border-radius: 50%; margin-right: 4px;}
+        .dot-green { background: var(--d11-green); }
+        .dot-red { background: var(--d11-red); }
+
+        .p-creds { font-weight: 900; font-size: 14px; margin-right: 40px;}
+        .add-icon { position: absolute; right: 15px; font-size: 20px; color: var(--d11-green); }
+        .p-card.selected .add-icon { color: var(--d11-red); transform: rotate(45deg); }
+        .p-card.benched .add-icon { color: #aaa; }
+
+        /* 🚀 Footer & Ground Preview Button */
+        .footer { position: fixed; bottom: 0; width: 100%; background: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #ddd; z-index: 100;}
+        .preview-btn { background: #333; color: #fff; padding: 10px 15px; border-radius: 5px; font-weight: 900; font-size: 12px; border: none;}
+        .next-btn { background: #ccc; color: #888; padding: 12px 35px; border-radius: 5px; font-weight: 900; border: none; cursor: not-allowed; transition: 0.3s;}
+        .next-btn.active { background: var(--d11-green); color: #fff; cursor: pointer; }
+
+        /* 🏟️ GROUND PREVIEW MODAL */
+        .ground-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://i.ibb.co/Xz9t0hY/ground.jpg') no-repeat center center; background-size: cover; z-index: 2000; overflow-y: auto;}
+        .close-preview { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 30px; z-index: 2001;}
+        .field-area { position: relative; height: 100%; display: flex; flex-direction: column; justify-content: space-around; padding: 50px 10px; box-sizing: border-box;}
+        .ground-row { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;}
+        .player-jersey { text-align: center; width: 60px;}
+        .jersey-img { width: 35px; margin: 0 auto; display: block;}
+        .jersey-name { background: #000; color: #fff; font-size: 8px; padding: 2px 4px; border-radius: 2px; margin-top: 3px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
     </style>
 </head>
 <body>
@@ -72,228 +73,209 @@
     <div class="header">
         <i class="fa-solid fa-arrow-left back-btn" onclick="history.back()"></i>
         <div class="match-info" id="matchHeader">Loading...</div>
-        <div style="width: 20px;"></div>
     </div>
 
-    <div class="status-bar">
-        <div class="top-stats">
-            <div>Players: <span class="player-count" id="pCount">0</span>/11</div>
-            <div>Credits: <span class="credits" id="cCount">100.0</span></div>
+    <div class="stats-bar">
+        <div class="top-row">
+            <div>Players: <span id="pCount">0</span>/11</div>
+            <div id="teamCountDisplay">IND 0 : 0 AUS</div>
+            <div>Credits: <span id="cCount">100.0</span></div>
         </div>
-        <div class="team-counters">
-            <div class="t-count-box">
-                <div class="t-name-lbl" id="lblT1">TEAM 1</div>
-                <div class="t-count-val" id="countT1">0</div>
+        <div class="progress-container" id="p-indicators">
             </div>
-            <div class="vs-lbl">VS</div>
-            <div class="t-count-box">
-                <div class="t-name-lbl" id="lblT2">TEAM 2</div>
-                <div class="t-count-val" id="countT2">0</div>
-            </div>
-        </div>
     </div>
 
-    <div class="split-view" id="mainSplitView">
-        <div class="loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Khiladi aa rahe hain...</div>
+    <div class="role-tabs">
+        <div class="role-tab active" onclick="switchRole('WK', this)">WK (0)</div>
+        <div class="role-tab" onclick="switchRole('BAT', this)">BAT (0)</div>
+        <div class="role-tab" onclick="switchRole('AR', this)">AR (0)</div>
+        <div class="role-tab" onclick="switchRole('BOWL', this)">BOWL (0)</div>
     </div>
+
+    <div class="player-list" id="player-list-container">
+        </div>
 
     <div class="footer">
-        <div style="font-size: 11px; color: #888; font-weight:bold;">Max 7 players<br>from a team</div>
-        <button class="next-btn" id="nextBtn" onclick="goToCaptain()">NEXT <i class="fa-solid fa-arrow-right"></i></button>
+        <button class="preview-btn" onclick="togglePreview()"><i class="fa-solid fa-eye"></i> TEAM PREVIEW</button>
+        <button class="next-btn" id="nextBtn" onclick="goToCaptain()">NEXT</button>
+    </div>
+
+    <div class="ground-modal" id="groundModal">
+        <span class="close-preview" onclick="togglePreview()">&times;</span>
+        <div class="field-area" id="field-area">
+            </div>
     </div>
 
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
         const urlParams = new URLSearchParams(window.location.search);
-        const matchId = urlParams.get('matchId') || "DUMMY_MATCH";
-        let urlT1 = urlParams.get('t1') || "Team A";
-        let urlT2 = urlParams.get('t2') || "Team B";
-        const contestFee = urlParams.get('fee') || 49; 
-        const isEditMode = urlParams.get('editTeam');
-
-        document.getElementById('matchHeader').innerText = `${urlT1.substring(0,4)} VS ${urlT2.substring(0,4)}`;
-        document.getElementById('lblT1').innerText = urlT1;
-        document.getElementById('lblT2').innerText = urlT2;
+        const matchId = urlParams.get('matchId');
+        const contestFee = urlParams.get('fee') || 49;
 
         let allPlayers = [];
-        let selectedPlayers = [];
-        let totalCredits = 100.0;
-        let t1Count = 0;
-        let t2Count = 0;
-        let initialLoadDone = false;
+        let selectedIds = [];
+        let currentRole = "WK";
+        let creditsLeft = 100.0;
+        let t1 = "T1", t2 = "T2";
 
-        // Fetch Live Players from Firebase
+        // Draw Progress Indicators
+        const indicators = document.getElementById('p-indicators');
+        for(let i=0; i<11; i++) indicators.innerHTML += `<div class="p-box" id="dot-${i}"></div>`;
+
+        // 🔥 FETCH PLAYERS 🔥
         db.ref('Game/Kalyan11/MatchPlayers/' + matchId).on('value', snapshot => {
-            allPlayers = []; 
+            allPlayers = [];
             if(snapshot.exists()) {
-                snapshot.forEach(child => { 
-                    let pData = child.val();
-                    pData.id = child.key; 
-                    allPlayers.push(pData); 
+                snapshot.forEach(c => {
+                    let p = c.val(); p.id = c.key;
+                    allPlayers.push(p);
                 });
-            } else {
-                // FAKE PLAYERS GENERATOR (Agar DB empty ho toh test karne ke liye)
-                for(let i=1; i<=11; i++) {
-                    allPlayers.push({ id: "T1_"+i, name: urlT1+" Plyr "+i, team: urlT1, role: "BAT", credits: 8.5 });
-                    allPlayers.push({ id: "T2_"+i, name: urlT2+" Plyr "+i, team: urlT2, role: "BOWL", credits: 8.5 });
-                }
-            }
-
-            // Real team names extract karna
-            let uniqueTeams = [...new Set(allPlayers.map(p => p.team))];
-            if(uniqueTeams.length >= 2) {
-                urlT1 = uniqueTeams[0]; urlT2 = uniqueTeams[1];
-                document.getElementById('lblT1').innerText = urlT1;
-                document.getElementById('lblT2').innerText = urlT2;
-            }
-
-            // 🛠️ EDIT TEAM LOGIC (Agar user team edit kar raha hai)
-            if(isEditMode && !initialLoadDone) {
-                let userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
-                db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${isEditMode}`).once('value', teamSnap => {
-                    if(teamSnap.exists()) {
-                        let savedTeam = teamSnap.val().players || [];
-                        savedTeam.forEach(savedId => {
-                            let pObj = allPlayers.find(p => p.id === savedId);
-                            if(pObj) {
-                                selectedPlayers.push(savedId);
-                                totalCredits -= parseFloat(pObj.credits || 8.5);
-                                if(pObj.team === urlT1) t1Count++; else t2Count++;
-                            }
-                        });
-                        // Save the edit mode key so Captain.html knows we are updating
-                        localStorage.setItem('kalyan_edit_team_key', isEditMode);
-                    }
-                    updateCounters();
-                    renderSplitPlayers();
-                    initialLoadDone = true;
-                });
-            } else if(!initialLoadDone) {
-                // Clear old edit keys
-                localStorage.removeItem('kalyan_edit_team_key');
-                localStorage.removeItem('kalyan_selected_team');
-                initialLoadDone = true;
-                renderSplitPlayers();
-            } else {
-                renderSplitPlayers();
+                let teams = [...new Set(allPlayers.map(x => x.team))];
+                t1 = teams[0] || "T1"; t2 = teams[1] || "T2";
+                document.getElementById('matchHeader').innerText = `${t1} VS ${t2}`;
+                updateTabsCount();
+                renderList();
             }
         });
 
-        // 🖼️ RENDER CARDS
-        function renderSplitPlayers() {
-            let container = document.getElementById('mainSplitView');
-            let t1List = allPlayers.filter(p => p.team === urlT1);
-            let t2List = allPlayers.filter(p => p.team === urlT2);
-
-            let t1HTML = `<div class="team-column">`;
-            t1List.forEach(p => { t1HTML += createPlayerCard(p); });
-            t1HTML += `</div>`;
-
-            let t2HTML = `<div class="team-column">`;
-            t2List.forEach(p => { t2HTML += createPlayerCard(p); });
-            t2HTML += `</div>`;
-
-            container.innerHTML = t1HTML + t2HTML;
-            checkNextButton();
+        function switchRole(role, el) {
+            currentRole = role;
+            document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            renderList();
         }
 
-        function createPlayerCard(p) {
-            let isSelected = selectedPlayers.includes(p.id);
-            let cred = parseFloat(p.credits || 8.5);
+        function renderList() {
+            let container = document.getElementById('player-list-container');
+            container.innerHTML = "";
             
-            // 🛑 DISABLE LOGIC (Max 7 from 1 team OR Max 11 total OR Out of Credits)
-            let isDisabled = false;
-            if(!isSelected) {
-                if(selectedPlayers.length >= 11) isDisabled = true;
-                if(totalCredits - cred < 0) isDisabled = true;
-                if(p.team === urlT1 && t1Count >= 7) isDisabled = true;
-                if(p.team === urlT2 && t2Count >= 7) isDisabled = true;
-            }
-
-            let cardClass = isSelected ? "mini-card selected" : "mini-card";
-            if(isDisabled) cardClass += " disabled";
-
-            let sClass = "dot-grey", tClass = "txt-grey", sText = "Unannounced";
-            if(p.playingStatus === "playing") { sClass = "dot-green"; tClass = "txt-green"; sText = "Playing"; }
-            else if(p.playingStatus === "benched") { sClass = "dot-red"; tClass = "txt-red"; sText = "Benched"; }
-
-            // Safe String for ID in onclick
-            let safeId = p.id.replace(/'/g, "\\'");
-
-            return `
-                <div class="${cardClass}" onclick="togglePlayer('${safeId}', ${cred}, '${p.team}')">
-                    <i class="fa-solid fa-circle-check check-icon"></i>
-                    <div class="p-name">${p.name}</div>
-                    <div class="p-role">${p.role || "PLAYER"}</div>
-                    
-                    <div class="play-status ${tClass}">
-                        <span class="status-dot ${sClass}"></span> ${sText}
-                    </div>
-
-                    <div class="p-credits">${cred.toFixed(1)} Cr</div>
-                </div>
-            `;
-        }
-
-        // 👆 TAP PLAYER LOGIC
-        function togglePlayer(id, credits, teamName) {
-            let index = selectedPlayers.indexOf(id);
+            let filtered = allPlayers.filter(p => p.role === currentRole);
             
-            // DESELECT
-            if (index > -1) {
-                selectedPlayers.splice(index, 1);
-                totalCredits += credits;
-                if(teamName === urlT1) t1Count--; else t2Count--;
-            } 
-            // SELECT
-            else {
-                if (selectedPlayers.length >= 11) { alert("Aap maximum 11 players hi chun sakte hain!"); return; }
-                if (totalCredits - credits < 0) { alert("Aapke Credits khatam ho gaye hain!"); return; }
-                if (teamName === urlT1 && t1Count >= 7) { alert(`Aap ${urlT1} se max 7 players le sakte hain!`); return; }
-                if (teamName === urlT2 && t2Count >= 7) { alert(`Aap ${urlT2} se max 7 players le sakte hain!`); return; }
+            // 🔥 MASTER SORTING LOGIC 🔥
+            // Priority: Playing(2) -> Unannounced(1) -> Benched(0)
+            filtered.sort((a, b) => {
+                let getPriority = (status) => {
+                    if (status === 'playing') return 2;
+                    if (status === 'benched') return 0;
+                    return 1; // Unannounced / Default
+                };
                 
-                selectedPlayers.push(id);
-                totalCredits -= credits;
-                if(teamName === urlT1) t1Count++; else t2Count++;
+                let priA = getPriority(a.playingStatus);
+                let priB = getPriority(b.playingStatus);
+                
+                if (priA !== priB) {
+                    return priB - priA; // High priority sabse upar
+                } else {
+                    // Agar dono ka status same hai, toh jiske Credits zyada hain wo upar aayega
+                    return parseFloat(b.credits || 9.0) - parseFloat(a.credits || 9.0);
+                }
+            });
+
+            filtered.forEach(p => {
+                let isSelected = selectedIds.includes(p.id);
+                let cred = parseFloat(p.credits || 9.0);
+                
+                let isAnnounced = p.playingStatus === 'playing';
+                let isBenched = p.playingStatus === 'benched';
+                
+                let statusHtml = isAnnounced ? `<div class="playing-status"><span class="dot dot-green"></span> Annouced Playing</div>` : 
+                                 isBenched ? `<div class="playing-status" style="color:var(--d11-red);"><span class="dot dot-red"></span> Not Playing</div>` : 
+                                 `<div class="playing-status"><span class="dot" style="background:#aaa;"></span> Unannounced</div>`;
+
+                let cardClass = isSelected ? "p-card selected" : "p-card";
+                if(isBenched) cardClass += " benched";
+
+                container.innerHTML += `
+                    <div class="${cardClass}" onclick="togglePlayer('${p.id}', ${cred})">
+                        <div class="p-img"></div>
+                        <div class="p-info">
+                            <div class="p-name">${p.name}</div>
+                            <div class="p-team-role">${p.team} | ${p.role}</div>
+                            ${statusHtml}
+                        </div>
+                        <div class="p-creds">${cred}</div>
+                        <i class="fa-solid fa-circle-plus add-icon"></i>
+                    </div>`;
+            });
+        }
+
+        function togglePlayer(id, cred) {
+            let idx = selectedIds.indexOf(id);
+            if(idx > -1) {
+                selectedIds.splice(idx, 1);
+                creditsLeft += cred;
+            } else {
+                if(selectedIds.length >= 11) return alert("11 Players ho gaye!");
+                if(creditsLeft - cred < 0) return alert("Credits khatam!");
+                
+                // Rule Check: Max 7 from one team
+                let pObj = allPlayers.find(p => p.id === id);
+                let teamCount = allPlayers.filter(p => selectedIds.includes(p.id) && p.team === pObj.team).length;
+                if(teamCount >= 7) return alert(`Aap ek team se max 7 players hi le sakte hain!`);
+
+                selectedIds.push(id);
+                creditsLeft -= cred;
             }
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('pCount').innerText = selectedIds.length;
+            document.getElementById('cCount').innerText = creditsLeft.toFixed(1);
             
-            updateCounters();
-            renderSplitPlayers(); // UI Refresh
+            // Progress Dots
+            for(let i=0; i<11; i++) {
+                document.getElementById(`dot-${i}`).classList.toggle('active', i < selectedIds.length);
+            }
+
+            let t1c = allPlayers.filter(p => selectedIds.includes(p.id) && p.team === t1).length;
+            let t2c = allPlayers.filter(p => selectedIds.includes(p.id) && p.team === t2).length;
+            document.getElementById('teamCountDisplay').innerText = `${t1} ${t1c} : ${t2c} ${t2} `;
+
+            let btn = document.getElementById('nextBtn');
+            btn.classList.toggle('active', selectedIds.length === 11);
+            btn.disabled = selectedIds.length !== 11;
+            
+            updateTabsCount();
+            renderList();
         }
 
-        // 🔄 UPDATE UI COUNTERS
-        function updateCounters() {
-            document.getElementById('pCount').innerText = selectedPlayers.length;
-            document.getElementById('cCount').innerText = totalCredits.toFixed(1);
-            document.getElementById('countT1').innerText = t1Count;
-            document.getElementById('countT2').innerText = t2Count;
-            checkNextButton();
+        function updateTabsCount() {
+            const getC = (r) => allPlayers.filter(p => selectedIds.includes(p.id) && p.role === r).length;
+            document.querySelectorAll('.role-tab')[0].innerText = `WK (${getC('WK')})`;
+            document.querySelectorAll('.role-tab')[1].innerText = `BAT (${getC('BAT')})`;
+            document.querySelectorAll('.role-tab')[2].innerText = `AR (${getC('AR')})`;
+            document.querySelectorAll('.role-tab')[3].innerText = `BOWL (${getC('BOWL')})`;
         }
 
-        // 🚦 ENABLE NEXT BUTTON
-        function checkNextButton() {
-            let nextBtn = document.getElementById('nextBtn');
-            if(selectedPlayers.length === 11) { 
-                nextBtn.classList.add('active'); 
-                nextBtn.disabled = false;
-            } else { 
-                nextBtn.classList.remove('active'); 
-                nextBtn.disabled = true;
+        function togglePreview() {
+            let modal = document.getElementById('groundModal');
+            let area = document.getElementById('field-area');
+            if(modal.style.display === 'block') {
+                modal.style.display = 'none';
+            } else {
+                modal.style.display = 'block';
+                area.innerHTML = "";
+                ['WK', 'BAT', 'AR', 'BOWL'].forEach(role => {
+                    let players = allPlayers.filter(p => selectedIds.includes(p.id) && p.role === role);
+                    let row = `<div class="ground-row">`;
+                    players.forEach(p => {
+                        row += `<div class="player-jersey">
+                            <img src="https://i.ibb.co/YyYh0kF/jersey.png" class="jersey-img">
+                            <div class="jersey-name">${p.name.split(' ')[0]}</div>
+                        </div>`;
+                    });
+                    row += `</div>`;
+                    area.innerHTML += row;
+                });
             }
         }
 
-        // 🚀 ROUTE TO CAPTAIN PAGE
         function goToCaptain() {
-            if(selectedPlayers.length !== 11) return;
-            
-            // Save team to temporary local storage for Captain page
-            localStorage.setItem('kalyan_selected_team', JSON.stringify(selectedPlayers));
-            localStorage.setItem('kalyan_entry_fee', contestFee); 
-            
-            // Redirect to Captain Page
+            localStorage.setItem('kalyan_selected_team', JSON.stringify(selectedIds));
             window.location.href = `Captain.html?matchId=${matchId}&fee=${contestFee}`;
         }
     </script>
