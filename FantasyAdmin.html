@@ -33,18 +33,25 @@
         .success { color: #00ff88; } .error { color: #ff004c; } .loading { color: #ffd700; }
         .clear-btn { background: #ff004c; border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
 
-        /* MODAL STYLES */
+        /* 🔥 MODAL & ROLE EDITOR STYLES 🔥 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-content { background: #111; width: 90%; max-width: 500px; max-height: 85vh; border-radius: 15px; border: 2px solid #00ff88; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0,255,136,0.2);}
+        .modal-content { background: #111; width: 95%; max-width: 500px; max-height: 85vh; border-radius: 15px; border: 2px solid #00ff88; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0,255,136,0.2);}
         .modal-header { padding: 15px; background: #1a1a2e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
         .modal-header h2 { margin: 0; color: #ffd700; font-size: 18px; }
         .close-btn { color: #ff004c; font-size: 24px; font-weight: bold; cursor: pointer; }
         .modal-body { padding: 15px; overflow-y: auto; flex: 1; }
         
         .player-toggle-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .p-toggle { background: #222; border: 2px solid #555; padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 12px; font-weight: bold; transition: 0.2s; user-select: none;}
-        .p-toggle.playing { background: rgba(0,255,136,0.2); border-color: #00ff88; color: #00ff88; }
-        .p-toggle.benched { background: rgba(255,0,76,0.2); border-color: #ff004c; color: #ff004c; }
+        
+        /* 🔥 NAYA PLAYER CARD (TOSS + ROLE) 🔥 */
+        .player-edit-card { background: #222; border: 1px solid #444; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;}
+        .p-toggle { padding: 10px; cursor: pointer; text-align: center; font-size: 12px; font-weight: bold; border-bottom: 1px solid #444; transition: 0.2s; user-select: none; }
+        .p-toggle.playing { background: rgba(0,255,136,0.2); color: #00ff88; }
+        .p-toggle.benched { background: rgba(255,0,76,0.2); color: #ff004c; }
+        .p-toggle.unannounced { color: #fff; }
+        
+        .role-select { background: #111; color: #ffd700; border: none; padding: 6px; font-size: 12px; font-weight: bold; text-align: center; outline: none; cursor: pointer; width: 100%;}
+        .role-select:focus { background: #333; }
         
         .modal-footer { padding: 15px; background: #1a1a2e; border-top: 1px solid #333; }
         .btn-save-lineup { width: 100%; background: #00ff88; color: #000; font-weight: 900; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;}
@@ -89,15 +96,15 @@
     <div id="lineupModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>🟢 UPDATE LINEUP (TOSS)</h2>
+                <h2>🟢 UPDATE TOSS & ROLES</h2>
                 <div class="close-btn" onclick="closeLineupModal()">&times;</div>
             </div>
             <div class="modal-body">
-                <p style="font-size: 11px; color: #aaa; text-align: center; margin-top: 0;">Click to toggle Playing/Benched.</p>
+                <p style="font-size: 11px; color: #aaa; text-align: center; margin-top: 0; margin-bottom: 15px;">Tap Name: Playing/Out <br> Dropdown: Change Role (WK/BAT/AR/BOWL)</p>
                 <div class="player-toggle-list" id="modalPlayerList"></div>
             </div>
             <div class="modal-footer">
-                <button class="btn-save-lineup" onclick="saveLineupToFirebase()"><i class="fa-solid fa-cloud-arrow-up"></i> PUBLISH LINEUP</button>
+                <button class="btn-save-lineup" onclick="saveLineupToFirebase()"><i class="fa-solid fa-cloud-arrow-up"></i> PUBLISH LINEUP & ROLES</button>
             </div>
         </div>
     </div>
@@ -140,11 +147,12 @@
             } catch(e) { status.innerHTML = "⚠️ Error"; status.className = "error"; }
         }
 
+        // Basic default detector (Par ab aap manual theek kar sakte hain)
         function getSmartRole(n) {
             n = n.toLowerCase();
             if (n.includes("bumrah") || n.includes("shami")) return "BOWL";
-            if (n.includes("dhoni") || n.includes("pant")) return "WK";
-            if (n.includes("jadeja") || n.includes("pandya")) return "AR";
+            if (n.includes("dhoni") || n.includes("pant") || n.includes("rahul")) return "WK";
+            if (n.includes("jadeja") || n.includes("pandya") || n.includes("maxwell")) return "AR";
             return "BAT";
         }
 
@@ -200,25 +208,44 @@
             });
         }
         
-        // 🔥 LINEUP UI FIX 🔥
+        // 🔥 NAYA TOSS & ROLE RENDER UI 🔥
         function renderModalList() {
             let container = document.getElementById('modalPlayerList'); 
             container.innerHTML = "";
             Object.keys(currentPlayersData).forEach(pKey => {
                 let p = currentPlayersData[pKey];
-                let s = p.playingStatus === 'playing' ? 'playing' : (p.playingStatus === 'benched' ? 'benched' : '');
-                container.innerHTML += `<div class="p-toggle ${s}" onclick="toggleStatus('${pKey}')">${p.name}</div>`;
+                let s = p.playingStatus === 'playing' ? 'playing' : (p.playingStatus === 'benched' ? 'benched' : 'unannounced');
+                let r = p.role || 'BAT'; // Default to BAT
+                
+                container.innerHTML += `
+                <div class="player-edit-card">
+                    <div class="p-toggle ${s}" onclick="toggleStatus('${pKey}')">${p.name}</div>
+                    <select class="role-select" onchange="changeRole('${pKey}', this.value)">
+                        <option value="WK" ${r === 'WK' ? 'selected' : ''}>Wicket Keeper (WK)</option>
+                        <option value="BAT" ${r === 'BAT' ? 'selected' : ''}>Batsman (BAT)</option>
+                        <option value="AR" ${r === 'AR' ? 'selected' : ''}>All Rounder (AR)</option>
+                        <option value="BOWL" ${r === 'BOWL' ? 'selected' : ''}>Bowler (BOWL)</option>
+                    </select>
+                </div>`;
             });
         }
 
         function toggleStatus(k) {
             let p = currentPlayersData[k];
             p.playingStatus = p.playingStatus === "playing" ? "benched" : "playing";
-            renderModalList(); // Turant color change hoga
+            renderModalList(); 
+        }
+
+        // 🔥 ROLE CHANGE FUNCTION 🔥
+        function changeRole(k, newRole) {
+            currentPlayersData[k].role = newRole;
         }
         
         function saveLineupToFirebase() {
-            db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).update(currentPlayersData).then(() => { alert("Saved!"); closeLineupModal(); });
+            db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).update(currentPlayersData).then(() => { 
+                alert("✅ Lineup & Roles Updated Successfully!"); 
+                closeLineupModal(); 
+            });
         }
         function closeLineupModal() { document.getElementById('lineupModal').style.display = 'none'; }
 
@@ -230,7 +257,6 @@
             return 0; 
         }
 
-        // 🔥 PAYOUT SYNC FIX 🔥
         async function processPerfectPayout(matchId) {
             if(!confirm("⚠️ PAYOUT KAREIN?")) return;
             const loader = document.getElementById('payoutLoader');
@@ -263,12 +289,11 @@
                 for(let r = 0; r < allRealTeams.length; r++) {
                     let currentTeam = allRealTeams[r];
                     let rank = r + 1;
-                    let prize = calculatePrizeLogic(rank, currentTeam.entry_paid, 100); // Demo total spots
+                    let prize = calculatePrizeLogic(rank, currentTeam.entry_paid, 100); 
 
                     if(prize > 0 && currentTeam.payment_status !== "PAID") {
                         await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${currentTeam.teamKey}`).update({ payment_status: "PAID" });
                         
-                        // Seedha Winning Balance mein credit
                         let wSnap = await db.ref(`users/${currentTeam.phone}`).once('value');
                         let currentWinBal = parseFloat(wSnap.val()?.winning_balance || 0);
                         await db.ref(`users/${currentTeam.phone}`).update({ winning_balance: currentWinBal + prize });
