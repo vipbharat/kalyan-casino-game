@@ -8,44 +8,69 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        body { background: #050510; color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; padding-bottom: 70px; padding-top: 120px;}
-        
-        /* 🔥 TOP HEADER & TABS 🔥 */
-        .top-header { position: fixed; top: 0; left: 0; width: 100%; background: #111; z-index: 1000; border-bottom: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.5);}
-        .app-title { text-align: center; font-size: 20px; font-weight: 900; color: #00ff88; padding: 15px 0; margin: 0; text-transform: uppercase; letter-spacing: 1px;}
-        
-        .top-tabs { display: flex; justify-content: space-around; background: #1a1a2e; padding: 0; margin: 0; list-style: none;}
-        .tab-btn { flex: 1; text-align: center; padding: 12px 0; color: #aaa; font-size: 14px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; border-bottom: 3px solid transparent;}
-        .tab-btn.active { color: #00ff88; border-bottom: 3px solid #00ff88; background: rgba(0,255,136,0.1);}
+        /* 🎨 DREAM11 STYLE COLOR PALETTE 🎨 */
+        :root {
+            --bg-color: #f2f2f2; /* Light grey background */
+            --header-bg: #fff; /* White headers */
+            --card-bg: #fff; /* White cards */
+            --text-main: #000; /* Black text */
+            --text-sub: #777; /* Grey text */
+            --primary-red: #d0021b; /* Dream11 Red */
+            --primary-green: #00a05a; /* Success Green */
+            --tab-active: #d0021b;
+        }
 
-        /* 🔥 MATCH CARDS 🔥 */
-        .match-container { padding: 15px; }
-        .match-card { background: #111; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;}
-        .match-card.upcoming::before { content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: #00ff88; }
-        .match-card.live::before { content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: #ff004c; }
-        .match-card.completed::before { content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: #ffd700; }
+        body { background: var(--bg-color); color: var(--text-main); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; padding-bottom: 80px; padding-top: 110px;}
         
-        .tour-name { font-size: 11px; color: #aaa; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px dashed #333; padding-bottom: 5px; text-align: center;}
-        .teams-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
-        .team-box { text-align: center; width: 35%;}
-        .team-name { font-size: 18px; font-weight: 900; color: #fff;}
+        /* 🔥 TOP HEADER & TABS (D11 STYLE) 🔥 */
+        .top-header { position: fixed; top: 0; left: 0; width: 100%; background: var(--header-bg); z-index: 1000; border-bottom: 1px solid #ddd; box-shadow: 0 2px 10px rgba(0,0,0,0.05);}
+        .app-title { text-align: left; font-size: 18px; font-weight: 900; color: #000; padding: 12px 15px; margin: 0; text-transform: uppercase;}
         
-        .vs-box { width: 30%; text-align: center; font-size: 12px; color: #ff004c; font-weight: bold; background: rgba(255,0,76,0.1); padding: 5px; border-radius: 20px;}
+        .top-tabs { display: flex; justify-content: space-around; background: var(--header-bg); padding: 0; margin: 0; list-style: none; border-bottom: 1px solid #eee;}
+        .tab-btn { flex: 1; text-align: center; padding: 10px 0; color: #666; font-size: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.2s; border-bottom: 3px solid transparent; position: relative;}
+        .tab-btn.active { color: var(--text-main); font-weight: 900; }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 25%; width: 50%; height: 3px; background: var(--tab-active); border-radius: 3px 3px 0 0;}
+
+        /* 🔥 MATCH CARDS (D11 STYLE) 🔥 */
+        .match-container { padding: 12px; }
+        .match-card { background: var(--card-bg); border-radius: 10px; margin-bottom: 12px; position: relative; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; transition: transform 0.2s;}
+        .match-card:active { transform: scale(0.98); }
         
-        .time-box { text-align: center; font-size: 13px; font-weight: bold; background: #222; padding: 8px; border-radius: 5px; margin-top: 10px;}
-        .time-box.countdown { color: #ffd700; }
-        .time-box.livenow { color: #fff; background: #ff004c; animation: pulse 1.5s infinite;}
-        .time-box.done { color: #fff; background: #555;}
+        /* ✨ Series Header on Card ✨ */
+        .tour-name-header { background: #f9f9f9; padding: 7px 12px; font-size: 10px; color: var(--text-sub); text-transform: uppercase; border-bottom: 1px solid #eee; font-weight: bold; }
         
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        .card-body { padding: 15px; }
         
-        /* 🔥 BOTTOM NAVIGATION 🔥 */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #333; z-index: 1000;}
-        .nav-item { text-align: center; color: #777; cursor: pointer; font-size: 12px; flex: 1; transition: 0.3s;}
+        .teams-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px;}
+        .team-box { width: 40%;}
+        .team-box.left { text-align: left; }
+        .team-box.right { text-align: right; }
+        
+        /* 🔥 Bold Team Names (3 Chars typically) 🔥 */
+        .team-name { font-size: 20px; font-weight: 900; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px;}
+        
+        .vs-box { width: 20%; text-align: center; font-size: 11px; color: #999; font-weight: bold; }
+        
+        /* ⏰ Time/Status Box ⏰ */
+        .card-footer { padding: 0 15px 12px 15px; }
+        .time-box { text-align: left; font-size: 11px; font-weight: bold; color: #444;}
+        
+        /* Green Countdown */
+        .time-box.countdown { color: var(--primary-green); }
+        /* Red Live */
+        .time-box.livenow { color: var(--primary-red); animation: pulse 1.5s infinite;}
+        /* Grey Completed */
+        .time-box.done { color: #888;}
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        
+        /* 🔥 BOTTOM NAVIGATION (WHITE STYLE) 🔥 */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);}
+        .nav-item { text-align: center; color: #888; cursor: pointer; font-size: 10px; flex: 1; transition: 0.3s; font-weight: bold; text-transform: uppercase;}
         .nav-item i { font-size: 20px; display: block; margin-bottom: 4px;}
-        .nav-item.active { color: #00ff88; }
+        .nav-item.active { color: var(--tab-active); }
         
-        .loader { text-align: center; color: #00ff88; font-size: 16px; margin-top: 50px; font-weight: bold;}
+        .loader { text-align: center; color: var(--primary-red); font-size: 16px; margin-top: 50px; font-weight: bold;}
         .empty-msg { text-align: center; color: #aaa; margin-top: 50px; font-size: 14px;}
     </style>
 </head>
@@ -91,22 +116,44 @@
     // DATABASE SE DATA FETCH KARNA
     db.ref('Game/Kalyan11/VIPMatches').on('value', (snapshot) => {
         allMatches = [];
+        let completedMatchesList = [];
+        let now = new Date().getTime();
+        let fourHoursInMs = 4 * 60 * 60 * 1000; // ⚡ 4 Ghante ka timer
+
         if (snapshot.exists()) {
             snapshot.forEach(child => {
                 let match = child.val();
                 match.id = child.key;
                 
-                // SMART AUTO-STATUS: Timer Check
-                let now = new Date().getTime();
-                if(match.status === "Upcoming" && match.timestamp <= now) {
+                // ⚡ SMART AUTO-STATUS (Upcoming -> Live -> Completed)
+                if (match.status === "Completed" || (now >= match.timestamp + fourHoursInMs)) {
+                    match.calculatedStatus = "Completed";
+                    completedMatchesList.push(match);
+                } 
+                else if (now >= match.timestamp) {
                     match.calculatedStatus = "Live";
-                } else {
-                    match.calculatedStatus = match.status; 
+                } 
+                else {
+                    match.calculatedStatus = "Upcoming"; 
                 }
                 
                 allMatches.push(match);
             });
+
             allMatches.sort((a, b) => a.timestamp - b.timestamp);
+            
+            // 🗑️ SMART AUTO-DELETE (GARBAGE COLLECTOR) 🗑️
+            if(completedMatchesList.length > 10) {
+                completedMatchesList.sort((a, b) => b.timestamp - a.timestamp); 
+                let matchesToDelete = completedMatchesList.slice(10); 
+                
+                matchesToDelete.forEach(oldMatch => {
+                    console.log(`Deleting old match: ${oldMatch.id}`);
+                    db.ref(`Game/Kalyan11/VIPMatches/${oldMatch.id}`).remove();
+                    db.ref(`Game/Kalyan11/Contests/${oldMatch.id}`).remove();
+                    db.ref(`Game/Kalyan11/MatchPlayers/${oldMatch.id}`).remove();
+                });
+            }
         }
         renderMatches();
         startTimerEngine(); 
@@ -134,24 +181,43 @@
         filteredMatches.forEach(match => {
             let cardClass = match.calculatedStatus.toLowerCase();
             
-            let timeBoxHtml = "";
+            let timeTextHtml = "";
+            let timeStatusClass = "";
             if (cardClass === "upcoming") {
-                timeBoxHtml = `<div class="time-box countdown" data-time="${match.timestamp}"><i class="fa-solid fa-clock"></i> Calculating...</div>`;
+                timeTextHtml = `Calculating...`;
+                timeStatusClass = "countdown";
             } else if (cardClass === "live") {
-                timeBoxHtml = `<div class="time-box livenow"><i class="fa-solid fa-circle-play"></i> LIVE NOW</div>`;
+                timeTextHtml = `<i class="fa-solid fa-circle" style="font-size:8px;"></i> LIVE`;
+                timeStatusClass = "livenow";
             } else {
-                timeBoxHtml = `<div class="time-box done"><i class="fa-solid fa-check-double"></i> COMPLETED</div>`;
+                timeTextHtml = `Completed`;
+                timeStatusClass = "done";
             }
 
+            // ⚡ Dream11 typically uses short names like IND, AUS
+            // Team Name logic (Max 5 chars for design)
+            let t1Name = (match.team1 || "").substring(0, 5).toUpperCase();
+            let t2Name = (match.team2 || "").substring(0, 5).toUpperCase();
+
             container.innerHTML += `
-                <div class="match-card ${cardClass}" onclick="handleMatchClick('${match.id}', '${cardClass}')">
-                    <div class="tour-name">${match.name}</div>
-                    <div class="teams-row">
-                        <div class="team-box"><div class="team-name">${match.team1}</div></div>
-                        <div class="vs-box">V/S</div>
-                        <div class="team-box"><div class="team-name">${match.team2}</div></div>
+                <div class="match-card" onclick="handleMatchClick('${match.id}', '${cardClass}')">
+                    <div class="tour-name-header">${match.name || "KALYAN VIP LEAGUE"}</div>
+                    
+                    <div class="card-body">
+                        <div class="teams-row">
+                            <div class="team-box left">
+                                <div class="team-name">${t1Name}</div>
+                            </div>
+                            <div class="vs-box">VS</div>
+                            <div class="team-box right">
+                                <div class="team-name">${t2Name}</div>
+                            </div>
+                        </div>
                     </div>
-                    ${timeBoxHtml}
+
+                    <div class="card-footer">
+                        <div class="time-box ${timeStatusClass}" data-time="${match.timestamp}">${timeTextHtml}</div>
+                    </div>
                 </div>
             `;
         });
@@ -182,13 +248,16 @@
                     minutes = (minutes < 10) ? "0" + minutes : minutes;
                     seconds = (seconds < 10) ? "0" + seconds : seconds;
 
-                    el.innerHTML = `<i class="fa-solid fa-clock"></i> ${hours}h ${minutes}m ${seconds}s left`;
+                    el.innerHTML = `<i class="fa-solid fa-clock-three"></i> ${hours}h ${minutes}m ${seconds}s left`;
                 }
             });
 
             if(needReRender) {
+                // Re-calculate tab shifts
                 allMatches.forEach(m => {
-                    if (m.status === "Upcoming" && m.timestamp <= now) m.calculatedStatus = "Live";
+                    let fourHours = 4 * 60 * 60 * 1000;
+                    if (m.timestamp + fourHours <= now) m.calculatedStatus = "Completed";
+                    else if (m.timestamp <= now) m.calculatedStatus = "Live";
                 });
                 renderMatches();
             }
@@ -196,22 +265,18 @@
         }, 1000);
     }
 
-    // 🔥 MATCH CLICK MANAGER (EXACT FILE LINKS SET) 🔥
+    // 🔥 MATCH CLICK MANAGER 🔥
     function handleMatchClick(matchId, status) {
         let cleanStatus = status.toLowerCase(); 
 
         if (cleanStatus === 'upcoming') {
-            // Bhai, user Contests par jayega
-            console.log("Redirecting to: Contests.html?matchId=" + matchId);
             window.location.href = "Contests.html?matchId=" + matchId; 
         } 
         else if (cleanStatus === 'live') {
-            // Time poora ho gaya, ab seedha leader.html
             alert("🔒 Match start ho chuka hai! Ab aap sirf Leaderboard dekh sakte hain.");
             window.location.href = "leader.html?matchId=" + matchId; 
         } 
         else if (cleanStatus === 'completed') {
-            // Match khatam, seedha leader.html
             window.location.href = "leader.html?matchId=" + matchId;
         }
     }
