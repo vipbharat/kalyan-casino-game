@@ -60,7 +60,7 @@
         .t1-header { color: #00ff88; }
         .t2-header { color: #ffd700; }
 
-        /* NAYA PLAYER CARD DESIGN (EYE TOGGLE) */
+        /* NAYA PLAYER CARD DESIGN (EYE & SWAP TOGGLE) */
         .player-edit-card { flex-shrink: 0; background: #222; border: 1px solid #444; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; transition: 0.3s;}
         .player-edit-card.dimmed { opacity: 0.4; border-color: #555; filter: grayscale(50%); }
         .p-top-row { display: flex; align-items: stretch; border-bottom: 1px solid #444; }
@@ -74,6 +74,10 @@
         .p-toggle.playing { background: rgba(0,255,136,0.2); color: #00ff88; }
         .p-toggle.benched { background: rgba(255,0,76,0.2); color: #ff004c; }
         .p-toggle.unannounced { color: #fff; }
+
+        /* NAYA SWAP BUTTON CSS */
+        .swap-btn { background: #111; border: none; border-left: 1px solid #444; color: #3498db; padding: 0 12px; cursor: pointer; transition: 0.2s; font-size: 12px; }
+        .swap-btn:active { transform: scale(0.8); color: #fff; }
         
         .role-select { background: #111; color: #ffd700; border: none; padding: 6px; font-size: 10px; font-weight: bold; text-align: center; outline: none; cursor: pointer; width: 100%;}
         
@@ -106,8 +110,7 @@
         </div>
         <div class="input-group"><label>⏱️ Match Start Time</label><input type="datetime-local" id="matchTime"></div>
         
-        <h3 style="margin-top:20px;"><i class="fa-solid fa-wand-magic-sparkles"></i> 2. Fix Squads (Move Players)</h3>
-        <p style="font-size: 11px; color: #aaa; margin-top: 0; margin-bottom: 15px;">Dono teams ke khiladi check karein, agar koi galat team mein hai toh arrow se use dusri team mein bhej dein.</p>
+        <h3 style="margin-top:20px;"><i class="fa-solid fa-wand-magic-sparkles"></i> 2. Pre-Launch Squads</h3>
         
         <textarea id="t1Players" style="display:none;"></textarea> 
         <textarea id="t2Players" style="display:none;"></textarea> 
@@ -251,16 +254,12 @@
             let safeT1 = t1.replace(/[^a-zA-Z0-9]/g, '');
             let safeT2 = t2.replace(/[^a-zA-Z0-9]/g, '');
 
-            // Naya Feature: inApp = true (By default sabhi app mein dikhenge jab tak admin hide na kare)
             t1Arr.forEach((cn, i) => { pData[safeT1 + "_" + i] = { name: cn, team: safeT1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced", inApp: true }; });
             t2Arr.forEach((cn, i) => { pData[safeT2 + "_" + i] = { name: cn, team: safeT2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced", inApp: true }; });
 
             db.ref('Game/Kalyan11/VIPMatches/' + mId).set({ engineUrl: eUrl, name: mName, team1: t1, team2: t2, timestamp: msTime, status: "Upcoming" });
-            
-            // App ko list bhejo aur Admin ke paas ek Ghost Copy bana lo
             db.ref('Game/Kalyan11/AdminFullSquads/' + mId).set(pData);
             db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData);
-            
             db.ref('Game/Kalyan11/LiveEngine/' + mId).set({ matchId: mId, cricbuzzLink: eUrl, wakeUpTime: msTime - 1200000 })
             .then(() => { alert("✅ Match Launched Successfully!"); location.reload(); });
         }
@@ -294,7 +293,6 @@
             currentEditingMatchId = matchId;
             document.getElementById('lineupModal').style.display = 'flex';
             
-            // Pehle Admin ka Ghost data check karega, nahi mila toh App ka data uthayega
             db.ref('Game/Kalyan11/AdminFullSquads/' + matchId).once('value', snap => {
                 if(snap.exists()) {
                     currentPlayersData = snap.val();
@@ -302,7 +300,7 @@
                 } else {
                     db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', snap2 => {
                         currentPlayersData = snap2.val() || {};
-                        Object.values(currentPlayersData).forEach(p => p.inApp = true); // Purane matches ko support dene ke liye
+                        Object.values(currentPlayersData).forEach(p => p.inApp = true); 
                         renderModalList();
                     });
                 }
@@ -313,6 +311,7 @@
             let container = document.getElementById('modalPlayerList'); 
             container.innerHTML = "";
             
+            // Collect team names dynamically
             let teams = [...new Set(Object.values(currentPlayersData).map(p => p.team))];
             let team1 = teams[0] || "Team 1";
             let team2 = teams[1] || "Team 2";
@@ -328,6 +327,9 @@
                 let s = p.playingStatus === 'playing' ? 'playing' : (p.playingStatus === 'benched' ? 'benched' : 'unannounced');
                 let r = p.role || 'BAT'; 
                 
+                let isTeam1 = p.team === team1;
+                let switchTeamTo = isTeam1 ? team2 : team1; // Switch logic
+                
                 let cardHtml = `
                 <div class="player-edit-card ${!isAppVisible ? 'dimmed' : ''}">
                     <div class="p-top-row">
@@ -335,6 +337,11 @@
                             <i class="fa-solid ${isAppVisible ? 'fa-eye' : 'fa-eye-slash'}"></i>
                         </button>
                         <div class="p-toggle ${s}" onclick="toggleStatus('${pKey}')">${p.name}</div>
+                        
+                        <button class="swap-btn" onclick="switchPlayerTeam('${pKey}', '${switchTeamTo}')" title="Khiladi ko dusri team mein bhejein">
+                            <i class="fa-solid fa-right-left"></i>
+                        </button>
+
                     </div>
                     <select class="role-select" onchange="changeRole('${pKey}', this.value)">
                         <option value="WK" ${r === 'WK' ? 'selected' : ''}>WK</option>
@@ -344,20 +351,24 @@
                     </select>
                 </div>`;
 
-                if(p.team === team1) { t1Html += cardHtml; } else { t2Html += cardHtml; }
+                if(isTeam1) { t1Html += cardHtml; } else { t2Html += cardHtml; }
             });
 
             t1Html += `</div>`; t2Html += `</div>`;
             container.innerHTML = t1Html + t2Html; 
         }
 
-        // Player HIDE/SHOW Function
+        // POST-LAUNCH TEAM SWAP Function
+        function switchPlayerTeam(pKey, newTeam) {
+            currentPlayersData[pKey].team = newTeam;
+            renderModalList();
+        }
+
         function toggleVisibility(k) {
             currentPlayersData[k].inApp = !(currentPlayersData[k].inApp !== false);
             renderModalList();
         }
 
-        // NEW PLAYER ADD Function
         function addNewPlayerToTeam(teamName) {
             let pName = prompt(`Naye khiladi ka naam likhein (${teamName} ke liye):`);
             if(pName && pName.trim() !== "") {
@@ -365,8 +376,7 @@
                 let pKey = safeTeam + "_NEW_" + Math.floor(Math.random()*10000);
                 currentPlayersData[pKey] = {
                     name: pName.trim(), team: safeTeam, role: "BAT", credits: 8.5, points: 0,
-                    playingStatus: "playing", // Naya hai toh by default playing kar do
-                    inApp: true
+                    playingStatus: "playing", inApp: true
                 };
                 renderModalList();
             }
@@ -382,17 +392,15 @@
         
         function saveLineupToFirebase() {
             let appVisiblePlayers = {};
-            // Jo chhupaye nahi gaye hain, unhe App ki list mein daalo
             Object.keys(currentPlayersData).forEach(k => {
                 if(currentPlayersData[k].inApp !== false) {
                     appVisiblePlayers[k] = currentPlayersData[k];
                 }
             });
 
-            // Pura Data Admin Ghost memory mein daalo, aur Chhanta hua Data App mein daalo
             db.ref('Game/Kalyan11/AdminFullSquads/' + currentEditingMatchId).set(currentPlayersData);
             db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).set(appVisiblePlayers).then(() => { 
-                alert("✅ App mein sirf chune hue players Update ho gaye hain!"); 
+                alert("✅ Changes aur Team Swap App mein Update ho gaye hain!"); 
                 closeLineupModal(); 
             });
         }
