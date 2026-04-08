@@ -3,46 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Esports Tournament Board</title>
+    <title>Pro Esports Tournament</title>
     <style>
         body { background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
         
-        /* App Header */
+        /* Header */
         .header { display: flex; justify-content: space-between; align-items: center; background: #1e1e1e; padding: 15px; border-radius: 10px; border-bottom: 2px solid #FFD700; margin-bottom: 20px; }
         .wallet { color: #00FF00; font-weight: bold; font-size: 18px; }
         
-        /* Game Selection Box */
+        /* Game Selection */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
         .tab { flex: 1; padding: 12px; text-align: center; background: #333; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .tab.active { background: #FFD700; color: #000; }
 
-        /* Create Challenge Section */
+        /* Create Challenge */
         .create-box { background: #1e1e1e; padding: 15px; border-radius: 10px; border: 1px dashed #777; margin-bottom: 20px; text-align: center; }
-        .create-input { padding: 10px; border-radius: 5px; border: none; width: 60%; background: #333; color: white; margin-bottom: 10px; }
-        .btn-create { background: #FFD700; color: #000; padding: 10px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%; }
+        .create-input { padding: 10px; border-radius: 5px; border: none; width: 60%; background: #333; color: white; margin-bottom: 10px; font-size: 16px; }
+        .btn-create { background: #FFD700; color: #000; padding: 10px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; }
 
-        /* Live Challenges List */
+        /* Live Board */
         .section-title { font-size: 14px; color: #aaa; margin-bottom: 10px; text-transform: uppercase; }
         .card { display: flex; justify-content: space-between; align-items: center; background: #1e1e1e; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #333; }
-        
         .player-info { display: flex; flex-direction: column; }
         .name-row { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
         .online { background: #00FF00; }
         .offline { background: #888; }
         .stats { color: #888; font-size: 12px; margin-top: 5px; }
-
         .action-area { text-align: right; }
         .amount { color: #FFD700; font-size: 18px; font-weight: bold; display: block; margin-bottom: 5px; }
-        .btn-accept { background: #00FF00; color: #000; padding: 8px 15px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; text-decoration: none; }
+        .btn-accept { background: #00FF00; color: #000; padding: 8px 15px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; text-transform: uppercase;}
         .btn-waiting { background: #444; color: #888; border-radius: 5px; padding: 8px 15px; font-size: 12px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div style="font-size: 20px; font-weight: bold; color: #FFD700;">PRO TOURNAMENT</div>
-        <div class="wallet">💰 ₹500</div>
+        <div>
+            <div style="font-size: 20px; font-weight: bold; color: #FFD700;">PRO TOURNAMENT</div>
+            <div id="player-id" style="font-size: 11px; color: #bbb;">Loading...</div>
+        </div>
+        <div class="wallet">💰 ₹<span id="balance">0.00</span></div>
     </div>
 
     <div class="tabs">
@@ -52,66 +53,161 @@
 
     <div class="create-box">
         <input type="number" class="create-input" placeholder="Amount (e.g. 100)" id="amt">
-        <button class="btn-create" onclick="alert('Challenge Created! Waiting for opponent...')">CREATE CHALLENGE</button>
+        <button class="btn-create" onclick="createChallenge()">CREATE CHALLENGE</button>
     </div>
 
-    <div class="section-title">🔴 Live Board</div>
+    <div class="section-title">🔴 Live Matches (Tap to Play)</div>
 
     <div id="board">
-        
-        <div class="card">
-            <div class="player-info">
-                <div class="name-row">
-                    <span class="status-dot online"></span>
-                    <span>Rahul_Pro_Gamer</span>
-                </div>
-                <div class="stats">Matches: 82 | Won: 50</div>
-            </div>
-            <div class="action-area">
-                <span class="amount">₹100</span>
-                <button class="btn-accept" onclick="goToMatch()">ACCEPT</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="player-info">
-                <div class="name-row">
-                    <span class="status-dot online"></span>
-                    <span>Sniper_King_Bot</span>
-                </div>
-                <div class="stats">Matches: 150 | Won: 120</div>
-            </div>
-            <div class="action-area">
-                <span class="amount">₹500</span>
-                <span class="btn-waiting">MATCHING...</span>
-            </div>
-        </div>
-
-        <div class="card" style="opacity: 0.6;">
-            <div class="player-info">
-                <div class="name-row">
-                    <span class="status-dot offline"></span>
-                    <span>OldPlayer_99</span>
-                </div>
-                <div class="stats">Matches: 12 | Won: 2</div>
-            </div>
-            <div class="action-area">
-                <span class="amount">₹20</span>
-                <span class="btn-waiting">OFFLINE</span>
-            </div>
-        </div>
-
+        <div style="text-align:center; padding: 20px; color: #aaa;">Loading Live Challenges...</div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
     <script>
-        function goToMatch() {
-            let confirmPlay = confirm("Kya aap ₹100 lagakar Match join karna chahte hain?");
+        // 1. Firebase Initialize (Aapki Config)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
+            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
+            projectId: "kalyan-casino"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // 2. Current User Setup
+        const phone = localStorage.getItem('userPhone') || "Guest";
+        let currentBalance = 0;
+        let playerName = "Guest";
+
+        if(phone === "Guest") {
+            alert("Please login first!");
+            window.location.href = "index.html"; // Wapas dashboard bhej do
+        }
+
+        // 3. Load Wallet Balance (Real-time)
+        db.ref('users/' + phone).on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            playerName = data.playerId || "KP" + phone.slice(-4);
+            document.getElementById('player-id').innerText = "ID: " + playerName;
+            
+            // Calculate total balance same as your dashboard
+            currentBalance = (parseFloat(data.balance||0) + parseFloat(data.winning_balance||0) + parseFloat(data.bonus_balance||0));
+            document.getElementById('balance').innerText = currentBalance.toFixed(2);
+        });
+
+        // 4. Create Challenge Logic
+        function createChallenge() {
+            let amt = parseFloat(document.getElementById('amt').value);
+            
+            if(isNaN(amt) || amt < 10) {
+                alert("Minimum challenge amount is ₹10");
+                return;
+            }
+            if(currentBalance < amt) {
+                alert("Insufficient Balance! Aapke wallet mein ₹" + currentBalance + " hain.");
+                return;
+            }
+
+            // Wallet se paise kato (Deduction)
+            db.ref('users/' + phone).update({
+                balance: firebase.database.ServerValue.increment(-amt)
+            });
+
+            // Firebase mein naya challenge daalo
+            const challengeRef = db.ref('live_challenges').push();
+            challengeRef.set({
+                creatorPhone: phone,
+                creatorName: playerName,
+                amount: amt,
+                status: "waiting",
+                timestamp: Date.now()
+            });
+
+            alert("Challenge Created for ₹" + amt + "! Waiting for opponent...");
+            document.getElementById('amt').value = ""; // Clear input
+        }
+
+        // 5. Load Live Challenges (Real-time Board Sync)
+        db.ref('live_challenges').orderByChild('status').equalTo('waiting').on('value', (snapshot) => {
+            const board = document.getElementById('board');
+            board.innerHTML = ""; // Purana data hatao
+
+            let challengesHTML = "";
+
+            snapshot.forEach((childSnapshot) => {
+                const challenge = childSnapshot.val();
+                const challengeId = childSnapshot.key;
+                
+                // Agar challenge player ne khud banaya hai toh 'Waiting' dikhao, accept ka button mat do
+                let actionButton = `<button class="btn-accept" onclick="acceptChallenge('${challengeId}', ${challenge.amount}, '${challenge.creatorName}')">ACCEPT</button>`;
+                
+                if(challenge.creatorPhone === phone) {
+                    actionButton = `<span class="btn-waiting">WAITING...</span>`;
+                }
+
+                challengesHTML += `
+                <div class="card">
+                    <div class="player-info">
+                        <div class="name-row">
+                            <span class="status-dot online"></span>
+                            <span>${challenge.creatorName}</span>
+                        </div>
+                        <div class="stats">Live Match</div>
+                    </div>
+                    <div class="action-area">
+                        <span class="amount">₹${challenge.amount}</span>
+                        ${actionButton}
+                    </div>
+                </div>`;
+            });
+
+            // Bot Players (Hamesha end mein rahenge bheed dikhane ke liye)
+            challengesHTML += `
+                <div class="card">
+                    <div class="player-info">
+                        <div class="name-row"><span class="status-dot online"></span><span>Sniper_Bot99</span></div>
+                        <div class="stats">Matches: 150</div>
+                    </div>
+                    <div class="action-area"><span class="amount">₹500</span><span class="btn-waiting">MATCHING...</span></div>
+                </div>
+                <div class="card" style="opacity: 0.6;">
+                    <div class="player-info">
+                        <div class="name-row"><span class="status-dot offline"></span><span>OldGamer</span></div>
+                        <div class="stats">Matches: 12</div>
+                    </div>
+                    <div class="action-area"><span class="amount">₹50</span><span class="btn-waiting">OFFLINE</span></div>
+                </div>`;
+
+            board.innerHTML = challengesHTML;
+        });
+
+        // 6. Accept Challenge Logic
+        function acceptChallenge(challengeId, amount, opponentName) {
+            if(currentBalance < amount) {
+                alert("Insufficient Balance! Recharge your wallet to play.");
+                return;
+            }
+
+            let confirmPlay = confirm(`Confirm Match: ₹${amount} deduct honge aur match ${opponentName} ke sath start hoga.`);
+            
             if(confirmPlay) {
-                // Yeh seedha aapki purani file par bhej dega
+                // Wallet se paise kato
+                db.ref('users/' + phone).update({
+                    balance: firebase.database.ServerValue.increment(-amount)
+                });
+
+                // Challenge ko 'accepted' mark karo taaki list se hat jaye
+                db.ref('live_challenges/' + challengeId).update({
+                    status: "accepted",
+                    acceptedBy: phone
+                });
+
+                alert("Match Accepted! Redirecting to Room...");
+                // Seedha MatchRoom par bhej do jahan ID/Pass milega
                 window.location.href = "MatchRoom.html";
             }
         }
     </script>
-
 </body>
 </html>
