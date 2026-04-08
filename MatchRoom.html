@@ -3,44 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Match Lobby</title>
+    <title>Match Room - Get Ready!</title>
     <style>
         body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; }
-        .box { border: 2px solid #FFD700; padding: 25px; border-radius: 15px; background: #1e1e1e; max-width: 400px; margin: 20px auto; box-shadow: 0px 4px 15px rgba(0,0,0,0.5); }
-        .btn { display: block; background: #FFD700; color: #000; padding: 15px; text-decoration: none; font-weight: bold; border-radius: 10px; margin-top: 25px; font-size: 16px; }
-        .copy-box { background: #333; padding: 15px; border-radius: 8px; margin: 15px 0; cursor: pointer; border: 1px dashed #777; transition: 0.2s; }
-        .copy-box:active { background: #444; }
+        .box { border: 2px solid #FFD700; padding: 25px; border-radius: 15px; background: linear-gradient(135deg, #1e1e1e, #111); max-width: 400px; margin: 20px auto; box-shadow: 0px 4px 20px rgba(255,215,0,0.2); }
+        .btn { display: block; background: linear-gradient(90deg, #FFD700, #ffae00); color: #000; padding: 15px; text-decoration: none; font-weight: 900; border-radius: 10px; margin-top: 25px; font-size: 16px; box-shadow: 0 4px 10px rgba(255,215,0,0.3); border: none; cursor: pointer; text-transform: uppercase; }
+        .btn:active { transform: scale(0.98); }
+        .copy-box { background: #222; padding: 15px; border-radius: 8px; margin: 15px 0; cursor: pointer; border: 1px dashed #777; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .copy-box:active { background: #444; border-color: #FFD700; }
+        .status-text { color:#00FF00; font-size: 14px; font-weight: bold; margin-bottom: 20px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 50% { opacity: 0.6; } }
+        
+        /* Claim Section */
+        .claim-box { margin-top: 30px; padding-top: 20px; border-top: 1px solid #444; }
+        .btn-wa { background: #25D366; color: white; margin-top: 10px; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3); }
     </style>
 </head>
 <body>
 
     <div class="box">
-        <h2 style="margin-top: 0;">MATCH READY!</h2>
-        <p style="color:#00FF00; font-size: 14px;">● 1 vs 4 Tournament Started! ₹10,000 Pool</p>
+        <h2 style="margin-top: 0; color: #FFD700; text-shadow: 0 2px 5px #000;">🔥 MATCH IS READY 🔥</h2>
+        <div class="status-text">● Room Details Generated</div>
         
         <div class="copy-box" onclick="copyText('FF-99887766')">
-            Room ID: <b style="font-size: 18px;">FF-99887766</b><br>
-            <small style="color:#FFD700;">(Tap to Copy)</small>
+            <div style="text-align: left;">
+                <span style="color: #aaa; font-size: 12px;">Room ID</span><br>
+                <b style="font-size: 20px; color: #fff;">FF-99887766</b>
+            </div>
+            <small style="color:#FFD700; font-weight: bold;">COPY</small>
         </div>
         
         <div class="copy-box" onclick="copyText('123456')">
-            Password: <b style="font-size: 18px;">123456</b><br>
-            <small style="color:#FFD700;">(Tap to Copy)</small>
+            <div style="text-align: left;">
+                <span style="color: #aaa; font-size: 12px;">Password</span><br>
+                <b style="font-size: 20px; color: #fff;">123456</b>
+            </div>
+            <small style="color:#FFD700; font-weight: bold;">COPY</small>
         </div>
 
-        <a href="intent://#Intent;scheme=freefire;package=com.dts.freefireth;end" class="btn">
-            ABHI GAME START KAREIN
+        <a href="intent://#Intent;package=com.dts.freefiremax;end" class="btn">
+            🎮 ABHI GAME START KAREIN
         </a>
-          
-        <p style="color: #888; font-size: 11px; margin-top: 20px;">Security: Payout ke baad token expire ho jayega.</p>
+
+        <div class="claim-box">
+            <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #fff;">Jeetne Ke Baad Yahan Click Karein 👇</h3>
+            <button class="btn btn-wa" onclick="claimWinning()">
+                🏆 UPLOAD SCREENSHOT (WhatsApp)
+            </button>
+            <p style="color: #888; font-size: 11px; margin-top: 15px;">Note: Fake screenshot bhejne par account ban ho jayega.</p>
+        </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
     <script>
+        const phone = localStorage.getItem('userPhone') || "Guest";
+        let playerId = "Guest";
+
+        // Admin Ka WhatsApp Number Yahan Daalein (Country Code ke sath, bina + ke)
+        const adminWhatsApp = "919876543210"; 
+
+        if(phone === "Guest") {
+            alert("Bhai, pehle login kijiye!");
+            window.location.href = "index.html";
+        }
+
+        // Get Player ID from LocalStorage/Firebase
+        playerId = localStorage.getItem('playerId') || "KP" + phone.slice(-4);
+
         function copyText(text) {
             navigator.clipboard.writeText(text);
-            alert('Copied successfully: ' + text);
+            alert('Copied: ' + text);
+        }
+
+        // WhatsApp Auto-Message Logic
+        function claimWinning() {
+            // Yeh message apne aap type ho jayega
+            let text = `🏆 Hello Admin! Main Match Jeet Gaya Hoon.\n\nGame: Free Fire (1v4)\nMy Player ID: ${playerId}\nRoom ID: FF-99887766\n\nMain apna winning screenshot bhej raha hoon, please winning balance add kar dein.`;
+            
+            // Text ko URL format mein badalna
+            let encodedText = encodeURIComponent(text);
+            
+            // WhatsApp Web/App link open karna
+            let waLink = `https://wa.me/${adminWhatsApp}?text=${encodedText}`;
+            window.open(waLink, '_blank');
         }
     </script>
-          
 </body>
 </html>
