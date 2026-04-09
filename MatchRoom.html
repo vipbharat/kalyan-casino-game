@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match Room - K-VIP Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 15px; }
+        .header { background: #1e1e1e; padding: 15px; border-radius: 10px; border-bottom: 2px solid #FFD700; text-align: center; margin-bottom: 20px; }
+        
+        .match-card { background: linear-gradient(135deg, #1e1e1e, #111); border: 2px solid #FFD700; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(255,215,0,0.2); margin-bottom: 20px; }
+        .vs-text { font-size: 24px; font-weight: 900; color: #ff3333; margin: 10px 0; }
+        
+        /* Room Details Box */
+        .room-box { background: #000; padding: 15px; border-radius: 8px; border: 1px dashed #444; margin-bottom: 15px; }
+        .room-input { padding: 10px; border-radius: 5px; border: 1px solid #444; background: #222; color: white; width: 45%; margin: 5px; text-align: center;}
+        .room-display { font-size: 22px; font-weight: 900; color: #00ffff; letter-spacing: 2px; }
+
+        /* Timer & Action */
+        .timer-box { font-size: 30px; font-weight: bold; color: #00FF00; margin: 15px 0; display: none; text-shadow: 0 0 10px #00FF00; }
+        .warning-text { color: #ffae00; font-size: 13px; margin-top: 10px; display: none; background: rgba(255,174,0,0.1); padding: 10px; border-radius: 5px; }
+        
+        .btn-row { display: flex; gap: 15px; margin-top: 20px; }
+        .btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-weight: 900; font-size: 16px; cursor: pointer; text-transform: uppercase; }
+        .btn-win { background: #00FF00; color: #000; box-shadow: 0 4px 10px rgba(0,255,0,0.3); }
+        .btn-loss { background: #ff3333; color: #fff; box-shadow: 0 4px 10px rgba(255,51,51,0.3); }
+        .btn-update { background: #3498db; color: #fff; padding: 10px; border-radius: 5px; border: none; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
+        
+        .msg-box { background: #222; padding: 15px; border-radius: 8px; color: #FFD700; font-weight: bold; margin-top: 20px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="margin: 0; color: #FFD700;">🎮 BATTLE ARENA</h2>
+        <div id="display-match-id" style="font-size: 11px; color: #888; margin-top: 5px;">ID: #LOADING...</div>
+    </div>
+
+    <div class="match-card">
+        <div style="font-size: 18px; margin-top: 10px;" id="vs-container">
+            Loading Match Data...
+        </div>
+        <div style="font-size: 18px; font-weight: bold; margin-top: 10px; color:#aaa;">Prize: <span style="color:#00FF00;" id="prize-amt">₹0</span></div>
+
+        <div class="room-box" id="room-area">
+            <div style="color:#888; font-size:12px; margin-bottom:10px;">ROOM DETAILS</div>
+            <div id="room-display-area" style="display:none;">
+                <div class="room-display" id="r-id">ID: WAITING</div>
+                <div class="room-display" style="color:#FFD700;" id="r-pass">PASS: ****</div>
+            </div>
+            <div id="room-input-area" style="display:none;">
+                <input type="text" id="inp-rid" class="room-input" placeholder="Room ID">
+                <input type="text" id="inp-rpass" class="room-input" placeholder="Password">
+                <button class="btn-update" onclick="updateRoom()">UPDATE ROOM DETAILS</button>
+            </div>
+        </div>
+
+        <div class="timer-box" id="countdownTimer">05:00</div>
+        <div class="warning-text" id="warningMsg">Opponent ne WIN claim kiya hai! Agar aapne 'I LOST' nahi dabaya ya 'I WON' se dispute nahi kiya, toh 5 minute mein aap haar jayenge.</div>
+
+        <div class="btn-row" id="actionButtons">
+            <button class="btn btn-win" onclick="claimWin()">🏆 I WON</button>
+            <button class="btn btn-loss" onclick="acceptLoss()">💀 I LOST</button>
+        </div>
+        
+        <div class="msg-box" id="status-msg"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        
+        const phone = localStorage.getItem('userPhone');
+        // URL se Match ID nikalna (jaise MatchRoom.html#-NxtYtz...)
+        const matchId = window.location.hash.substring(1); 
+        
+        if(!phone || !matchId) { alert("Invalid Match!"); window.location.href="ActiveMatches.html"; }
+        
+        document.getElementById('display-match-id').innerText = "MATCH ID: #" + matchId.slice(-6).toUpperCase();
+
+        let amICreator = false;
+        let matchAmt = 0;
+        let opponentPhone = "";
+        let timerInterval;
+
+        // 🟢 LOAD MATCH DATA FROM FIREBASE 🟢
+        db.ref('live_challenges/' + matchId).on('value', snap => {
+            const data = snap.val();
+            if(!data) {
+                document.getElementById('actionButtons').style.display = "none";
+                showMsg("Match has ended and closed.", "#888");
+                return;
+            }
+
+            amICreator = (data.creatorPhone === phone);
+            opponentPhone = amICreator ? data.acceptedByPhone : data.creatorPhone;
+            matchAmt = data.amount;
+            
+            // 1. VS Display Set Karna
+            let myName = amICreator ? data.creatorName : data.acceptedBy;
+            let oppName = amICreator ? data.acceptedBy : data.creatorName;
+            document.getElementById('vs-container').innerHTML = `<span style="color:#00FF00;">${myName}</span> <span class="vs-text"> VS </span> <span style="color:#FFD700;">${oppName}</span>`;
+            
+            // 10% Platform Commission (Player gets 1.8x or 1.9x) - Humne 1.9x rakha hai
+            document.getElementById('prize-amt').innerText = "₹" + (matchAmt * 1.9).toFixed(0);
+
+            // 2. Room Details Display
+            if(data.roomId) {
+                document.getElementById('room-input-area').style.display = "none";
+                document.getElementById('room-display-area').style.display = "block";
+                document.getElementById('r-id').innerText = "ID: " + data.roomId;
+                document.getElementById('r-pass').innerText = "PASS: " + data.roomPass;
+            } else if (amICreator) {
+                // Agar main creator hoon aur room ID nahi hai toh Input dikhao
+                document.getElementById('room-input-area').style.display = "block";
+                document.getElementById('room-display-area').style.display = "none";
+            } else {
+                // Agar main opponent hoon toh Waiting dikhao
+                document.getElementById('room-input-area').style.display = "none";
+                document.getElementById('room-display-area').style.display = "block";
+            }
+
+            // 3. WIN / LOSS ENGINE & TIMER
+            let myClaim = data.claims ? data.claims[phone] : null;
+            let oppClaim = data.claims ? data.claims[opponentPhone] : null;
+
+            if(myClaim === "WIN" && !oppClaim) {
+                document.getElementById('actionButtons').style.display = "none";
+                showMsg("Aapne WIN claim kiya hai. Opponent ke confirm karne ka wait karein...", "#00FF00");
+            } 
+            else if (oppClaim === "WIN" && !myClaim) {
+                // Opponent ne WIN daba diya. Aapka TIMER chalu!
+                startOpponentTimer(data.claimTime || Date.now());
+            } 
+            else if (myClaim === "WIN" && oppClaim === "WIN") {
+                clearInterval(timerInterval);
+                document.getElementById('countdownTimer').style.display = "none";
+                document.getElementById('warningMsg').style.display = "none";
+                document.getElementById('actionButtons').style.display = "none";
+                showMsg("⚠️ DISPUTE! Dono ne WIN dabaya hai. Admin check kar raha hai.", "#ff3333");
+                // Update Firebase Status to Disputed
+                db.ref('live_challenges/' + matchId).update({ status: "disputed" });
+            }
+        });
+
+        // 🔑 ROOM DETAILS UPDATE (Creator Only)
+        function updateRoom() {
+            let rid = document.getElementById('inp-rid').value;
+            let rpass = document.getElementById('inp-rpass').value;
+            if(rid && rpass) {
+                db.ref('live_challenges/' + matchId).update({ roomId: rid, roomPass: rpass });
+                alert("Room Details Shared with Opponent!");
+            } else {
+                alert("Please enter both Room ID and Password");
+            }
+        }
+
+        // 🏆 I WON CLICK
+        function claimWin() {
+            if(confirm("Kya aap sach mein jeete hain? Fake claim par Account Ban ho sakta hai!")) {
+                db.ref('live_challenges/' + matchId + '/claims').update({ [phone]: "WIN" });
+                db.ref('live_challenges/' + matchId).update({ claimTime: Date.now() });
+            }
+        }
+
+        // 💀 I LOST CLICK (Match Resolves Here)
+        function acceptLoss() {
+            if(confirm("Are you sure you lost? Paisa opponent ke wallet mein chala jayega.")) {
+                db.ref('live_challenges/' + matchId + '/claims').update({ [phone]: "LOSS" });
+                resolveMatchToOpponent();
+            }
+        }
+
+        // ⏳ 5-MINUTE AUTO TIMER
+        function startOpponentTimer(startTime) {
+            document.getElementById('countdownTimer').style.display = "block";
+            document.getElementById('warningMsg').style.display = "block";
+            
+            timerInterval = setInterval(() => {
+                let elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                let timeLeft = 300 - elapsedSeconds; // 300 sec = 5 minutes
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    autoLossByTimeout(); // Time over!
+                } else {
+                    let m = Math.floor(timeLeft / 60);
+                    let s = timeLeft % 60;
+                    document.getElementById('countdownTimer').innerText = `${m<10?'0'+m:m}:${s<10?'0'+s:s}`;
+                }
+            }, 1000);
+        }
+
+        // ⌛ AUTO LOSS IF TIMER ENDS
+        function autoLossByTimeout() {
+            document.getElementById('countdownTimer').innerText = "00:00";
+            db.ref('live_challenges/' + matchId + '/claims').update({ [phone]: "TIMEOUT_LOSS" });
+            alert("Time Out! Opponent ne WIN claim kiya tha aur aapne response nahi diya. You lost automatically.");
+            resolveMatchToOpponent();
+        }
+
+        // 💰 MONEY DISTRIBUTION & MATCH END
+        function resolveMatchToOpponent() {
+            document.getElementById('actionButtons').style.display = "none";
+            showMsg("You Lost! Match Completed.", "#ff3333");
+            
+            // Winning amount = Bet Amount * 1.9 (Platform keeps 10% logic)
+            let winAmount = matchAmt * 1.9;
+
+            // Opponent ko paise do
+            db.ref('users/' + opponentPhone).update({ balance: firebase.database.ServerValue.increment(winAmount) }).then(() => {
+                
+                // History mein match save karo
+                let historyId = db.ref('match_history').push().key;
+                
+                // Mere (Loser) liye history
+                db.ref('match_history/' + historyId + '_L').set({
+                    playerPhone: phone, opponentName: opponentPhone, amount: matchAmt, result: "LOSS", timestamp: Date.now()
+                });
+                // Usko (Winner) liye history
+                db.ref('match_history/' + historyId + '_W').set({
+                    playerPhone: opponentPhone, opponentName: phone, amount: winAmount, result: "WIN", timestamp: Date.now()
+                });
+
+                // Match ko Live list se hata do
+                db.ref('live_challenges/' + matchId).remove().then(() => {
+                    setTimeout(() => { window.location.href = "ActiveMatches.html"; }, 2000);
+                });
+            });
+        }
+
+        function showMsg(txt, color) {
+            let msgBox = document.getElementById('status-msg');
+            msgBox.style.display = "block";
+            msgBox.style.color = color;
+            msgBox.innerText = txt;
+        }
+    </script>
+</body>
+</html>
