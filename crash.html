@@ -10,7 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
     <style>
-        :root { --neon-green: #00ff88; --bg-dark: #0f0f13; --red: #ff3333; --gold: #ffd700; }
+        :root { --neon-green: #00ff88; --bg-dark: #0f0f13; --red: #ff3333; --gold: #ffd700; --aviator-red: #e91e63; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         body { background-color: var(--bg-dark); color: #fff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
@@ -28,35 +28,34 @@
         .hist-gold { color: var(--gold); border: 1px solid var(--gold); background: rgba(255, 215, 0, 0.1); }
 
         /* Main Game Area */
-        .game-area { flex: 1; position: relative; background: radial-gradient(circle at center, #203a43, #0f2027); display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; border-bottom: 2px solid #333; }
-        
-        /* Multiplier Text */
-        .multiplier-text { font-size: 65px; font-weight: 900; z-index: 5; transition: color 0.2s; text-shadow: 0 5px 15px rgba(0,0,0,0.5); font-variant-numeric: tabular-nums; }
-        .status-text { position: absolute; top: 20px; font-size: 14px; font-weight: bold; color: #aaa; text-transform: uppercase; letter-spacing: 2px; }
-        
-        /* Graph/Rocket Canvas */
+        .game-area { flex: 1; position: relative; background: radial-gradient(circle at center, #1e222d, #0b0e14); display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; border-bottom: 2px solid #333; }
+        .multiplier-text { font-size: 75px; font-weight: 900; z-index: 5; transition: color 0.2s; text-shadow: 0 5px 15px rgba(0,0,0,0.8); font-variant-numeric: tabular-nums; }
+        .status-text { position: absolute; top: 20px; font-size: 16px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(255,255,255,0.5); background: rgba(0,0,0,0.4); padding: 5px 15px; border-radius: 20px;}
         #crashCanvas { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
         /* Controls Area */
-        .controls { padding: 20px; background: #1a1a24; border-top: 1px solid #333; z-index: 10; }
+        .controls { padding: 15px 20px 25px; background: #1a1a24; border-top: 1px solid #333; z-index: 10; }
         .bet-inputs { display: flex; gap: 10px; margin-bottom: 15px; }
-        .input-box { flex: 1; background: #111; border: 1px solid #444; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; }
-        .input-box label { font-size: 10px; color: #888; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
-        .input-box input { background: transparent; border: none; color: #fff; font-size: 18px; font-weight: bold; outline: none; width: 100%; }
+        .input-box { flex: 1; background: #000; border: 1px solid #444; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; }
+        .input-box label { font-size: 10px; color: #aaa; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+        .input-box input { background: transparent; border: none; color: #fff; font-size: 20px; font-weight: bold; outline: none; width: 100%; }
         
-        .btn-action { width: 100%; padding: 18px; border: none; border-radius: 10px; font-size: 20px; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .btn-action { width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 22px; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
         .btn-action:active { transform: scale(0.97); }
-        
-        .btn-bet { background: linear-gradient(90deg, #00b09b, #96c93d); color: #000; box-shadow: 0 4px 15px rgba(150, 201, 61, 0.4); }
-        .btn-cashout { background: linear-gradient(90deg, #f12711, #f5af19); color: #fff; box-shadow: 0 4px 15px rgba(245, 175, 25, 0.4); }
-        .btn-disabled { background: #333; color: #666; cursor: not-allowed; box-shadow: none; }
+        .btn-bet { background: linear-gradient(135deg, #00b09b, #96c93d); color: #000; box-shadow: 0 4px 15px rgba(150, 201, 61, 0.4); border: 2px solid #fff; }
+        .btn-cashout { background: linear-gradient(135deg, #f5af19, #f12711); color: #fff; border: 2px solid #ffd700; animation: pulseCashout 1s infinite alternate; }
+        .btn-disabled { background: #2a2a35; color: #555; cursor: not-allowed; border: 2px solid #444; }
+        .btn-subtext { font-size: 14px; font-weight: bold; opacity: 0.9; }
 
-        /* Notification */
-        #winMsg { position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,255,136,0.2); border: 2px solid var(--neon-green); color: var(--neon-green); padding: 10px 20px; border-radius: 30px; font-weight: bold; font-size: 18px; display: none; z-index: 20; text-shadow: 0 0 10px var(--neon-green); animation: pop 0.3s ease-out; }
-        @keyframes pop { 0% { transform: translate(-50%, -40%) scale(0.8); opacity: 0; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+        @keyframes pulseCashout { 0% { transform: scale(1); } 100% { transform: scale(1.02); } }
+
+        #winMsg { position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(90deg, #00b09b, #96c93d); border: 2px solid #fff; color: #000; padding: 10px 25px; border-radius: 30px; font-weight: 900; font-size: 22px; display: none; z-index: 20; box-shadow: 0 10px 30px rgba(0,255,136,0.5); }
     </style>
 </head>
 <body>
+
+    <audio id="soundFly" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" loop></audio>
+    <audio id="soundBlast" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3"></audio>
 
     <div class="header">
         <a href="Dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
@@ -64,14 +63,13 @@
         <div class="wallet">₹<span id="balance">0.00</span></div>
     </div>
 
-    <div class="history-bar" id="historyBar">
-        </div>
+    <div class="history-bar" id="historyBar"></div>
 
     <div class="game-area">
         <canvas id="crashCanvas"></canvas>
         <div class="status-text" id="statusText">Loading...</div>
         <div class="multiplier-text" id="multiplierDisplay">1.00x</div>
-        <div id="winMsg">+ ₹0.00</div>
+        <div id="winMsg">YOU WIN!<br>₹0.00</div>
     </div>
 
     <div class="controls">
@@ -85,11 +83,12 @@
                 <input type="text" value="Disabled" disabled>
             </div>
         </div>
-        <button class="btn-action btn-bet" id="mainBtn" onclick="handleAction()">PLACE BET</button>
+        <button class="btn-action btn-bet" id="mainBtn" onclick="handleAction()">
+            <span>PLACE BET</span>
+        </button>
     </div>
 
     <script>
-        // --- 1. FIREBASE SETUP ---
         const firebaseConfig = {
             apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
             databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
@@ -100,23 +99,15 @@
         const phone = localStorage.getItem('userPhone') || "Guest";
 
         let currentBalance = 0;
-
-        if (phone === "Guest") {
-            alert("Please login first!");
-            window.location.href = "index.html";
-        }
-
         db.ref('users/' + phone).on('value', (snapshot) => {
             const data = snapshot.val() || {};
             currentBalance = (parseFloat(data.balance||0) + parseFloat(data.winning_balance||0) + parseFloat(data.bonus_balance||0));
             document.getElementById('balance').innerText = currentBalance.toFixed(2);
         });
 
-        // --- 2. GAME VARIABLES ---
-        let gameState = "WAITING"; // WAITING, FLYING, CRASHED
+        let gameState = "WAITING"; 
         let currentMultiplier = 1.00;
         let crashPoint = 1.00;
-        
         let isBetPlaced = false;
         let isCashedOut = false;
         let myBetAmount = 0;
@@ -125,19 +116,17 @@
         const display = document.getElementById('multiplierDisplay');
         const statusTxt = document.getElementById('statusText');
         const winMsg = document.getElementById('winMsg');
+        const sFly = document.getElementById('soundFly');
+        const sBlast = document.getElementById('soundBlast');
 
-        // --- 3. CANVAS (Graph Logic) ---
         const canvas = document.getElementById('crashCanvas');
         const ctx = canvas.getContext('2d');
-        let canvasW, canvasH;
-        let animationFrame;
-        let startTime;
+        let canvasW, canvasH, particles = [];
 
         function resizeCanvas() {
             canvasW = canvas.parentElement.clientWidth;
             canvasH = canvas.parentElement.clientHeight;
-            canvas.width = canvasW;
-            canvas.height = canvasH;
+            canvas.width = canvasW; canvas.height = canvasH;
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
@@ -145,200 +134,106 @@
         function drawGraph() {
             ctx.clearRect(0, 0, canvasW, canvasH);
             if(gameState === "WAITING") return;
-
-            // Simple curve logic
-            let progress = Math.min((currentMultiplier - 1) / 4, 1); // Curve caps visually at 5x
-            let x = progress * canvasW * 0.9;
-            let y = canvasH - (progress * canvasH * 0.8) - 20;
+            let progress = Math.min((currentMultiplier - 1) / 4, 1); 
+            let startX = 20, startY = canvasH - 20;
+            let x = progress * canvasW * 0.8 + 40, y = canvasH - (progress * canvasH * 0.7) - 40;
 
             ctx.beginPath();
-            ctx.moveTo(0, canvasH);
-            ctx.quadraticCurveTo(x/2, canvasH, x, y);
-            
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = gameState === "CRASHED" ? "#ff3333" : "#00ff88";
+            ctx.moveTo(startX, startY);
+            ctx.quadraticCurveTo(x/2, startY, x, y);
+            ctx.lineWidth = 6; ctx.strokeStyle = gameState === "CRASHED" ? "#ff3333" : "#e91e63";
             ctx.stroke();
 
-            // Rocket / Dot
-            ctx.beginPath();
-            ctx.arc(x, y, 8, 0, Math.PI * 2);
-            ctx.fillStyle = gameState === "CRASHED" ? "#ff3333" : "#fff";
-            ctx.fill();
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = ctx.strokeStyle;
-        }
-
-        // --- 4. ENGINE LOGIC ---
-        
-        // Generate Crash Point (House Edge Logic)
-        function generateCrashPoint() {
-            const e = 100;
-            const h = Math.random() * 100;
-            if (h < 3) return 1.00; // 3% chance of instant crash
-            let val = (e / (e - h));
-            return Math.min(val, 50.00); // Cap at 50x for safety
+            if (gameState === "FLYING") particles.push({ px: x - 15, py: y + 15, life: 1.0 });
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i]; ctx.globalAlpha = p.life;
+                ctx.beginPath(); ctx.arc(p.px, p.py, 6 * p.life, 0, Math.PI * 2);
+                ctx.fillStyle = gameState === "CRASHED" ? "#555" : "#ff9900"; ctx.fill();
+                p.life -= 0.04; p.px -= 3; p.py += 3;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+            ctx.globalAlpha = 1.0;
+            ctx.save(); ctx.translate(x, y);
+            if (gameState === "CRASHED") { ctx.font = "50px Arial"; ctx.fillText("💥", -25, 20); }
+            else { ctx.font = "45px Arial"; ctx.fillText("🚀", -20, 15); }
+            ctx.restore();
         }
 
         function startGameLoop() {
-            gameState = "WAITING";
-            currentMultiplier = 1.00;
-            crashPoint = generateCrashPoint();
-            isCashedOut = false;
-            
-            display.innerText = "1.00x";
-            display.style.color = "#fff";
-            ctx.clearRect(0, 0, canvasW, canvasH);
+            gameState = "WAITING"; currentMultiplier = 1.00;
+            crashPoint = (Math.random() < 0.03) ? 1.00 : (100 / (100 - Math.random() * 98));
+            isCashedOut = false; particles = [];
+            display.innerText = "1.00x"; display.style.color = "#fff";
+            sFly.pause(); sFly.currentTime = 0;
 
-            // Button Logic Update
-            if (isBetPlaced) {
-                btn.innerText = "WAITING FOR NEXT ROUND...";
-                btn.className = "btn-action btn-disabled";
-            } else {
-                btn.innerText = "PLACE BET";
-                btn.className = "btn-action btn-bet";
-            }
+            if (isBetPlaced) { btn.innerHTML = `<span>WAITING...</span>`; btn.className = "btn-action btn-disabled"; }
+            else { btn.innerHTML = `<span>PLACE BET</span>`; btn.className = "btn-action btn-bet"; }
 
-            let waitTime = 500; // 5 seconds wait
-            statusTxt.innerText = "STARTING IN 5s...";
-
+            let waitTime = 500;
             let waitInterval = setInterval(() => {
-                waitTime -= 100;
-                statusTxt.innerText = `STARTING IN ${(waitTime/100).toFixed(1)}s...`;
-                
-                if (waitTime <= 0) {
-                    clearInterval(waitInterval);
-                    startFlying();
-                }
+                waitTime -= 10; statusTxt.innerText = `STARTING IN ${(waitTime/100).toFixed(1)}s`;
+                if (waitTime <= 0) { clearInterval(waitInterval); startFlying(); }
             }, 100);
         }
 
         function startFlying() {
-            gameState = "FLYING";
-            statusTxt.innerText = "ROCKET FLYING!";
+            gameState = "FLYING"; statusTxt.innerText = "ROCKET FLYING!";
             startTime = performance.now();
-            
-            if (isBetPlaced) {
-                btn.innerText = "CASH OUT";
-                btn.className = "btn-action btn-cashout";
-            } else {
-                btn.innerText = "ROUND STARTED";
-                btn.className = "btn-action btn-disabled";
-            }
-
+            sFly.play(); // 🚀 Engine Sound On
+            if (isBetPlaced) btn.className = "btn-action btn-cashout";
+            else { btn.innerHTML = `<span>ROUND STARTED</span>`; btn.className = "btn-action btn-disabled"; }
             requestAnimationFrame(updateMultiplier);
         }
 
         function updateMultiplier(time) {
             if (gameState !== "FLYING") return;
-
-            // Calculate current multiplier based on time (Exponential growth)
             let elapsed = time - startTime;
             currentMultiplier = Math.pow(Math.E, 0.00008 * elapsed);
-
-            if (currentMultiplier >= crashPoint) {
-                currentMultiplier = crashPoint;
-                crashRocket();
-            } else {
+            if (currentMultiplier >= crashPoint) crashRocket();
+            else {
                 display.innerText = currentMultiplier.toFixed(2) + "x";
-                
-                // Color change based on height
-                if(currentMultiplier > 10) display.style.color = "#ffd700";
-                else if(currentMultiplier > 2) display.style.color = "#00ff88";
-
                 drawGraph();
-                
-                // Update button text if bet is placed
                 if(isBetPlaced && !isCashedOut) {
                     let liveWin = (myBetAmount * currentMultiplier).toFixed(2);
-                    btn.innerText = `CASH OUT (₹${liveWin})`;
+                    btn.innerHTML = `<span>CASH OUT</span><span class="btn-subtext">₹${liveWin}</span>`;
                 }
-
-                animationFrame = requestAnimationFrame(updateMultiplier);
+                requestAnimationFrame(updateMultiplier);
             }
         }
 
         function crashRocket() {
-            gameState = "CRASHED";
-            statusTxt.innerText = "CRASHED!";
-            display.innerText = currentMultiplier.toFixed(2) + "x";
-            display.style.color = "#ff3333";
+            gameState = "CRASHED"; statusTxt.innerText = "FLEW AWAY!";
+            sFly.pause(); sBlast.play(); // 💥 Explosion Sound
             drawGraph();
-
-            if (isBetPlaced && !isCashedOut) {
-                btn.innerText = "YOU LOST";
-                btn.className = "btn-action btn-disabled";
-                isBetPlaced = false; // Reset for next round
-            }
-
+            if (isBetPlaced && !isCashedOut) { btn.innerHTML = `<span>YOU LOST</span>`; btn.className = "btn-action btn-disabled"; isBetPlaced = false; }
             addToHistory(currentMultiplier);
-
-            setTimeout(() => {
-                winMsg.style.display = 'none';
-                startGameLoop();
-            }, 3000);
+            setTimeout(() => { winMsg.style.display = 'none'; startGameLoop(); }, 3000);
         }
 
-        // --- 5. PLAYER ACTIONS ---
         function handleAction() {
             if (gameState === "WAITING" && !isBetPlaced) {
-                // PLACE BET
                 let amtInput = document.getElementById('betAmount').value;
                 myBetAmount = parseFloat(amtInput);
-
-                if (isNaN(myBetAmount) || myBetAmount < 10) {
-                    alert("Minimum bet is ₹10");
-                    return;
-                }
-                if (myBetAmount > currentBalance) {
-                    alert("Insufficient Balance!");
-                    return;
-                }
-
-                // Deduct Balance from Firebase
-                db.ref('users/' + phone).update({ 
-                    balance: firebase.database.ServerValue.increment(-myBetAmount) 
-                }).then(() => {
-                    isBetPlaced = true;
-                    btn.innerText = "BET PLACED. WAITING...";
-                    btn.className = "btn-action btn-disabled";
+                if (isNaN(myBetAmount) || myBetAmount < 10) return alert("Min ₹10");
+                if (myBetAmount > currentBalance) return alert("Low Balance!");
+                db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(-myBetAmount) }).then(() => {
+                    isBetPlaced = true; btn.className = "btn-action btn-disabled";
                 });
-
             } else if (gameState === "FLYING" && isBetPlaced && !isCashedOut) {
-                // CASH OUT
-                isCashedOut = true;
-                let winAmount = (myBetAmount * currentMultiplier).toFixed(2);
-                
-                // Add Winning to Firebase
-                db.ref('users/' + phone).update({ 
-                    balance: firebase.database.ServerValue.increment(parseFloat(winAmount)) 
-                }).then(() => {
-                    isBetPlaced = false; // Reset
-                    btn.innerText = "CASHED OUT ✅";
-                    btn.className = "btn-action btn-disabled";
-                    
-                    // Show animation
-                    winMsg.innerText = `+ ₹${winAmount}`;
-                    winMsg.style.display = 'block';
+                isCashedOut = true; let winAmount = (myBetAmount * currentMultiplier).toFixed(2);
+                db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(parseFloat(winAmount)) }).then(() => {
+                    isBetPlaced = false; btn.innerHTML = `<span>CASHED OUT ✅</span>`;
+                    winMsg.innerHTML = `YOU WIN!<br>₹${winAmount}`; winMsg.style.display = 'block';
                 });
             }
         }
 
-        // History Logic
         function addToHistory(val) {
             let hist = document.getElementById('historyBar');
-            let cls = "hist-pill ";
-            if(val < 2.0) cls += "hist-red";
-            else if(val >= 10.0) cls += "hist-gold";
-            else cls += "hist-green";
-            
-            let el = `<div class="${cls}">${val.toFixed(2)}x</div>`;
+            let el = `<div class="hist-pill ${val<2?'hist-red':(val>10?'hist-gold':'hist-green')}">${val.toFixed(2)}x</div>`;
             hist.insertAdjacentHTML('afterbegin', el);
-            if(hist.children.length > 15) hist.removeChild(hist.lastChild);
         }
-
-        // Initialize Game
-        setTimeout(startGameLoop, 1000);
-
+        setTimeout(startGameLoop, 500);
     </script>
 </body>
 </html>
