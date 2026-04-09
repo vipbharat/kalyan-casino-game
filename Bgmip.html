@@ -9,7 +9,6 @@
         .header { display: flex; justify-content: space-between; align-items: center; background: #1e1e1e; padding: 15px; border-radius: 10px; border-bottom: 2px solid #f39c12; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .wallet { color: #00FF00; font-weight: bold; font-size: 18px; }
         
-        /* 🔥 TEENO TABS YAHAN HAIN 🔥 */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
         .tab { flex: 1; padding: 12px; text-align: center; background: #333; border-radius: 8px; font-weight: bold; cursor: pointer; color: #888; text-decoration: none; display: block; font-size: 14px;}
         .tab.active { background: linear-gradient(90deg, #f39c12, #d35400); color: #fff; box-shadow: 0 4px 10px rgba(243, 156, 18, 0.4); }
@@ -42,7 +41,7 @@
     <div class="tabs">
         <a href="Tournament.html" class="tab">Free Fire</a>
         <a href="Bgmip.html" class="tab active">BGMI</a>
-        <a href="MyMatches.html" class="tab">My Matches</a>
+        <a href="ActiveMatches.html" class="tab">My Matches</a>
     </div>
 
     <div class="create-box">
@@ -84,7 +83,6 @@
             document.getElementById('balance').innerText = currentBalance.toFixed(2);
         });
 
-        // 🔥 BGMI CREATE CHALLENGE -> REDIRECT TO MY MATCHES 🔥
         function createCh() {
             let amt = parseFloat(document.getElementById('amt').value);
             let oppId = document.getElementById('oppId').value.trim();
@@ -97,27 +95,27 @@
                     creatorPhone: phone, creatorName: playerName, amount: amt, status: "waiting", 
                     type: oppId === "" ? "public" : "private", targetId: oppId, game: "BGMI", timestamp: Date.now()
                 }).then(() => {
-                    alert("BGMI Match Created! Redirecting to My Matches...");
-                    window.location.href = "MyMatches.html"; // Player ab nahi atkega
+                    alert("BGMI Match Created! Redirecting...");
+                    // 🔥 REDIRECT UPDATE: ActiveMatches.html 🔥
+                    window.location.href = "ActiveMatches.html"; 
                 });
             });
         }
 
-        // ❌ CANCEL CHALLENGE
         function cancelCh(id, amount) {
             db.ref('live_challenges/' + id).remove();
             db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(amount) });
             alert("Challenge Cancelled! Paise wapas aa gaye.");
         }
 
-        // ✅ ACCEPT CHALLENGE -> REDIRECT TO MY MATCHES
         function acceptCh(id, amount) {
             if(currentBalance < amount) return alert("Insufficient Balance!");
             if(confirm(`Play for ₹${amount}? Paise wallet se cut jayenge.`)) {
                 db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(-amount) });
                 db.ref('live_challenges/' + id).update({ status: "accepted", acceptedBy: playerName, acceptedByPhone: phone }).then(() => {
-                    alert("Match Fixed! Redirecting to My Matches...");
-                    window.location.href = "MyMatches.html"; // Accept karne wala bhi seedha yahan jayega
+                    alert("Match Fixed! Redirecting...");
+                    // 🔥 REDIRECT UPDATE: ActiveMatches.html 🔥
+                    window.location.href = "ActiveMatches.html"; 
                 });
             }
         }
