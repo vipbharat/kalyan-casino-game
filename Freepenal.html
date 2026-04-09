@@ -29,7 +29,7 @@
         .txt-loss { color: #ff3333; }
         .badge-live { background: #00FF00; color: #000; padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 900; letter-spacing: 1px; }
         
-        /* 3 Box Input System (Fix Keyboard Closing) */
+        /* 3 Box Input System */
         .ank-box { width: 50px; padding: 8px; text-align: center; background: #111; color: #fff; border: 1px solid #FFD700; border-radius: 4px; font-weight: bold; font-size: 14px; outline: none; }
         .ank-box:focus { background: #222; border-color: #00FF00; }
         
@@ -78,7 +78,7 @@
 
 
     <div id="marketTab" class="section">
-        <h3 style="color:#FFD700; margin-top:0;"><i class="fa-solid fa-pen-to-square"></i> DECLARE MATKA ANK</h3>
+        <h3 style="color:#FFD700; margin-top:0;"><i class="fa-solid fa-pen-to-square"></i> DECLARE RESULT & AUTO-PAYOUT</h3>
         <div class="table-container">
             <table>
                 <thead>
@@ -94,21 +94,21 @@
             </table>
         </div>
 
-        <h3 style="color:#00FF00;"><i class="fa-solid fa-coins"></i> ALL LIVE MATKA BETS</h3>
+        <h3 style="color:#00FF00;"><i class="fa-solid fa-coins"></i> ALL MATKA BETS</h3>
         <div class="table-container">
             <table>
                 <thead>
-                    <tr><th>Phone</th><th>Market</th><th>Game</th><th>Bid No.</th><th>Amount</th><th>Status</th></tr>
+                    <tr><th>Phone</th><th>Market</th><th>Game (Session)</th><th>Bid No.</th><th>Amount</th><th>Status</th></tr>
                 </thead>
                 <tbody id="marketBetsData">
-                    <tr><td colspan="6" style="text-align: center; color: #888;">Loading Active Bets...</td></tr>
+                    <tr><td colspan="6" style="text-align: center; color: #888;">Loading Bets...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
@@ -122,7 +122,7 @@
             btnElement.classList.add('active');
         }
 
-        // --- 1. TDM LIVE PLAYING ---
+        // TDM ENGINE (Unchanged)
         db.ref('live_challenges').on('value', snap => {
             const tbody = document.getElementById('livePlayingData');
             tbody.innerHTML = ""; let hasLive = false;
@@ -130,17 +130,12 @@
                 let val = child.val(); let mId = child.key.slice(-6).toUpperCase();
                 if(val.status === "accepted") {
                     hasLive = true;
-                    tbody.innerHTML += `<tr>
-                        <td style="color:#00ffff;">#${mId}</td><td style="color:#FFD700;">${val.creatorName||val.creatorPhone}</td>
-                        <td style="color:#888;">VS</td><td style="color:#00FF00;">${val.acceptedBy||val.acceptedByPhone}</td>
-                        <td style="color:#FFD700;">₹${val.amount}</td><td><span class="badge-live">PLAYING</span></td>
-                    </tr>`;
+                    tbody.innerHTML += `<tr><td style="color:#00ffff;">#${mId}</td><td style="color:#FFD700;">${val.creatorName||val.creatorPhone}</td><td style="color:#888;">VS</td><td style="color:#00FF00;">${val.acceptedBy||val.acceptedByPhone}</td><td style="color:#FFD700;">₹${val.amount}</td><td><span class="badge-live">PLAYING</span></td></tr>`;
                 }
             });
             if(!hasLive) tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; color:#888;'>Koi live match nahi hai.</td></tr>";
         });
 
-        // --- 2. TDM HISTORY ---
         db.ref('match_history').limitToLast(20).on('value', snap => {
             const tbody = document.getElementById('completedMatchData');
             tbody.innerHTML = ""; let hasData = false;
@@ -150,17 +145,13 @@
                 if(val.result === "WIN" || val.result === "LOSS") {
                     hasData = true;
                     let resClass = val.result === "WIN" ? "txt-win" : "txt-loss";
-                    tbody.innerHTML += `<tr>
-                        <td style="font-size:11px; color:#aaa;">${dateStr}</td><td style="color:#00ffff;">#${m.key.slice(-6).toUpperCase()}</td>
-                        <td>${val.game||'Game'}</td><td style="color:#FFD700;">${val.playerPhone}</td>
-                        <td>₹${val.amount}</td><td class="${resClass}">${val.result}</td>
-                    </tr>`;
+                    tbody.innerHTML += `<tr><td style="font-size:11px; color:#aaa;">${dateStr}</td><td style="color:#00ffff;">#${m.key.slice(-6).toUpperCase()}</td><td>${val.game||'Game'}</td><td style="color:#FFD700;">${val.playerPhone}</td><td>₹${val.amount}</td><td class="${resClass}">${val.result}</td></tr>`;
                 }
             });
             if(!hasData) tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; color:#888;'>Koi history nahi hai.</td></tr>";
         });
 
-        // --- 3. MATKA SYSTEM (KEYBOARD BUG FIXED) ---
+        // MATKA ENGINE
         const defaultVIPMarkets = {
             "m1": { name: "TIME BAZAR", open: "01:00 PM", close: "02:00 PM" },
             "m2": { name: "MADHUR DAY", open: "01:15 PM", close: "02:15 PM" },
@@ -172,7 +163,6 @@
             "m8": { name: "KALYAN NIGHT", open: "09:30 PM", close: "11:30 PM" }
         };
 
-        // Ek baar table banegi (Isse keyboard nahi hatega)
         function initMarketTable() {
             const tbody = document.getElementById('marketControlData');
             Object.keys(defaultVIPMarkets).forEach(mId => {
@@ -186,11 +176,10 @@
                         <input type="text" id="jo_${mId}" class="ank-box" placeholder="Jodi"> - 
                         <input type="text" id="cl_${mId}" class="ank-box" placeholder="Close">
                     </td>
-                    <td><button class="btn-publish" onclick="publishAnk('${mId}', '${m.name}')">UPDATE</button></td>
+                    <td><button class="btn-publish" onclick="publishAnk('${mId}', '${m.name}')">UPDATE & PAY</button></td>
                 </tr>`;
             });
 
-            // Live Data sirf text ko badlega, Input box delete nahi karega
             db.ref('LiveMarkets').on('value', snap => {
                 if(!snap.exists()) { db.ref('LiveMarkets').set(defaultVIPMarkets); return; }
                 snap.forEach(child => {
@@ -203,34 +192,116 @@
         initMarketTable();
 
         function publishAnk(mId, mName) {
-            let op = document.getElementById('op_' + mId).value.trim() || "***";
-            let jo = document.getElementById('jo_' + mId).value.trim() || "**";
-            let cl = document.getElementById('cl_' + mId).value.trim() || "***";
+            let op = document.getElementById('op_' + mId).value.trim();
+            let jo = document.getElementById('jo_' + mId).value.trim();
+            let cl = document.getElementById('cl_' + mId).value.trim();
             
-            let finalAnk = `${op}-${jo}-${cl}`;
+            let finalAnk = `${op||'***'}-${jo||'**'}-${cl||'***'}`;
             
-            if(confirm(`Kya aap ${mName} ka result [ ${finalAnk} ] update karna chahte hain?`)) {
+            if(confirm(`Kya aap ${mName} ka result [ ${finalAnk} ] dalna chahte hain? \nSahi numbers wale players ke account me paise AUTOMATIC add ho jayenge!`)) {
+                
                 db.ref('LiveMarkets/' + mId).update({ result: finalAnk }).then(() => {
-                    alert("✅ Result Published!");
-                    // Clear inputs after publish
+                    alert("✅ Result Published! Ab auto-payout calculation chal rahi hai...");
+                    
+                    // Clear inputs
                     document.getElementById('op_' + mId).value = "";
                     document.getElementById('jo_' + mId).value = "";
                     document.getElementById('cl_' + mId).value = "";
+
+                    // Trigger Auto Payout Engine
+                    autoPayoutEngine(mName, op, jo, cl);
                 });
             }
         }
 
-        // --- 4. ALL LIVE MATKA BETS ---
+        // 🔥🔥🔥 AUTO-PAYOUT ENGINE 🔥🔥🔥
+        function autoPayoutEngine(marketName, openPanna, jodi, closePanna) {
+            let openAnk = jodi ? jodi.charAt(0) : "";
+            let closeAnk = jodi && jodi.length > 1 ? jodi.charAt(1) : "";
+
+            db.ref('AdminPanel/AllActiveBets').orderByChild('marketName').equalTo(marketName).once('value', snap => {
+                if(!snap.exists()) { console.log("No bets found for payout."); return; }
+
+                let totalWinners = 0;
+                let totalPayout = 0;
+
+                snap.forEach(child => {
+                    let bet = child.val();
+                    let betKey = child.key;
+                    
+                    // Agar bet pehle se process ho chuki hai, toh skip karo
+                    if(bet.status !== "pending") return;
+
+                    let isWin = false;
+                    let rate = 0;
+
+                    // Winning Logic Check
+                    if(bet.gameType === "Single Ank") {
+                        if(bet.session === "OPEN" && bet.bidNumber === openAnk) { isWin = true; rate = 9.5; }
+                        else if(bet.session === "CLOSE" && bet.bidNumber === closeAnk) { isWin = true; rate = 9.5; }
+                    }
+                    else if(bet.gameType === "Jodi Digit") {
+                        if(bet.bidNumber === jodi) { isWin = true; rate = 95; }
+                    }
+                    else if(bet.gameType === "Single Panna") {
+                        if(bet.session === "OPEN" && bet.bidNumber === openPanna) { isWin = true; rate = 150; }
+                        else if(bet.session === "CLOSE" && bet.bidNumber === closePanna) { isWin = true; rate = 150; }
+                    }
+                    else if(bet.gameType === "Double Panna") {
+                        if(bet.session === "OPEN" && bet.bidNumber === openPanna) { isWin = true; rate = 300; }
+                        else if(bet.session === "CLOSE" && bet.bidNumber === closePanna) { isWin = true; rate = 300; }
+                    }
+                    else if(bet.gameType === "Triple Panna") {
+                        if(bet.session === "OPEN" && bet.bidNumber === openPanna) { isWin = true; rate = 800; }
+                        else if(bet.session === "CLOSE" && bet.bidNumber === closePanna) { isWin = true; rate = 800; }
+                    }
+                    else if(bet.gameType === "Half Sangam") {
+                        let p1 = `${openPanna}-${closeAnk}`; // Open Panna + Close Ank
+                        let p2 = `${openAnk}-${closePanna}`; // Open Ank + Close Panna
+                        if(bet.bidNumber === p1 || bet.bidNumber === p2) { isWin = true; rate = 1000; }
+                    }
+
+                    // Process Wallet Credit & Status Change
+                    if(isWin) {
+                        let winAmount = bet.betAmount * rate;
+                        totalWinners++;
+                        totalPayout += winAmount;
+
+                        // Admin panel status update
+                        db.ref(`AdminPanel/AllActiveBets/${betKey}`).update({status: "WIN", winAmount: winAmount});
+                        // Add balance directly to user wallet (Using Firebase Increment)
+                        db.ref(`Users/${bet.userPhone}/balance`).set(firebase.database.ServerValue.increment(winAmount));
+                    } else {
+                        // Agar haar gaya
+                        db.ref(`AdminPanel/AllActiveBets/${betKey}`).update({status: "LOSS"});
+                    }
+                });
+
+                if(totalWinners > 0) {
+                    alert(`🎉 Payout Complete!\nTotal Winners: ${totalWinners}\nDistributed Amount: ₹${totalPayout}`);
+                } else {
+                    alert("⚠️ Koi winner nahi mila is round me.");
+                }
+            });
+        }
+
+        // LOAD BETS IN ADMIN TABLE
         db.ref('AdminPanel/AllActiveBets').on('value', snap => {
             const tbody = document.getElementById('marketBetsData');
             tbody.innerHTML = ""; let hasBets = false;
             let bets = []; snap.forEach(child => { bets.push(child.val()); });
             bets.reverse().forEach(bet => {
                 hasBets = true;
+                let statColor = bet.status === "WIN" ? "#00FF00" : (bet.status === "LOSS" ? "#ff004c" : "#ffae00");
+                let statText = bet.status === "WIN" ? `WIN (₹${bet.winAmount})` : bet.status.toUpperCase();
+                
                 tbody.innerHTML += `<tr>
-                    <td style="color:#00ffff;">${bet.userPhone}</td><td style="color:#FFD700;">${bet.marketName}</td>
-                    <td style="color:#aaa;">${bet.gameType}</td><td style="font-family:monospace; font-size:18px;">${bet.bidNumber}</td>
-                    <td style="color:#00FF00;">₹${bet.betAmount}</td><td style="color:#ffae00;">${bet.status.toUpperCase()}</td>
+                    <td style="color:#00ffff;">${bet.userPhone}</td>
+                    <td style="color:#FFD700;">${bet.marketName}</td>
+                    <td style="color:#aaa;">${bet.gameType} <br><span style="font-size:9px;color:#fff;">(${bet.session || 'FULL'})</span></td>
+                    <td style="font-family:monospace; font-size:18px;">${bet.bidNumber}</td>
+                    <td style="color:#00FF00;">₹${bet.betAmount}</td>
+                    <td style="color:${statColor}; font-weight:bold;">${statText}</td>
                 </tr>`;
             });
             if(!hasBets) tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; color:#888;'>Koi bet nahi mili.</td></tr>";
