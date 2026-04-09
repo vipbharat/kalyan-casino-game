@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,13 +8,17 @@
         body { background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; padding-bottom: 80px; }
         .header { display: flex; justify-content: space-between; align-items: center; background: #1e1e1e; padding: 15px; border-radius: 10px; border-bottom: 2px solid #FFD700; margin-bottom: 20px; }
         .wallet { color: #00FF00; font-weight: bold; font-size: 18px; }
+        
+        /* 🔥 TEENO TABS YAHAN HAIN 🔥 */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab { flex: 1; padding: 12px; text-align: center; background: #333; border-radius: 8px; font-weight: bold; cursor: pointer; color: #888; text-decoration: none; }
+        .tab { flex: 1; padding: 12px; text-align: center; background: #333; border-radius: 8px; font-weight: bold; cursor: pointer; color: #888; text-decoration: none; font-size: 14px;}
         .tab.active { background: linear-gradient(90deg, #FFD700, #ffae00); color: #000; }
+        
         .create-box { background: linear-gradient(135deg, #1e1e1e, #2a2a2a); padding: 15px; border-radius: 10px; border: 1.5px dashed #FFD700; margin-bottom: 20px; }
         .input-group { display: flex; gap: 10px; margin-bottom: 10px; }
         .create-input { padding: 12px; border-radius: 5px; border: 1px solid #444; background: #111; color: white; flex: 1; box-sizing: border-box; width: 100%; }
         .btn-create { background: linear-gradient(90deg, #FFD700, #ffae00); color: #000; padding: 12px; border: none; border-radius: 5px; font-weight: 900; cursor: pointer; width: 100%; text-transform: uppercase; }
+        
         .card { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #333; }
         .card.real { border-left-color: #00FF00; background: #223322; }
         .amount { color: #FFD700; font-size: 16px; font-weight: 900; }
@@ -26,14 +30,17 @@
         <div><div style="font-size: 20px; font-weight: 900; color: #FFD700;">FF BATTLE</div><div id="p-id" style="font-size: 12px; color: #ccc;">Loading...</div></div>
         <div class="wallet">💰 ₹<span id="balance">0.00</span></div>
     </div>
+    
     <div class="tabs">
         <a href="Tournament.html" class="tab active">Free Fire</a>
         <a href="Bgmip.html" class="tab">BGMI</a>
+        <a href="MyMatches.html" class="tab">My Matches</a>
     </div>
+    
     <div class="create-box">
         <div class="input-group">
-            <input type="number" class="create-input" placeholder="Amount" id="amt">
-            <input type="text" class="create-input" placeholder="Opponent ID" id="oppId">
+            <input type="number" class="create-input" placeholder="Amount (₹)" id="amt">
+            <input type="text" class="create-input" placeholder="Opponent ID (Optional)" id="oppId">
         </div>
         <button class="btn-create" onclick="createCh()">CREATE CHALLENGE</button>
     </div>
@@ -45,30 +52,90 @@
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const phone = localStorage.getItem('userPhone');
+        
+        const phone = localStorage.getItem('userPhone') || "Guest";
+        let currentBalance = 0;
+        let playerName = "Guest";
+
+        if(phone === "Guest") { alert("Login First!"); window.location.href="index.html"; }
         
         db.ref('users/' + phone).on('value', (snap) => {
-            const d = snap.val();
-            document.getElementById('p-id').innerText = "ID: " + (d.playerId || "KP"+phone.slice(-4));
-            document.getElementById('balance').innerText = (parseFloat(d.balance||0) + parseFloat(d.winning_balance||0)).toFixed(2);
+            const d = snap.val() || {};
+            playerName = d.playerId || "KP"+phone.slice(-4);
+            document.getElementById('p-id').innerText = "ID: " + playerName;
+            currentBalance = (parseFloat(d.balance||0) + parseFloat(d.winning_balance||0) + parseFloat(d.bonus_balance||0));
+            document.getElementById('balance').innerText = currentBalance.toFixed(2);
         });
 
         const botNames = ["Toxic_FF", "Ninja_Op", "Killer_Boy", "Pro_Player", "Ghost_X", "Vip_Gamer", "Sniper_99"];
+        
         function render() {
             db.ref('live_challenges').orderByChild('game').equalTo('Free Fire').on('value', (snap) => {
                 let h = "";
                 snap.forEach(c => {
-                    let v = c.val(); if(v.status==="waiting") h += `<div class="card real"><div><b>${v.creatorName}</b><br><small>Live Player</small></div><div><span class="amount">₹${v.amount}</span><br><button class="btn-action" style="background:#00FF00" onclick="location.href='MatchRoom.html'">PLAY</button></div></div>`;
+                    let v = c.val(); 
+                    if(v.status === "waiting") {
+                        // Agar match khud banaya hai toh Cancel, warna Play dikhao
+                        let btnHtml = (v.creatorPhone === phone) 
+                            ? `<button class="btn-action" style="background:#ff3333;color:#fff" onclick="cancelCh('${c.key}', ${v.amount})">CANCEL</button>`
+                            : `<button class="btn-action" style="background:#00FF00" onclick="acceptCh('${c.key}', ${v.amount})">PLAY</button>`;
+                        
+                        h += `<div class="card real">
+                            <div><b>${v.creatorName}</b><br><small>Live Player</small></div>
+                            <div style="text-align:right;"><span class="amount">₹${v.amount}</span><br>${btnHtml}</div>
+                            </div>`;
+                    }
                 });
                 for(let i=0; i<5; i++) {
                     let b = botNames[Math.floor(Math.random()*botNames.length)] + Math.floor(Math.random()*99);
-                    h += `<div class="card"><div><b>${b}</b><br><small>Matches: ${Math.floor(Math.random()*100)}</small></div><div><span class="amount">₹50</span><br><button class="btn-action" style="background:#444;color:#888">MATCHING</button></div></div>`;
+                    let bAmt = [50, 100, 200][Math.floor(Math.random()*3)];
+                    h += `<div class="card">
+                        <div><b>${b}</b><br><small>Matches: ${Math.floor(Math.random()*100)}</small></div>
+                        <div style="text-align:right;"><span class="amount">₹${bAmt}</span><br><button class="btn-action" style="background:#444;color:#888">MATCHING</button></div>
+                        </div>`;
                 }
                 document.getElementById('board').innerHTML = h;
             });
         }
-        render(); setInterval(render, 5000);
-        function createCh() { /* Previous Create Logic */ alert("Challenge Created!"); }
+        render(); 
+
+        // 🔥 CREATE CHALLENGE -> CUT PAISA -> REDIRECT TO MY MATCHES 🔥
+        function createCh() {
+            let amt = parseFloat(document.getElementById('amt').value);
+            let oppId = document.getElementById('oppId').value.trim();
+            
+            if(isNaN(amt) || amt < 10) return alert("Minimum ₹10 daalein!");
+            if(currentBalance < amt) return alert("Wallet mein paise kam hain!");
+
+            db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(-amt) }).then(() => {
+                db.ref('live_challenges').push({
+                    creatorPhone: phone, creatorName: playerName, amount: amt, status: "waiting", 
+                    type: oppId === "" ? "public" : "private", targetId: oppId, game: "Free Fire", timestamp: Date.now()
+                }).then(() => {
+                    alert("Match Ban Gaya! Chaliye Status Dekhte Hain...");
+                    window.location.href = "MyMatches.html"; // Player ab nahi atkega
+                });
+            });
+        }
+
+        // ❌ CANCEL CHALLENGE
+        function cancelCh(id, amt) {
+            db.ref('live_challenges/' + id).remove();
+            db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(amt) });
+            alert("Match Cancelled! Paise wapas aa gaye.");
+        }
+
+        // ✅ ACCEPT CHALLENGE -> CUT PAISA -> REDIRECT TO MY MATCHES
+        function acceptCh(id, amt) {
+            if(currentBalance < amt) return alert("Insufficient Balance!");
+            if(confirm("Play for ₹" + amt + "? Wallet se paise cut jayenge.")) {
+                db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(-amt) });
+                db.ref('live_challenges/' + id).update({ status: "accepted", acceptedBy: playerName, acceptedByPhone: phone }).then(() => {
+                    alert("Match Fixed! Redirecting...");
+                    window.location.href = "MyMatches.html"; // Jo accept karega wo bhi direct MyMatches jayega
+                });
+            }
+        }
     </script>
 </body>
 </html>
