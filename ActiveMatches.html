@@ -3,47 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Active Matches - K-VIP Pro</title>
+    <title>My Active Matches - K-VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; padding-bottom: 80px; }
         .header { display: flex; justify-content: space-between; align-items: center; background: #1e1e1e; padding: 15px; border-radius: 10px; border-bottom: 2px solid #FFD700; margin-bottom: 20px; }
         
-        /* 🔥 TEENO TABS YAHAN BHI HAIN 🔥 */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
         .tab { flex: 1; padding: 12px; text-align: center; background: #333; border-radius: 8px; font-weight: bold; cursor: pointer; color: #888; text-decoration: none; font-size: 14px; }
         .tab.active { background: linear-gradient(90deg, #FFD700, #ffae00); color: #000; }
         
         .section-title { color: #FFD700; font-weight: 900; margin: 25px 0 10px; text-transform: uppercase; font-size: 14px; border-left: 3px solid #FFD700; padding-left: 10px; }
         
-        .card { background: #1a1a1a; padding: 15px; border-radius: 10px; margin-bottom: 12px; border: 1px solid #333; position: relative; overflow: hidden; }
-        .card.pending { border-left: 4px solid #ffae00; }
-        .card.active { border-left: 4px solid #00FF00; box-shadow: 0 0 10px rgba(0,255,0,0.1); }
-        .card.completed { border-left: 4px solid #555; opacity: 0.8; }
+        .card { background: #1a1a1a; padding: 15px; border-radius: 10px; margin-bottom: 12px; border: 1px solid #333; position: relative; }
+        .card.pending { border-left: 5px solid #ffae00; background: rgba(255, 174, 0, 0.05); }
+        .card.active { border-left: 5px solid #00FF00; background: rgba(0, 255, 0, 0.05); }
         
         .flex-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .match-id { font-size: 11px; color: #888; font-family: monospace; }
         .amt { color: #FFD700; font-size: 16px; font-weight: bold; }
         
-        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 13px; width: 100%; margin-top: 10px; transition: 0.2s; }
-        .btn-room { background: linear-gradient(90deg, #00FF00, #00cc00); color: #000; box-shadow: 0 4px 12px rgba(0,255,0,0.3); animation: pulse 1.5s infinite; }
-        .btn-cancel { background: #333; color: #ff3333; border: 1px solid #ff3333; }
+        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 13px; width: 100%; margin-top: 10px; }
+        .btn-room { background: #00FF00; color: #000; box-shadow: 0 4px 10px rgba(0,255,0,0.3); font-weight: 900; }
+        .btn-cancel { background: transparent; color: #ff3333; border: 1px solid #ff3333; }
         
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
-        
-        .badge { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-        .badge-waiting { background: rgba(255, 174, 0, 0.2); color: #ffae00; }
-        .badge-live { background: rgba(0, 255, 0, 0.2); color: #00FF00; }
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        .badge-waiting { background: #ffae00; color: #000; }
+        .badge-live { background: #00FF00; color: #000; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div>
-            <div style="font-size: 20px; font-weight: 900; color: #FFD700;">MY MATCHES</div>
-            <div id="player-id" style="font-size: 12px; color: #ccc;">Loading...</div>
+            <div style="font-size: 18px; font-weight: 900; color: #FFD700;">MY ACTIVE BATTLES</div>
+            <div id="player-id" style="font-size: 11px; color: #aaa;">ID: Loading...</div>
         </div>
-        <div style="text-align: right;"><i class="fas fa-history" style="color:#FFD700;"></i></div>
+        <i class="fas fa-gamepad" style="color:#FFD700; font-size: 20px;"></i>
     </div>
 
     <div class="tabs">
@@ -52,11 +48,15 @@
         <a href="ActiveMatches.html" class="tab active">My Matches</a>
     </div>
 
-    <div class="section-title">🔴 Live & Pending Challenges</div>
-    <div id="live-board"><div style="text-align:center; padding:20px; color:#666;">Checking for active matches...</div></div>
+    <div class="section-title">🔴 Live Challenges</div>
+    <div id="live-board">
+        <div style="text-align:center; padding:30px; color:#555;">Checking Database...</div>
+    </div>
 
-    <div class="section-title">✅ Recently Completed</div>
-    <div id="history-board"><div style="text-align:center; padding:20px; color:#666;">No history available.</div></div>
+    <div class="section-title">📜 Match History</div>
+    <div id="history-board">
+        <div style="text-align:center; padding:20px; color:#444;">No recent history found.</div>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -64,74 +64,95 @@
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const phone = localStorage.getItem('userPhone');
+        
+        // Trim aur String conversion taaki 100% match ho
+        const phone = String(localStorage.getItem('userPhone') || "").trim();
 
-        if(!phone || phone === "Guest") { alert("Pehle login karein!"); window.location.href="index.html"; }
+        if(!phone || phone === "") {
+            alert("Pehle login karein!");
+            window.location.href="index.html";
+        }
 
+        // Player ID display
         db.ref('users/' + phone).on('value', snap => {
             const d = snap.val() || {};
-            document.getElementById('player-id').innerText = "ID: " + (d.playerId || "KP"+phone.slice(-4));
+            document.getElementById('player-id').innerText = "ID: " + (d.playerId || "KP" + phone.slice(-4));
         });
 
-        // 🔥 LIVE MONITORING OF MATCHES 🔥
+        // 🔥 MAIN ENGINE: HAR EK MATCH KO SCAN KARO 🔥
         db.ref('live_challenges').on('value', snap => {
             let html = "";
-            let hasLive = false;
+            let found = false;
             
             snap.forEach(child => {
-                let val = child.val();
-                let mId = child.key;
+                const val = child.val();
+                const mId = child.key;
                 
-                // Agar match MAINE banaya hai YA MAINE accept kiya hai
-                if(val.creatorPhone === phone || val.acceptedByPhone === phone) {
-                    hasLive = true;
+                // Compare Creator & Acceptor Phones (String Safe)
+                const cPhone = String(val.creatorPhone || "").trim();
+                const aPhone = String(val.acceptedByPhone || "").trim();
+                
+                if(cPhone === phone || aPhone === phone) {
+                    found = true;
                     
                     if(val.status === "waiting") {
-                        // Pending Match
-                        html += `<div class="card pending">
-                            <div class="flex-row"><span class="match-id">ID: #${mId.slice(-6).toUpperCase()}</span> <span class="badge badge-waiting">WAITING FOR OPPONENT</span></div>
-                            <div class="flex-row"><b>${val.game} Challenge</b> <span class="amt">₹${val.amount}</span></div>
-                            <button class="btn btn-cancel" onclick="cancelCh('${mId}', ${val.amount})">CANCEL CHALLENGE</button>
+                        // Card for Pending Match
+                        html += `
+                        <div class="card pending">
+                            <div class="flex-row">
+                                <span class="match-id">#${mId.slice(-6).toUpperCase()}</span>
+                                <span class="badge badge-waiting">WAITING FOR OPPONENT</span>
+                            </div>
+                            <div class="flex-row">
+                                <b>${val.game} Match</b>
+                                <span class="amt">₹${val.amount}</span>
+                            </div>
+                            <button class="btn btn-cancel" onclick="cancelMatch('${mId}', ${val.amount})">CANCEL & REFUND</button>
                         </div>`;
                     } 
                     else if(val.status === "accepted") {
-                        // Active Match (Match Fixed!)
-                        let oppName = (val.creatorPhone === phone) ? val.acceptedBy : val.creatorName;
-                        html += `<div class="card active">
-                            <div class="flex-row"><span class="match-id">ID: #${mId.slice(-6).toUpperCase()}</span> <span class="badge badge-live">MATCH FIXED!</span></div>
-                            <div class="flex-row"><b>VS ${oppName}</b> <span class="amt">₹${val.amount}</span></div>
-                            <button class="btn btn-room" onclick="window.location.href='MatchRoom.html#${mId}'">🎮 GO TO MATCH ROOM</button>
+                        // Card for Live Match
+                        let opponent = (cPhone === phone) ? val.acceptedBy : val.creatorName;
+                        html += `
+                        <div class="card active">
+                            <div class="flex-row">
+                                <span class="match-id">#${mId.slice(-6).toUpperCase()}</span>
+                                <span class="badge badge-live">MATCH IS LIVE!</span>
+                            </div>
+                            <div class="flex-row">
+                                <b>VS ${opponent}</b>
+                                <span class="amt">₹${val.amount}</span>
+                            </div>
+                            <button class="btn btn-room" onclick="window.location.href='MatchRoom.html#${mId}'">ENTER MATCH ROOM</button>
                         </div>`;
                     }
                 }
             });
-            document.getElementById('live-board').innerHTML = hasLive ? html : "<div style='color:#888; text-align:center; padding:20px;'>Aapka koi live match nahi hai.</div>";
+            
+            document.getElementById('live-board').innerHTML = found ? html : "<div style='color:#777; text-align:center; padding:30px; border:1px dashed #333; border-radius:10px;'>Aapka koi active match nahi hai. Lobby se match banayein!</div>";
         });
 
-        // ❌ CANCEL LOGIC (REFUND)
-        function cancelCh(id, amt) {
-            if(confirm("Challenge cancel karein? Paise wapas mil jayenge.")) {
-                db.ref('live_challenges/'+id).remove().then(() => {
-                    db.ref('users/'+phone).update({ balance: firebase.database.ServerValue.increment(amt) });
-                    alert("Cancelled & Refunded!");
+        function cancelMatch(id, amt) {
+            if(confirm("Challenge cancel karke ₹" + amt + " wapas lein?")) {
+                db.ref('live_challenges/' + id).remove().then(() => {
+                    db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(amt) });
+                    alert("Cancelled! Refund added to wallet.");
                 });
             }
         }
 
-        // 📜 HISTORY LOGIC (JANM KUNDLI)
-        db.ref('match_history').orderByChild('playerPhone').equalTo(phone).limitToLast(10).on('value', snap => {
-            let html = "";
-            let hasHistory = false;
-            snap.forEach(child => {
-                hasHistory = true;
-                let v = child.val();
-                let resColor = v.result === "WIN" ? "#00FF00" : "#ff3333";
-                html += `<div class="card completed">
-                    <div class="flex-row"><span class="match-id">${new Date(v.timestamp).toLocaleDateString()}</span> <b style="color:${resColor}">${v.result}</b></div>
-                    <div class="flex-row"><span>vs ${v.opponentName}</span> <span class="amt">₹${v.amount}</span></div>
+        // History Loader
+        db.ref('match_history').orderByChild('playerPhone').equalTo(phone).limitToLast(5).on('value', snap => {
+            let h = "";
+            snap.forEach(c => {
+                let v = c.val();
+                let col = v.result === "WIN" ? "#00FF00" : "#ff3333";
+                h += `<div class="card" style="opacity:0.7; padding:10px;">
+                    <div class="flex-row"><small>${new Date(v.timestamp).toLocaleDateString()}</small> <b style="color:${col}">${v.result}</b></div>
+                    <div class="flex-row"><span style="font-size:12px;">vs ${v.opponentName}</span> <span>₹${v.amount}</span></div>
                 </div>`;
             });
-            document.getElementById('history-board').innerHTML = hasHistory ? html : "<div style='color:#666; text-align:center; padding:10px;'>Koi purana record nahi mila.</div>";
+            if(h !== "") document.getElementById('history-board').innerHTML = h;
         });
     </script>
 </body>
