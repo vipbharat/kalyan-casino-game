@@ -55,6 +55,13 @@
         .game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .game-btn { background: #222; color: #fff; padding: 15px 10px; border-radius: 8px; border: 1px solid #444; text-align: center; font-weight: bold; font-size: 13px; cursor: pointer; transition: 0.2s;}
         .game-btn:active { background: #f1c40f; color: #000; border-color: #f1c40f; }
+
+        /* Custom Input Section (New) */
+        #inputSection { display: none; animation: slideUp 0.2s ease-out; }
+        .bet-input { width: 100%; padding: 15px; margin-bottom: 15px; background: #111; border: 1px solid #444; color: #fff; border-radius: 8px; font-size: 16px; outline: none; }
+        .bet-input:focus { border-color: #f1c40f; }
+        .btn-confirm { background: #2ecc71; color: #000; width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: 900; font-size: 16px; cursor: pointer; margin-bottom: 10px; }
+        .btn-back { background: #444; color: #fff; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; }
         
         #loader { text-align: center; color: #aaa; margin-top: 20px; font-weight: bold; }
     </style>
@@ -91,13 +98,24 @@
             <div class="modal-title" id="modalMarketName">SELECT GAME</div>
             <div class="close-modal" onclick="closeBetModal()"><i class="fa-solid fa-circle-xmark"></i></div>
         </div>
-        <div class="game-grid">
-            <button class="game-btn" onclick="placeFinalBet('Single Ank')">SINGLE ANK</button>
-            <button class="game-btn" onclick="placeFinalBet('Jodi Digit')">JODI DIGIT</button>
-            <button class="game-btn" onclick="placeFinalBet('Single Panna')">SINGLE PANNA</button>
-            <button class="game-btn" onclick="placeFinalBet('Double Panna')">DOUBLE PANNA</button>
-            <button class="game-btn" onclick="placeFinalBet('Triple Panna')">TRIPLE PANNA</button>
-            <button class="game-btn" onclick="placeFinalBet('Half Sangam')">HALF SANGAM</button>
+        
+        <div class="game-grid" id="gameGrid">
+            <button class="game-btn" onclick="selectGame('Single Ank')">SINGLE ANK</button>
+            <button class="game-btn" onclick="selectGame('Jodi Digit')">JODI DIGIT</button>
+            <button class="game-btn" onclick="selectGame('Single Panna')">SINGLE PANNA</button>
+            <button class="game-btn" onclick="selectGame('Double Panna')">DOUBLE PANNA</button>
+            <button class="game-btn" onclick="selectGame('Triple Panna')">TRIPLE PANNA</button>
+            <button class="game-btn" onclick="selectGame('Half Sangam')">HALF SANGAM</button>
+        </div>
+
+        <div id="inputSection">
+            <div style="color: #2ecc71; font-weight: bold; margin-bottom: 15px; font-size: 14px;" id="selectedGameLabel">Game: Single Ank</div>
+            
+            <input type="number" id="betNumber" class="bet-input" placeholder="Enter Bidding Number (e.g. 5, 45, 120)">
+            <input type="number" id="betAmount" class="bet-input" placeholder="Enter Amount (₹)">
+            
+            <button class="btn-confirm" onclick="submitFinalBet()">✔️ PLACE BET</button>
+            <button class="btn-back" onclick="backToGames()">⬅️ BACK</button>
         </div>
     </div>
 
@@ -114,8 +132,9 @@
         const container = document.getElementById('markets-container');
         const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
         let activeMarket = null;
+        let selectedGameType = "";
 
-        // 2. OFFLINE MEMORY (Cache System)
+        // 2. OFFLINE MEMORY
         function loadOffline() {
             const cached = localStorage.getItem('kvip_markets_cache');
             return cached ? JSON.parse(cached) : null;
@@ -131,7 +150,7 @@
             });
         }
 
-        // 4. MARKET RENDER & AUTO-TIME ENGINE
+        // 4. MARKET RENDER ENGINE
         function parseTime(t) {
             if(!t) return 1440;
             let p = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
@@ -171,11 +190,9 @@
             });
         }
 
-        // Load Offline First
         const offlineData = loadOffline();
         if(offlineData) renderMarkets(offlineData);
 
-        // DEFAULT VIP MARKETS (Agar Firebase Khali Ho)
         const defaultVIPMarkets = {
             "m1": { name: "TIME BAZAR", open: "01:00 PM", close: "02:00 PM", result: "***-**-***" },
             "m2": { name: "MADHUR DAY", open: "01:15 PM", close: "02:15 PM", result: "***-**-***" },
@@ -187,23 +204,17 @@
             "m8": { name: "KALYAN NIGHT", open: "09:30 PM", close: "11:30 PM", result: "***-**-***" }
         };
 
-        // Firebase Sync
         db.ref('LiveMarkets').on('value', snap => {
-            if(!snap.exists()) {
-                console.log("Database khali hai, naye markets set ho rahe hain...");
-                db.ref('LiveMarkets').set(defaultVIPMarkets);
-            } else {
-                const data = snap.val();
-                saveOffline(data);
-                renderMarkets(data);
-            }
+            if(!snap.exists()) { db.ref('LiveMarkets').set(defaultVIPMarkets); } 
+            else { const data = snap.val(); saveOffline(data); renderMarkets(data); }
         });
 
-        // 5. BETTING LOGIC (Modal & Deduction)
+        // 5. NEW BETTING LOGIC (Custom UI + Firebase History)
         function openBetModal(id, name) {
             if(!userPhone) { alert("Pehle Dashboard mein Login karein!"); return; }
             activeMarket = { id: id, name: name };
             document.getElementById('modalMarketName').innerText = name + " - PLAY";
+            backToGames(); // Reset modal view
             document.getElementById('modalOverlay').style.display = 'block';
             document.getElementById('betModal').style.display = 'block';
         }
@@ -213,32 +224,71 @@
             document.getElementById('betModal').style.display = 'none';
         }
 
-        function placeFinalBet(gameType) {
-            let number = prompt(`Bidding for: ${gameType}\nKaunse number par paisa lagana hai?`);
-            if(!number || number.trim() === "") return;
-
-            let amt = prompt(`₹ Bidding on Number [${number}]\nKitna paisa lagana chahte hain?`);
-            if(amt && !isNaN(amt)) {
-                let bal = parseFloat(document.getElementById('balance').innerText);
-                let betAmt = parseFloat(amt);
-                
-                if(betAmt <= 0) { alert("Invalid amount!"); return; }
-                if(betAmt > bal) { alert("Wallet mein balance kam hai! Recharge karein."); return; }
-                
-                // Payout update in DB
-                db.ref('Users/' + userPhone + '/balance').set(bal - betAmt).then(() => {
-                    alert(`✅ BET PLACED SUCCESSFULLY!\nGame: ${gameType}\nNumber: ${number}\nAmount: ₹${betAmt}`);
-                    closeBetModal();
-                });
-            }
+        // Step 1: Game chuna (Single, Jodi etc)
+        function selectGame(gameType) {
+            selectedGameType = gameType;
+            document.getElementById('gameGrid').style.display = 'none';
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('selectedGameLabel').innerText = "Selected Game: " + gameType;
+            
+            // Purana input clear karo
+            document.getElementById('betNumber').value = "";
+            document.getElementById('betAmount').value = "";
         }
 
-        // Har 30 sec mein time check karke open/close karna
-        setInterval(() => {
-            let data = loadOffline();
-            if(data) renderMarkets(data);
-        }, 30000);
+        // Wapas game list par jana
+        function backToGames() {
+            document.getElementById('gameGrid').style.display = 'grid';
+            document.getElementById('inputSection').style.display = 'none';
+        }
 
+        // Step 2: Final Submit
+        function submitFinalBet() {
+            let number = document.getElementById('betNumber').value.trim();
+            let amount = document.getElementById('betAmount').value.trim();
+
+            if(!number || number === "") return alert("Please enter a valid bidding number!");
+            if(!amount || isNaN(amount) || parseFloat(amount) < 10) return alert("Minimum bet amount is ₹10!");
+
+            let betAmt = parseFloat(amount);
+            let bal = parseFloat(document.getElementById('balance').innerText);
+
+            if(betAmt > bal) {
+                alert("Wallet mein balance kam hai! Kripya recharge karein.");
+                return;
+            }
+
+            // A: Paise kaato
+            db.ref('Users/' + userPhone + '/balance').set(bal - betAmt).then(() => {
+                
+                // B: Bet History Save Karo (Aapke (Admin) ke liye)
+                let betDetails = {
+                    marketId: activeMarket.id,
+                    marketName: activeMarket.name,
+                    gameType: selectedGameType,
+                    bidNumber: number,
+                    betAmount: betAmt,
+                    status: "pending",
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                // Player ke account mein history save
+                db.ref('BetHistory/' + userPhone).push(betDetails);
+                
+                // Admin Panel (All Bets) folder mein save
+                db.ref('AdminPanel/AllActiveBets').push({
+                    userPhone: userPhone,
+                    ...betDetails
+                });
+
+                alert(`✅ BET PLACED SUCCESSFULLY!\n\nMarket: ${activeMarket.name}\nGame: ${selectedGameType}\nNumber: ${number}\nAmount: ₹${betAmt}`);
+                closeBetModal();
+            }).catch(err => {
+                alert("Server Error! Bet Failed.");
+            });
+        }
+
+        setInterval(() => { let data = loadOffline(); if(data) renderMarkets(data); }, 30000);
     </script>
 </body>
 </html>
