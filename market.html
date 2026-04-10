@@ -20,10 +20,9 @@
         .m-card.closed { border-left-color:#e74c3c; opacity:0.8; }
         .m-card.half-closed { border-left-color:#f39c12; }
         .m-title { font-size:18px; font-weight:900; color:#f1c40f; text-transform:uppercase; }
-        .m-res { font-size:28px; font-weight:bold; margin:12px 0; text-align:center; letter-spacing:4px; background:#111; padding:10px; border-radius:5px; color:#00ffff; border:1px solid #333; }
+        .m-res { font-size:28px; font-weight:bold; margin:12px 0; text-align:center; letter-spacing:4px; background:#111; padding:10px; border-radius:5px; color:#00ffff; border:1px solid #333; transition: all 0.3s; }
         
         .btn-bet { width:100%; background:linear-gradient(180deg, #2ecc71, #27ae60); color:#000; border:none; padding:14px; border-radius:8px; font-weight:900; font-size:16px; cursor:pointer; }
-        /* FIX: Market Closed hone par button strict disable */
         .btn-bet:disabled { background:#333; color:#777; cursor:not-allowed; pointer-events:none; }
         .btn-bet.btn-close-only { background:linear-gradient(180deg, #f39c12, #d35400); color:#fff; }
         
@@ -99,7 +98,6 @@
 
         let activeMarket = null, selectedGameType = "", serverTimeOffset = 0, currentBalance = 0;
 
-        // Base Data
         const defaultVIPMarkets = {
             "m1": { name: "TIME BAZAR", open: "01:00 PM", close: "02:00 PM", result: "***-**-***" },
             "m2": { name: "MADHUR DAY", open: "01:15 PM", close: "02:15 PM", result: "***-**-***" },
@@ -135,42 +133,55 @@
             return h * 60 + m;
         }
 
-        function renderMarkets(finalMarkets) {
+        // FULL RENDER (Runs only once or when new markets added)
+        function renderMarkets(marketsObj) {
             const container = document.getElementById('markets-container');
             container.innerHTML = '';
             let cm = getISTMinutes();
             
-            Object.keys(finalMarkets).forEach(k => {
-                let m = finalMarkets[k];
-                let ot = parseTime(m.open), ct = parseTime(m.close);
+            Object.keys(marketsObj).forEach(k => {
+                let m = marketsObj[k];
+                let openT = m.open || "12:00 AM", closeT = m.close || "11:59 PM";
+                let ot = parseTime(openT), ct = parseTime(closeT);
                 
                 let isFC = cm >= ct, isOC = cm >= ot;
                 let status = isFC ? 'closed' : (isOC ? 'half-closed' : 'running');
                 let btnT = isFC ? 'MARKET CLOSED' : (isOC ? 'PLAY CLOSE ONLY' : 'PLAY NOW');
                 
+                // FIX: Result ko specific ID (res_display_m1) di gayi hai direct update ke liye
                 container.innerHTML += `
                     <div class="m-card ${status}">
                         <div style="display:flex; justify-content:space-between;">
                             <div class="m-title">${m.name}</div>
-                            <div style="font-size:10px; color:#aaa;">${m.open} - ${m.close}</div>
+                            <div style="font-size:10px; color:#aaa;">${openT} - ${closeT}</div>
                         </div>
-                        <div class="m-res">${m.result}</div>
-                        <button class="btn-bet ${isOC?'btn-close-only':''}" ${isFC?'disabled':''} onclick="openBetModal('${k}','${m.name}','${m.open}','${m.close}')">${btnT}</button>
+                        <div class="m-res" id="res_display_${k}">${m.result || '***-**-***'}</div>
+                        <button class="btn-bet ${isOC?'btn-close-only':''}" ${isFC?'disabled':''} onclick="openBetModal('${k}','${m.name}','${openT}','${closeT}')">${btnT}</button>
                     </div>`;
             });
         }
 
-        // FIX: Hamesha Default list use karega aur Firebase se sirf 'result' uthayega. Isse UI kabhi kharab nahi hoga!
+        // Initial setup
+        renderMarkets(defaultVIPMarkets);
+
+        // DIRECT LIVE UPDATE (Bina page hilaye result update karega)
         db.ref('LiveMarkets').on('value', snap => { 
-            let dbData = snap.val() || {};
-            let mergedMarkets = {};
-            Object.keys(defaultVIPMarkets).forEach(k => {
-                mergedMarkets[k] = { ...defaultVIPMarkets[k] };
-                if(dbData[k] && dbData[k].result) mergedMarkets[k].result = dbData[k].result;
-            });
-            renderMarkets(mergedMarkets);
+            if(!snap.exists()) {
+                db.ref('LiveMarkets').set(defaultVIPMarkets);
+            } else {
+                let dbData = snap.val();
+                Object.keys(dbData).forEach(k => {
+                    let resultElement = document.getElementById('res_display_' + k);
+                    if (resultElement && dbData[k].result) {
+                        resultElement.innerText = dbData[k].result;
+                        resultElement.style.color = "#FFD700"; // Light up yellow when updated
+                        setTimeout(() => { resultElement.style.color = "#00ffff"; }, 1000);
+                    }
+                });
+            }
         });
 
+        // MODAL SETTINGS
         function openBetModal(id, name, ot, ct) {
             activeMarket = { id, name, ot: parseTime(ot), ct: parseTime(ct) };
             document.getElementById('modalMarketName').innerText = name;
@@ -178,7 +189,7 @@
             let cm = getISTMinutes();
             let isOpenClosed = cm >= activeMarket.ot; 
             
-            // FIX: Agar Open time band ho gaya hai, toh Jodi aur Sangam ke button poori tarah GAYAB ho jayenge!
+            // JODI & SANGAM HIDE LOGIC
             document.getElementById('btnJodi').style.display = isOpenClosed ? 'none' : 'block';
             document.getElementById('btnSangam').style.display = isOpenClosed ? 'none' : 'block';
             
