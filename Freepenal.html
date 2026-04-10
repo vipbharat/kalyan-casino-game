@@ -70,36 +70,39 @@
             btn.classList.add('active');
         }
 
-        // Rules Engine
         db.ref('settings/game_rules').on('value', snap => { if(snap.exists()) document.getElementById('rulesInput').value = snap.val(); });
-        function saveRules() { db.ref('settings/game_rules').set(document.getElementById('rulesInput').value).then(() => alert("Rules Updated!")); }
+        function saveRules() { db.ref('settings/game_rules').set(document.getElementById('rulesInput').value).then(() => alert("Rules Updated on App!")); }
 
-        // Matka Engine
-        const markets = { "m1": {name: "TIME BAZAR", ot: "01:00 PM", ct: "02:00 PM"}, "m4": {name: "KALYAN", ot: "04:00 PM", ct: "06:00 PM"} }; // Add more here
+        const defaultVIPMarkets = {
+            "m1": { name: "TIME BAZAR" }, "m2": { name: "MADHUR DAY" }, "m3": { name: "MILAN DAY" }, "m4": { name: "KALYAN" },
+            "m5": { name: "TIME BAZAR NIGHT" }, "m6": { name: "MADHUR NIGHT" }, "m7": { name: "MILAN NIGHT" }, "m8": { name: "KALYAN NIGHT" }
+        };
 
         function init() {
             const tbody = document.getElementById('marketControlData');
-            Object.keys(markets).forEach(id => {
+            Object.keys(defaultVIPMarkets).forEach(id => {
                 tbody.innerHTML += `<tr>
-                    <td>${markets[id].name}</td>
+                    <td>${defaultVIPMarkets[id].name}</td>
                     <td id="res_${id}">***-**-***</td>
                     <td><input id="op_${id}" class="ank-box"> - <input id="jo_${id}" class="ank-box"> - <input id="cl_${id}" class="ank-box"></td>
-                    <td><button class="btn-publish" onclick="publish('${id}', '${markets[id].name}')">PAY</button></td>
+                    <td><button class="btn-publish" onclick="publish('${id}', '${defaultVIPMarkets[id].name}')">PAY</button></td>
                 </tr>`;
             });
         }
         init();
 
         db.ref('LiveMarkets').on('value', snap => {
-            snap.forEach(c => { if(document.getElementById('res_'+c.key)) document.getElementById('res_'+c.key).innerText = c.val().result; });
+            snap.forEach(c => { if(document.getElementById('res_'+c.key) && c.val().result) document.getElementById('res_'+c.key).innerText = c.val().result; });
         });
 
         function publish(id, name) {
             let op = document.getElementById('op_'+id).value, jo = document.getElementById('jo_'+id).value, cl = document.getElementById('cl_'+id).value;
-            if(jo.length !== 2) return alert("Jodi must be 2 digit!");
+            if(jo.length !== 2) return alert("Jodi must be exactly 2 digits!");
             let res = `${op||'***'}-${jo}-${cl||'***'}`;
+            
+            // Only update Result. Does not break other DB items.
             db.ref('LiveMarkets/'+id).update({result: res}).then(() => {
-                alert("Result Out! Paying...");
+                alert("Result Live! Payout starting...");
                 payout(name, op, jo, cl);
             });
         }
@@ -112,7 +115,10 @@
                     let win = false, rate = 0;
                     if(b.gameType === "Single Ank") { if(b.session==="OPEN" && b.bidNumber===oA) {win=true; rate=9.5;} else if(b.session==="CLOSE" && b.bidNumber===cA) {win=true; rate=9.5;} }
                     else if(b.gameType === "Jodi Digit" && b.bidNumber===jo) {win=true; rate=95;}
-                    // ... (Add Panna rates as needed)
+                    else if(b.gameType === "Single Panna") { if(b.session==="OPEN" && b.bidNumber===op) {win=true; rate=150;} else if(b.session==="CLOSE" && b.bidNumber===cl) {win=true; rate=150;} }
+                    else if(b.gameType === "Double Panna") { if(b.session==="OPEN" && b.bidNumber===op) {win=true; rate=300;} else if(b.session==="CLOSE" && b.bidNumber===cl) {win=true; rate=300;} }
+                    else if(b.gameType === "Triple Panna") { if(b.session==="OPEN" && b.bidNumber===op) {win=true; rate=800;} else if(b.session==="CLOSE" && b.bidNumber===cl) {win=true; rate=800;} }
+                    else if(b.gameType === "Half Sangam") { let p1=`${op}-${cA}`, p2=`${oA}-${cl}`; if(b.bidNumber===p1 || b.bidNumber===p2) {win=true; rate=1000;} }
 
                     if(win) {
                         let amt = b.betAmount * rate;
@@ -122,15 +128,16 @@
                         db.ref('AdminPanel/AllActiveBets/'+c.key).update({status: "LOSS"});
                     }
                 });
-                alert("Payout Finished!");
+                alert("Payout Finished successfully!");
             });
         }
 
         db.ref('AdminPanel/AllActiveBets').limitToLast(20).on('value', snap => {
             const tbody = document.getElementById('marketBetsData'); tbody.innerHTML = "";
-            snap.forEach(c => {
-                let b = c.val();
-                tbody.innerHTML += `<tr><td>${b.userPhone}</td><td>${b.marketName}</td><td>${b.gameType}</td><td>${b.bidNumber}</td><td>${b.betAmount}</td><td>${b.status}</td></tr>`;
+            let arr = []; snap.forEach(c => arr.push(c.val()));
+            arr.reverse().forEach(b => {
+                let statColor = b.status === "WIN" ? "#00FF00" : (b.status === "LOSS" ? "#ff004c" : "#ffae00");
+                tbody.innerHTML += `<tr><td>${b.userPhone}</td><td>${b.marketName}</td><td>${b.gameType}</td><td>${b.bidNumber}</td><td>₹${b.betAmount}</td><td style="color:${statColor};font-weight:bold;">${b.status}</td></tr>`;
             });
         });
     </script>
