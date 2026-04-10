@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>K-VIP Live Markets</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -55,7 +56,7 @@
     </div>
 
     <div class="market-list" id="markets-container">
-        <div style="text-align: center; color: #888; padding: 20px;">Loading Markets...</div>
+        <div style="text-align: center; color: #888; padding: 20px;">Fetching Live Markets...</div>
     </div>
 
     <div id="rulesModalOverlay" onclick="closeRules()"></div>
@@ -94,19 +95,20 @@
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        
         const userPhone = localStorage.getItem('userPhone') || 'Guest';
-
         let activeMarket = null, selectedGameType = "", serverTimeOffset = 0, currentBalance = 0;
 
+        // 🔥 NAYI COORDINATED MARKET LIST 🔥
         const defaultVIPMarkets = {
-            "m1": { name: "TIME BAZAR", open: "01:00 PM", close: "02:00 PM", result: "***-**-***" },
-            "m2": { name: "MADHUR DAY", open: "01:15 PM", close: "02:15 PM", result: "***-**-***" },
-            "m3": { name: "MILAN DAY", open: "03:00 PM", close: "05:00 PM", result: "***-**-***" },
-            "m4": { name: "KALYAN", open: "04:00 PM", close: "06:00 PM", result: "***-**-***" },
-            "m5": { name: "TIME BAZAR NIGHT", open: "08:00 PM", close: "09:00 PM", result: "***-**-***" },
-            "m6": { name: "MADHUR NIGHT", open: "08:30 PM", close: "10:30 PM", result: "***-**-***" },
-            "m7": { name: "MILAN NIGHT", open: "09:00 PM", close: "11:00 PM", result: "***-**-***" },
-            "m8": { name: "KALYAN NIGHT", open: "09:30 PM", close: "11:30 PM", result: "***-**-***" }
+            "time_day": { name: "TIME BAZAR", open: "01:00 PM", close: "02:00 PM" },
+            "madhur_day": { name: "MADHUR DAY", open: "01:15 PM", close: "02:15 PM" },
+            "milan_day": { name: "MILAN DAY", open: "03:00 PM", close: "05:00 PM" },
+            "kalyan_day": { name: "KALYAN", open: "04:00 PM", close: "06:00 PM" },
+            "time_night": { name: "TIME BAZAR NIGHT", open: "08:00 PM", close: "09:00 PM" },
+            "madhur_night": { name: "MADHUR NIGHT", open: "08:30 PM", close: "10:30 PM" },
+            "milan_night": { name: "MILAN NIGHT", open: "09:00 PM", close: "11:00 PM" },
+            "kalyan_night": { name: "KALYAN NIGHT", open: "09:30 PM", close: "11:30 PM" }
         };
 
         db.ref('users/' + userPhone).on('value', snap => {
@@ -125,57 +127,43 @@
         }
 
         function parseTime(t) {
-            if (!t || typeof t !== 'string') return 0;
-            let p = t.match(/(\d+):(\d+)\s*(AM|PM)/i); 
-            if(!p) return 0;
+            let p = t.match(/(\d+):(\d+)\s*(AM|PM)/i); if(!p) return 0;
             let h = parseInt(p[1]), m = parseInt(p[2]), mod = p[3].toUpperCase();
             if(h === 12) h = (mod === 'PM') ? 12 : 0; else if(mod === 'PM') h += 12;
             return h * 60 + m;
         }
 
-        function renderMarkets(marketsObj) {
+        function renderMarkets(liveData) {
             const container = document.getElementById('markets-container');
-            container.innerHTML = '';
+            container.innerHTML = ''; 
             let cm = getISTMinutes();
             
-            Object.keys(marketsObj).forEach(k => {
-                let m = marketsObj[k];
-                let openT = m.open || "12:00 AM", closeT = m.close || "11:59 PM";
-                let ot = parseTime(openT), ct = parseTime(closeT);
+            Object.keys(defaultVIPMarkets).forEach(k => {
+                let m = defaultVIPMarkets[k]; 
+                let liveResult = (liveData && liveData[k] && liveData[k].result) ? liveData[k].result : "***-**-***";
                 
+                let ot = parseTime(m.open), ct = parseTime(m.close);
                 let isFC = cm >= ct, isOC = cm >= ot;
                 let status = isFC ? 'closed' : (isOC ? 'half-closed' : 'running');
                 let btnT = isFC ? 'MARKET CLOSED' : (isOC ? 'PLAY CLOSE ONLY' : 'PLAY NOW');
+                let resColor = (liveResult !== "***-**-***") ? "#FFD700" : "#00ffff"; 
                 
                 container.innerHTML += `
                     <div class="m-card ${status}">
                         <div style="display:flex; justify-content:space-between;">
                             <div class="m-title">${m.name}</div>
-                            <div style="font-size:10px; color:#aaa;">${openT} - ${closeT}</div>
+                            <div style="font-size:10px; color:#aaa;">${m.open} - ${m.close}</div>
                         </div>
-                        <div class="m-res" id="res_display_${k}">${m.result || '***-**-***'}</div>
-                        <button class="btn-bet ${isOC?'btn-close-only':''}" ${isFC?'disabled':''} onclick="openBetModal('${k}','${m.name}','${openT}','${closeT}')">${btnT}</button>
+                        <div class="m-res" style="color: ${resColor};">${liveResult}</div>
+                        <button class="btn-bet ${isOC?'btn-close-only':''}" ${isFC?'disabled':''} onclick="openBetModal('${k}','${m.name}','${m.open}','${m.close}')">${btnT}</button>
                     </div>`;
             });
         }
 
-        renderMarkets(defaultVIPMarkets);
-
-        // Path is strictly 'market' now
-        db.ref('market').on('value', snap => { 
-            if(!snap.exists()) {
-                db.ref('market').set(defaultVIPMarkets);
-            } else {
-                let dbData = snap.val();
-                Object.keys(dbData).forEach(k => {
-                    let resultElement = document.getElementById('res_display_' + k);
-                    if (resultElement && dbData[k].result) {
-                        resultElement.innerText = dbData[k].result;
-                        resultElement.style.color = "#FFD700"; 
-                        setTimeout(() => { resultElement.style.color = "#00ffff"; }, 1000);
-                    }
-                });
-            }
+        // Fetch Live Data
+        db.ref('market').on('value', snap => {
+            let data = snap.val() || {};
+            renderMarkets(data); 
         });
 
         function openBetModal(id, name, ot, ct) {
@@ -185,7 +173,6 @@
             let cm = getISTMinutes();
             let isOpenClosed = cm >= activeMarket.ot; 
             
-            // JODI and SANGAM hide completely if OPEN time is passed
             document.getElementById('btnJodi').style.display = isOpenClosed ? 'none' : 'block';
             document.getElementById('btnSangam').style.display = isOpenClosed ? 'none' : 'block';
             
@@ -212,7 +199,6 @@
             if((gt === 'Jodi Digit' || gt === 'Half Sangam') && cm >= activeMarket.ot) {
                 return alert("Time Over! Aap ab Jodi ya Sangam nahi khel sakte.");
             }
-            
             selectedGameType = gt;
             document.getElementById('gameGrid').style.display = 'none';
             document.getElementById('inputSection').style.display = 'block';
@@ -236,11 +222,11 @@
         function closeRules() { document.getElementById('rulesModalOverlay').style.display='none'; document.getElementById('rulesModal').style.display='none'; }
 
         function submitFinalBet() {
-            if (userPhone === 'Guest') return alert("Please Login!");
+            if (userPhone === 'Guest') return alert("Please Login First!");
             let num = document.getElementById('betNumber').value, amt = parseFloat(document.getElementById('betAmount').value);
             
             if(!num || isNaN(amt) || amt < 10) return alert("Valid Number & Amount (Min ₹10) bhariye!");
-            if(amt > currentBalance) return alert("Low Balance!");
+            if(amt > currentBalance) return alert("Low VIP Wallet Balance!");
 
             let numStr = num.toString();
             if (selectedGameType === 'Single Ank' && numStr.length !== 1) return alert("Single Ank 1 digit hona chahiye!");
@@ -268,7 +254,7 @@
                 document.getElementById('confirmBtn').disabled = false;
                 document.getElementById('confirmBtn').innerText = "PLACE BET";
             }).catch(() => {
-                alert("❌ Transaction failed!");
+                alert("❌ Transaction failed! Check internet.");
                 document.getElementById('confirmBtn').disabled = false;
                 document.getElementById('confirmBtn').innerText = "PLACE BET";
             });
