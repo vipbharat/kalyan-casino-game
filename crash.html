@@ -44,9 +44,6 @@
         .modal-header { font-size: 20px; font-weight: 900; color: var(--neon-green); margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; text-align: center; }
         .modal-body { font-size: 14px; color: #ddd; line-height: 1.6; max-height: 60vh; overflow-y: auto; white-space: pre-wrap; }
         .close-btn { position: absolute; top: 15px; right: 20px; color: #ff3333; font-size: 28px; font-weight: bold; cursor: pointer; }
-
-        /* Hidden Admin Toggle */
-        #adminToggle { position: fixed; bottom: 5px; right: 5px; opacity: 0.1; font-size: 10px; background: none; border: none; color: white; cursor: pointer; z-index: 9999; }
     </style>
 </head>
 <body>
@@ -78,14 +75,12 @@
 
     <div class="controls">
         <div class="input-box">
-            <input type="number" id="betAmount" value="100" min="10" placeholder="Enter Bet Amount">
+            <input type="number" id="betAmount" value="10" min="10" placeholder="Enter Bet Amount">
         </div>
         <button class="btn-action btn-disabled" id="mainBtn" onclick="handleAction()">
-            <span>LOADING...</span>
+            <span>CONNECTING...</span>
         </button>
     </div>
-
-    <button id="adminToggle" onclick="toggleAdmin()">ADMIN MODE</button>
 
     <script>
         // --- 1. FIREBASE SETUP ---
@@ -96,7 +91,7 @@
         };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const phone = localStorage.getItem('userPhone') || "User_" + Math.floor(Math.random()*9999);
+        const phone = localStorage.getItem('userPhone') || "Guest";
 
         // --- 2. FETCH RULES ---
         db.ref('settings/game_rules').on('value', (snapshot) => {
@@ -107,11 +102,19 @@
         function openRules() { document.getElementById('rulesModal').style.display = 'flex'; }
         function closeRules() { document.getElementById('rulesModal').style.display = 'none'; }
 
-        // --- 3. FETCH WALLET BALANCE ---
+        // --- 3. FETCH DASHBOARD WALLET BALANCE ---
         let currentBalance = 0;
         db.ref('users/' + phone).on('value', (snapshot) => {
-            const data = snapshot.val() || { balance: 1000 }; // Default balance for testing
-            currentBalance = parseFloat(data.balance || 0);
+            const data = snapshot.val() || {};
+            
+            // Asli Dashboard Logic (Main + Winning + Bonus)
+            let mainBal = parseFloat(data.balance || 0);
+            let winBal = parseFloat(data.winning_balance || 0);
+            let bonusBal = parseFloat(data.bonus_balance || 0);
+            
+            currentBalance = mainBal + winBal + bonusBal;
+            
+            // Update UI
             document.getElementById('balance').innerText = currentBalance.toFixed(2);
         });
 
@@ -240,7 +243,6 @@
                 display.innerText = currentMultiplier.toFixed(2) + "x";
                 display.style.color = "#ff3333";
                 
-                // Freeze graph at crash time
                 let finalElapsed = Math.log(currentMultiplier) / 0.00008;
                 drawGraphEngine(finalElapsed);
             }
@@ -249,38 +251,30 @@
         requestAnimationFrame(renderFrame);
 
         function drawGraphEngine(elapsedMs) {
-            // Background Grid
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.05)"; ctx.lineWidth = 1;
             bgOffset += (gameState === "FLYING" ? 1.5 : 0);
             if (bgOffset > 50) bgOffset = 0;
-            for(let i = 40; i < canvasW; i += 50) {
-                ctx.beginPath(); ctx.moveTo(i - bgOffset, 0); ctx.lineTo(i - bgOffset, canvasH - 30); ctx.stroke();
-            }
-            for(let i = canvasH - 30; i > 0; i -= 50) {
-                ctx.beginPath(); ctx.moveTo(40, i); ctx.lineTo(canvasW, i); ctx.stroke();
-            }
+            for(let i = 40; i < canvasW; i += 50) { ctx.beginPath(); ctx.moveTo(i - bgOffset, 0); ctx.lineTo(i - bgOffset, canvasH - 30); ctx.stroke(); }
+            for(let i = canvasH - 30; i > 0; i -= 50) { ctx.beginPath(); ctx.moveTo(40, i); ctx.lineTo(canvasW, i); ctx.stroke(); }
 
-            // Dynamic Axis Text
             ctx.fillStyle = "rgba(255, 255, 255, 0.5)"; ctx.font = "bold 10px Arial";
             let maxSec = Math.max(5, elapsedMs / 1000);
             let maxMult = Math.max(2.0, currentMultiplier); 
             
-            ctx.textAlign = "right"; // Y-Axis
+            ctx.textAlign = "right"; 
             for(let i=0; i<=4; i++) {
                 let v = 1 + ((maxMult-1)*(i/4)); 
                 let yp = canvasH - 30 - (i/4)*(canvasH*0.7);
                 if(i===0) yp = canvasH - 35;
                 ctx.fillText(v.toFixed(1)+"x", 35, yp+4);
             }
-            ctx.textAlign = "center"; // X-Axis
+            ctx.textAlign = "center"; 
             for(let i=1; i<=5; i++) {
                 let v = (maxSec*(i/5)); 
                 let xp = 40 + (i/5)*(canvasW*0.8);
                 ctx.fillText(v.toFixed(1)+"s", xp, canvasH - 10);
             }
 
-            // Calculate Curve Points
             let xMap = (elapsedMs / 1000) / maxSec; 
             let yMap = (currentMultiplier - 1) / (maxMult - 1); 
             if(maxMult === 1) yMap = 0;
@@ -291,7 +285,6 @@
 
             if (gameState === "FLYING") { x += (Math.random()-0.5)*3; y += (Math.random()-0.5)*3; }
 
-            // Draw Red Curve
             ctx.beginPath(); ctx.moveTo(startX, startY); ctx.quadraticCurveTo(x * 0.5, startY, x, y);
             ctx.lineWidth = 5; 
             let lineGrad = ctx.createLinearGradient(0, 0, x, y);
@@ -299,14 +292,12 @@
             lineGrad.addColorStop(1, gameState === "CRASHED" ? "#ff3333" : "#e91e63");
             ctx.strokeStyle = lineGrad; ctx.stroke();
 
-            // Fill Under Curve
             ctx.lineTo(x, startY); ctx.lineTo(startX, startY);
             let fillGrad = ctx.createLinearGradient(0, y, 0, startY);
             fillGrad.addColorStop(0, gameState === "CRASHED" ? "rgba(255, 51, 51, 0.3)" : "rgba(233, 30, 99, 0.4)");
             fillGrad.addColorStop(1, "rgba(233, 30, 99, 0.0)");
             ctx.fillStyle = fillGrad; ctx.fill();
 
-            // Particles
             if (gameState === "FLYING") particles.push({ px: x - 15, py: y + 15, life: 1.0 });
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i]; ctx.globalAlpha = p.life;
@@ -317,34 +308,72 @@
             }
             ctx.globalAlpha = 1.0;
 
-            // Rocket Emoji
             ctx.save(); ctx.translate(x, y);
             if (gameState === "CRASHED") { ctx.font = "45px Arial"; ctx.fillText("💥", -20, 15); } 
             else { ctx.font = "35px Arial"; ctx.rotate(-Math.PI / 6); ctx.fillText("🚀", -15, 10); }
             ctx.restore();
         }
 
-        // --- 8. ADMIN AUTO-PLAY ENGINE ---
-        let adminInterval;
-        function toggleAdmin() {
-            if(adminInterval) { alert("Admin Engine is already running!"); return; }
-            alert("ADMIN MODE ON: Game logic is now running from this device.");
-            runGameCycle();
-        }
+        // --- 8. SMART AUTO-PLAY ENGINE (NO BUTTON) ---
+        let isServerRunning = false; 
+
+        // Lagatar Firebase par check karega ki koi admin hai ya nahi
+        setInterval(() => {
+            if (isServerRunning) return; 
+
+            db.ref('game_loop/lastHeartbeat').once('value', (snap) => {
+                let lastTime = snap.val() || 0;
+                let now = Date.now();
+                
+                // Agar pichle 15 second se koi response nahi aaya, toh khud server ban jao
+                if (now - lastTime > 15000) {
+                    console.log("No active server detected. Becoming Host!");
+                    isServerRunning = true;
+                    runGameCycle(); 
+                }
+            });
+        }, 5000);
+
+        // Agar yeh device server ban gaya hai, toh har 5s mein heartbeat bhejo taaki dusro ko pata rahe
+        setInterval(() => {
+            if (isServerRunning) {
+                db.ref('game_loop/lastHeartbeat').set(Date.now());
+            }
+        }, 5000);
 
         function runGameCycle() {
-            let waitTime = 15000; 
-            db.ref('game_loop').set({ state: 'WAITING', waitEndTime: Date.now() + waitTime });
+            if (!isServerRunning) return;
 
-            adminInterval = setTimeout(() => {
+            let waitTime = 15000; 
+            db.ref('game_loop').update({ 
+                state: 'WAITING', 
+                waitEndTime: Date.now() + waitTime,
+                lastHeartbeat: Date.now()
+            });
+
+            setTimeout(() => {
+                if (!isServerRunning) return;
+                
                 let crashVal = (Math.random() < 0.05) ? 1.00 : (100 / (100 - Math.random() * 98)); 
                 let flightDurationMs = Math.log(crashVal) / 0.00008; 
                 
-                db.ref('game_loop').set({ state: 'FLYING', startTime: Date.now() });
+                db.ref('game_loop').update({ 
+                    state: 'FLYING', 
+                    startTime: Date.now(),
+                    lastHeartbeat: Date.now()
+                });
 
                 setTimeout(() => {
-                    db.ref('game_loop').set({ state: 'CRASHED', crashMultiplier: crashVal });
-                    setTimeout(runGameCycle, 4000); // Wait 4s before next round
+                    if (!isServerRunning) return;
+                    
+                    db.ref('game_loop').update({ 
+                        state: 'CRASHED', 
+                        crashMultiplier: crashVal,
+                        lastHeartbeat: Date.now()
+                    });
+                    
+                    setTimeout(runGameCycle, 4000); 
+
                 }, flightDurationMs);
 
             }, waitTime);
