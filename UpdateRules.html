@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VIP Rules Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body { 
+            background-color: #0a0a0a; 
+            color: #fff; 
+            font-family: 'Roboto', sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        .header { 
+            background: linear-gradient(90deg, #1a2a6c, #b21f1f); 
+            padding: 15px; 
+            text-align: center; 
+            border-radius: 10px; 
+            border-bottom: 3px solid #ffd700; 
+            margin-bottom: 20px; 
+            box-shadow: 0 4px 10px rgba(255,215,0,0.2);
+        }
+        .header h1 { margin: 0; font-size: 20px; color: #ffd700; letter-spacing: 1px; }
+        .card { 
+            background: #141414; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid #333; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); 
+        }
+        label { 
+            font-size: 14px; 
+            color: #aaa; 
+            font-weight: bold; 
+            display: block; 
+            margin-bottom: 10px; 
+            text-transform: uppercase; 
+        }
+        textarea { 
+            width: 100%; 
+            height: 250px; 
+            background: #000; 
+            color: #00ff88; 
+            border: 2px solid #444; 
+            border-radius: 8px; 
+            padding: 15px; 
+            font-size: 16px; 
+            font-family: monospace; 
+            outline: none; 
+            box-sizing: border-box; 
+            resize: vertical;
+            transition: 0.3s;
+        }
+        textarea:focus { border-color: #ffd700; }
+        .btn-save { 
+            width: 100%; 
+            background: linear-gradient(45deg, #00b09b, #96c93d); 
+            color: #000; 
+            padding: 15px; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: 900; 
+            margin-top: 15px; 
+            cursor: pointer; 
+            box-shadow: 0 4px 10px rgba(0,255,136,0.3);
+            text-transform: uppercase;
+        }
+        .btn-save:active { transform: scale(0.98); }
+        .status-box { margin-top: 15px; text-align: center; font-size: 13px; color: #aaa; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1><i class="fa-solid fa-scale-balanced"></i> GAME RULES ADMIN</h1>
+    </div>
+
+    <div class="card">
+        <label><i class="fa-solid fa-pen-to-square"></i> Edit Live Rules For Players</label>
+        <textarea id="rulesInput" placeholder="Loading current rules..."></textarea>
+        
+        <button class="btn-save" id="saveBtn" onclick="publishRules()"><i class="fa-solid fa-paper-plane"></i> PUBLISH NEW RULES</button>
+        
+        <div class="status-box" id="statusMsg">Connected to Live Database</div>
+    </div>
+
+    <script>
+        // Aapke Firebase ki details
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
+            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
+            projectId: "kalyan-casino" 
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const rulesBox = document.getElementById('rulesInput');
+        const saveButton = document.getElementById('saveBtn');
+        const statusMsg = document.getElementById('statusMsg');
+
+        // 1. Live Rules Load Karna (Jaise hi admin panel khulega, purane rules dikh jayenge)
+        db.ref('settings/game_rules').on('value', snap => {
+            if(snap.exists()) {
+                rulesBox.value = snap.val();
+            } else {
+                rulesBox.value = "Welcome to K-VIP Casino! \n\n1. Play responsibly.\n2. Minimum bet is ₹10.";
+            }
+        });
+
+        // 2. Naye Rules Save Karna
+        function publishRules() {
+            const newText = rulesBox.value.trim();
+            
+            if(newText === "") {
+                alert("Rules khali nahi ho sakte!");
+                return;
+            }
+
+            saveButton.innerText = "UPDATING...";
+            saveButton.disabled = true;
+
+            // Seedha Firebase mein update
+            db.ref('settings/game_rules').set(newText)
+                .then(() => {
+                    alert("✅ Rules App Me Successfully Live Ho Gaye!");
+                    saveButton.innerHTML = "<i class='fa-solid fa-check-double'></i> PUBLISHED";
+                    statusMsg.innerText = "Last updated: Just now";
+                    
+                    setTimeout(() => {
+                        saveButton.innerHTML = "<i class='fa-solid fa-paper-plane'></i> PUBLISH NEW RULES";
+                        saveButton.disabled = false;
+                    }, 2000);
+                })
+                .catch((error) => {
+                    alert("❌ Connection Error: " + error.message);
+                    saveButton.innerHTML = "<i class='fa-solid fa-paper-plane'></i> PUBLISH NEW RULES";
+                    saveButton.disabled = false;
+                });
+        }
+    </script>
+</body>
+</html>
