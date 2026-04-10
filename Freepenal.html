@@ -91,54 +91,95 @@
         }
         init();
 
-        // 🔥 FIX: Yahan 'LiveMarkets' ko 'market' kar diya gaya hai
         db.ref('market').on('value', snap => {
             snap.forEach(c => { if(document.getElementById('res_'+c.key) && c.val().result) document.getElementById('res_'+c.key).innerText = c.val().result; });
         });
 
+        // 🔥 SMART PUBLISH ENGINE
         function publish(id, name) {
-            let op = document.getElementById('op_'+id).value, jo = document.getElementById('jo_'+id).value, cl = document.getElementById('cl_'+id).value;
-            if(jo.length !== 2) return alert("Jodi must be exactly 2 digits!");
-            let res = `${op||'***'}-${jo}-${cl||'***'}`;
+            let op = document.getElementById('op_'+id).value.trim();
+            let jo = document.getElementById('jo_'+id).value.trim();
+            let cl = document.getElementById('cl_'+id).value.trim();
             
-            // 🔥 FIX: Yahan bhi 'LiveMarkets' ko 'market' kar diya gaya hai
+            if(jo.length === 0) return alert("Kam se kam Open Ank (1 digit) toh daaliye!");
+            if(jo.length > 2) return alert("Jodi box mein sirf 1 ya 2 digit daal sakte hain.");
+            
+            // Format for UI: Agar sirf Open aaya hai (1 digit) toh end mein star lag jayega (9*)
+            let formatJo = jo.length === 1 ? jo + "*" : jo;
+            let res = `${op||'***'}-${formatJo}-${cl||'***'}`;
+            
             db.ref('market/'+id).update({result: res}).then(() => {
-                alert("Result Live! Payout starting...");
+                alert(`Result [ ${res} ] Live! Smart Payout starting...`);
                 payout(name, op, jo, cl);
             });
         }
 
+        // 🔥 SMART PAYOUT ENGINE (Open/Close separate handling)
         function payout(mName, op, jo, cl) {
-            let oA = jo.charAt(0), cA = jo.charAt(1);
-            db.ref('AdminPanel/AllActiveBets').orderByChild('marketName').equalTo(mName).once('value', snap => {
-                snap.forEach(c => {
-                    let b = c.val(); if(b.status !== "pending") return;
-                    let win = false, rate = 0;
-                    if(b.gameType === "Single Ank") { if(b.session==="OPEN" && b.bidNumber===oA) {win=true; rate=9.5;} else if(b.session==="CLOSE" && b.bidNumber===cA) {win=true; rate=9.5;} }
-                    else if(b.gameType === "Jodi Digit" && b.bidNumber===jo) {win=true; rate=95;}
-                    else if(b.gameType === "Single Panna") { if(b.session==="OPEN" && b.bidNumber===op) {win=true; rate=150;} else if(b.session==="CLOSE" && b.bidNumber===cl) {win=true; rate=150;} }
-                    else if(b.gameType === "Double Panna") { if(b.session==="OPEN" && b.bidNumber===op) {win=true; rate=300;} else if(b.session==="CLOSE" && b.bidNumber===cl) {win=true; rate=300;} }
-                    else if(b.gameType === "Triple Panna") { if(b.session==="OPEN" && b.bidNumber===op) {win=true; rate=800;} else if(b.session==="CLOSE" && b.bidNumber===cl) {win=true; rate=800;} }
-                    else if(b.gameType === "Half Sangam") { let p1=`${op}-${cA}`, p2=`${oA}-${cl}`; if(b.bidNumber===p1 || b.bidNumber===p2) {win=true; rate=1000;} }
+            let oA = jo.charAt(0) || ""; 
+            let cA = jo.charAt(1) || ""; 
 
+            db.ref('AdminPanel/AllActiveBets').orderByChild('marketName').equalTo(mName).once('value', snap => {
+                let payCount = 0;
+                
+                snap.forEach(c => {
+                    let b = c.val(); 
+                    if(b.status !== "pending") return; // Jo bet pehle process ho chuki hai, use chhod do
+                    
+                    let win = false, rate = 0;
+                    
+                    // --- OPEN PAYOUTS CHECK ---
+                    if (oA !== "") {
+                        if(b.gameType === "Single Ank" && b.session === "OPEN" && b.bidNumber === oA) {win=true; rate=9.5;}
+                        if(b.gameType === "Single Panna" && b.session === "OPEN" && b.bidNumber === op) {win=true; rate=150;}
+                        if(b.gameType === "Double Panna" && b.session === "OPEN" && b.bidNumber === op) {win=true; rate=300;}
+                        if(b.gameType === "Triple Panna" && b.session === "OPEN" && b.bidNumber === op) {win=true; rate=800;}
+                    }
+                    
+                    // --- CLOSE & JODI PAYOUTS CHECK ---
+                    if (cA !== "") {
+                        if(b.gameType === "Single Ank" && b.session === "CLOSE" && b.bidNumber === cA) {win=true; rate=9.5;}
+                        if(b.gameType === "Single Panna" && b.session === "CLOSE" && b.bidNumber === cl) {win=true; rate=150;}
+                        if(b.gameType === "Double Panna" && b.session === "CLOSE" && b.bidNumber === cl) {win=true; rate=300;}
+                        if(b.gameType === "Triple Panna" && b.session === "CLOSE" && b.bidNumber === cl) {win=true; rate=800;}
+                        
+                        if(b.gameType === "Jodi Digit" && b.bidNumber === jo) {win=true; rate=95;}
+                        if(b.gameType === "Half Sangam") { 
+                            let p1 = `${op}-${cA}`, p2 = `${oA}-${cl}`; 
+                            if(b.bidNumber === p1 || b.bidNumber === p2) {win=true; rate=1000;} 
+                        }
+                    }
+
+                    // --- LOSS LOGIC ---
+                    // Loss tabhi mana jayega jab us specific session ka result aa gaya ho, warna 'pending' hi rahega.
+                    let isLoss = false;
+                    if (!win) {
+                        if (oA !== "" && b.session === "OPEN") isLoss = true;
+                        if (cA !== "" && b.session === "CLOSE") isLoss = true;
+                        if (cA !== "" && (b.gameType === "Jodi Digit" || b.gameType === "Half Sangam")) isLoss = true;
+                    }
+
+                    // --- APPLY DATABASE UPDATES ---
                     if(win) {
+                        payCount++;
                         let amt = b.betAmount * rate;
                         db.ref('AdminPanel/AllActiveBets/'+c.key).update({status: "WIN", winAmount: amt});
                         db.ref('users/'+b.userPhone+'/balance').set(firebase.database.ServerValue.increment(amt));
-                    } else {
+                    } else if (isLoss) {
                         db.ref('AdminPanel/AllActiveBets/'+c.key).update({status: "LOSS"});
                     }
                 });
-                alert("Payout Finished successfully!");
+                
+                alert(`Smart Payout Finished! Total Winners this round: ${payCount}`);
             });
         }
 
-        db.ref('AdminPanel/AllActiveBets').limitToLast(20).on('value', snap => {
+        db.ref('AdminPanel/AllActiveBets').limitToLast(30).on('value', snap => {
             const tbody = document.getElementById('marketBetsData'); tbody.innerHTML = "";
             let arr = []; snap.forEach(c => arr.push(c.val()));
             arr.reverse().forEach(b => {
                 let statColor = b.status === "WIN" ? "#00FF00" : (b.status === "LOSS" ? "#ff004c" : "#ffae00");
-                tbody.innerHTML += `<tr><td>${b.userPhone}</td><td>${b.marketName}</td><td>${b.gameType}</td><td>${b.bidNumber}</td><td>₹${b.betAmount}</td><td style="color:${statColor};font-weight:bold;">${b.status}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${b.userPhone}</td><td>${b.marketName}</td><td>${b.gameType} <span style="color:#aaa;font-size:10px;">(${b.session})</span></td><td>${b.bidNumber}</td><td>₹${b.betAmount}</td><td style="color:${statColor};font-weight:bold;">${b.status}</td></tr>`;
             });
         });
     </script>
