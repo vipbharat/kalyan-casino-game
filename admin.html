@@ -233,13 +233,13 @@
             });
         });
 
-        // 2. Users Listener
+        // 2. Users Listener (Single Wallet fix)
         db.ref('users').on('value', snap => {
             const body = document.getElementById('p-list-body');
             document.getElementById('stat-users').innerText = snap.numChildren();
             body.innerHTML = "";
             snap.forEach(p => {
-                const bal = (parseFloat(p.val().balance||0) + parseFloat(p.val().winning_balance||0)).toFixed(2);
+                const bal = parseFloat(p.val().balance || 0).toFixed(2);
                 body.innerHTML += `
                 <tr class="player-row" data-phone="${p.key}">
                     <td style="color:var(--gold); font-weight:bold;">${p.key}</td>
@@ -252,7 +252,6 @@
         // 3. Settings Listener
         db.ref('admin_settings').on('value', snap => {
             const d = snap.val(); if(!d) return;
-            // Payment settings
             if(d.payment) {
                 document.getElementById('upiId').value = d.payment.upi_id || ""; 
                 document.getElementById('qrStatus').checked = d.payment.show_qr || false;
@@ -262,36 +261,46 @@
                     document.getElementById('qrPreview').style.display = "block"; 
                 }
             }
-            // Support settings
             if(d.support) {
                 document.getElementById('waNo').value = d.support.whatsapp || ""; 
                 document.getElementById('tgLink').value = d.support.telegram || "";
             }
-            // Notification setting
             if(d.notification) {
                 document.getElementById('notif').value = d.notification || "";
             }
         });
     }
 
-    // --- QUICK WALLET CONTROLS ---
+    // --- QUICK WALLET CONTROLS (0 MISTAKE SINGLE WALLET) ---
     window.quickWallet = function(type) {
         const phone = document.getElementById('quick-phone').value;
         const amt = parseFloat(document.getElementById('quick-amount').value);
-        if(!phone || !amt) { alert("Please enter Mobile Number and Amount!"); return; }
+        
+        if(!phone || isNaN(amt) || amt <= 0) { 
+            alert("Please enter a valid Mobile Number and Amount!"); 
+            return; 
+        }
         
         db.ref(`users/${phone}`).once('value', snap => {
-            if(!snap.exists()){ alert("Player Not Found!"); return; }
+            if(!snap.exists()){ 
+                alert("Player Not Found! Check Mobile Number."); 
+                return; 
+            }
+            
             let currentBal = parseFloat(snap.val().balance || 0);
+
+            if(type === 'cut' && amt > currentBal) {
+                alert(`Error: Player ke wallet mein sirf ₹${currentBal} hain. Aap ₹${amt} cut nahi kar sakte!`);
+                return;
+            }
+
             let newBal = type === 'add' ? currentBal + amt : currentBal - amt;
-            if(newBal < 0) newBal = 0; 
             
             db.ref(`users/${phone}/balance`).set(newBal).then(() => {
-                alert(`₹${amt} Successfully ${type === 'add' ? 'Added to' : 'Deducted from'} ${phone}`);
+                alert(`✅ ₹${amt} Successfully ${type === 'add' ? 'Added to' : 'Deducted from'} ${phone}`);
                 document.getElementById('quick-phone').value = "";
                 document.getElementById('quick-amount').value = "";
 
-                // Auto-Approve Pending Deposits on Adding Funds
                 if(type === 'add') {
                     db.ref(`user_history/${phone}`).once('value', (histSnap) => {
                         if(histSnap.exists()) {
@@ -303,6 +312,8 @@
                         }
                     });
                 }
+            }).catch((err) => {
+                alert("Transaction failed: " + err.message);
             });
         });
     }
@@ -314,7 +325,6 @@
                 db.ref(`withdraw_requests/${reqKey}/status`).set('Success').then(() => alert("Request Approved successfully!"));
             } else {
                 db.ref(`withdraw_requests/${reqKey}/status`).set('Rejected').then(() => {
-                    // Refund balance back to user if rejected
                     if(amount) {
                         db.ref(`users/${phone}/balance`).set(firebase.database.ServerValue.increment(amount));
                     }
@@ -334,7 +344,7 @@
         });
     }
 
-    // --- PLAYER TOTAL INFO POPUP (MODAL) ---
+    // --- PLAYER TOTAL INFO POPUP (Single Wallet UI Fix) ---
     window.openModal = function(phone) {
         db.ref(`users/${phone}`).once('value', snap => {
             if(!snap.exists()) return;
@@ -342,8 +352,7 @@
             let modalBody = document.getElementById('modal-body');
             modalBody.innerHTML = `
                 <div class="detail-row"><span>Phone:</span><span>${phone}</span></div>
-                <div class="detail-row"><span>Main Balance:</span><span style="color:var(--green)">₹${d.balance || 0}</span></div>
-                <div class="detail-row"><span>Winning:</span><span style="color:var(--gold)">₹${d.winning_balance || 0}</span></div>
+                <div class="detail-row"><span>Total Balance:</span><span style="color:var(--green); font-size:16px;">₹${d.balance || 0}</span></div>
                 <div class="detail-row"><span>Password:</span><span>${d.password || 'N/A'}</span></div>
                 <div class="detail-row"><span>Status:</span><span style="color:${d.isBanned ? 'var(--red)' : 'var(--green)'}">${d.isBanned ? 'BANNED 🚫' : 'ACTIVE ✅'}</span></div>
                 <button class="btn btn-cut" style="width:100%; margin-top:15px;" onclick="toggleBan('${phone}', ${d.isBanned})">${d.isBanned ? 'UNBAN PLAYER' : 'BAN PLAYER'}</button>
@@ -358,7 +367,7 @@
         if(confirm(`Are you sure you want to ${isBanned ? 'UNBAN' : 'BAN'} this player?`)){
             db.ref(`users/${phone}/isBanned`).set(!isBanned).then(() => { 
                 alert("Status changed!"); 
-                openModal(phone); // Refresh Modal
+                openModal(phone); 
             });
         }
     }
