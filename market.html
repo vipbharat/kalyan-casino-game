@@ -42,13 +42,14 @@
         #rulesModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; z-index: 101; width: 85%; max-width: 400px; border-radius: 15px; padding: 20px; border: 2px solid #f1c40f; }
 
         .game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .game-btn { background: #222; color: #fff; padding: 15px 10px; border-radius: 8px; border: 1px solid #444; text-align: center; font-weight: bold; font-size: 13px; }
+        .game-btn { background: #222; color: #fff; padding: 15px 10px; border-radius: 8px; border: 1px solid #444; text-align: center; font-weight: bold; font-size: 13px; cursor: pointer;}
+        .game-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .session-selector { display: flex; gap: 10px; margin-bottom: 15px; }
-        .session-lbl { flex: 1; background: #222; color: #fff; padding: 12px; text-align: center; border-radius: 8px; border: 2px solid #444; font-weight: bold; }
+        .session-lbl { flex: 1; background: #222; color: #fff; padding: 12px; text-align: center; border-radius: 8px; border: 2px solid #444; font-weight: bold; cursor: pointer;}
         .session-lbl.active { border-color: #f1c40f; background: #333; color: #f1c40f; }
         .bet-input { width: 100%; padding: 15px; margin-bottom: 15px; background: #111; border: 1px solid #444; color: #fff; border-radius: 8px; font-size: 16px; outline: none; }
-        .btn-confirm { background: #2ecc71; color: #000; width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: 900; font-size: 16px; }
-        .btn-back { background: #444; color: #fff; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; margin-top: 10px;}
+        .btn-confirm { background: #2ecc71; color: #000; width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: 900; font-size: 16px; cursor: pointer;}
+        .btn-back { background: #444; color: #fff; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; margin-top: 10px; cursor: pointer;}
     </style>
 </head>
 <body>
@@ -93,13 +94,20 @@
         
         <div id="inputSection" style="display:none;">
             <div style="color: #2ecc71; font-weight: bold; margin-bottom: 10px; font-size: 14px;" id="selectedGameLabel">Game</div>
+            
             <div class="session-selector" id="sessionBox">
-                <label class="session-lbl" id="lblOpen"><input type="radio" name="betSession" value="OPEN" id="radioOpen" style="display:none;" onchange="updateSessionUI()">OPEN</label>
-                <label class="session-lbl" id="lblClose"><input type="radio" name="betSession" value="CLOSE" id="radioClose" style="display:none;" onchange="updateSessionUI()">CLOSE</label>
+                <label class="session-lbl" id="lblOpen">
+                    <input type="radio" name="betSession" value="OPEN" id="radioOpen" style="display:none;" onchange="updateSessionUI()">OPEN
+                </label>
+                <label class="session-lbl" id="lblClose">
+                    <input type="radio" name="betSession" value="CLOSE" id="radioClose" style="display:none;" onchange="updateSessionUI()">CLOSE
+                </label>
             </div>
+            
             <input type="number" id="betNumber" class="bet-input" placeholder="Enter Number">
             <input type="number" id="betAmount" class="bet-input" placeholder="Enter Amount (₹)">
-            <button class="btn-confirm" onclick="submitFinalBet()">✔️ PLACE BET</button>
+            
+            <button class="btn-confirm" id="confirmBetBtn" onclick="submitFinalBet()">✔️ PLACE BET</button>
             <button class="btn-back" onclick="backToGames()">⬅️ BACK</button>
         </div>
     </div>
@@ -110,15 +118,18 @@
             databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
             projectId: "kalyan-casino" 
         };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const db = firebase.database();
 
         const container = document.getElementById('markets-container');
         const userPhone = localStorage.getItem('userPhone') || 'Guest';
+        
         let activeMarket = null;
         let selectedGameType = "";
         let serverTimeOffset = 0;
-        let currentBalance = 0; // Total Dashboard Balance
+        let currentBalance = 0; 
 
         const defaultVIPMarkets = {
             "m1": { name: "TIME BAZAR", open: "01:00 PM", close: "02:00 PM", result: "***-**-***" },
@@ -131,7 +142,10 @@
             "m8": { name: "KALYAN NIGHT", open: "09:30 PM", close: "11:30 PM", result: "***-**-***" }
         };
 
+        // Render Initial Empty/Default Markets instantly
         renderMarkets(defaultVIPMarkets);
+        
+        // Sync Server Time to prevent device time cheating
         db.ref('.info/serverTimeOffset').on('value', snap => { serverTimeOffset = snap.val() || 0; });
 
         function getISTMinutes() {
@@ -140,7 +154,7 @@
             return ist >= 1440 ? ist - 1440 : ist;
         }
 
-        // --- FETCH RULES FROM FIREBASE ---
+        // --- FETCH GAME RULES FROM FIREBASE ---
         db.ref('settings/game_rules').on('value', (snapshot) => {
             let rulesData = snapshot.val();
             if (!rulesData) rulesData = "1. Welcome to K-VIP Casino.\n2. Please wait for the admin to update rules.";
@@ -157,12 +171,10 @@
             document.getElementById('rulesModal').style.display = 'none';
         }
 
-        // --- FIX 1: DASHBOARD WALLET SYSTEM ---
+        // --- WALLET SYSTEM (Small 'u' path for consistency) ---
         if (userPhone !== 'Guest') {
             db.ref('users/' + userPhone).on('value', snap => {
                 const data = snap.val() || {};
-                
-                // Dashboard Logic (Main + Winning + Bonus)
                 let mainBal = parseFloat(data.balance || 0);
                 let winBal = parseFloat(data.winning_balance || 0);
                 let bonusBal = parseFloat(data.bonus_balance || 0);
@@ -172,6 +184,7 @@
             });
         }
 
+        // --- MARKET LOGIC & TIMINGS ---
         function parseTime(t) {
             let p = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
             if(!p) return 1440;
@@ -184,10 +197,15 @@
         function renderMarkets(markets) {
             container.innerHTML = '';
             let cm = getISTMinutes(); 
+            
             Object.keys(markets).forEach(key => {
                 let m = markets[key];
-                let ot = parseTime(m.open), ct = parseTime(m.close);
-                let isOC = cm >= ot, isFC = cm >= ct;
+                let ot = parseTime(m.open);
+                let ct = parseTime(m.close);
+                
+                let isOC = cm >= ot; // Is Open Time passed?
+                let isFC = cm >= ct; // Is Close Time passed?
+                
                 let status = isFC ? 'closed' : (isOC ? 'half-closed' : 'running');
                 let btnT = isFC ? 'MARKET CLOSED' : (isOC ? 'PLAY CLOSE ONLY' : 'PLAY NOW');
                 let btnC = isFC ? 'btn-bet' : (isOC ? 'btn-bet btn-close-only' : 'btn-bet');
@@ -199,11 +217,12 @@
                             <div style="font-size:10px; color:#aaa;">${m.open} - ${m.close}</div>
                         </div>
                         <div class="m-res">${m.result || '***-**-***'}</div>
-                        <button class="${btnC}" ${isFC?'disabled':''} onclick="openBetModal('${key}','${m.name}','${m.open}','${m.close}')">${btnT}</button>
+                        <button class="${btnC}" ${isFC ? 'disabled' : ''} onclick="openBetModal('${key}','${m.name}','${m.open}','${m.close}')">${btnT}</button>
                     </div>`;
             });
         }
 
+        // Listen for Realtime Market Updates (Results)
         db.ref('LiveMarkets').on('value', snap => { 
             if(snap.exists()) {
                 renderMarkets(snap.val()); 
@@ -212,16 +231,30 @@
             }
         });
 
-        // --- MODAL & GAME SELECTION ---
+        // --- BETTING UI & MODAL ---
         function openBetModal(id, name, ot, ct) {
-            let cm = getISTMinutes(), om = parseTime(ot), clm = parseTime(ct);
+            let cm = getISTMinutes();
+            let om = parseTime(ot);
+            let clm = parseTime(ct);
+            
             activeMarket = { id, name, openMins: om, closeMins: clm };
             document.getElementById('modalMarketName').innerText = name;
-            document.getElementById('btnJodi').disabled = cm >= om;
-            document.getElementById('btnSangam').disabled = cm >= om;
             
-            let rO = document.getElementById('radioOpen'), rC = document.getElementById('radioClose');
-            if(cm >= om) { rO.disabled = true; rC.checked = true; } else { rO.disabled = false; rO.checked = true; }
+            // Disable games that require OPEN session if OPEN is closed
+            let isOpenClosed = cm >= om;
+            document.getElementById('btnJodi').disabled = isOpenClosed;
+            document.getElementById('btnSangam').disabled = isOpenClosed;
+            
+            let rO = document.getElementById('radioOpen');
+            let rC = document.getElementById('radioClose');
+            
+            if(isOpenClosed) { 
+                rO.disabled = true; 
+                rC.checked = true; 
+            } else { 
+                rO.disabled = false; 
+                rO.checked = true; 
+            }
             
             updateSessionUI();
             backToGames();
@@ -233,12 +266,24 @@
             let isO = document.getElementById('radioOpen').checked;
             document.getElementById('lblOpen').className = "session-lbl " + (isO ? "active" : "");
             document.getElementById('lblClose').className = "session-lbl " + (!isO ? "active" : "");
-            if(document.getElementById('radioOpen').disabled) document.getElementById('lblOpen').style.opacity = "0.3";
+            
+            if(document.getElementById('radioOpen').disabled) {
+                document.getElementById('lblOpen').style.opacity = "0.3";
+                document.getElementById('lblOpen').style.cursor = "not-allowed";
+            } else {
+                document.getElementById('lblOpen').style.opacity = "1";
+                document.getElementById('lblOpen').style.cursor = "pointer";
+            }
         }
 
         function selectGame(gt) {
-            if((gt==='Jodi Digit'||gt==='Half Sangam') && getISTMinutes()>=activeMarket.openMins) return alert("Open time out!");
-            document.getElementById('sessionBox').style.display = (gt==='Jodi Digit'||gt==='Half Sangam') ? 'none' : 'flex';
+            if((gt === 'Jodi Digit' || gt === 'Half Sangam') && getISTMinutes() >= activeMarket.openMins) {
+                return alert("Open time out! You cannot play this game now.");
+            }
+            
+            // Hide Session Box for full games
+            document.getElementById('sessionBox').style.display = (gt === 'Jodi Digit' || gt === 'Half Sangam') ? 'none' : 'flex';
+            
             selectedGameType = gt;
             document.getElementById('gameGrid').style.display = 'none';
             document.getElementById('inputSection').style.display = 'block';
@@ -254,13 +299,14 @@
             document.getElementById('modalOverlay').style.display = 'none'; 
             document.getElementById('betModal').style.display = 'none'; 
             
-            // Clear Inputs on Close
             document.getElementById('betNumber').value = '';
             document.getElementById('betAmount').value = '';
         }
 
-        // --- FIX 2: SECURE FINAL BET & VALIDATION ---
+        // --- FINAL BET PLACEMENT & SECURITY ---
         function submitFinalBet() {
+            if (userPhone === 'Guest') return alert("Please Login to Place Bets!");
+
             let num = document.getElementById('betNumber').value;
             let amt = document.getElementById('betAmount').value;
             
@@ -269,20 +315,27 @@
             let betAmountFloat = parseFloat(amt);
             if(betAmountFloat > currentBalance) return alert("Low VIP Wallet Balance!");
             
-            // Validation Rules
+            // Number Formatting Validation
             let numStr = num.toString();
             if (selectedGameType === 'Single Ank' && numStr.length !== 1) return alert("Single Ank must be a 1-digit number!");
             if (selectedGameType === 'Jodi Digit' && numStr.length !== 2) return alert("Jodi Digit must be a 2-digit number!");
             if ((selectedGameType === 'Single Panna' || selectedGameType === 'Double Panna' || selectedGameType === 'Triple Panna') && numStr.length !== 3) {
                 return alert("Panna must be a 3-digit number!");
             }
+            if (selectedGameType === 'Half Sangam' && numStr.length !== 4) return alert("Half Sangam must be a 4-digit number! (Example: 1234)");
 
-            let cm = getISTMinutes(), isJS = (selectedGameType==='Jodi Digit'||selectedGameType==='Half Sangam');
+            let cm = getISTMinutes();
+            let isJS = (selectedGameType === 'Jodi Digit' || selectedGameType === 'Half Sangam');
             let sess = isJS ? "FULL" : (document.getElementById('radioOpen').checked ? "OPEN" : "CLOSE");
             
-            if((sess==="OPEN"||isJS) && cm>=activeMarket.openMins) return alert("Open closed!");
+            // Double check server time before bet
+            if((sess === "OPEN" || isJS) && cm >= activeMarket.openMins) return alert("Open market is closed!");
 
-            // Safe Database Deduction Using ServerValue.increment
+            let btn = document.getElementById('confirmBetBtn');
+            btn.disabled = true;
+            btn.innerText = "PROCESSING...";
+
+            // Secure Database Deduction Using ServerValue.increment
             db.ref('users/' + userPhone + '/balance').set(firebase.database.ServerValue.increment(-betAmountFloat))
                 .then(() => {
                     let bet = { 
@@ -290,19 +343,28 @@
                         marketName: activeMarket.name, 
                         gameType: selectedGameType, 
                         session: sess, 
-                        bidNumber: num, 
+                        bidNumber: numStr, 
                         betAmount: betAmountFloat, 
                         status: "pending", 
                         timestamp: firebase.database.ServerValue.TIMESTAMP 
                     };
+                    
+                    // Push to user history
                     db.ref('BetHistory/' + userPhone).push(bet);
+                    
+                    // Push to Admin Master Panel
                     db.ref('AdminPanel/AllActiveBets').push({ userPhone, ...bet });
                     
                     alert("✅ Bet Placed Successfully!"); 
                     closeBetModal();
+                    
+                    btn.disabled = false;
+                    btn.innerText = "✔️ PLACE BET";
                 })
                 .catch((error) => {
-                    alert("Transaction failed! Please try again.");
+                    alert("Transaction failed! Please check connection.");
+                    btn.disabled = false;
+                    btn.innerText = "✔️ PLACE BET";
                 });
         }
     </script>
