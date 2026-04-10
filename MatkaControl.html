@@ -73,7 +73,6 @@
         db.ref('settings/game_rules').on('value', snap => { if(snap.exists()) document.getElementById('rulesInput').value = snap.val(); });
         function saveRules() { db.ref('settings/game_rules').set(document.getElementById('rulesInput').value).then(() => alert("Rules Updated on App!")); }
 
-        // 🔥 YAHAN IDs PLAYER APP SE MATCH KAR DI GAYI HAIN 🔥
         const defaultVIPMarkets = {
             "time_day": { name: "TIME BAZAR" }, 
             "madhur_day": { name: "MADHUR DAY" }, 
@@ -91,7 +90,7 @@
                 tbody.innerHTML += `<tr>
                     <td>${defaultVIPMarkets[id].name}</td>
                     <td id="res_${id}">***-**-***</td>
-                    <td><input id="op_${id}" class="ank-box" placeholder="123"> - <input id="jo_${id}" class="ank-box" placeholder="9"> - <input id="cl_${id}" class="ank-box" placeholder="456"></td>
+                    <td><input id="op_${id}" class="ank-box" placeholder="123"> - <input id="jo_${id}" class="ank-box" placeholder="98"> - <input id="cl_${id}" class="ank-box" placeholder="456"></td>
                     <td><button class="btn-publish" onclick="publish('${id}', '${defaultVIPMarkets[id].name}')">PAY</button></td>
                 </tr>`;
             });
@@ -102,22 +101,26 @@
             snap.forEach(c => { if(document.getElementById('res_'+c.key) && c.val().result) document.getElementById('res_'+c.key).innerText = c.val().result; });
         });
 
-        // 🔥 SMART PUBLISH ENGINE (Open/Close Logic)
+        // 🔥 DIRECT PUBLISH ENGINE (No Restrictions) 🔥
         function publish(id, name) {
-            let op = document.getElementById('op_'+id).value.trim();
-            let jo = document.getElementById('jo_'+id).value.trim();
-            let cl = document.getElementById('cl_'+id).value.trim();
+            // Jo box khali chhodoge wahan automatically *** ya ** lag jayega
+            let op = document.getElementById('op_'+id).value.trim() || "***";
+            let jo = document.getElementById('jo_'+id).value.trim() || "**";
+            let cl = document.getElementById('cl_'+id).value.trim() || "***";
             
-            if(jo.length === 0) return alert("Kam se kam Open Ank (1 digit) toh daaliye!");
-            if(jo.length > 2) return alert("Jodi box mein sirf 1 ya 2 digit daal sakte hain.");
+            // Format for UI: Teeno ko jod kar direct result bana diya
+            let res = `${op}-${jo}-${cl}`;
             
-            // Format for UI: Agar sirf Open aaya hai (1 digit) toh end mein star lag jayega (9*)
-            let formatJo = jo.length === 1 ? jo + "*" : jo;
-            let res = `${op||'***'}-${formatJo}-${cl||'***'}`;
-            
+            // Seedha Firebase mein update (Bina kisi error ya condition ke)
             db.ref('market/'+id).update({result: res}).then(() => {
-                alert(`Result [ ${res} ] Live! Smart Payout starting...`);
-                payout(name, op, jo, cl);
+                alert(`Result [ ${res} ] Live ho gaya hai!`);
+                
+                // Agar aapne payout logic use karna hai toh ye chalega, warna koi error nahi dega
+                if(jo !== "**" || op !== "***" || cl !== "***") {
+                    payout(name, op, jo, cl);
+                }
+            }).catch((error) => {
+                alert("Koi error aayi: " + error.message);
             });
         }
 
@@ -174,7 +177,9 @@
                         db.ref('AdminPanel/AllActiveBets/'+c.key).update({status: "LOSS"});
                     }
                 });
-                alert(`Smart Payout Finished! Total Winners this round: ${payCount}`);
+                if(payCount > 0) {
+                    alert(`Smart Payout Finished! Total Winners this round: ${payCount}`);
+                }
             });
         }
 
