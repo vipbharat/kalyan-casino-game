@@ -133,7 +133,6 @@
             return h * 60 + m;
         }
 
-        // FULL RENDER (Runs only once or when new markets added)
         function renderMarkets(marketsObj) {
             const container = document.getElementById('markets-container');
             container.innerHTML = '';
@@ -148,7 +147,6 @@
                 let status = isFC ? 'closed' : (isOC ? 'half-closed' : 'running');
                 let btnT = isFC ? 'MARKET CLOSED' : (isOC ? 'PLAY CLOSE ONLY' : 'PLAY NOW');
                 
-                // FIX: Result ko specific ID (res_display_m1) di gayi hai direct update ke liye
                 container.innerHTML += `
                     <div class="m-card ${status}">
                         <div style="display:flex; justify-content:space-between;">
@@ -161,27 +159,25 @@
             });
         }
 
-        // Initial setup
         renderMarkets(defaultVIPMarkets);
 
-        // DIRECT LIVE UPDATE (Bina page hilaye result update karega)
-        db.ref('LiveMarkets').on('value', snap => { 
+        // Path is strictly 'market' now
+        db.ref('market').on('value', snap => { 
             if(!snap.exists()) {
-                db.ref('LiveMarkets').set(defaultVIPMarkets);
+                db.ref('market').set(defaultVIPMarkets);
             } else {
                 let dbData = snap.val();
                 Object.keys(dbData).forEach(k => {
                     let resultElement = document.getElementById('res_display_' + k);
                     if (resultElement && dbData[k].result) {
                         resultElement.innerText = dbData[k].result;
-                        resultElement.style.color = "#FFD700"; // Light up yellow when updated
+                        resultElement.style.color = "#FFD700"; 
                         setTimeout(() => { resultElement.style.color = "#00ffff"; }, 1000);
                     }
                 });
             }
         });
 
-        // MODAL SETTINGS
         function openBetModal(id, name, ot, ct) {
             activeMarket = { id, name, ot: parseTime(ot), ct: parseTime(ct) };
             document.getElementById('modalMarketName').innerText = name;
@@ -189,7 +185,7 @@
             let cm = getISTMinutes();
             let isOpenClosed = cm >= activeMarket.ot; 
             
-            // JODI & SANGAM HIDE LOGIC
+            // JODI and SANGAM hide completely if OPEN time is passed
             document.getElementById('btnJodi').style.display = isOpenClosed ? 'none' : 'block';
             document.getElementById('btnSangam').style.display = isOpenClosed ? 'none' : 'block';
             
