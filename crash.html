@@ -48,7 +48,8 @@
 </head>
 <body>
 
-    <audio id="soundFly" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" loop></audio>
+    <audio id="soundFly" src="https://assets.mixkit.co/active_storage/sfx/1271/1271-preview.mp3" loop></audio>
+    <audio id="soundBlast" src="https://assets.mixkit.co/active_storage/sfx/1702/1702-preview.mp3"></audio>
 
     <div class="header">
         <div style="display: flex; align-items: center;">
@@ -118,7 +119,7 @@
             document.getElementById('balance').innerText = currentBalance.toFixed(2);
         });
 
-        // --- 4. GAME VARIABLES ---
+        // --- 4. GAME VARIABLES & AUDIO ---
         let gameState = "WAITING"; 
         let currentMultiplier = 1.00;
         let isBetPlaced = false;
@@ -126,7 +127,9 @@
         let myBetAmount = 0;
         let flightStartTime = 0;
         let waitEndTime = 0;
+        
         let sFly = document.getElementById('soundFly');
+        let sBlast = document.getElementById('soundBlast'); // Naya blast sound variable
 
         const btn = document.getElementById('mainBtn');
         const display = document.getElementById('multiplierDisplay');
@@ -137,7 +140,10 @@
             btn.innerText = text;
             btn.className = "btn-action " + cls;
         }
-        function playSoundSafely(audio) { let p = audio.play(); if (p !== undefined) p.catch(e=>{}); }
+        function playSoundSafely(audio) { 
+            let p = audio.play(); 
+            if (p !== undefined) p.catch(e => { console.log("Sound muted till user interaction"); }); 
+        }
 
         // --- 5. FIREBASE GAME LOOP LISTENER ---
         db.ref('game_loop').on('value', (snapshot) => {
@@ -150,7 +156,11 @@
                 waitEndTime = data.waitEndTime;
                 currentMultiplier = 1.00;
                 winMsg.style.display = "none";
-                sFly.pause(); sFly.currentTime = 0;
+                
+                // Sound off for new round
+                sFly.pause(); 
+                sFly.currentTime = 0;
+                
                 isCashedOut = false;
                 
                 if (!isBetPlaced) updateButton("PLACE BET", "btn-bet");
@@ -158,6 +168,8 @@
 
             } else if (gameState === "FLYING") {
                 flightStartTime = data.startTime;
+                
+                // Play Heavy Rocket Sound
                 playSoundSafely(sFly);
                 
                 if (isBetPlaced && !isCashedOut) updateButton("CASH OUT", "btn-cashout");
@@ -165,7 +177,10 @@
 
             } else if (gameState === "CRASHED") {
                 currentMultiplier = data.crashMultiplier;
+                
+                // Stop Rocket Sound, Play Explosion Sound
                 sFly.pause();
+                playSoundSafely(sBlast); 
                 
                 if (isBetPlaced && !isCashedOut) {
                     updateButton("YOU LOST", "btn-disabled");
@@ -317,7 +332,6 @@
         // --- 8. SMART AUTO-PLAY ENGINE (NO BUTTON) ---
         let isServerRunning = false; 
 
-        // Lagatar Firebase par check karega ki koi admin hai ya nahi
         setInterval(() => {
             if (isServerRunning) return; 
 
@@ -334,7 +348,6 @@
             });
         }, 5000);
 
-        // Agar yeh device server ban gaya hai, toh har 5s mein heartbeat bhejo taaki dusro ko pata rahe
         setInterval(() => {
             if (isServerRunning) {
                 db.ref('game_loop/lastHeartbeat').set(Date.now());
