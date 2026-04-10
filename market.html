@@ -21,17 +21,24 @@
         .m-card.half-closed { border-left-color:#f39c12; }
         .m-title { font-size:18px; font-weight:900; color:#f1c40f; text-transform:uppercase; }
         .m-res { font-size:28px; font-weight:bold; margin:12px 0; text-align:center; letter-spacing:4px; background:#111; padding:10px; border-radius:5px; color:#00ffff; border:1px solid #333; }
+        
         .btn-bet { width:100%; background:linear-gradient(180deg, #2ecc71, #27ae60); color:#000; border:none; padding:14px; border-radius:8px; font-weight:900; font-size:16px; cursor:pointer; }
         .btn-bet:disabled { background:#444; color:#888; cursor:not-allowed; }
         .btn-bet.btn-close-only { background:linear-gradient(180deg, #f39c12, #d35400); color:#fff; }
+        
         #modalOverlay, #rulesModalOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:998; }
         #betModal, #rulesModal { display:none; position:fixed; bottom:0; left:0; width:100%; background:#1a1a1a; z-index:999; border-top:3px solid #f1c40f; padding:20px; border-top-left-radius:20px; border-top-right-radius:20px; }
         #rulesModal { top:20%; bottom:auto; width:90%; left:5%; border-radius:15px; }
+        
         .game-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
         .game-btn { background:#222; color:#fff; padding:15px 10px; border-radius:8px; border:1px solid #444; font-weight:bold; font-size:13px; cursor:pointer; }
+        .game-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: #ff3333; color: #888; } /* Disabled Button Style */
+        
         .session-selector { display:flex; gap:10px; margin-bottom:15px; }
-        .session-lbl { flex:1; background:#222; padding:12px; text-align:center; border-radius:8px; border:2px solid #444; font-weight:bold; }
+        .session-lbl { flex:1; background:#222; padding:12px; text-align:center; border-radius:8px; border:2px solid #444; font-weight:bold; cursor:pointer; }
         .session-lbl.active { border-color:#f1c40f; color:#f1c40f; }
+        .session-lbl.disabled { opacity: 0.3; cursor: not-allowed; }
+        
         .bet-input { width:100%; padding:15px; margin-bottom:15px; background:#111; border:1px solid #444; color:#fff; border-radius:8px; outline:none; }
         .btn-confirm { background:#2ecc71; color:#000; width:100%; padding:15px; border:none; border-radius:8px; font-weight:900; cursor:pointer; }
     </style>
@@ -63,13 +70,14 @@
     <div id="betModal">
         <h3 id="modalMarketName" style="color:#f1c40f; margin-bottom:15px;">SELECT GAME</h3>
         <div class="game-grid" id="gameGrid">
-            <button class="game-btn" onclick="selectGame('Single Ank')">SINGLE ANK</button>
-            <button class="game-btn" onclick="selectGame('Jodi Digit')">JODI DIGIT</button>
-            <button class="game-btn" onclick="selectGame('Single Panna')">SINGLE PANNA</button>
-            <button class="game-btn" onclick="selectGame('Double Panna')">DOUBLE PANNA</button>
-            <button class="game-btn" onclick="selectGame('Triple Panna')">TRIPLE PANNA</button>
-            <button class="game-btn" onclick="selectGame('Half Sangam')">HALF SANGAM</button>
+            <button class="game-btn" id="btnAnk" onclick="selectGame('Single Ank')">SINGLE ANK</button>
+            <button class="game-btn" id="btnJodi" onclick="selectGame('Jodi Digit')">JODI DIGIT</button>
+            <button class="game-btn" id="btnSP" onclick="selectGame('Single Panna')">SINGLE PANNA</button>
+            <button class="game-btn" id="btnDP" onclick="selectGame('Double Panna')">DOUBLE PANNA</button>
+            <button class="game-btn" id="btnTP" onclick="selectGame('Triple Panna')">TRIPLE PANNA</button>
+            <button class="game-btn" id="btnSangam" onclick="selectGame('Half Sangam')">HALF SANGAM</button>
         </div>
+        
         <div id="inputSection" style="display:none;">
             <div id="selectedGameLabel" style="color:#2ecc71; margin-bottom:10px; font-weight:bold;"></div>
             <div class="session-selector" id="sessionBox">
@@ -91,7 +99,6 @@
 
         let activeMarket = null, selectedGameType = "", serverTimeOffset = 0, currentBalance = 0;
 
-        // Default Markets (Safety Net)
         const defaultVIPMarkets = {
             "m1": { name: "TIME BAZAR", open: "01:00 PM", close: "02:00 PM", result: "***-**-***" },
             "m2": { name: "MADHUR DAY", open: "01:15 PM", close: "02:15 PM", result: "***-**-***" },
@@ -103,16 +110,13 @@
             "m8": { name: "KALYAN NIGHT", open: "09:30 PM", close: "11:30 PM", result: "***-**-***" }
         };
 
-        // Balance Sync
         db.ref('users/' + userPhone).on('value', snap => {
             const d = snap.val() || {};
             currentBalance = (parseFloat(d.balance)||0) + (parseFloat(d.winning_balance)||0) + (parseFloat(d.bonus_balance)||0);
             document.getElementById('balance').innerText = currentBalance.toFixed(2);
         });
 
-        // Rules Sync
         db.ref('settings/game_rules').on('value', snap => { document.getElementById('rulesText').innerText = snap.val() || "Rules loading..."; });
-
         db.ref('.info/serverTimeOffset').on('value', snap => { serverTimeOffset = snap.val() || 0; });
 
         function getISTMinutes() {
@@ -121,7 +125,6 @@
             return ist >= 1440 ? ist - 1440 : ist;
         }
 
-        // Safe Time Parser
         function parseTime(t) {
             if (!t || typeof t !== 'string') return 0;
             let p = t.match(/(\d+):(\d+)\s*(AM|PM)/i); 
@@ -138,14 +141,12 @@
             
             Object.keys(markets).forEach(k => {
                 let m = markets[k];
-                // Safety check for missing time
-                let openT = m.open || "12:00 AM";
-                let closeT = m.close || "11:59 PM";
-                
+                let openT = m.open || "12:00 AM", closeT = m.close || "11:59 PM";
                 let ot = parseTime(openT), ct = parseTime(closeT);
+                
                 let isFC = cm >= ct, isOC = cm >= ot;
                 let status = isFC ? 'closed' : (isOC ? 'half-closed' : 'running');
-                let btnT = isFC ? 'MARKET CLOSED' : (isOC ? 'CLOSE ONLY' : 'PLAY NOW');
+                let btnT = isFC ? 'MARKET CLOSED' : (isOC ? 'PLAY CLOSE ONLY' : 'PLAY NOW');
                 
                 container.innerHTML += `
                     <div class="m-card ${status}">
@@ -159,37 +160,68 @@
             });
         }
 
-        // Fetch Live Markets data securely
         db.ref('LiveMarkets').on('value', snap => { 
-            if(snap.exists()) {
-                renderMarkets(snap.val()); 
-            } else {
-                db.ref('LiveMarkets').set(defaultVIPMarkets);
-                renderMarkets(defaultVIPMarkets);
-            }
+            if(snap.exists()) renderMarkets(snap.val()); 
+            else { db.ref('LiveMarkets').set(defaultVIPMarkets); renderMarkets(defaultVIPMarkets); }
         });
 
+        // --- THE STRICT RULE LOGIC ---
         function openBetModal(id, name, ot, ct) {
             activeMarket = { id, name, ot: parseTime(ot), ct: parseTime(ct) };
             document.getElementById('modalMarketName').innerText = name;
             document.getElementById('modalOverlay').style.display = 'block';
             document.getElementById('betModal').style.display = 'block';
+            
+            let cm = getISTMinutes();
+            let isOpenClosed = cm >= activeMarket.ot; // Agar Open ka time nikal gaya
+            
+            // Jodi aur Sangam ko turant Disable (Lock) karo
+            document.getElementById('btnJodi').disabled = isOpenClosed;
+            document.getElementById('btnSangam').disabled = isOpenClosed;
+            
+            // 'Open' session radio button ko Disable karo
+            let rO = document.getElementById('radioOpen');
+            let rC = document.getElementById('radioClose');
+            let lblO = document.getElementById('lblOpen');
+            
+            if(isOpenClosed) { 
+                rO.disabled = true; 
+                rC.checked = true; // Automatically shift to Close
+                lblO.classList.add('disabled');
+            } else { 
+                rO.disabled = false; 
+                rO.checked = true; 
+                lblO.classList.remove('disabled');
+            }
+            
+            updateUI();
             backToGames();
         }
 
         function selectGame(gt) {
+            // Anti-Cheat: Agar html edit karke button daba bhi diya, toh yahan alert aayega
+            let cm = getISTMinutes();
+            if((gt === 'Jodi Digit' || gt === 'Half Sangam') && cm >= activeMarket.ot) {
+                return alert("Open time out! Aap ab Jodi ya Sangam nahi khel sakte.");
+            }
+            
             selectedGameType = gt;
             document.getElementById('gameGrid').style.display = 'none';
             document.getElementById('inputSection').style.display = 'block';
             document.getElementById('selectedGameLabel').innerText = "Game: " + gt;
+            
+            // Hide Open/Close buttons if playing Jodi/Sangam
             document.getElementById('sessionBox').style.display = (gt.includes('Jodi') || gt.includes('Sangam')) ? 'none' : 'flex';
             updateUI();
         }
 
         function updateUI() {
             let isO = document.getElementById('radioOpen').checked;
-            document.getElementById('lblOpen').className = "session-lbl " + (isO ? "active" : "");
-            document.getElementById('lblClose').className = "session-lbl " + (!isO ? "active" : "");
+            let lblO = document.getElementById('lblOpen');
+            let lblC = document.getElementById('lblClose');
+            
+            if (isO) { lblO.classList.add('active'); lblC.classList.remove('active'); } 
+            else { lblC.classList.add('active'); lblO.classList.remove('active'); }
         }
 
         function backToGames() { document.getElementById('gameGrid').style.display='grid'; document.getElementById('inputSection').style.display='none'; }
@@ -204,18 +236,19 @@
             if(!num || isNaN(amt) || amt < 10) return alert("Valid Number & Amount (Min ₹10) bhariye!");
             if(amt > currentBalance) return alert("Low Balance!");
 
-            // Strict Validation
             let numStr = num.toString();
             if (selectedGameType === 'Single Ank' && numStr.length !== 1) return alert("Single Ank 1 digit hona chahiye!");
             if (selectedGameType === 'Jodi Digit' && numStr.length !== 2) return alert("Jodi 2 digit honi chahiye!");
             if (selectedGameType.includes('Panna') && numStr.length !== 3) return alert("Panna 3 digit hona chahiye!");
+            if (selectedGameType === 'Half Sangam' && numStr.length !== 4) return alert("Half Sangam 4 digit hona chahiye!");
 
             let cm = getISTMinutes();
             let isJS = (selectedGameType.includes('Jodi') || selectedGameType.includes('Sangam'));
             let sess = isJS ? "FULL" : (document.getElementById('radioOpen').checked ? "OPEN" : "CLOSE");
             
-            // Anti-Cheat Time Check
-            if ((sess === "OPEN" || isJS) && cm >= activeMarket.ot) return alert("⏳ Open market band ho gaya hai!");
+            // Final Strict Anti-Cheat
+            if (sess === "OPEN" && cm >= activeMarket.ot) return alert("⏳ Open market band ho gaya hai!");
+            if (isJS && cm >= activeMarket.ot) return alert("⏳ Open time nikal chuka hai, Jodi/Sangam invalid!");
             if (sess === "CLOSE" && cm >= activeMarket.ct) return alert("⏳ Market poora band ho gaya hai!");
 
             document.getElementById('confirmBtn').disabled = true;
