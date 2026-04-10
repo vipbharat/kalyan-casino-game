@@ -73,9 +73,16 @@
         db.ref('settings/game_rules').on('value', snap => { if(snap.exists()) document.getElementById('rulesInput').value = snap.val(); });
         function saveRules() { db.ref('settings/game_rules').set(document.getElementById('rulesInput').value).then(() => alert("Rules Updated on App!")); }
 
+        // 🔥 YAHAN IDs PLAYER APP SE MATCH KAR DI GAYI HAIN 🔥
         const defaultVIPMarkets = {
-            "m1": { name: "TIME BAZAR" }, "m2": { name: "MADHUR DAY" }, "m3": { name: "MILAN DAY" }, "m4": { name: "KALYAN" },
-            "m5": { name: "TIME BAZAR NIGHT" }, "m6": { name: "MADHUR NIGHT" }, "m7": { name: "MILAN NIGHT" }, "m8": { name: "KALYAN NIGHT" }
+            "time_day": { name: "TIME BAZAR" }, 
+            "madhur_day": { name: "MADHUR DAY" }, 
+            "milan_day": { name: "MILAN DAY" }, 
+            "kalyan_day": { name: "KALYAN" },
+            "time_night": { name: "TIME BAZAR NIGHT" }, 
+            "madhur_night": { name: "MADHUR NIGHT" }, 
+            "milan_night": { name: "MILAN NIGHT" }, 
+            "kalyan_night": { name: "KALYAN NIGHT" }
         };
 
         function init() {
@@ -84,7 +91,7 @@
                 tbody.innerHTML += `<tr>
                     <td>${defaultVIPMarkets[id].name}</td>
                     <td id="res_${id}">***-**-***</td>
-                    <td><input id="op_${id}" class="ank-box"> - <input id="jo_${id}" class="ank-box"> - <input id="cl_${id}" class="ank-box"></td>
+                    <td><input id="op_${id}" class="ank-box" placeholder="123"> - <input id="jo_${id}" class="ank-box" placeholder="9"> - <input id="cl_${id}" class="ank-box" placeholder="456"></td>
                     <td><button class="btn-publish" onclick="publish('${id}', '${defaultVIPMarkets[id].name}')">PAY</button></td>
                 </tr>`;
             });
@@ -95,7 +102,7 @@
             snap.forEach(c => { if(document.getElementById('res_'+c.key) && c.val().result) document.getElementById('res_'+c.key).innerText = c.val().result; });
         });
 
-        // 🔥 SMART PUBLISH ENGINE
+        // 🔥 SMART PUBLISH ENGINE (Open/Close Logic)
         function publish(id, name) {
             let op = document.getElementById('op_'+id).value.trim();
             let jo = document.getElementById('jo_'+id).value.trim();
@@ -114,7 +121,7 @@
             });
         }
 
-        // 🔥 SMART PAYOUT ENGINE (Open/Close separate handling)
+        // 🔥 SMART PAYOUT ENGINE
         function payout(mName, op, jo, cl) {
             let oA = jo.charAt(0) || ""; 
             let cA = jo.charAt(1) || ""; 
@@ -128,7 +135,7 @@
                     
                     let win = false, rate = 0;
                     
-                    // --- OPEN PAYOUTS CHECK ---
+                    // OPEN CHECKS
                     if (oA !== "") {
                         if(b.gameType === "Single Ank" && b.session === "OPEN" && b.bidNumber === oA) {win=true; rate=9.5;}
                         if(b.gameType === "Single Panna" && b.session === "OPEN" && b.bidNumber === op) {win=true; rate=150;}
@@ -136,13 +143,12 @@
                         if(b.gameType === "Triple Panna" && b.session === "OPEN" && b.bidNumber === op) {win=true; rate=800;}
                     }
                     
-                    // --- CLOSE & JODI PAYOUTS CHECK ---
+                    // CLOSE & JODI CHECKS
                     if (cA !== "") {
                         if(b.gameType === "Single Ank" && b.session === "CLOSE" && b.bidNumber === cA) {win=true; rate=9.5;}
                         if(b.gameType === "Single Panna" && b.session === "CLOSE" && b.bidNumber === cl) {win=true; rate=150;}
                         if(b.gameType === "Double Panna" && b.session === "CLOSE" && b.bidNumber === cl) {win=true; rate=300;}
                         if(b.gameType === "Triple Panna" && b.session === "CLOSE" && b.bidNumber === cl) {win=true; rate=800;}
-                        
                         if(b.gameType === "Jodi Digit" && b.bidNumber === jo) {win=true; rate=95;}
                         if(b.gameType === "Half Sangam") { 
                             let p1 = `${op}-${cA}`, p2 = `${oA}-${cl}`; 
@@ -150,8 +156,7 @@
                         }
                     }
 
-                    // --- LOSS LOGIC ---
-                    // Loss tabhi mana jayega jab us specific session ka result aa gaya ho, warna 'pending' hi rahega.
+                    // LOSS LOGIC
                     let isLoss = false;
                     if (!win) {
                         if (oA !== "" && b.session === "OPEN") isLoss = true;
@@ -159,7 +164,7 @@
                         if (cA !== "" && (b.gameType === "Jodi Digit" || b.gameType === "Half Sangam")) isLoss = true;
                     }
 
-                    // --- APPLY DATABASE UPDATES ---
+                    // UPDATE DATABASE
                     if(win) {
                         payCount++;
                         let amt = b.betAmount * rate;
@@ -169,7 +174,6 @@
                         db.ref('AdminPanel/AllActiveBets/'+c.key).update({status: "LOSS"});
                     }
                 });
-                
                 alert(`Smart Payout Finished! Total Winners this round: ${payCount}`);
             });
         }
