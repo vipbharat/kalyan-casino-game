@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crash Game - K-VIP Pro</title>
+    <title>Kalyan VIP - Crash Game</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -14,114 +14,196 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         body { background-color: var(--bg-dark); color: #fff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Header */
+        /* Header & Rules Button */
         .header { background: #1a1a24; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--neon-green); box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2); z-index: 10; }
-        .back-btn { color: #fff; font-size: 20px; text-decoration: none; }
-        .wallet { font-weight: 900; font-size: 18px; color: var(--neon-green); background: rgba(0, 255, 136, 0.1); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--neon-green); }
+        .rules-btn { background: rgba(255,255,255,0.1); border: 1px solid #aaa; color: #fff; padding: 5px 12px; border-radius: 15px; font-size: 12px; cursor: pointer; font-weight: bold; margin-right: 15px;}
+        .wallet { font-weight: 900; font-size: 16px; color: var(--neon-green); background: rgba(0, 255, 136, 0.1); padding: 5px 15px; border-radius: 20px; border: 1px solid var(--neon-green); }
 
-        /* History Bar */
-        .history-bar { display: flex; gap: 10px; padding: 10px; overflow-x: auto; background: #111; border-bottom: 1px solid #333; white-space: nowrap; scrollbar-width: none; }
-        .history-bar::-webkit-scrollbar { display: none; }
-        .hist-pill { padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: bold; background: #222; }
-        .hist-green { color: var(--neon-green); border: 1px solid var(--neon-green); }
-        .hist-red { color: var(--red); border: 1px solid var(--red); }
-        .hist-gold { color: var(--gold); border: 1px solid var(--gold); background: rgba(255, 215, 0, 0.1); }
-
-        /* Main Game Area */
+        /* Game Area */
         .game-area { flex: 1; position: relative; background: radial-gradient(circle at center, #1e222d, #0b0e14); display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; border-bottom: 2px solid #333; }
-        .multiplier-text { font-size: 75px; font-weight: 900; z-index: 5; transition: color 0.2s; text-shadow: 0 5px 15px rgba(0,0,0,0.8); font-variant-numeric: tabular-nums; }
-        .status-text { position: absolute; top: 20px; font-size: 16px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(255,255,255,0.5); background: rgba(0,0,0,0.4); padding: 5px 15px; border-radius: 20px;}
+        .multiplier-text { font-size: 75px; font-weight: 900; z-index: 5; text-shadow: 0 5px 15px rgba(0,0,0,0.8); font-variant-numeric: tabular-nums; }
+        .status-text { position: absolute; top: 20px; font-size: 14px; font-weight: 900; color: #fff; background: rgba(0,0,0,0.6); padding: 8px 20px; border-radius: 20px; border: 1px solid #444; z-index: 10; letter-spacing: 1px;}
         #crashCanvas { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-        /* Controls Area */
+        /* Controls */
         .controls { padding: 15px 20px 25px; background: #1a1a24; border-top: 1px solid #333; z-index: 10; }
-        .bet-inputs { display: flex; gap: 10px; margin-bottom: 15px; }
-        .input-box { flex: 1; background: #000; border: 1px solid #444; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; }
-        .input-box label { font-size: 10px; color: #aaa; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
-        .input-box input { background: transparent; border: none; color: #fff; font-size: 20px; font-weight: bold; outline: none; width: 100%; }
+        .input-box { background: #000; border: 1px solid #444; border-radius: 8px; padding: 10px; margin-bottom: 15px; }
+        .input-box input { background: transparent; border: none; color: #fff; font-size: 20px; font-weight: bold; outline: none; width: 100%; text-align: center;}
         
-        .btn-action { width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 22px; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
-        .btn-action:active { transform: scale(0.97); }
-        .btn-bet { background: linear-gradient(135deg, #00b09b, #96c93d); color: #000; box-shadow: 0 4px 15px rgba(150, 201, 61, 0.4); border: 2px solid #fff; }
-        .btn-cashout { background: linear-gradient(135deg, #f5af19, #f12711); color: #fff; border: 2px solid #ffd700; animation: pulseCashout 1s infinite alternate; }
-        .btn-disabled { background: #2a2a35; color: #555; cursor: not-allowed; border: 2px solid #444; }
-        .btn-subtext { font-size: 14px; font-weight: bold; opacity: 0.9; }
+        .btn-action { width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 20px; font-weight: 900; cursor: pointer; text-transform: uppercase; transition: 0.2s; white-space: pre-line; line-height: 1.3;}
+        .btn-bet { background: linear-gradient(135deg, #00b09b, #96c93d); color: #000; border: 2px solid #fff; }
+        .btn-cashout { background: linear-gradient(135deg, #f5af19, #f12711); color: #fff; border: 2px solid #ffd700; }
+        .btn-disabled { background: #2a2a35; color: #777; cursor: not-allowed; border: 2px solid #444; }
 
-        @keyframes pulseCashout { 0% { transform: scale(1); } 100% { transform: scale(1.02); } }
+        /* Win Message */
+        #winMsg { position: absolute; top: 30%; background: linear-gradient(90deg, #00b09b, #96c93d); border: 2px solid #fff; color: #000; padding: 15px 30px; border-radius: 30px; font-weight: 900; font-size: 22px; display: none; z-index: 20; text-align: center; box-shadow: 0 10px 30px rgba(0,255,136,0.5);}
 
-        #winMsg { position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(90deg, #00b09b, #96c93d); border: 2px solid #fff; color: #000; padding: 10px 25px; border-radius: 30px; font-weight: 900; font-size: 22px; display: none; z-index: 20; box-shadow: 0 10px 30px rgba(0,255,136,0.5); }
+        /* Rules Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #1a1a24; border: 2px solid var(--neon-green); border-radius: 15px; width: 85%; max-width: 400px; padding: 20px; position: relative; }
+        .modal-header { font-size: 20px; font-weight: 900; color: var(--neon-green); margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; text-align: center; }
+        .modal-body { font-size: 14px; color: #ddd; line-height: 1.6; max-height: 60vh; overflow-y: auto; white-space: pre-wrap; }
+        .close-btn { position: absolute; top: 15px; right: 20px; color: #ff3333; font-size: 28px; font-weight: bold; cursor: pointer; }
+
+        /* Hidden Admin Toggle */
+        #adminToggle { position: fixed; bottom: 5px; right: 5px; opacity: 0.1; font-size: 10px; background: none; border: none; color: white; cursor: pointer; z-index: 9999; }
     </style>
 </head>
 <body>
 
     <audio id="soundFly" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" loop></audio>
-    <audio id="soundBlast" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3"></audio>
 
     <div class="header">
-        <a href="Dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
-        <div style="font-weight: 900; font-size: 18px; color: #fff;">CRASH <span style="color:var(--neon-green)">X</span></div>
+        <div style="display: flex; align-items: center;">
+            <button class="rules-btn" onclick="openRules()"><i class="fa-solid fa-circle-info"></i> RULES</button>
+            <div style="font-weight: 900; font-size: 18px; color: #fff;">CRASH <span style="color:var(--neon-green)">X</span></div>
+        </div>
         <div class="wallet">₹<span id="balance">0.00</span></div>
     </div>
 
-    <div class="history-bar" id="historyBar"></div>
+    <div class="modal-overlay" id="rulesModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeRules()">&times;</span>
+            <div class="modal-header">GAME RULES</div>
+            <div class="modal-body" id="rulesText">Loading rules from server...</div>
+        </div>
+    </div>
 
     <div class="game-area">
         <canvas id="crashCanvas"></canvas>
-        <div class="status-text" id="statusText">Loading...</div>
+        <div class="status-text" id="statusText">CONNECTING...</div>
         <div class="multiplier-text" id="multiplierDisplay">1.00x</div>
         <div id="winMsg">YOU WIN!<br>₹0.00</div>
     </div>
 
     <div class="controls">
-        <div class="bet-inputs">
-            <div class="input-box">
-                <label>Amount (₹)</label>
-                <input type="number" id="betAmount" value="100" min="10">
-            </div>
-            <div class="input-box" style="opacity: 0.5;">
-                <label>Auto Cashout</label>
-                <input type="text" value="Disabled" disabled>
-            </div>
+        <div class="input-box">
+            <input type="number" id="betAmount" value="100" min="10" placeholder="Enter Bet Amount">
         </div>
-        <button class="btn-action btn-bet" id="mainBtn" onclick="handleAction()">
-            <span>PLACE BET</span>
+        <button class="btn-action btn-disabled" id="mainBtn" onclick="handleAction()">
+            <span>LOADING...</span>
         </button>
     </div>
 
+    <button id="adminToggle" onclick="toggleAdmin()">ADMIN MODE</button>
+
     <script>
+        // --- 1. FIREBASE SETUP ---
         const firebaseConfig = {
             apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
             databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
             projectId: "kalyan-casino"
         };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const phone = localStorage.getItem('userPhone') || "Guest";
+        const phone = localStorage.getItem('userPhone') || "User_" + Math.floor(Math.random()*9999);
 
+        // --- 2. FETCH RULES ---
+        db.ref('settings/game_rules').on('value', (snapshot) => {
+            let rulesData = snapshot.val();
+            if (!rulesData) rulesData = "1. Place your bet before the round starts.\n2. Cash out before the rocket crashes to win.\n3. Minimum bet is ₹10.";
+            document.getElementById('rulesText').innerText = rulesData;
+        });
+        function openRules() { document.getElementById('rulesModal').style.display = 'flex'; }
+        function closeRules() { document.getElementById('rulesModal').style.display = 'none'; }
+
+        // --- 3. FETCH WALLET BALANCE ---
         let currentBalance = 0;
         db.ref('users/' + phone).on('value', (snapshot) => {
-            const data = snapshot.val() || {};
-            currentBalance = (parseFloat(data.balance||0) + parseFloat(data.winning_balance||0) + parseFloat(data.bonus_balance||0));
+            const data = snapshot.val() || { balance: 1000 }; // Default balance for testing
+            currentBalance = parseFloat(data.balance || 0);
             document.getElementById('balance').innerText = currentBalance.toFixed(2);
         });
 
+        // --- 4. GAME VARIABLES ---
         let gameState = "WAITING"; 
         let currentMultiplier = 1.00;
-        let crashPoint = 1.00;
         let isBetPlaced = false;
         let isCashedOut = false;
         let myBetAmount = 0;
-        
+        let flightStartTime = 0;
+        let waitEndTime = 0;
+        let sFly = document.getElementById('soundFly');
+
         const btn = document.getElementById('mainBtn');
         const display = document.getElementById('multiplierDisplay');
         const statusTxt = document.getElementById('statusText');
         const winMsg = document.getElementById('winMsg');
-        const sFly = document.getElementById('soundFly');
-        const sBlast = document.getElementById('soundBlast');
 
+        function updateButton(text, cls) {
+            btn.innerText = text;
+            btn.className = "btn-action " + cls;
+        }
+        function playSoundSafely(audio) { let p = audio.play(); if (p !== undefined) p.catch(e=>{}); }
+
+        // --- 5. FIREBASE GAME LOOP LISTENER ---
+        db.ref('game_loop').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+
+            gameState = data.state;
+
+            if (gameState === "WAITING") {
+                waitEndTime = data.waitEndTime;
+                currentMultiplier = 1.00;
+                winMsg.style.display = "none";
+                sFly.pause(); sFly.currentTime = 0;
+                isCashedOut = false;
+                
+                if (!isBetPlaced) updateButton("PLACE BET", "btn-bet");
+                else updateButton("WAITING FOR ROCKET", "btn-disabled");
+
+            } else if (gameState === "FLYING") {
+                flightStartTime = data.startTime;
+                playSoundSafely(sFly);
+                
+                if (isBetPlaced && !isCashedOut) updateButton("CASH OUT", "btn-cashout");
+                else updateButton("ROUND STARTED", "btn-disabled");
+
+            } else if (gameState === "CRASHED") {
+                currentMultiplier = data.crashMultiplier;
+                sFly.pause();
+                
+                if (isBetPlaced && !isCashedOut) {
+                    updateButton("YOU LOST", "btn-disabled");
+                    isBetPlaced = false; 
+                } else if (!isBetPlaced) {
+                    updateButton("CRASHED", "btn-disabled");
+                }
+            }
+        });
+
+        // --- 6. PLAYER ACTIONS (PROFIT LOGIC) ---
+        function handleAction() {
+            let amt = parseFloat(document.getElementById('betAmount').value);
+
+            if (gameState === "WAITING" && !isBetPlaced) {
+                if (isNaN(amt) || amt < 10) return alert("Minimum bet is ₹10");
+                if (amt > currentBalance) return alert("Low Balance!");
+                
+                myBetAmount = amt;
+                db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(-myBetAmount) }).then(() => {
+                    isBetPlaced = true;
+                    updateButton("WAITING FOR ROCKET", "btn-disabled");
+                });
+
+            } else if (gameState === "FLYING" && isBetPlaced && !isCashedOut) {
+                isCashedOut = true;
+                let winAmount = (myBetAmount * currentMultiplier).toFixed(2);
+                
+                db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(parseFloat(winAmount)) }).then(() => {
+                    updateButton("CASHED OUT ✅", "btn-disabled");
+                    winMsg.innerHTML = `YOU WIN!<br>₹${winAmount}`;
+                    winMsg.style.display = 'block';
+                    isBetPlaced = false; 
+                });
+            }
+        }
+
+        // --- 7. REAL AVIATOR GRAPH ENGINE ---
         const canvas = document.getElementById('crashCanvas');
         const ctx = canvas.getContext('2d');
-        let canvasW, canvasH, particles = [];
+        let canvasW, canvasH, particles = [], bgOffset = 0;
 
         function resizeCanvas() {
             canvasW = canvas.parentElement.clientWidth;
@@ -131,109 +213,142 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        function drawGraph() {
+        function renderFrame() {
             ctx.clearRect(0, 0, canvasW, canvasH);
-            if(gameState === "WAITING") return;
-            let progress = Math.min((currentMultiplier - 1) / 4, 1); 
-            let startX = 20, startY = canvasH - 20;
-            let x = progress * canvasW * 0.8 + 40, y = canvasH - (progress * canvasH * 0.7) - 40;
+            
+            if (gameState === "WAITING") {
+                let timeLeft = Math.max(0, (waitEndTime - Date.now()) / 1000);
+                statusTxt.innerText = `NEXT ROUND IN: ${timeLeft.toFixed(1)}s`;
+                display.innerText = "1.00x";
+                display.style.color = "#fff";
+                
+            } else if (gameState === "FLYING") {
+                statusTxt.innerText = "ROCKET FLYING!";
+                let elapsedMs = Date.now() - flightStartTime;
+                currentMultiplier = Math.pow(Math.E, 0.00008 * elapsedMs);
+                display.innerText = currentMultiplier.toFixed(2) + "x";
+                display.style.color = "#fff";
+                
+                if(isBetPlaced && !isCashedOut) {
+                    let liveWin = (myBetAmount * currentMultiplier).toFixed(2);
+                    updateButton(`CASH OUT\n₹${liveWin}`, "btn-cashout");
+                }
+                drawGraphEngine(elapsedMs);
+                
+            } else if (gameState === "CRASHED") {
+                statusTxt.innerText = "FLEW AWAY!";
+                display.innerText = currentMultiplier.toFixed(2) + "x";
+                display.style.color = "#ff3333";
+                
+                // Freeze graph at crash time
+                let finalElapsed = Math.log(currentMultiplier) / 0.00008;
+                drawGraphEngine(finalElapsed);
+            }
+            requestAnimationFrame(renderFrame);
+        }
+        requestAnimationFrame(renderFrame);
 
-            ctx.beginPath();
-            ctx.moveTo(startX, startY);
-            ctx.quadraticCurveTo(x/2, startY, x, y);
-            ctx.lineWidth = 6; ctx.strokeStyle = gameState === "CRASHED" ? "#ff3333" : "#e91e63";
-            ctx.stroke();
+        function drawGraphEngine(elapsedMs) {
+            // Background Grid
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+            ctx.lineWidth = 1;
+            bgOffset += (gameState === "FLYING" ? 1.5 : 0);
+            if (bgOffset > 50) bgOffset = 0;
+            for(let i = 40; i < canvasW; i += 50) {
+                ctx.beginPath(); ctx.moveTo(i - bgOffset, 0); ctx.lineTo(i - bgOffset, canvasH - 30); ctx.stroke();
+            }
+            for(let i = canvasH - 30; i > 0; i -= 50) {
+                ctx.beginPath(); ctx.moveTo(40, i); ctx.lineTo(canvasW, i); ctx.stroke();
+            }
 
+            // Dynamic Axis Text
+            ctx.fillStyle = "rgba(255, 255, 255, 0.5)"; ctx.font = "bold 10px Arial";
+            let maxSec = Math.max(5, elapsedMs / 1000);
+            let maxMult = Math.max(2.0, currentMultiplier); 
+            
+            ctx.textAlign = "right"; // Y-Axis
+            for(let i=0; i<=4; i++) {
+                let v = 1 + ((maxMult-1)*(i/4)); 
+                let yp = canvasH - 30 - (i/4)*(canvasH*0.7);
+                if(i===0) yp = canvasH - 35;
+                ctx.fillText(v.toFixed(1)+"x", 35, yp+4);
+            }
+            ctx.textAlign = "center"; // X-Axis
+            for(let i=1; i<=5; i++) {
+                let v = (maxSec*(i/5)); 
+                let xp = 40 + (i/5)*(canvasW*0.8);
+                ctx.fillText(v.toFixed(1)+"s", xp, canvasH - 10);
+            }
+
+            // Calculate Curve Points
+            let xMap = (elapsedMs / 1000) / maxSec; 
+            let yMap = (currentMultiplier - 1) / (maxMult - 1); 
+            if(maxMult === 1) yMap = 0;
+
+            let startX = 40, startY = canvasH - 30;
+            let x = startX + (xMap * canvasW * 0.8); 
+            let y = startY - (yMap * canvasH * 0.7);
+
+            if (gameState === "FLYING") { x += (Math.random()-0.5)*3; y += (Math.random()-0.5)*3; }
+
+            // Draw Red Curve
+            ctx.beginPath(); ctx.moveTo(startX, startY); ctx.quadraticCurveTo(x * 0.5, startY, x, y);
+            ctx.lineWidth = 5; 
+            let lineGrad = ctx.createLinearGradient(0, 0, x, y);
+            lineGrad.addColorStop(0, "rgba(233, 30, 99, 0.2)");
+            lineGrad.addColorStop(1, gameState === "CRASHED" ? "#ff3333" : "#e91e63");
+            ctx.strokeStyle = lineGrad; ctx.stroke();
+
+            // Fill Under Curve
+            ctx.lineTo(x, startY); ctx.lineTo(startX, startY);
+            let fillGrad = ctx.createLinearGradient(0, y, 0, startY);
+            fillGrad.addColorStop(0, gameState === "CRASHED" ? "rgba(255, 51, 51, 0.3)" : "rgba(233, 30, 99, 0.4)");
+            fillGrad.addColorStop(1, "rgba(233, 30, 99, 0.0)");
+            ctx.fillStyle = fillGrad; ctx.fill();
+
+            // Particles
             if (gameState === "FLYING") particles.push({ px: x - 15, py: y + 15, life: 1.0 });
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i]; ctx.globalAlpha = p.life;
-                ctx.beginPath(); ctx.arc(p.px, p.py, 6 * p.life, 0, Math.PI * 2);
+                ctx.beginPath(); ctx.arc(p.px, p.py, 4 * p.life, 0, Math.PI * 2);
                 ctx.fillStyle = gameState === "CRASHED" ? "#555" : "#ff9900"; ctx.fill();
-                p.life -= 0.04; p.px -= 3; p.py += 3;
+                p.life -= 0.05; p.px -= 3; p.py += 3;
                 if (p.life <= 0) particles.splice(i, 1);
             }
             ctx.globalAlpha = 1.0;
+
+            // Rocket Emoji
             ctx.save(); ctx.translate(x, y);
-            if (gameState === "CRASHED") { ctx.font = "50px Arial"; ctx.fillText("💥", -25, 20); }
-            else { ctx.font = "45px Arial"; ctx.fillText("🚀", -20, 15); }
+            if (gameState === "CRASHED") { ctx.font = "45px Arial"; ctx.fillText("💥", -20, 15); } 
+            else { ctx.font = "35px Arial"; ctx.rotate(-Math.PI / 6); ctx.fillText("🚀", -15, 10); }
             ctx.restore();
         }
 
-        function startGameLoop() {
-            gameState = "WAITING"; currentMultiplier = 1.00;
-            crashPoint = (Math.random() < 0.03) ? 1.00 : (100 / (100 - Math.random() * 98));
-            isCashedOut = false; particles = [];
-            display.innerText = "1.00x"; display.style.color = "#fff";
-            sFly.pause(); sFly.currentTime = 0;
-
-            if (isBetPlaced) { btn.innerHTML = `<span>WAITING...</span>`; btn.className = "btn-action btn-disabled"; }
-            else { btn.innerHTML = `<span>PLACE BET</span>`; btn.className = "btn-action btn-bet"; }
-
-            let waitTime = 500;
-            let waitInterval = setInterval(() => {
-                waitTime -= 10; statusTxt.innerText = `STARTING IN ${(waitTime/100).toFixed(1)}s`;
-                if (waitTime <= 0) { clearInterval(waitInterval); startFlying(); }
-            }, 100);
+        // --- 8. ADMIN AUTO-PLAY ENGINE ---
+        let adminInterval;
+        function toggleAdmin() {
+            if(adminInterval) { alert("Admin Engine is already running!"); return; }
+            alert("ADMIN MODE ON: Game logic is now running from this device.");
+            runGameCycle();
         }
 
-        function startFlying() {
-            gameState = "FLYING"; statusTxt.innerText = "ROCKET FLYING!";
-            startTime = performance.now();
-            sFly.play(); // 🚀 Engine Sound On
-            if (isBetPlaced) btn.className = "btn-action btn-cashout";
-            else { btn.innerHTML = `<span>ROUND STARTED</span>`; btn.className = "btn-action btn-disabled"; }
-            requestAnimationFrame(updateMultiplier);
-        }
+        function runGameCycle() {
+            let waitTime = 15000; 
+            db.ref('game_loop').set({ state: 'WAITING', waitEndTime: Date.now() + waitTime });
 
-        function updateMultiplier(time) {
-            if (gameState !== "FLYING") return;
-            let elapsed = time - startTime;
-            currentMultiplier = Math.pow(Math.E, 0.00008 * elapsed);
-            if (currentMultiplier >= crashPoint) crashRocket();
-            else {
-                display.innerText = currentMultiplier.toFixed(2) + "x";
-                drawGraph();
-                if(isBetPlaced && !isCashedOut) {
-                    let liveWin = (myBetAmount * currentMultiplier).toFixed(2);
-                    btn.innerHTML = `<span>CASH OUT</span><span class="btn-subtext">₹${liveWin}</span>`;
-                }
-                requestAnimationFrame(updateMultiplier);
-            }
-        }
+            adminInterval = setTimeout(() => {
+                let crashVal = (Math.random() < 0.05) ? 1.00 : (100 / (100 - Math.random() * 98)); 
+                let flightDurationMs = Math.log(crashVal) / 0.00008; 
+                
+                db.ref('game_loop').set({ state: 'FLYING', startTime: Date.now() });
 
-        function crashRocket() {
-            gameState = "CRASHED"; statusTxt.innerText = "FLEW AWAY!";
-            sFly.pause(); sBlast.play(); // 💥 Explosion Sound
-            drawGraph();
-            if (isBetPlaced && !isCashedOut) { btn.innerHTML = `<span>YOU LOST</span>`; btn.className = "btn-action btn-disabled"; isBetPlaced = false; }
-            addToHistory(currentMultiplier);
-            setTimeout(() => { winMsg.style.display = 'none'; startGameLoop(); }, 3000);
-        }
+                setTimeout(() => {
+                    db.ref('game_loop').set({ state: 'CRASHED', crashMultiplier: crashVal });
+                    setTimeout(runGameCycle, 4000); // Wait 4s before next round
+                }, flightDurationMs);
 
-        function handleAction() {
-            if (gameState === "WAITING" && !isBetPlaced) {
-                let amtInput = document.getElementById('betAmount').value;
-                myBetAmount = parseFloat(amtInput);
-                if (isNaN(myBetAmount) || myBetAmount < 10) return alert("Min ₹10");
-                if (myBetAmount > currentBalance) return alert("Low Balance!");
-                db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(-myBetAmount) }).then(() => {
-                    isBetPlaced = true; btn.className = "btn-action btn-disabled";
-                });
-            } else if (gameState === "FLYING" && isBetPlaced && !isCashedOut) {
-                isCashedOut = true; let winAmount = (myBetAmount * currentMultiplier).toFixed(2);
-                db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(parseFloat(winAmount)) }).then(() => {
-                    isBetPlaced = false; btn.innerHTML = `<span>CASHED OUT ✅</span>`;
-                    winMsg.innerHTML = `YOU WIN!<br>₹${winAmount}`; winMsg.style.display = 'block';
-                });
-            }
+            }, waitTime);
         }
-
-        function addToHistory(val) {
-            let hist = document.getElementById('historyBar');
-            let el = `<div class="hist-pill ${val<2?'hist-red':(val>10?'hist-gold':'hist-green')}">${val.toFixed(2)}x</div>`;
-            hist.insertAdjacentHTML('afterbegin', el);
-        }
-        setTimeout(startGameLoop, 500);
     </script>
 </body>
 </html>
