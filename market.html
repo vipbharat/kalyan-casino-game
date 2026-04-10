@@ -6,366 +6,196 @@
     <title>K-VIP Live Markets</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; user-select: none; }
-        body { background-color: #0d0d0d; color: #fff; padding-bottom: 30px; }
-        
-        /* Header & Rules Button Updated */
-        .header { background: linear-gradient(90deg, #1a2a6c, #b21f1f, #fdbb2d); padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); position: sticky; top: 0; z-index: 50; display: flex; justify-content: space-between; align-items: center;}
-        .header h1 { font-size: 20px; font-weight: 900; letter-spacing: 1px; margin: 0; text-align: center; flex: 1;}
-        .rules-btn { background: rgba(0,0,0,0.4); border: 1px solid #fff; color: #fff; padding: 6px 12px; border-radius: 15px; font-size: 12px; cursor: pointer; font-weight: bold; }
-        
-        .wallet-bar { background: #1e1e1e; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; }
-        .bal-amt { color: #2ecc71; font-size: 20px; font-weight: 900; }
-        
-        .market-list { padding: 10px; min-height: 200px; }
-        .m-card { background: #222; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-left: 5px solid #2ecc71; box-shadow: 0 4px 6px rgba(0,0,0,0.4); }
-        .m-card.closed { border-left-color: #e74c3c; opacity: 0.8; }
-        .m-card.half-closed { border-left-color: #f39c12; }
-        .m-title { font-size: 18px; font-weight: 900; color: #f1c40f; text-transform: uppercase; }
-        .m-res { font-size: 28px; font-weight: bold; margin: 12px 0; font-family: 'Courier New', monospace; text-align: center; letter-spacing: 4px; background: #111; padding: 10px; border-radius: 5px; color: #00ffff; border: 1px solid #333; }
-        
-        .btn-bet { width: 100%; background: linear-gradient(180deg, #2ecc71, #27ae60); color: #000; border: none; padding: 14px; border-radius: 8px; font-weight: 900; font-size: 16px; cursor: pointer; }
-        .btn-bet:disabled { background: #444; color: #888; cursor: not-allowed; }
-        .btn-bet.btn-close-only { background: linear-gradient(180deg, #f39c12, #d35400); color: #fff; }
-        
-        #modalOverlay, #rulesModalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99; }
-        
-        /* Bet Modal */
-        #betModal { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #1a1a1a; z-index: 100; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px; border-top: 3px solid #f1c40f; }
-        
-        /* Rules Modal */
-        #rulesModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; z-index: 101; width: 85%; max-width: 400px; border-radius: 15px; padding: 20px; border: 2px solid #f1c40f; }
-
-        .game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .game-btn { background: #222; color: #fff; padding: 15px 10px; border-radius: 8px; border: 1px solid #444; text-align: center; font-weight: bold; font-size: 13px; cursor: pointer;}
-        .game-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .session-selector { display: flex; gap: 10px; margin-bottom: 15px; }
-        .session-lbl { flex: 1; background: #222; color: #fff; padding: 12px; text-align: center; border-radius: 8px; border: 2px solid #444; font-weight: bold; cursor: pointer;}
-        .session-lbl.active { border-color: #f1c40f; background: #333; color: #f1c40f; }
-        .bet-input { width: 100%; padding: 15px; margin-bottom: 15px; background: #111; border: 1px solid #444; color: #fff; border-radius: 8px; font-size: 16px; outline: none; }
-        .btn-confirm { background: #2ecc71; color: #000; width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: 900; font-size: 16px; cursor: pointer;}
-        .btn-back { background: #444; color: #fff; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; margin-top: 10px; cursor: pointer;}
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Roboto', sans-serif; user-select:none; }
+        body { background-color:#0d0d0d; color:#fff; padding-bottom:30px; }
+        .header { background:linear-gradient(90deg, #1a2a6c, #b21f1f, #fdbb2d); padding:15px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
+        .rules-btn { background:rgba(0,0,0,0.5); border:1px solid #fff; color:#fff; padding:6px 12px; border-radius:15px; font-size:12px; font-weight:bold; cursor:pointer; }
+        .wallet-bar { background:#1e1e1e; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #333; }
+        .bal-amt { color:#2ecc71; font-size:20px; font-weight:900; }
+        .market-list { padding:10px; }
+        .m-card { background:#222; border-radius:10px; padding:15px; margin-bottom:15px; border-left:5px solid #2ecc71; box-shadow: 0 4px 6px rgba(0,0,0,0.4); }
+        .m-card.closed { border-left-color:#e74c3c; opacity:0.8; }
+        .m-card.half-closed { border-left-color:#f39c12; }
+        .m-title { font-size:18px; font-weight:900; color:#f1c40f; text-transform:uppercase; }
+        .m-res { font-size:28px; font-weight:bold; margin:12px 0; text-align:center; letter-spacing:4px; background:#111; padding:10px; border-radius:5px; color:#00ffff; border:1px solid #333; }
+        .btn-bet { width:100%; background:linear-gradient(180deg, #2ecc71, #27ae60); color:#000; border:none; padding:14px; border-radius:8px; font-weight:900; font-size:16px; cursor:pointer; }
+        .btn-bet:disabled { background:#444; color:#888; cursor:not-allowed; }
+        .btn-bet.btn-close-only { background:linear-gradient(180deg, #f39c12, #d35400); color:#fff; }
+        #modalOverlay, #rulesModalOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:998; }
+        #betModal, #rulesModal { display:none; position:fixed; bottom:0; left:0; width:100%; background:#1a1a1a; z-index:999; border-top:3px solid #f1c40f; padding:20px; border-top-left-radius:20px; border-top-right-radius:20px; }
+        #rulesModal { top:20%; bottom:auto; width:90%; left:5%; border-radius:15px; }
+        .game-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+        .game-btn { background:#222; color:#fff; padding:15px 10px; border-radius:8px; border:1px solid #444; font-weight:bold; font-size:13px; cursor:pointer; }
+        .session-selector { display:flex; gap:10px; margin-bottom:15px; }
+        .session-lbl { flex:1; background:#222; padding:12px; text-align:center; border-radius:8px; border:2px solid #444; font-weight:bold; }
+        .session-lbl.active { border-color:#f1c40f; color:#f1c40f; }
+        .bet-input { width:100%; padding:15px; margin-bottom:15px; background:#111; border:1px solid #444; color:#fff; border-radius:8px; outline:none; }
+        .btn-confirm { background:#2ecc71; color:#000; width:100%; padding:15px; border:none; border-radius:8px; font-weight:900; cursor:pointer; }
     </style>
 </head>
 <body>
-
     <header class="header">
-        <button class="rules-btn" onclick="openRules()"><i class="fa-solid fa-circle-info"></i> RULES</button>
-        <h1>👑 K-VIP CASINO</h1>
-        <div style="width: 75px;"></div> </header>
+        <button class="rules-btn" onclick="openRules()">RULES</button>
+        <h1 style="color:#fff; font-size:18px;">👑 K-VIP CASINO</h1>
+        <div style="width:50px;"></div>
+    </header>
 
     <div class="wallet-bar">
-        <span style="font-size:12px; font-weight:bold; color:#aaa;"><i class="fa-solid fa-wallet"></i> VIP WALLET</span>
+        <span style="font-size:12px; font-weight:bold; color:#aaa;">VIP WALLET</span>
         <div class="bal-amt">₹ <span id="balance">0.00</span></div>
     </div>
 
-    <div class="market-list" id="markets-container">
-        </div>
+    <div class="market-list" id="markets-container"></div>
 
     <div id="rulesModalOverlay" onclick="closeRules()"></div>
     <div id="rulesModal">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
-            <div style="color:#f1c40f; font-weight:900; font-size:20px;">GAME RULES</div>
-            <div onclick="closeRules()"><i class="fa-solid fa-circle-xmark" style="color:#ff004c; font-size:24px; cursor:pointer;"></i></div>
-        </div>
-        <div id="rulesText" style="font-size:14px; color:#ddd; line-height:1.6; white-space:pre-wrap; max-height:60vh; overflow-y:auto;">Loading rules from server...</div>
+        <h2 style="color:#f1c40f; margin-bottom:10px;">GAME RULES</h2>
+        <div id="rulesText" style="white-space:pre-wrap; color:#ddd; font-size:14px;">Loading rules...</div>
+        <button onclick="closeRules()" style="width:100%; margin-top:15px; padding:12px; background:#444; color:#fff; border:none; border-radius:8px; font-weight:bold;">CLOSE</button>
     </div>
 
     <div id="modalOverlay" onclick="closeBetModal()"></div>
     <div id="betModal">
-        <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <div class="modal-title" id="modalMarketName" style="color:#f1c40f; font-weight:900;">SELECT GAME</div>
-            <div onclick="closeBetModal()"><i class="fa-solid fa-circle-xmark" style="color:#ff004c; font-size:24px; cursor:pointer;"></i></div>
-        </div>
-        
+        <h3 id="modalMarketName" style="color:#f1c40f; margin-bottom:15px;">SELECT GAME</h3>
         <div class="game-grid" id="gameGrid">
-            <button class="game-btn" id="btnAnk" onclick="selectGame('Single Ank')">SINGLE ANK</button>
-            <button class="game-btn" id="btnJodi" onclick="selectGame('Jodi Digit')">JODI DIGIT</button>
-            <button class="game-btn" id="btnSP" onclick="selectGame('Single Panna')">SINGLE PANNA</button>
-            <button class="game-btn" id="btnDP" onclick="selectGame('Double Panna')">DOUBLE PANNA</button>
-            <button class="game-btn" id="btnTP" onclick="selectGame('Triple Panna')">TRIPLE PANNA</button>
-            <button class="game-btn" id="btnSangam" onclick="selectGame('Half Sangam')">HALF SANGAM</button>
+            <button class="game-btn" onclick="selectGame('Single Ank')">SINGLE ANK</button>
+            <button class="game-btn" onclick="selectGame('Jodi Digit')">JODI DIGIT</button>
+            <button class="game-btn" onclick="selectGame('Single Panna')">SINGLE PANNA</button>
+            <button class="game-btn" onclick="selectGame('Double Panna')">DOUBLE PANNA</button>
+            <button class="game-btn" onclick="selectGame('Triple Panna')">TRIPLE PANNA</button>
+            <button class="game-btn" onclick="selectGame('Half Sangam')">HALF SANGAM</button>
         </div>
-        
         <div id="inputSection" style="display:none;">
-            <div style="color: #2ecc71; font-weight: bold; margin-bottom: 10px; font-size: 14px;" id="selectedGameLabel">Game</div>
-            
+            <div id="selectedGameLabel" style="color:#2ecc71; margin-bottom:10px; font-weight:bold;"></div>
             <div class="session-selector" id="sessionBox">
-                <label class="session-lbl" id="lblOpen">
-                    <input type="radio" name="betSession" value="OPEN" id="radioOpen" style="display:none;" onchange="updateSessionUI()">OPEN
-                </label>
-                <label class="session-lbl" id="lblClose">
-                    <input type="radio" name="betSession" value="CLOSE" id="radioClose" style="display:none;" onchange="updateSessionUI()">CLOSE
-                </label>
+                <label class="session-lbl" id="lblOpen"><input type="radio" name="betSession" id="radioOpen" onchange="updateUI()" checked style="display:none;">OPEN</label>
+                <label class="session-lbl" id="lblClose"><input type="radio" name="betSession" id="radioClose" onchange="updateUI()" style="display:none;">CLOSE</label>
             </div>
-            
             <input type="number" id="betNumber" class="bet-input" placeholder="Enter Number">
-            <input type="number" id="betAmount" class="bet-input" placeholder="Enter Amount (₹)">
-            
-            <button class="btn-confirm" id="confirmBetBtn" onclick="submitFinalBet()">✔️ PLACE BET</button>
-            <button class="btn-back" onclick="backToGames()">⬅️ BACK</button>
+            <input type="number" id="betAmount" class="bet-input" placeholder="Amount (Min ₹10)">
+            <button class="btn-confirm" id="confirmBtn" onclick="submitFinalBet()">PLACE BET</button>
+            <button onclick="backToGames()" style="width:100%; margin-top:10px; background:none; color:#888; border:none; cursor:pointer;">⬅️ BACK</button>
         </div>
     </div>
 
     <script>
-        const firebaseConfig = { 
-            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
-            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
-            projectId: "kalyan-casino" 
-        };
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
-        const container = document.getElementById('markets-container');
         const userPhone = localStorage.getItem('userPhone') || 'Guest';
-        
-        let activeMarket = null;
-        let selectedGameType = "";
-        let serverTimeOffset = 0;
-        let currentBalance = 0; 
 
-        const defaultVIPMarkets = {
-            "m1": { name: "TIME BAZAR", open: "01:00 PM", close: "02:00 PM", result: "***-**-***" },
-            "m2": { name: "MADHUR DAY", open: "01:15 PM", close: "02:15 PM", result: "***-**-***" },
-            "m3": { name: "MILAN DAY", open: "03:00 PM", close: "05:00 PM", result: "***-**-***" },
-            "m4": { name: "KALYAN", open: "04:00 PM", close: "06:00 PM", result: "***-**-***" },
-            "m5": { name: "TIME BAZAR NIGHT", open: "08:00 PM", close: "09:00 PM", result: "***-**-***" },
-            "m6": { name: "MADHUR NIGHT", open: "08:30 PM", close: "10:30 PM", result: "***-**-***" },
-            "m7": { name: "MILAN NIGHT", open: "09:00 PM", close: "11:00 PM", result: "***-**-***" },
-            "m8": { name: "KALYAN NIGHT", open: "09:30 PM", close: "11:30 PM", result: "***-**-***" }
-        };
+        let activeMarket = null, selectedGameType = "", serverTimeOffset = 0, currentBalance = 0;
 
-        // Render Initial Empty/Default Markets instantly
-        renderMarkets(defaultVIPMarkets);
-        
-        // Sync Server Time to prevent device time cheating
+        // Balance Sync (Small 'users' path)
+        db.ref('users/' + userPhone).on('value', snap => {
+            const d = snap.val() || {};
+            currentBalance = (parseFloat(d.balance)||0) + (parseFloat(d.winning_balance)||0) + (parseFloat(d.bonus_balance)||0);
+            document.getElementById('balance').innerText = currentBalance.toFixed(2);
+        });
+
+        // Rules Sync
+        db.ref('settings/game_rules').on('value', snap => { document.getElementById('rulesText').innerText = snap.val() || "Rules loading..."; });
+
         db.ref('.info/serverTimeOffset').on('value', snap => { serverTimeOffset = snap.val() || 0; });
 
         function getISTMinutes() {
-            let d = new Date(new Date().getTime() + serverTimeOffset); 
+            let d = new Date(new Date().getTime() + serverTimeOffset);
             let ist = (d.getUTCHours() * 60) + d.getUTCMinutes() + 330;
             return ist >= 1440 ? ist - 1440 : ist;
         }
 
-        // --- FETCH GAME RULES FROM FIREBASE ---
-        db.ref('settings/game_rules').on('value', (snapshot) => {
-            let rulesData = snapshot.val();
-            if (!rulesData) rulesData = "1. Welcome to K-VIP Casino.\n2. Please wait for the admin to update rules.";
-            document.getElementById('rulesText').innerText = rulesData;
-        });
-
-        function openRules() {
-            document.getElementById('rulesModalOverlay').style.display = 'block';
-            document.getElementById('rulesModal').style.display = 'block';
-        }
-
-        function closeRules() {
-            document.getElementById('rulesModalOverlay').style.display = 'none';
-            document.getElementById('rulesModal').style.display = 'none';
-        }
-
-        // --- WALLET SYSTEM (Small 'u' path for consistency) ---
-        if (userPhone !== 'Guest') {
-            db.ref('users/' + userPhone).on('value', snap => {
-                const data = snap.val() || {};
-                let mainBal = parseFloat(data.balance || 0);
-                let winBal = parseFloat(data.winning_balance || 0);
-                let bonusBal = parseFloat(data.bonus_balance || 0);
-                
-                currentBalance = mainBal + winBal + bonusBal;
-                document.getElementById('balance').innerText = currentBalance.toFixed(2);
-            });
-        }
-
-        // --- MARKET LOGIC & TIMINGS ---
         function parseTime(t) {
-            let p = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
-            if(!p) return 1440;
+            let p = t.match(/(\d+):(\d+)\s*(AM|PM)/i); if(!p) return 0;
             let h = parseInt(p[1]), m = parseInt(p[2]), mod = p[3].toUpperCase();
-            if(h === 12) h = (mod === 'PM') ? 12 : 0;
-            else if(mod === 'PM') h += 12;
+            if(h === 12) h = (mod === 'PM') ? 12 : 0; else if(mod === 'PM') h += 12;
             return h * 60 + m;
         }
 
         function renderMarkets(markets) {
+            const container = document.getElementById('markets-container');
             container.innerHTML = '';
-            let cm = getISTMinutes(); 
-            
-            Object.keys(markets).forEach(key => {
-                let m = markets[key];
-                let ot = parseTime(m.open);
-                let ct = parseTime(m.close);
-                
-                let isOC = cm >= ot; // Is Open Time passed?
-                let isFC = cm >= ct; // Is Close Time passed?
-                
+            let cm = getISTMinutes();
+            Object.keys(markets).forEach(k => {
+                let m = markets[k];
+                let ot = parseTime(m.open), ct = parseTime(m.close);
+                let isFC = cm >= ct, isOC = cm >= ot;
                 let status = isFC ? 'closed' : (isOC ? 'half-closed' : 'running');
-                let btnT = isFC ? 'MARKET CLOSED' : (isOC ? 'PLAY CLOSE ONLY' : 'PLAY NOW');
-                let btnC = isFC ? 'btn-bet' : (isOC ? 'btn-bet btn-close-only' : 'btn-bet');
-
+                let btnT = isFC ? 'MARKET CLOSED' : (isOC ? 'CLOSE ONLY' : 'PLAY NOW');
                 container.innerHTML += `
                     <div class="m-card ${status}">
-                        <div style="display:flex; justify-content:space-between;">
-                            <div class="m-title">${m.name}</div>
-                            <div style="font-size:10px; color:#aaa;">${m.open} - ${m.close}</div>
-                        </div>
+                        <div style="display:flex; justify-content:space-between;"><div class="m-title">${m.name}</div><div style="font-size:10px;">${m.open}-${m.close}</div></div>
                         <div class="m-res">${m.result || '***-**-***'}</div>
-                        <button class="${btnC}" ${isFC ? 'disabled' : ''} onclick="openBetModal('${key}','${m.name}','${m.open}','${m.close}')">${btnT}</button>
+                        <button class="btn-bet ${isOC?'btn-close-only':''}" ${isFC?'disabled':''} onclick="openBetModal('${k}','${m.name}','${m.open}','${m.close}')">${btnT}</button>
                     </div>`;
             });
         }
 
-        // Listen for Realtime Market Updates (Results)
-        db.ref('LiveMarkets').on('value', snap => { 
-            if(snap.exists()) {
-                renderMarkets(snap.val()); 
-            } else {
-                db.ref('LiveMarkets').set(defaultVIPMarkets);
-            }
-        });
+        db.ref('LiveMarkets').on('value', snap => { if(snap.exists()) renderMarkets(snap.val()); });
 
-        // --- BETTING UI & MODAL ---
         function openBetModal(id, name, ot, ct) {
-            let cm = getISTMinutes();
-            let om = parseTime(ot);
-            let clm = parseTime(ct);
-            
-            activeMarket = { id, name, openMins: om, closeMins: clm };
+            activeMarket = { id, name, ot: parseTime(ot), ct: parseTime(ct) };
             document.getElementById('modalMarketName').innerText = name;
-            
-            // Disable games that require OPEN session if OPEN is closed
-            let isOpenClosed = cm >= om;
-            document.getElementById('btnJodi').disabled = isOpenClosed;
-            document.getElementById('btnSangam').disabled = isOpenClosed;
-            
-            let rO = document.getElementById('radioOpen');
-            let rC = document.getElementById('radioClose');
-            
-            if(isOpenClosed) { 
-                rO.disabled = true; 
-                rC.checked = true; 
-            } else { 
-                rO.disabled = false; 
-                rO.checked = true; 
-            }
-            
-            updateSessionUI();
-            backToGames();
             document.getElementById('modalOverlay').style.display = 'block';
             document.getElementById('betModal').style.display = 'block';
-        }
-
-        function updateSessionUI() {
-            let isO = document.getElementById('radioOpen').checked;
-            document.getElementById('lblOpen').className = "session-lbl " + (isO ? "active" : "");
-            document.getElementById('lblClose').className = "session-lbl " + (!isO ? "active" : "");
-            
-            if(document.getElementById('radioOpen').disabled) {
-                document.getElementById('lblOpen').style.opacity = "0.3";
-                document.getElementById('lblOpen').style.cursor = "not-allowed";
-            } else {
-                document.getElementById('lblOpen').style.opacity = "1";
-                document.getElementById('lblOpen').style.cursor = "pointer";
-            }
+            backToGames();
         }
 
         function selectGame(gt) {
-            if((gt === 'Jodi Digit' || gt === 'Half Sangam') && getISTMinutes() >= activeMarket.openMins) {
-                return alert("Open time out! You cannot play this game now.");
-            }
-            
-            // Hide Session Box for full games
-            document.getElementById('sessionBox').style.display = (gt === 'Jodi Digit' || gt === 'Half Sangam') ? 'none' : 'flex';
-            
             selectedGameType = gt;
             document.getElementById('gameGrid').style.display = 'none';
             document.getElementById('inputSection').style.display = 'block';
             document.getElementById('selectedGameLabel').innerText = "Game: " + gt;
+            document.getElementById('sessionBox').style.display = (gt.includes('Jodi') || gt.includes('Sangam')) ? 'none' : 'flex';
+            updateUI();
         }
 
-        function backToGames() { 
-            document.getElementById('gameGrid').style.display = 'grid'; 
-            document.getElementById('inputSection').style.display = 'none'; 
+        function updateUI() {
+            let isO = document.getElementById('radioOpen').checked;
+            document.getElementById('lblOpen').className = "session-lbl " + (isO ? "active" : "");
+            document.getElementById('lblClose').className = "session-lbl " + (!isO ? "active" : "");
         }
 
-        function closeBetModal() { 
-            document.getElementById('modalOverlay').style.display = 'none'; 
-            document.getElementById('betModal').style.display = 'none'; 
-            
-            document.getElementById('betNumber').value = '';
-            document.getElementById('betAmount').value = '';
-        }
+        function backToGames() { document.getElementById('gameGrid').style.display='grid'; document.getElementById('inputSection').style.display='none'; }
+        function closeBetModal() { document.getElementById('modalOverlay').style.display='none'; document.getElementById('betModal').style.display='none'; }
+        function openRules() { document.getElementById('rulesModalOverlay').style.display='block'; document.getElementById('rulesModal').style.display='block'; }
+        function closeRules() { document.getElementById('rulesModalOverlay').style.display='none'; document.getElementById('rulesModal').style.display='none'; }
 
-        // --- FINAL BET PLACEMENT & SECURITY ---
         function submitFinalBet() {
-            if (userPhone === 'Guest') return alert("Please Login to Place Bets!");
+            if (userPhone === 'Guest') return alert("Please Login!");
+            let num = document.getElementById('betNumber').value, amt = parseFloat(document.getElementById('betAmount').value);
+            
+            if(!num || isNaN(amt) || amt < 10) return alert("Valid Number & Amount (Min ₹10) bhariye!");
+            if(amt > currentBalance) return alert("Low Balance!");
 
-            let num = document.getElementById('betNumber').value;
-            let amt = document.getElementById('betAmount').value;
-            
-            if(!num || !amt || amt < 10) return alert("Enter valid details! (Min Bet ₹10)");
-            
-            let betAmountFloat = parseFloat(amt);
-            if(betAmountFloat > currentBalance) return alert("Low VIP Wallet Balance!");
-            
-            // Number Formatting Validation
+            // Strict Validation
             let numStr = num.toString();
-            if (selectedGameType === 'Single Ank' && numStr.length !== 1) return alert("Single Ank must be a 1-digit number!");
-            if (selectedGameType === 'Jodi Digit' && numStr.length !== 2) return alert("Jodi Digit must be a 2-digit number!");
-            if ((selectedGameType === 'Single Panna' || selectedGameType === 'Double Panna' || selectedGameType === 'Triple Panna') && numStr.length !== 3) {
-                return alert("Panna must be a 3-digit number!");
-            }
-            if (selectedGameType === 'Half Sangam' && numStr.length !== 4) return alert("Half Sangam must be a 4-digit number! (Example: 1234)");
+            if (selectedGameType === 'Single Ank' && numStr.length !== 1) return alert("Single Ank 1 digit hona chahiye!");
+            if (selectedGameType === 'Jodi Digit' && numStr.length !== 2) return alert("Jodi 2 digit honi chahiye!");
+            if (selectedGameType.includes('Panna') && numStr.length !== 3) return alert("Panna 3 digit hona chahiye!");
 
             let cm = getISTMinutes();
-            let isJS = (selectedGameType === 'Jodi Digit' || selectedGameType === 'Half Sangam');
+            let isJS = (selectedGameType.includes('Jodi') || selectedGameType.includes('Sangam'));
             let sess = isJS ? "FULL" : (document.getElementById('radioOpen').checked ? "OPEN" : "CLOSE");
             
-            // Double check server time before bet
-            if((sess === "OPEN" || isJS) && cm >= activeMarket.openMins) return alert("Open market is closed!");
+            // Anti-Cheat Time Check
+            if ((sess === "OPEN" || isJS) && cm >= activeMarket.ot) return alert("Open market band ho gaya hai!");
+            if (sess === "CLOSE" && cm >= activeMarket.ct) return alert("Market poora band ho gaya hai!");
 
-            let btn = document.getElementById('confirmBetBtn');
-            btn.disabled = true;
-            btn.innerText = "PROCESSING...";
+            document.getElementById('confirmBtn').disabled = true;
 
-            // Secure Database Deduction Using ServerValue.increment
-            db.ref('users/' + userPhone + '/balance').set(firebase.database.ServerValue.increment(-betAmountFloat))
-                .then(() => {
-                    let bet = { 
-                        marketId: activeMarket.id, 
-                        marketName: activeMarket.name, 
-                        gameType: selectedGameType, 
-                        session: sess, 
-                        bidNumber: numStr, 
-                        betAmount: betAmountFloat, 
-                        status: "pending", 
-                        timestamp: firebase.database.ServerValue.TIMESTAMP 
-                    };
-                    
-                    // Push to user history
-                    db.ref('BetHistory/' + userPhone).push(bet);
-                    
-                    // Push to Admin Master Panel
-                    db.ref('AdminPanel/AllActiveBets').push({ userPhone, ...bet });
-                    
-                    alert("✅ Bet Placed Successfully!"); 
-                    closeBetModal();
-                    
-                    btn.disabled = false;
-                    btn.innerText = "✔️ PLACE BET";
-                })
-                .catch((error) => {
-                    alert("Transaction failed! Please check connection.");
-                    btn.disabled = false;
-                    btn.innerText = "✔️ PLACE BET";
-                });
+            db.ref('users/' + userPhone + '/balance').set(firebase.database.ServerValue.increment(-amt)).then(() => {
+                let b = { marketName: activeMarket.name, gameType: selectedGameType, session: sess, bidNumber: numStr, betAmount: amt, status: "pending", timestamp: Date.now() };
+                db.ref('BetHistory/' + userPhone).push(b);
+                db.ref('AdminPanel/AllActiveBets').push({ userPhone, ...b });
+                alert("✅ Bet Placed!"); closeBetModal();
+                document.getElementById('confirmBtn').disabled = false;
+            }).catch(() => {
+                alert("Transaction failed!");
+                document.getElementById('confirmBtn').disabled = false;
+            });
         }
     </script>
 </body>
