@@ -11,7 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Roboto', sans-serif; user-select:none; }
-        body { background-color:#0d0518; color:#fff; padding-bottom:70px; }
+        body { background-color:#0d0518; color:#fff; padding-bottom:80px; }
         .header { background:linear-gradient(90deg, #2a0845, #6441A5); padding:15px; text-align: center; position:sticky; top:0; z-index:100; border-bottom: 3px solid #ffd700; box-shadow: 0 4px 15px rgba(255,215,0,0.2); }
         .header h1 { font-size: 20px; color: #ffd700; letter-spacing: 2px; margin-bottom: 5px; font-weight: 900; text-transform: uppercase; }
         .date-box { font-size: 11px; color: #000; background: #ffd700; display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: 900; text-transform: uppercase; }
@@ -37,6 +37,7 @@
         .res-active { color:#ffd700; text-shadow: 0 0 25px rgba(255,215,0,0.7); border-color: #ffd700; }
 
         .btn-play { width:100%; background:linear-gradient(180deg, #ffd700, #d4af37); color:#000; border:none; padding:15px; border-radius:8px; font-weight:900; font-size:15px; cursor:pointer; text-transform: uppercase; box-shadow: 0 4px 0 #b8860b; transition: 0.2s; }
+        .btn-play:active { transform: translateY(3px); box-shadow: 0 1px 0 #b8860b; }
         .btn-play.btn-close-only { background:linear-gradient(180deg, #f39c12, #d35400); color:#fff; box-shadow: 0 4px 0 #a04000; }
         .btn-play:disabled { background: #222; color: #555; cursor: not-allowed; box-shadow: none; }
 
@@ -53,8 +54,9 @@
         .bet-input { width:100%; padding:16px; margin-bottom:15px; background:#0a0312; border:1px solid #6441A5; color:#ffd700; border-radius:10px; outline:none; font-size: 18px; font-weight: 900; text-align: center; }
         .btn-confirm { background:linear-gradient(180deg, #00ff88, #00b050); color:#000; width:100%; padding:16px; border:none; border-radius:10px; font-weight:900; cursor:pointer; font-size: 17px; text-transform: uppercase; }
         
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #160a2c; display: flex; justify-content: space-around; padding: 12px; border-top: 1px solid #3d1b63; z-index: 90; }
-        .nav-btn { color: #b39ddb; text-decoration: none; font-weight: bold; font-size: 12px; text-align: center; }
+        /* 🔥 Nav Bar for Bottom 🔥 */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #160a2c; display: flex; justify-content: space-around; padding: 12px; border-top: 1px solid #3d1b63; z-index: 1100; box-shadow: 0 -5px 15px rgba(0,0,0,0.5); }
+        .nav-btn { color: #b39ddb; text-decoration: none; font-weight: bold; font-size: 12px; text-align: center; cursor: pointer; }
         .nav-btn i { font-size: 18px; display: block; margin-bottom: 4px; }
         .nav-btn.active { color: #ffd700; }
     </style>
@@ -75,7 +77,7 @@
     </div>
 
     <div class="bottom-nav">
-        <a href="Market.html" class="nav-btn active"><i class="fa-solid fa-gamepad"></i>Play</a>
+        <a onclick="history.back()" class="nav-btn"><i class="fa-solid fa-arrow-left"></i>Back</a>
         <a href="GameRecord.html" class="nav-btn"><i class="fa-solid fa-clock-rotate-left"></i>History</a>
     </div>
 
@@ -109,7 +111,6 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         
-        // 🔥 NUMBER FETCH FIX 🔥
         const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
         let activeMarket = null, selectedGameType = "";
         let depBal = 0, winBal = 0, bonBal = 0, totalBal = 0;
@@ -127,7 +128,6 @@
 
         document.getElementById('todayDate').innerText = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 
-        // 🔥 WALLET CALCULATION FIX 🔥
         if(userPhone) {
             db.ref('users/' + userPhone).on('value', snap => {
                 if(snap.exists()) {
@@ -137,10 +137,8 @@
                     bonBal = parseFloat(d.bonus_balance || 0);
                     totalBal = Math.max(0, depBal + winBal + bonBal);
                     document.getElementById('balance').innerText = totalBal.toFixed(2);
-                } else { document.getElementById('balance').innerText = "0.00"; }
+                }
             });
-        } else {
-            document.getElementById('balance').innerText = "0.00 (Guest)";
         }
 
         const container = document.getElementById('markets-container');
@@ -193,18 +191,16 @@
             Object.keys(markets).forEach(id => {
                 let timerElem = document.getElementById('timer_' + id); let cardElem = document.getElementById('card_' + id); let btnElem = document.getElementById('btn_' + id);
                 if(!timerElem) return;
-                
                 let openTime = parseTime(markets[id].open).getTime(); let closeTime = parseTime(markets[id].close).getTime();
-
                 if (now < openTime) {
                     timerElem.innerText = "Opens in: " + formatDiff(openTime - now); timerElem.className = "timer-box";
-                    cardElem.classList.remove('closed'); btnElem.disabled = false; btnElem.innerText = "PLAY NOW"; btnElem.className = "btn-play";
+                    cardElem.classList.remove('closed'); btnElem.disabled = false; btnElem.innerText = "PLAY NOW";
                 } else if (now >= openTime && now < closeTime) {
                     timerElem.innerText = "Closes in: " + formatDiff(closeTime - now); timerElem.className = "timer-box running";
-                    cardElem.classList.remove('closed'); btnElem.disabled = false; btnElem.innerText = "PLAY CLOSE ONLY"; btnElem.className = "btn-play btn-close-only";
+                    cardElem.classList.remove('closed'); btnElem.disabled = false; btnElem.innerText = "PLAY CLOSE ONLY";
                 } else {
                     timerElem.innerText = "CLOSED"; timerElem.className = "timer-box closed";
-                    cardElem.classList.add('closed'); btnElem.disabled = true; btnElem.innerText = "MARKET CLOSED"; btnElem.className = "btn-play";
+                    cardElem.classList.add('closed'); btnElem.disabled = true; btnElem.innerText = "MARKET CLOSED";
                 }
             });
         }, 1000);
@@ -215,14 +211,11 @@
             activeMarket = { id, name, openTime: openTime };
             document.getElementById('modalMarketName').innerText = name;
             let isOpenClosed = now >= openTime; 
-            
             document.getElementById('btnJodi').style.display = isOpenClosed ? 'none' : 'block';
             document.getElementById('btnSangam').style.display = isOpenClosed ? 'none' : 'block';
-            
             let rO = document.getElementById('radioOpen'); let rC = document.getElementById('radioClose'); let lblO = document.getElementById('lblOpen');
             if(isOpenClosed) { rO.disabled = true; rC.checked = true; lblO.classList.add('disabled'); } 
             else { rO.disabled = false; rO.checked = true; lblO.classList.remove('disabled'); }
-            
             document.getElementById('modalOverlay').style.display = 'block';
             document.getElementById('betModal').style.display = 'block';
             updateUI(); backToGames();
@@ -230,7 +223,7 @@
 
         function selectGame(gt) {
             let now = new Date().getTime();
-            if((gt === 'Jodi Digit' || gt === 'Half Sangam') && now >= activeMarket.openTime) return alert("Time Over! Aap ab Jodi ya Sangam nahi khel sakte.");
+            if((gt === 'Jodi Digit' || gt === 'Half Sangam') && now >= activeMarket.openTime) return alert("Time Over!");
             selectedGameType = gt;
             document.getElementById('gameGrid').style.display = 'none';
             document.getElementById('inputSection').style.display = 'block';
@@ -249,39 +242,22 @@
         function closeBetModal() { document.getElementById('modalOverlay').style.display='none'; document.getElementById('betModal').style.display='none'; document.getElementById('betNumber').value=''; document.getElementById('betAmount').value=''; }
 
         function submitFinalBet() {
-            if (!userPhone) return alert("Pehle login karein! (Abhi aap Guest hain)");
+            if (!userPhone) return alert("Login First!");
             let num = document.getElementById('betNumber').value;
             let amt = parseFloat(document.getElementById('betAmount').value);
-            
-            if(!num || isNaN(amt) || amt < 10) return alert("Valid Number aur Amount (Min ₹10) bhariye!");
-            if(amt > totalBal) return alert("Wallet me paise kam hain!");
-
-            let numStr = num.toString();
-            if (selectedGameType === 'Single Ank' && numStr.length !== 1) return alert("Single Ank 1 digit hona chahiye!");
-            if (selectedGameType === 'Jodi Digit' && numStr.length !== 2) return alert("Jodi 2 digit honi chahiye!");
-            if (selectedGameType.includes('Panna') && numStr.length !== 3) return alert("Panna 3 digit hona chahiye!");
-            if (selectedGameType === 'Half Sangam' && numStr.length !== 4) return alert("Half Sangam 4 digit hona chahiye!");
-
-            // 🔥 BET DEDUCTION LOGIC 🔥
+            if(!num || isNaN(amt) || amt < 10) return alert("Enter Valid Details!");
+            if(amt > totalBal) return alert("Insufficient Balance!");
             let nDep = depBal, nWin = winBal, rem = amt;
             if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
-
             let isJS = (selectedGameType.includes('Jodi') || selectedGameType.includes('Sangam'));
             let sess = isJS ? "FULL" : (document.getElementById('radioOpen').checked ? "OPEN" : "CLOSE");
-
-            document.getElementById('confirmBtn').disabled = true; document.getElementById('confirmBtn').innerText = "PROCESSING...";
-
+            document.getElementById('confirmBtn').disabled = true;
             db.ref('users/' + userPhone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) }).then(() => {
-                let b = { marketName: activeMarket.name, gameType: selectedGameType, session: sess, bidNumber: numStr, betAmount: amt, status: "pending", timestamp: Date.now() };
+                let b = { marketName: activeMarket.name, gameType: selectedGameType, session: sess, bidNumber: num, betAmount: amt, status: "pending", timestamp: Date.now() };
                 db.ref('BetHistory/' + userPhone).push(b);
-                db.ref('AdminPanel/AllActiveBets').push({ userPhone, ...b });
-                
-                alert("✅ Bet Placed Successfully!"); 
+                alert("Bet Placed!"); 
                 closeBetModal();
-                document.getElementById('confirmBtn').disabled = false; document.getElementById('confirmBtn').innerText = "PLACE BET";
-            }).catch(() => {
-                alert("❌ Transaction fail ho gaya! Internet check karein.");
-                document.getElementById('confirmBtn').disabled = false; document.getElementById('confirmBtn').innerText = "PLACE BET";
+                document.getElementById('confirmBtn').disabled = false;
             });
         }
     </script>
