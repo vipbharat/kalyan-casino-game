@@ -26,12 +26,16 @@
         .m-title { font-size:16px; font-weight:900; color:#f1c40f; text-transform:uppercase; }
         .m-time-text { font-size: 11px; color: #aaa; margin-top: 2px; }
         
-        /* 🔥 Countdown Timer Styling 🔥 */
+        /* Timer Styling */
         .timer-box { font-size: 11px; font-weight: bold; background: #000; padding: 4px 8px; border-radius: 5px; border: 1px solid #444; color: #fff; }
         .timer-box.running { color: #00ff88; border-color: #00ff88; }
         .timer-box.closed { color: #ff3333; border-color: #ff3333; }
         
-        .m-res { font-size:32px; font-weight:bold; margin:10px 0; text-align:center; letter-spacing:5px; background: #000; padding:15px; border-radius:8px; color:#00ffff; border:1px solid #222; text-shadow: 0 0 10px rgba(0,255,255,0.3); }
+        /* 🔥 Smart Result Box 🔥 */
+        .m-res { font-size:32px; font-weight:bold; margin:10px 0; text-align:center; letter-spacing:5px; background: #000; padding:15px; border-radius:8px; border:1px solid #222; transition: all 0.3s ease; }
+        .res-default { color:#00ffff; text-shadow: 0 0 10px rgba(0,255,255,0.3); }
+        .res-active { color:#ffd700; text-shadow: 0 0 15px rgba(255,215,0,0.5); } /* Ank aane par Gold color ho jayega */
+
         .btn-play { width:100%; background:linear-gradient(180deg, #2ecc71, #27ae60); color:#000; border:none; padding:12px; border-radius:8px; font-weight:900; font-size:14px; cursor:pointer; }
         .btn-play:disabled { background: #333; color: #666; cursor: not-allowed; }
     </style>
@@ -44,16 +48,13 @@
     </header>
 
     <div class="market-list" id="markets-container">
-        <p style="text-align: center; color: #888; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Connecting Server...</p>
-    </div>
+        </div>
 
     <script>
-        // 1. Firebase Config
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 2. Markets Data & Timings
         const markets = {
             "time_day": { name: "TIME BAZAR", open: "01:00 PM", close: "02:00 PM" },
             "madhur_day": { name: "MADHUR DAY", open: "01:15 PM", close: "02:15 PM" },
@@ -65,10 +66,61 @@
             "kalyan_night": { name: "KALYAN NIGHT", open: "09:30 PM", close: "11:30 PM" }
         };
 
-        // Date Display
         document.getElementById('todayDate').innerText = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 
-        // Helper: Convert "01:00 PM" to actual Date object for TODAY
+        // 1. Ek baar HTML structure bana do (Taki page baar baar refresh na ho)
+        const container = document.getElementById('markets-container');
+        container.innerHTML = '';
+        Object.keys(markets).forEach(id => {
+            const mInfo = markets[id];
+            container.innerHTML += `
+                <div class="m-card" id="card_${id}">
+                    <div class="m-top">
+                        <div>
+                            <div class="m-title">${mInfo.name}</div>
+                            <div class="m-time-text">${mInfo.open} - ${mInfo.close}</div>
+                        </div>
+                        <div class="timer-box" id="timer_${id}">Calculating...</div>
+                    </div>
+                    <div class="m-res res-default" id="res_${id}">***-**-***</div>
+                    <button class="btn-play" id="btn_${id}">PLAY NOW</button>
+                </div>
+            `;
+        });
+
+        // 2. 🔥 SMART LIVE SYNC (Sirf Result Text badlega) 🔥
+        db.ref('market').on('value', snap => {
+            const data = snap.val() || {};
+            
+            Object.keys(markets).forEach(id => {
+                let resBox = document.getElementById('res_' + id);
+                if (resBox) {
+                    let finalResult = "***-**-***";
+                    
+                    // Database format check karke result nikalna
+                    if (data[id]) {
+                        if (typeof data[id] === 'string') {
+                            finalResult = data[id];
+                        } else if (data[id].result) {
+                            finalResult = data[id].result;
+                        }
+                    }
+
+                    resBox.innerText = finalResult;
+
+                    // Agar ank aagaya toh color Gold kar do, nahi toh default rakhho
+                    if(finalResult !== "***-**-***") {
+                        resBox.classList.remove('res-default');
+                        resBox.classList.add('res-active');
+                    } else {
+                        resBox.classList.remove('res-active');
+                        resBox.classList.add('res-default');
+                    }
+                }
+            });
+        });
+
+        // 3. Time Logic
         function parseTime(timeStr) {
             let [time, modifier] = timeStr.split(' ');
             let [hours, minutes] = time.split(':');
@@ -80,7 +132,6 @@
             return d;
         }
 
-        // Format milliseconds to H:M:S
         function formatDiff(diff) {
             let h = Math.floor(diff / (1000 * 60 * 60));
             let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -88,43 +139,9 @@
             return `${h}h ${m}m ${s}s`;
         }
 
-        let liveMarketData = {};
-
-        // 3. Fetch Live Result Data
-        db.ref('market').on('value', snap => {
-            liveMarketData = snap.val() || {};
-            renderMarkets(); // Re-render when data comes
-        });
-
-        const container = document.getElementById('markets-container');
-
-        // 4. Render Layout
-        function renderMarkets() {
-            container.innerHTML = '';
-            Object.keys(markets).forEach(id => {
-                const mInfo = markets[id];
-                const result = (liveMarketData[id] && liveMarketData[id].result) ? liveMarketData[id].result : "***-**-***";
-                
-                container.innerHTML += `
-                    <div class="m-card" id="card_${id}">
-                        <div class="m-top">
-                            <div>
-                                <div class="m-title">${mInfo.name}</div>
-                                <div class="m-time-text">${mInfo.open} - ${mInfo.close}</div>
-                            </div>
-                            <div class="timer-box" id="timer_${id}">Calculating...</div>
-                        </div>
-                        <div class="m-res">${result}</div>
-                        <button class="btn-play" id="btn_${id}">PLAY NOW</button>
-                    </div>
-                `;
-            });
-        }
-
-        // 5. Smart Countdown Timer Engine (Runs every 1 second)
+        // 4. Countdown Timer Engine
         setInterval(() => {
             let now = new Date().getTime();
-
             Object.keys(markets).forEach(id => {
                 let timerElem = document.getElementById('timer_' + id);
                 let cardElem = document.getElementById('card_' + id);
@@ -135,28 +152,22 @@
                 let closeTime = parseTime(markets[id].close).getTime();
 
                 if (now < openTime) {
-                    // Market is yet to open
                     timerElem.innerText = "Opens in: " + formatDiff(openTime - now);
                     timerElem.className = "timer-box";
                     cardElem.classList.remove('closed');
-                    btnElem.disabled = false;
-                    btnElem.innerText = "PLAY NOW";
+                    btnElem.disabled = false; btnElem.innerText = "PLAY NOW";
                 } 
                 else if (now >= openTime && now < closeTime) {
-                    // Market is Running
                     timerElem.innerText = "Closes in: " + formatDiff(closeTime - now);
                     timerElem.className = "timer-box running";
                     cardElem.classList.remove('closed');
-                    btnElem.disabled = false;
-                    btnElem.innerText = "PLAY CLOSE ONLY";
+                    btnElem.disabled = false; btnElem.innerText = "PLAY CLOSE ONLY";
                 } 
                 else {
-                    // Market is Closed
                     timerElem.innerText = "CLOSED";
                     timerElem.className = "timer-box closed";
                     cardElem.classList.add('closed');
-                    btnElem.disabled = true;
-                    btnElem.innerText = "MARKET CLOSED";
+                    btnElem.disabled = true; btnElem.innerText = "MARKET CLOSED";
                 }
             });
         }, 1000);
