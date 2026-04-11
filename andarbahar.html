@@ -10,10 +10,10 @@
     <style>
         :root { --andar: #ff3333; --bahar: #00aaff; --gold: #ffd700; --gold-glow: #ffae42; --table-green: #073b16; --table-dark: #021a08;}
         
-        /* 🔥 SCREEN LOCK CSS: Pull-to-refresh aur scrolling band karne ke liye 🔥 */
+        /* 🔥 SCREEN LOCK 🔥 */
         html, body { 
             margin: 0; padding: 0; width: 100vw; height: 100vh; 
-            overflow: hidden; overscroll-behavior: none; touch-action: none; /* Patthar jaisa lock */
+            overflow: hidden; overscroll-behavior: none; touch-action: none; 
             font-family: 'Roboto', sans-serif; color: white; user-select: none; 
             background: radial-gradient(circle at center, var(--table-green) 0%, var(--table-dark) 100%); 
             box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
@@ -25,7 +25,7 @@
         
         .admin-note-bar { background: linear-gradient(90deg, #800000, #400000, #800000); color: #ffd700; font-size: 13px; height: 28px; line-height: 28px; overflow: hidden; white-space: nowrap; border-bottom: 2px solid #ffd700; font-weight: 900; text-shadow: 1px 1px 2px #000; position: relative; z-index: 100; letter-spacing: 1px;}
 
-        /* CARDS DISPLAY AREA */
+        /* CARDS AREA */
         .cards-display-area { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; padding: 0 10px; touch-action: none;}
         .side-card-wrapper { text-align: center; }
         .side-title { font-size: 15px; font-weight: 900; letter-spacing: 2px; margin-bottom: 8px; font-family: 'Cinzel', serif; }
@@ -47,8 +47,7 @@
             padding: 10px 15px; border-radius: 20px; border: 1px solid var(--gold); 
             box-shadow: 0 0 15px rgba(0,0,0,0.8); width: 90%; max-width: 400px; 
             overflow-x: auto; margin: 5px auto 15px auto; z-index: 100;
-            touch-action: pan-x; /* Sirf left-right scroll allow hai */
-            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x; -webkit-overflow-scrolling: touch;
         }
         .record-panel::-webkit-scrollbar { display: none; }
         .record-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-family: 'Cinzel', serif; font-weight: 900; border: 2px solid #fff; color: white; box-shadow: inset 0 0 8px rgba(0,0,0,0.8), 0 2px 5px rgba(0,0,0,0.5); flex-shrink: 0;}
@@ -93,7 +92,6 @@
 </head>
 <body>
 
-    <audio id="bgMusic" src="https://assets.mixkit.co/active_storage/sfx/143/143-preview.mp3" loop></audio>
     <audio id="coinSnd" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
     <audio id="cardSnd" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
 
@@ -170,23 +168,18 @@
 </div>
 
 <script>
-    // 🔥 PULL-TO-REFRESH & SCROLL BLOCKER 🔥
+    // 🔥 PULL-TO-REFRESH BLOCKER 🔥
     document.addEventListener('touchmove', function(e) {
-        // Sirf Record Panel (history) ko left-right scroll karne ki permission hai
-        if (!e.target.closest('.record-panel')) {
-            e.preventDefault();
-        }
+        if (!e.target.closest('.record-panel')) { e.preventDefault(); }
     }, { passive: false });
 
-    // 🔥 AI VOICE & AUDIO ENGINE (Automatic Init on first touch) 🔥
+    // 🔥 CLEAN AUDIO & AI VOICE 🔥
     let isEngineInit = false;
     let voiceSynth = window.speechSynthesis;
     let hindiVoice = null;
 
     function initEngine() {
         if(!isEngineInit) {
-            let bgm = document.getElementById('bgMusic');
-            bgm.volume = 0.20; bgm.play().catch(e=>{});
             if('speechSynthesis' in window) {
                 let voices = voiceSynth.getVoices();
                 hindiVoice = voices.find(v => v.lang.includes('hi') || v.lang.includes('IN')) || voices[0];
@@ -196,7 +189,6 @@
             isEngineInit = true;
         }
     }
-    // Mobile par pehle touch pe audio unlock hoga bina kisi bug ke
     document.addEventListener('touchstart', initEngine, { once: true });
     document.addEventListener('click', initEngine, { once: true });
 
@@ -214,17 +206,11 @@
     }
 
     function getHindiCardName(val) {
-        if(val === 'A') return 'Ikka';
-        if(val === 'J') return 'Ghulaam';
-        if(val === 'Q') return 'Begum';
-        if(val === 'K') return 'Baadshah';
-        if(val === '10') return 'Dahla';
-        if(val === '9') return 'Nahla';
-        if(val === '8') return 'Attha';
+        if(val === 'A') return 'Ikka'; if(val === 'J') return 'Ghulaam'; if(val === 'Q') return 'Begum'; if(val === 'K') return 'Baadshah';
+        if(val === '10') return 'Dahla'; if(val === '9') return 'Nahla'; if(val === '8') return 'Attha';
         return val;
     }
 
-    // 🔥 ORIGINAL SERVER SYNC LOGIC 🔥
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -311,7 +297,6 @@
                 hHtml += `<div class="record-dot" style="background:${col};">${char}</div>`;
             });
             document.getElementById('record-board').innerHTML = hHtml;
-            // Scroll to newest
             let board = document.getElementById('record-board');
             board.scrollLeft = board.scrollWidth;
         }
@@ -392,13 +377,19 @@
         </div>`;
     }
 
-    // ORIGINAL SERVER STATUS LISTENER (Koi Client-Server nahi)
     let lastSpokenJoker = "";
     db.ref('Game/AndarBahar/Status').on('value', snap => {
         let st = snap.val(); if(!st) return;
         let tEl = document.getElementById('timer');
         
         if(st.state === 'betting') {
+            if (!isBettingOpen) {
+                isBettingOpen = true;
+                resetUI();
+                clearInterval(botInterval);
+                botInterval = setInterval(botBetAction, 700); 
+            }
+
             document.getElementById('joker-back').style.display = 'none';
             document.getElementById('joker-front').style.display = 'block';
             document.getElementById('joker-front').innerHTML = createCardDesign(st.jokerVal, st.jokerSuit);
@@ -409,13 +400,6 @@
                 lastSpokenJoker = st.jokerVal;
             }
             
-            if(!isBettingOpen) {
-                isBettingOpen = true;
-                resetUI();
-                clearInterval(botInterval);
-                botInterval = setInterval(botBetAction, 700); 
-            }
-            
             tEl.innerText = st.timer + "s";
             tEl.style.color = (st.timer <= 5) ? "#ff3333" : "#0f0";
             tEl.style.textShadow = (st.timer <= 5) ? "0 0 20px #ff3333" : "0 0 15px #0f0";
@@ -423,7 +407,7 @@
             if(st.timer === 5) speakAI("Time running out.");
         } 
         else if (st.state === 'dealing' && isBettingOpen) {
-            isBettingOpen = false;
+            isBettingOpen = false; // Lock immediately
             clearInterval(botInterval); 
             tEl.innerText = "STOP!";
             tEl.style.color = "#fff";
@@ -516,6 +500,49 @@
         
         pool = {andar:0, bahar:0}; myBets = {andar:0, bahar:0}; 
         document.getElementById('p-andar').innerText = "0"; document.getElementById('p-bahar').innerText = "0";
+    }
+
+    // 🔥 BULLETPROOF AUTO-DEALER (NEVER STOPS) 🔥
+    let isServer = false;
+
+    // Har 5 second mein check karo, agar 20 second se koi update nahi aaya, toh isko khud start kar do
+    setInterval(() => {
+        if (isServer) return;
+        db.ref('Game/AndarBahar/Status/lastHeartbeat').once('value', snap => {
+            let lastTime = snap.val() || 0;
+            if (Date.now() - lastTime > 20000) { 
+                isServer = true; 
+                runDealerLoop(); 
+            }
+        });
+    }, 5000);
+
+    // Agar main server hoon, toh heartbeat dete raho taaki dusre shant rahein
+    setInterval(() => { if(isServer) db.ref('Game/AndarBahar/Status/lastHeartbeat').set(Date.now()); }, 3000);
+
+    function runDealerLoop() {
+        if (!isServer) return;
+        let jVal = cardValues[Math.floor(Math.random()*13)];
+        let jSuit = cardSuits[Math.floor(Math.random()*4)];
+        
+        db.ref('Game/AndarBahar/Status').update({ state: 'betting', timer: 15, jokerVal: jVal, jokerSuit: jSuit, lastHeartbeat: Date.now() });
+        db.ref('Game/AndarBahar/Bets').remove(); // Clear pool for new round
+        
+        let t = 15;
+        let intv = setInterval(() => {
+            if(!isServer) { clearInterval(intv); return; }
+            t--;
+            if(t > 0) {
+                db.ref('Game/AndarBahar/Status').update({ timer: t, lastHeartbeat: Date.now() });
+            } else {
+                clearInterval(intv);
+                let winner = Math.random() > 0.5 ? 'andar' : 'bahar';
+                db.ref('Game/AndarBahar/Status').update({ state: 'dealing', winner: winner, timer: 0, lastHeartbeat: Date.now() });
+                
+                // Animation poori hone ke baad agla round shuru
+                setTimeout(runDealerLoop, 12000); 
+            }
+        }, 1000);
     }
 </script>
 </body>
