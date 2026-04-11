@@ -78,8 +78,7 @@
     </div>
 
     <div class="market-list" id="markets-container">
-        <p style="text-align: center; color: #6441A5; padding: 20px; font-weight: bold;"><i class="fa-solid fa-spinner fa-spin"></i> Loading Premium Casino...</p>
-    </div>
+        </div>
 
     <div id="modalOverlay" onclick="closeBetModal()"></div>
     <div id="betModal">
@@ -107,7 +106,24 @@
     </div>
 
     <script>
-        // 1. Firebase System setup
+        // ==========================================================
+        // 🔥 DIRECT RESULTS (ANK YAHAN DAALEIN) 🔥
+        // Jab bhi naya ank daalna ho, GitHub par is file ko edit karein
+        // aur "***-**-***" ko hata kar apna ank likhein (jaise "123-45-678")
+        // ==========================================================
+        const liveResults = {
+            "time_day": "***-**-***",
+            "madhur_day": "***-**-***",
+            "milan_day": "***-**-***",
+            "kalyan_day": "***-**-***",
+            "time_night": "***-**-***",
+            "madhur_night": "***-**-***",
+            "milan_night": "***-**-***",
+            "kalyan_night": "***-**-***"
+        };
+        // ==========================================================
+
+        // 1. Firebase System setup (Sirf Wallet aur Bets ke liye)
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -128,7 +144,7 @@
 
         document.getElementById('todayDate').innerText = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 
-        // 🔥 Wallet Logic Fixed 🔥
+        // 🔥 Wallet Logic 🔥
         db.ref('users/' + userPhone).on('value', snap => {
             if(snap.exists() && userPhone !== 'Guest') {
                 const d = snap.val();
@@ -139,11 +155,14 @@
             }
         });
 
-        // 2. Generate UI Cards
+        // 2. Generate UI Cards (Direct Result ke saath)
         const container = document.getElementById('markets-container');
         container.innerHTML = '';
         Object.keys(markets).forEach(id => {
             const m = markets[id];
+            let ank = liveResults[id] || "***-**-***"; // Direct fetch
+            let colorClass = (ank !== "***-**-***") ? "res-active" : "res-default";
+            
             container.innerHTML += `
                 <div class="m-card" id="card_${id}">
                     <div class="m-top">
@@ -151,32 +170,15 @@
                             <div class="m-title">${m.name}</div>
                             <div class="m-time-text">${m.open} - ${m.close}</div>
                         </div>
-                        <div class="timer-box" id="timer_${id}">Syncing...</div>
+                        <div class="timer-box" id="timer_${id}">Calculating...</div>
                     </div>
-                    <div class="m-res res-default" id="res_${id}">***-**-***</div>
+                    <div class="m-res ${colorClass}" id="res_${id}">${ank}</div>
                     <button class="btn-play" id="btn_${id}" onclick="openBetModal('${id}', '${m.name}', '${m.open}', '${m.close}')">PLAY NOW</button>
                 </div>
             `;
         });
 
-        // 3. 🔥 Persistent Live Data Sync (No Refresh Required) 🔥
-        db.ref('market').on('value', snap => {
-            const data = snap.val() || {};
-            Object.keys(markets).forEach(id => {
-                let resBox = document.getElementById('res_' + id);
-                if (resBox) {
-                    let ank = (data[id] && data[id].result) ? data[id].result : "***-**-***";
-                    resBox.innerText = ank;
-                    if(ank !== "***-**-***") {
-                        resBox.classList.remove('res-default'); resBox.classList.add('res-active');
-                    } else {
-                        resBox.classList.remove('res-active'); resBox.classList.add('res-default');
-                    }
-                }
-            });
-        });
-
-        // 4. Timer & Countdown Logic (FIXED)
+        // 3. Timer & Countdown Logic
         function parseTime(timeStr) {
             let [time, modifier] = timeStr.split(' '); let [hours, minutes] = time.split(':');
             hours = parseInt(hours, 10); if (hours === 12) hours = 0; if (modifier === 'PM') hours += 12;
@@ -201,7 +203,6 @@
                 let openTime = parseTime(markets[id].open).getTime(); 
                 let closeTime = parseTime(markets[id].close).getTime();
 
-                // Here is the fix for the countdown text!
                 if (now < openTime) {
                     timerElem.innerText = "Opens in: " + formatDiff(openTime - now); 
                     timerElem.className = "timer-box";
