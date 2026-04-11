@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>Kalyan VIP Live Markets</title>
+    <title>Kalyan VIP - Live Markets</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -12,116 +11,50 @@
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Roboto', sans-serif; user-select:none; }
         body { background-color:#0d0d0d; color:#fff; padding-bottom:30px; }
-        .header { background:linear-gradient(90deg, #1a2a6c, #b21f1f, #fdbb2d); padding:15px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
-        .rules-btn { background:rgba(0,0,0,0.5); border:1px solid #fff; color:#fff; padding:6px 12px; border-radius:15px; font-size:12px; font-weight:bold; cursor:pointer; }
-        .wallet-bar { background:#1e1e1e; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #333; }
-        .bal-amt { color:#2ecc71; font-size:20px; font-weight:900; }
         
-        /* 🔥 Date & Time Styling 🔥 */
-        .live-datetime { background:#111; color:#f1c40f; text-align:center; padding:10px; font-size:14px; font-weight:bold; border-bottom:1px solid #333; letter-spacing: 1px; }
+        /* Header & Date */
+        .header { background:linear-gradient(90deg, #1a2a6c, #b21f1f, #fdbb2d); padding:15px; text-align: center; position:sticky; top:0; z-index:100; border-bottom: 2px solid #ffd700; }
+        .header h1 { font-size: 18px; color: #fff; letter-spacing: 1px; margin-bottom: 5px; }
+        .date-box { font-size: 12px; color: #000; background: #ffd700; display: inline-block; padding: 3px 10px; border-radius: 10px; font-weight: bold; }
 
         .market-list { padding:10px; }
-        .m-card { background:#222; border-radius:10px; padding:15px; margin-bottom:15px; border-left:5px solid #2ecc71; box-shadow: 0 4px 6px rgba(0,0,0,0.4); }
-        .m-card.closed { border-left-color:#e74c3c; opacity:0.8; }
-        .m-card.half-closed { border-left-color:#f39c12; }
-        .m-title { font-size:18px; font-weight:900; color:#f1c40f; text-transform:uppercase; }
-        .m-res { font-size:28px; font-weight:bold; margin:12px 0; text-align:center; letter-spacing:4px; background:#111; padding:10px; border-radius:5px; color:#00ffff; border:1px solid #333; transition: all 0.3s; }
+        .m-card { background:#1a1a1a; border-radius:10px; padding:15px; margin-bottom:15px; border: 1px solid #333; position: relative; overflow: hidden; }
+        .m-card::before { content: ""; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: #2ecc71; }
+        .m-card.closed::before { background: #e74c3c; }
         
-        .btn-bet { width:100%; background:linear-gradient(180deg, #2ecc71, #27ae60); color:#000; border:none; padding:14px; border-radius:8px; font-weight:900; font-size:16px; cursor:pointer; }
-        .btn-bet:disabled { background:#333; color:#777; cursor:not-allowed; pointer-events:none; }
-        .btn-bet.btn-close-only { background:linear-gradient(180deg, #f39c12, #d35400); color:#fff; }
+        .m-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .m-title { font-size:16px; font-weight:900; color:#f1c40f; text-transform:uppercase; }
+        .m-time-text { font-size: 11px; color: #aaa; margin-top: 2px; }
         
-        #modalOverlay, #rulesModalOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:998; }
-        #betModal, #rulesModal { display:none; position:fixed; bottom:0; left:0; width:100%; background:#1a1a1a; z-index:999; border-top:3px solid #f1c40f; padding:20px; border-top-left-radius:20px; border-top-right-radius:20px; }
-        #rulesModal { top:20%; bottom:auto; width:90%; left:5%; border-radius:15px; }
+        /* 🔥 Countdown Timer Styling 🔥 */
+        .timer-box { font-size: 11px; font-weight: bold; background: #000; padding: 4px 8px; border-radius: 5px; border: 1px solid #444; color: #fff; }
+        .timer-box.running { color: #00ff88; border-color: #00ff88; }
+        .timer-box.closed { color: #ff3333; border-color: #ff3333; }
         
-        .game-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
-        .game-btn { background:#222; color:#fff; padding:15px 10px; border-radius:8px; border:1px solid #444; font-weight:bold; font-size:13px; cursor:pointer; transition:0.2s; }
-        
-        .session-selector { display:flex; gap:10px; margin-bottom:15px; }
-        .session-lbl { flex:1; background:#222; padding:12px; text-align:center; border-radius:8px; border:2px solid #444; font-weight:bold; cursor:pointer; }
-        .session-lbl.active { border-color:#f1c40f; color:#f1c40f; }
-        .session-lbl.disabled { opacity: 0.3; cursor: not-allowed; pointer-events:none; }
-        
-        .bet-input { width:100%; padding:15px; margin-bottom:15px; background:#111; border:1px solid #444; color:#fff; border-radius:8px; outline:none; }
-        .btn-confirm { background:#2ecc71; color:#000; width:100%; padding:15px; border:none; border-radius:8px; font-weight:900; cursor:pointer; }
+        .m-res { font-size:32px; font-weight:bold; margin:10px 0; text-align:center; letter-spacing:5px; background: #000; padding:15px; border-radius:8px; color:#00ffff; border:1px solid #222; text-shadow: 0 0 10px rgba(0,255,255,0.3); }
+        .btn-play { width:100%; background:linear-gradient(180deg, #2ecc71, #27ae60); color:#000; border:none; padding:12px; border-radius:8px; font-weight:900; font-size:14px; cursor:pointer; }
+        .btn-play:disabled { background: #333; color: #666; cursor: not-allowed; }
     </style>
 </head>
 <body>
+
     <header class="header">
-        <button class="rules-btn" onclick="openRules()">RULES</button>
-        <h1 style="color:#fff; font-size:18px;">👑 KALYAN VIP MARKETS</h1>
-        <div style="width:50px;"></div>
+        <h1>👑 KALYAN VIP MARKETS</h1>
+        <div class="date-box" id="todayDate">Loading Date...</div>
     </header>
 
-    <div class="live-datetime" id="clockBox">
-        Loading Time...
-    </div>
-
-    <div class="wallet-bar">
-        <span style="font-size:12px; font-weight:bold; color:#aaa;">VIP WALLET</span>
-        <div class="bal-amt">₹ <span id="balance">0.00</span></div>
-    </div>
-
     <div class="market-list" id="markets-container">
-        <div style="text-align: center; color: #888; padding: 20px;">Fetching Live Markets...</div>
-    </div>
-
-    <div id="rulesModalOverlay" onclick="closeRules()"></div>
-    <div id="rulesModal">
-        <h2 style="color:#f1c40f; margin-bottom:10px;">GAME RULES</h2>
-        <div id="rulesText" style="white-space:pre-wrap; color:#ddd; font-size:14px;">Loading rules...</div>
-        <button onclick="closeRules()" style="width:100%; margin-top:15px; padding:12px; background:#444; color:#fff; border:none; border-radius:8px; font-weight:bold;">CLOSE</button>
-    </div>
-
-    <div id="modalOverlay" onclick="closeBetModal()"></div>
-    <div id="betModal">
-        <h3 id="modalMarketName" style="color:#f1c40f; margin-bottom:15px;">SELECT GAME</h3>
-        <div class="game-grid" id="gameGrid">
-            <button class="game-btn" onclick="selectGame('Single Ank')">SINGLE ANK</button>
-            <button class="game-btn" id="btnJodi" onclick="selectGame('Jodi Digit')">JODI DIGIT</button>
-            <button class="game-btn" onclick="selectGame('Single Panna')">SINGLE PANNA</button>
-            <button class="game-btn" onclick="selectGame('Double Panna')">DOUBLE PANNA</button>
-            <button class="game-btn" onclick="selectGame('Triple Panna')">TRIPLE PANNA</button>
-            <button class="game-btn" id="btnSangam" onclick="selectGame('Half Sangam')">HALF SANGAM</button>
-        </div>
-        
-        <div id="inputSection" style="display:none;">
-            <div id="selectedGameLabel" style="color:#2ecc71; margin-bottom:10px; font-weight:bold;"></div>
-            <div class="session-selector" id="sessionBox">
-                <label class="session-lbl" id="lblOpen"><input type="radio" name="betSession" id="radioOpen" onchange="updateUI()" checked style="display:none;">OPEN</label>
-                <label class="session-lbl" id="lblClose"><input type="radio" name="betSession" id="radioClose" onchange="updateUI()" style="display:none;">CLOSE</label>
-            </div>
-            <input type="number" id="betNumber" class="bet-input" placeholder="Enter Number">
-            <input type="number" id="betAmount" class="bet-input" placeholder="Amount (Min ₹10)">
-            <button class="btn-confirm" id="confirmBtn" onclick="submitFinalBet()">PLACE BET</button>
-            <button onclick="backToGames()" style="width:100%; margin-top:10px; background:none; color:#888; border:none; cursor:pointer;">⬅️ BACK</button>
-        </div>
+        <p style="text-align: center; color: #888; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Connecting Server...</p>
     </div>
 
     <script>
-        // 🔥 Live Date & Time Engine 🔥
-        function updateClock() {
-            const now = new Date();
-            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
-            document.getElementById('clockBox').innerText = now.toLocaleString('en-IN', options);
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        // 🔥 24 Hour Auto-Refresh Engine (86400000 milliseconds) 🔥
-        setTimeout(function() {
-            window.location.reload(true);
-        }, 86400000);
-
+        // 1. Firebase Config
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
-        const userPhone = localStorage.getItem('userPhone') || 'Guest';
-        let activeMarket = null, selectedGameType = "", serverTimeOffset = 0, currentBalance = 0;
 
-        const defaultVIPMarkets = {
+        // 2. Markets Data & Timings
+        const markets = {
             "time_day": { name: "TIME BAZAR", open: "01:00 PM", close: "02:00 PM" },
             "madhur_day": { name: "MADHUR DAY", open: "01:15 PM", close: "02:15 PM" },
             "milan_day": { name: "MILAN DAY", open: "03:00 PM", close: "05:00 PM" },
@@ -132,154 +65,102 @@
             "kalyan_night": { name: "KALYAN NIGHT", open: "09:30 PM", close: "11:30 PM" }
         };
 
-        db.ref('users/' + userPhone).on('value', snap => {
-            const d = snap.val() || {};
-            currentBalance = (parseFloat(d.balance)||0) + (parseFloat(d.winning_balance)||0) + (parseFloat(d.bonus_balance)||0);
-            document.getElementById('balance').innerText = currentBalance.toFixed(2);
+        // Date Display
+        document.getElementById('todayDate').innerText = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+
+        // Helper: Convert "01:00 PM" to actual Date object for TODAY
+        function parseTime(timeStr) {
+            let [time, modifier] = timeStr.split(' ');
+            let [hours, minutes] = time.split(':');
+            hours = parseInt(hours, 10);
+            if (hours === 12) hours = 0;
+            if (modifier === 'PM') hours += 12;
+            let d = new Date();
+            d.setHours(hours, parseInt(minutes, 10), 0, 0);
+            return d;
+        }
+
+        // Format milliseconds to H:M:S
+        function formatDiff(diff) {
+            let h = Math.floor(diff / (1000 * 60 * 60));
+            let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            let s = Math.floor((diff % (1000 * 60)) / 1000);
+            return `${h}h ${m}m ${s}s`;
+        }
+
+        let liveMarketData = {};
+
+        // 3. Fetch Live Result Data
+        db.ref('market').on('value', snap => {
+            liveMarketData = snap.val() || {};
+            renderMarkets(); // Re-render when data comes
         });
 
-        db.ref('settings/game_rules').on('value', snap => { document.getElementById('rulesText').innerText = snap.val() || "Rules loading..."; });
-        db.ref('.info/serverTimeOffset').on('value', snap => { serverTimeOffset = snap.val() || 0; });
+        const container = document.getElementById('markets-container');
 
-        function getISTMinutes() {
-            let d = new Date(new Date().getTime() + serverTimeOffset);
-            let ist = (d.getUTCHours() * 60) + d.getUTCMinutes() + 330;
-            return ist >= 1440 ? ist - 1440 : ist;
-        }
-
-        function parseTime(t) {
-            let p = t.match(/(\d+):(\d+)\s*(AM|PM)/i); if(!p) return 0;
-            let h = parseInt(p[1]), m = parseInt(p[2]), mod = p[3].toUpperCase();
-            if(h === 12) h = (mod === 'PM') ? 12 : 0; else if(mod === 'PM') h += 12;
-            return h * 60 + m;
-        }
-
-        function renderMarkets(liveData) {
-            const container = document.getElementById('markets-container');
-            container.innerHTML = ''; 
-            let cm = getISTMinutes();
-            
-            Object.keys(defaultVIPMarkets).forEach(k => {
-                let m = defaultVIPMarkets[k]; 
-                let liveResult = (liveData && liveData[k] && liveData[k].result) ? liveData[k].result : "***-**-***";
-                
-                let ot = parseTime(m.open), ct = parseTime(m.close);
-                let isFC = cm >= ct, isOC = cm >= ot;
-                let status = isFC ? 'closed' : (isOC ? 'half-closed' : 'running');
-                let btnT = isFC ? 'MARKET CLOSED' : (isOC ? 'PLAY CLOSE ONLY' : 'PLAY NOW');
-                let resColor = (liveResult !== "***-**-***") ? "#FFD700" : "#00ffff"; 
+        // 4. Render Layout
+        function renderMarkets() {
+            container.innerHTML = '';
+            Object.keys(markets).forEach(id => {
+                const mInfo = markets[id];
+                const result = (liveMarketData[id] && liveMarketData[id].result) ? liveMarketData[id].result : "***-**-***";
                 
                 container.innerHTML += `
-                    <div class="m-card ${status}">
-                        <div style="display:flex; justify-content:space-between;">
-                            <div class="m-title">${m.name}</div>
-                            <div style="font-size:10px; color:#aaa;">${m.open} - ${m.close}</div>
+                    <div class="m-card" id="card_${id}">
+                        <div class="m-top">
+                            <div>
+                                <div class="m-title">${mInfo.name}</div>
+                                <div class="m-time-text">${mInfo.open} - ${mInfo.close}</div>
+                            </div>
+                            <div class="timer-box" id="timer_${id}">Calculating...</div>
                         </div>
-                        <div class="m-res" style="color: ${resColor};">${liveResult}</div>
-                        <button class="btn-bet ${isOC?'btn-close-only':''}" ${isFC?'disabled':''} onclick="openBetModal('${k}','${m.name}','${m.open}','${m.close}')">${btnT}</button>
-                    </div>`;
+                        <div class="m-res">${result}</div>
+                        <button class="btn-play" id="btn_${id}">PLAY NOW</button>
+                    </div>
+                `;
             });
         }
 
-        // Fetch Live Data (Ye automatic ank ko waise hi rakhega jab tak admin naya na daale)
-        db.ref('market').on('value', snap => {
-            let data = snap.val() || {};
-            renderMarkets(data); 
-        });
+        // 5. Smart Countdown Timer Engine (Runs every 1 second)
+        setInterval(() => {
+            let now = new Date().getTime();
 
-        function openBetModal(id, name, ot, ct) {
-            activeMarket = { id, name, ot: parseTime(ot), ct: parseTime(ct) };
-            document.getElementById('modalMarketName').innerText = name;
-            
-            let cm = getISTMinutes();
-            let isOpenClosed = cm >= activeMarket.ot; 
-            
-            document.getElementById('btnJodi').style.display = isOpenClosed ? 'none' : 'block';
-            document.getElementById('btnSangam').style.display = isOpenClosed ? 'none' : 'block';
-            
-            let rO = document.getElementById('radioOpen');
-            let rC = document.getElementById('radioClose');
-            let lblO = document.getElementById('lblOpen');
-            
-            if(isOpenClosed) { 
-                rO.disabled = true; rC.checked = true; 
-                lblO.classList.add('disabled');
-            } else { 
-                rO.disabled = false; rO.checked = true; 
-                lblO.classList.remove('disabled');
-            }
-            
-            document.getElementById('modalOverlay').style.display = 'block';
-            document.getElementById('betModal').style.display = 'block';
-            updateUI();
-            backToGames();
-        }
+            Object.keys(markets).forEach(id => {
+                let timerElem = document.getElementById('timer_' + id);
+                let cardElem = document.getElementById('card_' + id);
+                let btnElem = document.getElementById('btn_' + id);
+                if(!timerElem) return;
 
-        function selectGame(gt) {
-            let cm = getISTMinutes();
-            if((gt === 'Jodi Digit' || gt === 'Half Sangam') && cm >= activeMarket.ot) {
-                return alert("Time Over! Aap ab Jodi ya Sangam nahi khel sakte.");
-            }
-            selectedGameType = gt;
-            document.getElementById('gameGrid').style.display = 'none';
-            document.getElementById('inputSection').style.display = 'block';
-            document.getElementById('selectedGameLabel').innerText = "Game: " + gt;
-            document.getElementById('sessionBox').style.display = (gt.includes('Jodi') || gt.includes('Sangam')) ? 'none' : 'flex';
-            updateUI();
-        }
+                let openTime = parseTime(markets[id].open).getTime();
+                let closeTime = parseTime(markets[id].close).getTime();
 
-        function updateUI() {
-            let isO = document.getElementById('radioOpen').checked;
-            let lblO = document.getElementById('lblOpen');
-            let lblC = document.getElementById('lblClose');
-            
-            if (isO) { lblO.classList.add('active'); lblC.classList.remove('active'); } 
-            else { lblC.classList.add('active'); lblO.classList.remove('active'); }
-        }
-
-        function backToGames() { document.getElementById('gameGrid').style.display='grid'; document.getElementById('inputSection').style.display='none'; }
-        function closeBetModal() { document.getElementById('modalOverlay').style.display='none'; document.getElementById('betModal').style.display='none'; document.getElementById('betNumber').value=''; document.getElementById('betAmount').value=''; }
-        function openRules() { document.getElementById('rulesModalOverlay').style.display='block'; document.getElementById('rulesModal').style.display='block'; }
-        function closeRules() { document.getElementById('rulesModalOverlay').style.display='none'; document.getElementById('rulesModal').style.display='none'; }
-
-        function submitFinalBet() {
-            if (userPhone === 'Guest') return alert("Please Login First!");
-            let num = document.getElementById('betNumber').value, amt = parseFloat(document.getElementById('betAmount').value);
-            
-            if(!num || isNaN(amt) || amt < 10) return alert("Valid Number & Amount (Min ₹10) bhariye!");
-            if(amt > currentBalance) return alert("Low VIP Wallet Balance!");
-
-            let numStr = num.toString();
-            if (selectedGameType === 'Single Ank' && numStr.length !== 1) return alert("Single Ank 1 digit hona chahiye!");
-            if (selectedGameType === 'Jodi Digit' && numStr.length !== 2) return alert("Jodi 2 digit honi chahiye!");
-            if (selectedGameType.includes('Panna') && numStr.length !== 3) return alert("Panna 3 digit hona chahiye!");
-            if (selectedGameType === 'Half Sangam' && numStr.length !== 4) return alert("Half Sangam 4 digit hona chahiye!");
-
-            let cm = getISTMinutes();
-            let isJS = (selectedGameType.includes('Jodi') || selectedGameType.includes('Sangam'));
-            let sess = isJS ? "FULL" : (document.getElementById('radioOpen').checked ? "OPEN" : "CLOSE");
-            
-            if (sess === "OPEN" && cm >= activeMarket.ot) return alert("⏳ Open market band ho gaya hai!");
-            if (isJS && cm >= activeMarket.ot) return alert("⏳ Open time nikal chuka hai, Jodi/Sangam invalid!");
-            if (sess === "CLOSE" && cm >= activeMarket.ct) return alert("⏳ Market poora band ho gaya hai!");
-
-            document.getElementById('confirmBtn').disabled = true;
-            document.getElementById('confirmBtn').innerText = "PROCESSING...";
-
-            db.ref('users/' + userPhone + '/balance').set(firebase.database.ServerValue.increment(-amt)).then(() => {
-                let b = { marketName: activeMarket.name, gameType: selectedGameType, session: sess, bidNumber: numStr, betAmount: amt, status: "pending", timestamp: Date.now() };
-                db.ref('BetHistory/' + userPhone).push(b);
-                db.ref('AdminPanel/AllActiveBets').push({ userPhone, ...b });
-                alert("✅ Bet Placed Successfully!"); 
-                closeBetModal();
-                document.getElementById('confirmBtn').disabled = false;
-                document.getElementById('confirmBtn').innerText = "PLACE BET";
-            }).catch(() => {
-                alert("❌ Transaction failed! Check internet.");
-                document.getElementById('confirmBtn').disabled = false;
-                document.getElementById('confirmBtn').innerText = "PLACE BET";
+                if (now < openTime) {
+                    // Market is yet to open
+                    timerElem.innerText = "Opens in: " + formatDiff(openTime - now);
+                    timerElem.className = "timer-box";
+                    cardElem.classList.remove('closed');
+                    btnElem.disabled = false;
+                    btnElem.innerText = "PLAY NOW";
+                } 
+                else if (now >= openTime && now < closeTime) {
+                    // Market is Running
+                    timerElem.innerText = "Closes in: " + formatDiff(closeTime - now);
+                    timerElem.className = "timer-box running";
+                    cardElem.classList.remove('closed');
+                    btnElem.disabled = false;
+                    btnElem.innerText = "PLAY CLOSE ONLY";
+                } 
+                else {
+                    // Market is Closed
+                    timerElem.innerText = "CLOSED";
+                    timerElem.className = "timer-box closed";
+                    cardElem.classList.add('closed');
+                    btnElem.disabled = true;
+                    btnElem.innerText = "MARKET CLOSED";
+                }
             });
-        }
+        }, 1000);
+
     </script>
 </body>
 </html>
