@@ -10,26 +10,17 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
     <style>
-        :root { 
-            --neon-green: #00ff88; 
-            --bg-dark: #0f0f13; 
-            --red: #ff3333; 
-            --gold: #ffd700; 
-            --panel-bg: #1a1a24;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        :root { --neon-green: #00ff88; --bg-dark: #0f0f13; --red: #ff3333; --gold: #ffd700; --panel-bg: #1a1a24; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; user-select: none; }
         body { background-color: var(--bg-dark); color: #fff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Header */
         .header { background: var(--panel-bg); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--neon-green); box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2); z-index: 10; }
         .rules-btn { background: rgba(255,255,255,0.1); border: 1px solid #aaa; color: #fff; padding: 6px 12px; border-radius: 15px; font-size: 12px; cursor: pointer; font-weight: bold; margin-right: 15px;}
         .wallet { font-weight: 900; font-size: 16px; color: var(--gold); background: rgba(255, 215, 0, 0.1); padding: 6px 15px; border-radius: 20px; border: 1px solid var(--gold); text-shadow: 0 0 5px rgba(255,215,0,0.5);}
 
-        /* Game Area */
         .game-area { flex: 1; position: relative; background: radial-gradient(circle at center, #1e222d 0%, #0b0e14 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; border-bottom: 3px solid #333; }
-        .multiplier-text { font-size: 80px; font-weight: 900; z-index: 5; text-shadow: 0 5px 20px rgba(0,0,0,0.9); font-variant-numeric: tabular-nums; transition: color 0.1s;}
+        .multiplier-text { font-size: 80px; font-weight: 900; z-index: 5; text-shadow: 0 5px 20px rgba(0,0,0,0.9); transition: color 0.1s;}
         
-        /* Loading/Status Box */
         .status-box { position: absolute; top: 20px; z-index: 10; display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.7); padding: 10px 25px; border-radius: 30px; border: 1px solid var(--neon-green); box-shadow: 0 0 15px rgba(0,255,136,0.2);}
         .status-text { font-size: 16px; font-weight: 900; color: #fff; letter-spacing: 1px; text-transform: uppercase;}
         .progress-bar-bg { width: 100%; height: 4px; background: #333; border-radius: 2px; margin-top: 5px; overflow: hidden; display: none;}
@@ -37,15 +28,12 @@
 
         #crashCanvas { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-        /* Premium Betting Controls */
         .controls { padding: 15px; background: var(--panel-bg); z-index: 10; border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
-        
         .bet-display-row { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 10px 15px; border-radius: 12px; border: 1px solid #444; margin-bottom: 10px; }
         .bet-display-row span { color: #aaa; font-size: 12px; font-weight: bold; text-transform: uppercase;}
         .bet-amount-text { color: #fff; font-size: 22px; font-weight: 900; }
         .clear-btn { background: #333; color: #fff; border: none; padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;}
 
-        /* Colorful Chips */
         .chips-container { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;}
         .chips-container::-webkit-scrollbar { display: none; }
         .chip { flex: 1; min-width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: 900; color: #fff; cursor: pointer; border: 2px dashed rgba(255,255,255,0.4); box-shadow: 0 4px 10px rgba(0,0,0,0.4); transition: transform 0.1s;}
@@ -56,7 +44,6 @@
         .chip-500 { background: radial-gradient(circle, #b84bff, #6b00b3); }
         .chip-1000 { background: radial-gradient(circle, #ffd700, #b38f00); color: #000;}
 
-        /* Main Action Button */
         .btn-action { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 22px; font-weight: 900; cursor: pointer; text-transform: uppercase; transition: 0.2s; white-space: pre-line; line-height: 1.2; letter-spacing: 1px;}
         .btn-bet { background: linear-gradient(to right, #00b09b, #96c93d); color: #000; box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4); border: 2px solid #fff;}
         .btn-cashout { background: linear-gradient(to right, #f5af19, #f12711); color: #fff; box-shadow: 0 5px 15px rgba(255, 51, 51, 0.4); border: 2px solid var(--gold); animation: pulse 1s infinite alternate;}
@@ -64,35 +51,20 @@
 
         @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.02); } }
 
-        /* Win Message */
         #winMsg { position: absolute; top: 40%; background: linear-gradient(90deg, #00b09b, #96c93d); border: 2px solid #fff; color: #000; padding: 15px 40px; border-radius: 30px; font-weight: 900; font-size: 26px; display: none; z-index: 20; text-align: center; box-shadow: 0 10px 40px rgba(0,255,136,0.6); animation: popIn 0.3s ease-out;}
         @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-
-        /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: #1a1a24; border: 2px solid var(--neon-green); border-radius: 15px; width: 85%; padding: 20px; position: relative; }
-        .close-btn { position: absolute; top: 10px; right: 20px; color: #ff3333; font-size: 28px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
-<body>
+<body onclick="initAudio()">
 
+    <audio id="sndChip" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+    <audio id="sndCashout" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
     <audio id="soundFly" src="https://assets.mixkit.co/active_storage/sfx/1271/1271-preview.mp3" loop></audio>
     <audio id="soundBlast" src="https://assets.mixkit.co/active_storage/sfx/1702/1702-preview.mp3"></audio>
 
     <div class="header">
-        <div style="display: flex; align-items: center;">
-            <button class="rules-btn" onclick="document.getElementById('rulesModal').style.display='flex'">RULES</button>
-            <div style="font-weight: 900; font-size: 18px; color: #fff;">CRASH <span style="color:var(--neon-green)">X</span></div>
-        </div>
+        <div style="font-weight: 900; font-size: 18px; color: #fff;">CRASH <span style="color:var(--neon-green)">X</span></div>
         <div class="wallet">₹<span id="balance">0.00</span></div>
-    </div>
-
-    <div class="modal-overlay" id="rulesModal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="this.parentElement.parentElement.style.display='none'">&times;</span>
-            <div style="font-size: 20px; font-weight: 900; color: var(--neon-green); margin-bottom: 15px; text-align: center;">GAME RULES</div>
-            <div style="font-size: 14px; color: #ddd; line-height: 1.6; white-space: pre-wrap;">1. 15 Second betting time.\n2. Cash out before crash.\n3. Min Bet ₹10.</div>
-        </div>
     </div>
 
     <div class="game-area">
@@ -129,30 +101,42 @@
 
     <script>
         // --- 1. FIREBASE SETUP ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
-            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
-            projectId: "kalyan-casino"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const phone = localStorage.getItem('userPhone') || "Guest";
+        const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
-        // --- 2. WALLET & CHIPS LOGIC ---
-        let currentBalance = 0;
+        // --- 2. AUDIO ENGINE (FIXED KHATARA SOUND) ---
+        let isAudioInit = false;
+        function initAudio() { if(!isAudioInit) { isAudioInit = true; } }
+        
+        function playSnd(audioEl, vol = 1.0) {
+            if(!isAudioInit) return;
+            try { audioEl.volume = vol; audioEl.currentTime = 0; audioEl.play().catch(e=>{}); } catch(e){}
+        }
+
+        // --- 3. PERFECT WALLET LOGIC ---
+        let depBal = 0, winBal = 0, bonBal = 0, currentBalance = 0;
         let selectedBetAmount = 10;
 
-        db.ref('users/' + phone).on('value', (snapshot) => {
-            const data = snapshot.val() || {};
-            currentBalance = parseFloat(data.balance || 0) + parseFloat(data.winning_balance || 0) + parseFloat(data.bonus_balance || 0);
-            if (currentBalance < 0) { db.ref('users/' + phone).update({ balance: 1000 }); currentBalance = 1000; }
-            document.getElementById('balance').innerText = currentBalance.toFixed(2);
-        });
+        if (phone) {
+            db.ref('users/' + phone).on('value', (snapshot) => {
+                const d = snapshot.val() || {};
+                depBal = parseFloat(d.balance || 0); 
+                winBal = parseFloat(d.winning_balance || 0); 
+                bonBal = parseFloat(d.bonus_balance || 0);
+                currentBalance = Math.max(0, depBal + winBal + bonBal);
+                document.getElementById('balance').innerText = currentBalance.toFixed(2);
+            });
+        } else {
+            document.getElementById('balance').innerText = "0.00 (Guest)";
+        }
 
         function addBet(val) {
             if(gameState !== "WAITING" || isBetPlaced) return;
             selectedBetAmount += val;
             document.getElementById('betAmountDisplay').innerText = selectedBetAmount;
+            playSnd(document.getElementById('sndChip'), 0.8); // Nayi Chip Awaaz
         }
         function clearBet() {
             if(gameState !== "WAITING" || isBetPlaced) return;
@@ -160,18 +144,15 @@
             document.getElementById('betAmountDisplay').innerText = selectedBetAmount;
         }
 
-        // --- 3. GAME VARIABLES & AUDIO ENGINE ---
+        // --- 4. GAME VARIABLES ---
         let gameState = "WAITING"; 
+        let previousState = ""; // Ye khatara sound rokne ke liye hai
         let currentMultiplier = 1.00;
         let finalCrashPoint = 1.00;
         let isBetPlaced = false;
         let isCashedOut = false;
         let flightStartTime = 0;
         let waitEndTime = 0;
-        
-        let sFly = document.getElementById('soundFly');
-        let sBlast = document.getElementById('soundBlast');
-        sFly.volume = 0.5; sBlast.volume = 0.8;
 
         const btn = document.getElementById('mainBtn');
         const display = document.getElementById('multiplierDisplay');
@@ -181,71 +162,65 @@
         const winMsg = document.getElementById('winMsg');
 
         function updateBtn(txt, cls) { btn.innerText = txt; btn.className = "btn-action " + cls; }
-        
-        // Audio Helper (Solves timing bugs)
-        let isMuted = true;
-        document.body.addEventListener('click', () => { isMuted = false; }, {once:true});
-        
-        function playSnd(audio) {
-            if(isMuted) return;
-            audio.currentTime = 0;
-            let p = audio.play();
-            if (p !== undefined) p.catch(e => console.log("Audio prep"));
-        }
 
-        // --- 4. FIREBASE SYNC LISTENER (Solves Aage-Piche bug) ---
+        // --- 5. FIREBASE SYNC (Audio Glitch Fixed) ---
         db.ref('game_loop').on('value', (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
 
             gameState = data.state;
 
-            if (gameState === "WAITING") {
-                waitEndTime = data.waitEndTime;
-                currentMultiplier = 1.00;
-                winMsg.style.display = "none";
-                progBg.style.display = "block"; // Show progress bar
-                
-                // Stop Sounds perfectly
-                sFly.pause(); sFly.currentTime = 0;
-                sBlast.pause(); sBlast.currentTime = 0;
-                
-                isCashedOut = false;
-                if (!isBetPlaced) updateBtn("PLACE BET", "btn-bet");
-                else updateBtn("WAITING FOR ROCKET", "btn-disabled");
+            // Audio & UI Trigger (Sirf ek baar chalega jab state badlegi)
+            if(gameState !== previousState) {
+                let sFly = document.getElementById('soundFly');
+                let sBlast = document.getElementById('soundBlast');
 
-            } else if (gameState === "FLYING") {
-                flightStartTime = data.startTime;
-                progBg.style.display = "none"; // Hide progress bar
-                
-                playSnd(sFly); // Start Jet Sound
-                
-                if (isBetPlaced && !isCashedOut) updateBtn("CASH OUT", "btn-cashout");
-                else updateBtn("ROUND STARTED", "btn-disabled");
-
-            } else if (gameState === "CRASHED") {
-                finalCrashPoint = data.crashMultiplier;
-                currentMultiplier = finalCrashPoint;
-                progBg.style.display = "none";
-                
-                // Swap sounds instantly
-                sFly.pause(); 
-                playSnd(sBlast); 
-                
-                if (isBetPlaced && !isCashedOut) {
-                    updateBtn("YOU LOST", "btn-disabled");
-                    isBetPlaced = false; 
-                } else if (!isBetPlaced) {
-                    updateBtn("CRASHED", "btn-disabled");
+                if (gameState === "WAITING") {
+                    waitEndTime = data.waitEndTime;
+                    currentMultiplier = 1.00;
+                    winMsg.style.display = "none";
+                    progBg.style.display = "block";
+                    sFly.pause(); sFly.currentTime = 0;
+                    isCashedOut = false;
+                    if (!isBetPlaced) updateBtn("PLACE BET", "btn-bet");
+                    else updateBtn("WAITING FOR ROCKET", "btn-disabled");
+                } 
+                else if (gameState === "FLYING") {
+                    flightStartTime = data.startTime;
+                    progBg.style.display = "none";
+                    playSnd(sFly, 0.4); // Smooth Jet Sound
+                    if (isBetPlaced && !isCashedOut) updateBtn("CASH OUT", "btn-cashout");
+                    else updateBtn("ROUND STARTED", "btn-disabled");
+                } 
+                else if (gameState === "CRASHED") {
+                    finalCrashPoint = data.crashMultiplier;
+                    currentMultiplier = finalCrashPoint;
+                    progBg.style.display = "none";
+                    sFly.pause(); playSnd(sBlast, 1.0); // Smooth Blast
+                    
+                    if (isBetPlaced && !isCashedOut) {
+                        updateBtn("YOU LOST", "btn-disabled");
+                        isBetPlaced = false; 
+                    } else if (!isBetPlaced) {
+                        updateBtn("CRASHED", "btn-disabled");
+                    }
                 }
+                previousState = gameState; // Lock kar diya
             }
         });
 
-        // --- 5. BETTING & PROFIT LOGIC ---
+        // --- 6. 100% PERFECT BET DEDUCTION LOGIC ---
         function handleAction() {
+            if(!phone) return alert("Please Login!");
+
             if (gameState === "WAITING" && !isBetPlaced) {
                 if (selectedBetAmount > currentBalance) return alert("Low Balance!");
-                db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(-selectedBetAmount) }).then(() => {
+                
+                // Real Deduction Logic
+                let nDep = depBal, nWin = winBal, rem = selectedBetAmount;
+                if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
+
+                db.ref('users/' + phone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) }).then(() => {
                     isBetPlaced = true;
                     updateBtn("WAITING FOR ROCKET", "btn-disabled");
                 });
@@ -253,7 +228,10 @@
             } else if (gameState === "FLYING" && isBetPlaced && !isCashedOut) {
                 isCashedOut = true;
                 let winAmount = (selectedBetAmount * currentMultiplier).toFixed(2);
-                db.ref('users/' + phone).update({ balance: firebase.database.ServerValue.increment(parseFloat(winAmount)) }).then(() => {
+                
+                // Real Winning Add Logic
+                db.ref('users/' + phone).update({ winning_balance: firebase.database.ServerValue.increment(parseFloat(winAmount)) }).then(() => {
+                    playSnd(document.getElementById('sndCashout'), 1.0); // Real Win Sound
                     updateBtn("CASHED OUT ✅", "btn-disabled");
                     winMsg.innerHTML = `YOU WIN!<br>₹${winAmount}`;
                     winMsg.style.display = 'block';
@@ -262,7 +240,7 @@
             }
         }
 
-        // --- 6. CANVAS ENGINE (Perfectly Synced) ---
+        // --- 7. COLORFUL CANVAS ENGINE ---
         const canvas = document.getElementById('crashCanvas');
         const ctx = canvas.getContext('2d');
         let canvasW, canvasH, particles = [], bgOffset = 0;
@@ -283,11 +261,9 @@
                 display.innerText = "1.00x";
                 display.style.color = "#fff";
                 
-                // Progress Bar Update (15 sec total)
                 let pct = (msLeft / 15000) * 100;
                 progFill.style.width = `${pct}%`;
-                if(pct < 30) progFill.style.background = "var(--red)";
-                else progFill.style.background = "var(--neon-green)";
+                progFill.style.background = (pct < 30) ? "var(--red)" : "var(--neon-green)";
                 
             } else if (gameState === "FLYING") {
                 statusTxt.innerText = "ROCKET FLYING!";
@@ -296,9 +272,14 @@
                 let elapsedMs = Date.now() - flightStartTime;
                 if(elapsedMs < 0) elapsedMs = 0;
                 
-                currentMultiplier = Math.pow(Math.E, 0.00008 * elapsedMs);
+                currentMultiplier = Math.pow(Math.E, 0.00006 * elapsedMs); // Smooth speed
                 display.innerText = currentMultiplier.toFixed(2) + "x";
-                display.style.color = "#fff";
+                
+                // Color change based on multiplier
+                if(currentMultiplier > 10) display.style.color = "#ff33ff";
+                else if(currentMultiplier > 5) display.style.color = "#ff3333";
+                else if(currentMultiplier > 2) display.style.color = "#ffd700";
+                else display.style.color = "#00ff88";
                 
                 if(isBetPlaced && !isCashedOut) {
                     let liveWin = (selectedBetAmount * currentMultiplier).toFixed(2);
@@ -312,7 +293,7 @@
                 display.innerText = finalCrashPoint.toFixed(2) + "x";
                 display.style.color = "var(--red)";
                 
-                let finalElapsed = Math.log(finalCrashPoint) / 0.00008;
+                let finalElapsed = Math.log(finalCrashPoint) / 0.00006;
                 drawGraphEngine(finalElapsed);
             }
             requestAnimationFrame(renderFrame);
@@ -337,12 +318,6 @@
                 if(i===0) yp = canvasH - 35;
                 ctx.fillText(v.toFixed(1)+"x", 35, yp+4);
             }
-            ctx.textAlign = "center"; 
-            for(let i=1; i<=5; i++) {
-                let v = (maxSec*(i/5)); 
-                let xp = 40 + (i/5)*(canvasW*0.8);
-                ctx.fillText(v.toFixed(1)+"s", xp, canvasH - 10);
-            }
 
             let xMap = (elapsedMs / 1000) / maxSec; 
             let yMap = (currentMultiplier - 1) / (maxMult - 1); 
@@ -356,10 +331,16 @@
 
             ctx.beginPath(); ctx.moveTo(startX, startY); ctx.quadraticCurveTo(x * 0.5, startY, x, y);
             ctx.lineWidth = 6; 
-            let lineGrad = ctx.createLinearGradient(0, 0, x, y);
-            lineGrad.addColorStop(0, "rgba(233, 30, 99, 0.2)");
-            lineGrad.addColorStop(1, gameState === "CRASHED" ? "#ff3333" : "#00ff88"); // Rocket Line Color
-            ctx.strokeStyle = lineGrad; ctx.stroke();
+            
+            // 🔥 NAYI RANGEEN (COLORFUL) LINE 🔥
+            let lineColor = "#00ff88"; // Default Green
+            if(currentMultiplier > 10) lineColor = "#ff33ff"; // Purple
+            else if(currentMultiplier > 5) lineColor = "#ff3333"; // Red
+            else if(currentMultiplier > 2) lineColor = "#ffd700"; // Yellow
+            if(gameState === "CRASHED") lineColor = "#ff3333"; // Crash pe Red
+            
+            ctx.strokeStyle = lineColor; 
+            ctx.stroke();
 
             ctx.lineTo(x, startY); ctx.lineTo(startX, startY);
             let fillGrad = ctx.createLinearGradient(0, y, 0, startY);
@@ -383,7 +364,7 @@
             ctx.restore();
         }
 
-        // --- 8. SMART AUTO-PLAY SERVER ---
+        // --- 8. SMART AUTO-SERVER (Fix Random Crash Logic) ---
         let isServer = false; 
 
         setInterval(() => {
@@ -402,8 +383,17 @@
 
             setTimeout(() => {
                 if (!isServer) return;
-                let cVal = (Math.random() < 0.05) ? 1.00 : (100 / (100 - Math.random() * 98)); 
-                let fTime = Math.log(cVal) / 0.00008; 
+                
+                // 🔥 NAYA ADVANCED RANDOM LOGIC (Har baar alag jageh udatega) 🔥
+                let chance = Math.random();
+                let cVal = 1.00;
+                if(chance < 0.10) cVal = 1.00; // 10% chance of instant blast
+                else if (chance < 0.50) cVal = 1.01 + Math.random() * 0.99; // 1x - 2x
+                else if (chance < 0.85) cVal = 2.00 + Math.random() * 3.00; // 2x - 5x
+                else if (chance < 0.95) cVal = 5.00 + Math.random() * 5.00; // 5x - 10x
+                else cVal = 10.00 + Math.random() * 15.00; // 10x - 25x Jackpot
+
+                let fTime = Math.log(cVal) / 0.00006; 
                 db.ref('game_loop').update({ state: 'FLYING', startTime: Date.now(), lastHeartbeat: Date.now() });
 
                 setTimeout(() => {
@@ -411,7 +401,7 @@
                     db.ref('game_loop').update({ state: 'CRASHED', crashMultiplier: cVal, lastHeartbeat: Date.now() });
                     setTimeout(runServerLoop, 4000); 
                 }, fTime);
-            }, 15000); // Perfect 15 sec wait
+            }, 15000);
         }
     </script>
 </body>
