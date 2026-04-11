@@ -2,96 +2,33 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VIP Rules Admin</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIP Admin - Result Panel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body { 
-            background-color: #0a0a0a; 
-            color: #fff; 
-            font-family: 'Roboto', sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-        }
-        .header { 
-            background: linear-gradient(90deg, #1a2a6c, #b21f1f); 
-            padding: 15px; 
-            text-align: center; 
-            border-radius: 10px; 
-            border-bottom: 3px solid #ffd700; 
-            margin-bottom: 20px; 
-            box-shadow: 0 4px 10px rgba(255,215,0,0.2);
-        }
-        .header h1 { margin: 0; font-size: 20px; color: #ffd700; letter-spacing: 1px; }
-        .card { 
-            background: #141414; 
-            padding: 20px; 
-            border-radius: 12px; 
-            border: 1px solid #333; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5); 
-        }
-        label { 
-            font-size: 14px; 
-            color: #aaa; 
-            font-weight: bold; 
-            display: block; 
-            margin-bottom: 10px; 
-            text-transform: uppercase; 
-        }
-        textarea { 
-            width: 100%; 
-            height: 250px; 
-            background: #000; 
-            color: #00ff88; 
-            border: 2px solid #444; 
-            border-radius: 8px; 
-            padding: 15px; 
-            font-size: 16px; 
-            font-family: monospace; 
-            outline: none; 
-            box-sizing: border-box; 
-            resize: vertical;
-            transition: 0.3s;
-        }
-        textarea:focus { border-color: #ffd700; }
-        .btn-save { 
-            width: 100%; 
-            background: linear-gradient(45deg, #00b09b, #96c93d); 
-            color: #000; 
-            padding: 15px; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            font-weight: 900; 
-            margin-top: 15px; 
-            cursor: pointer; 
-            box-shadow: 0 4px 10px rgba(0,255,136,0.3);
-            text-transform: uppercase;
-        }
-        .btn-save:active { transform: scale(0.98); }
-        .status-box { margin-top: 15px; text-align: center; font-size: 13px; color: #aaa; }
+        body { background: #0a0a0b; color: #fff; font-family: sans-serif; padding: 15px; margin: 0; }
+        .header { background: linear-gradient(45deg, #b21f1f, #1a2a6c); padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; border-bottom: 3px solid #ffd700; }
+        .m-card { background: #1a1a1e; border-radius: 12px; padding: 15px; margin-bottom: 15px; border-left: 5px solid #00ff88; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .m-name { font-weight: 900; color: #ffd700; font-size: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; }
+        .inputs { display: flex; gap: 8px; margin-bottom: 15px; }
+        input { flex: 1; background: #000; color: #fff; border: 1px solid #444; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 16px; outline: none; }
+        input:focus { border-color: #ffd700; }
+        .btn-pay { width: 100%; background: #00ff88; color: #000; border: none; padding: 12px; border-radius: 6px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+        .live-tag { font-size: 12px; color: #00ffff; background: #000; padding: 2px 6px; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1><i class="fa-solid fa-scale-balanced"></i> GAME RULES ADMIN</h1>
-    </div>
+    <div class="header"><h1>👑 RESULT ADMIN</h1></div>
 
-    <div class="card">
-        <label><i class="fa-solid fa-pen-to-square"></i> Edit Live Rules For Players</label>
-        <textarea id="rulesInput" placeholder="Loading current rules..."></textarea>
-        
-        <button class="btn-save" id="saveBtn" onclick="publishRules()"><i class="fa-solid fa-paper-plane"></i> PUBLISH NEW RULES</button>
-        
-        <div class="status-box" id="statusMsg">Connected to Live Database</div>
+    <div id="panel-container">
+        <p style="text-align:center;">Connecting to Firebase...</p>
     </div>
 
     <script>
-        // Aapke Firebase ki details
+        // 🔥 Aapka Firebase Config 🔥
         const firebaseConfig = { 
             apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", 
             databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
@@ -100,48 +37,64 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const rulesBox = document.getElementById('rulesInput');
-        const saveButton = document.getElementById('saveBtn');
-        const statusMsg = document.getElementById('statusMsg');
+        const markets = {
+            "time_day": "TIME BAZAR",
+            "madhur_day": "MADHUR DAY",
+            "milan_day": "MILAN DAY",
+            "kalyan_day": "KALYAN",
+            "time_night": "TIME BAZAR NIGHT",
+            "madhur_night": "MADHUR NIGHT",
+            "milan_night": "MILAN NIGHT",
+            "kalyan_night": "KALYAN NIGHT"
+        };
 
-        // 1. Live Rules Load Karna (Jaise hi admin panel khulega, purane rules dikh jayenge)
-        db.ref('settings/game_rules').on('value', snap => {
-            if(snap.exists()) {
-                rulesBox.value = snap.val();
-            } else {
-                rulesBox.value = "Welcome to K-VIP Casino! \n\n1. Play responsibly.\n2. Minimum bet is ₹10.";
-            }
+        const container = document.getElementById('panel-container');
+
+        // Panel UI generate karna
+        function loadPanel() {
+            container.innerHTML = '';
+            Object.keys(markets).forEach(id => {
+                container.innerHTML += `
+                    <div class="m-card">
+                        <div class="m-name">
+                            ${markets[id]} <span class="live-tag" id="live_${id}">***-**-***</span>
+                        </div>
+                        <div class="inputs">
+                            <input type="number" id="op_${id}" placeholder="Open">
+                            <input type="number" id="jo_${id}" placeholder="Jodi">
+                            <input type="number" id="cl_${id}" placeholder="Close">
+                        </div>
+                        <button class="btn-pay" onclick="sendResult('${id}')">Publish Ank</button>
+                    </div>
+                `;
+            });
+        }
+        loadPanel();
+
+        // Live update dikhane ke liye
+        db.ref('market').on('value', snap => {
+            const data = snap.val() || {};
+            Object.keys(markets).forEach(id => {
+                if(data[id] && data[id].result) {
+                    document.getElementById('live_'+id).innerText = data[id].result;
+                }
+            });
         });
 
-        // 2. Naye Rules Save Karna
-        function publishRules() {
-            const newText = rulesBox.value.trim();
+        // 🔥 Result bhejne ka logic 🔥
+        function sendResult(id) {
+            let op = document.getElementById('op_'+id).value || "***";
+            let jo = document.getElementById('jo_'+id).value || "**";
+            let cl = document.getElementById('cl_'+id).value || "***";
             
-            if(newText === "") {
-                alert("Rules khali nahi ho sakte!");
-                return;
-            }
+            let final = `${op}-${jo}-${cl}`;
 
-            saveButton.innerText = "UPDATING...";
-            saveButton.disabled = true;
-
-            // Seedha Firebase mein update
-            db.ref('settings/game_rules').set(newText)
-                .then(() => {
-                    alert("✅ Rules App Me Successfully Live Ho Gaye!");
-                    saveButton.innerHTML = "<i class='fa-solid fa-check-double'></i> PUBLISHED";
-                    statusMsg.innerText = "Last updated: Just now";
-                    
-                    setTimeout(() => {
-                        saveButton.innerHTML = "<i class='fa-solid fa-paper-plane'></i> PUBLISH NEW RULES";
-                        saveButton.disabled = false;
-                    }, 2000);
-                })
-                .catch((error) => {
-                    alert("❌ Connection Error: " + error.message);
-                    saveButton.innerHTML = "<i class='fa-solid fa-paper-plane'></i> PUBLISH NEW RULES";
-                    saveButton.disabled = false;
-                });
+            db.ref('market/' + id).update({ result: final }).then(() => {
+                alert("✅ Live: " + final);
+                document.getElementById('op_'+id).value = '';
+                document.getElementById('jo_'+id).value = '';
+                document.getElementById('cl_'+id).value = '';
+            });
         }
     </script>
 </body>
