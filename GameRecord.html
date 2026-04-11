@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VIP Admin - Result Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body { background: #0a0a0b; color: #fff; font-family: sans-serif; padding: 15px; margin: 0; }
+        .header { background: linear-gradient(45deg, #b21f1f, #1a2a6c); padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; border-bottom: 3px solid #ffd700; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .header h1 { margin: 0; font-size: 18px; font-weight: 900; color: #ffd700; }
+        .m-card { background: #1a1a1e; border-radius: 12px; padding: 15px; margin-bottom: 15px; border-left: 5px solid #00ff88; box-shadow: 0 4px 8px rgba(0,0,0,0.6); }
+        .m-name { font-weight: 900; color: #ffd700; font-size: 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        input { width: 100%; box-sizing: border-box; background: #000; color: #fff; border: 1px solid #444; padding: 12px 5px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 14px; outline: none; }
+        input:focus { border-color: #ffd700; }
+        .btn-pay { width: 100%; background: linear-gradient(45deg, #00ff88, #00b050); color: #000; border: none; padding: 14px; border-radius: 6px; font-weight: 900; cursor: pointer; text-transform: uppercase; font-size: 14px; }
+        .btn-pay:active { transform: scale(0.98); }
+        .live-tag { font-size: 11px; color: #00ffff; background: #000; padding: 4px 8px; border-radius: 4px; border: 1px solid #333; }
+        .btn-clear { background: #ff3333; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="header"><h1>👑 RESULT ADMIN PANEL</h1></div>
+    <div id="panel-container"><p style="text-align:center; color:#888;">Connecting to Live Database...</p></div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const markets = { 
+            "time_day": "TIME BAZAR", "madhur_day": "MADHUR DAY", "milan_day": "MILAN DAY", "kalyan_day": "KALYAN", 
+            "time_night": "TIME BAZAR NIGHT", "madhur_night": "MADHUR NIGHT", "milan_night": "MILAN NIGHT", "kalyan_night": "KALYAN NIGHT" 
+        };
+
+        const container = document.getElementById('panel-container');
+
+        function loadPanel() {
+            container.innerHTML = '';
+            Object.keys(markets).forEach(id => {
+                container.innerHTML += `
+                    <div class="m-card">
+                        <div class="m-name">
+                            ${markets[id]} 
+                            <div><span class="live-tag" id="live_${id}">***-**-***</span><button class="btn-clear" onclick="clearResult('${id}')">CLEAR</button></div>
+                        </div>
+                        <div class="inputs">
+                            <input type="number" id="op_${id}" placeholder="Open" oninput="if(this.value.length > 3) this.value = this.value.slice(0,3);">
+                            <input type="number" id="jo_${id}" placeholder="Jodi" oninput="if(this.value.length > 2) this.value = this.value.slice(0,2);">
+                            <input type="number" id="cl_${id}" placeholder="Close" oninput="if(this.value.length > 3) this.value = this.value.slice(0,3);">
+                        </div>
+                        <button class="btn-pay" onclick="sendResult('${id}')">Publish Ank</button>
+                    </div>`;
+            });
+        }
+        loadPanel();
+
+        db.ref('market').on('value', snap => {
+            const data = snap.val() || {};
+            Object.keys(markets).forEach(id => { 
+                document.getElementById('live_'+id).innerText = (data[id] && data[id].result) ? data[id].result : "***-**-***"; 
+            });
+        });
+
+        function sendResult(id) {
+            let op = document.getElementById('op_'+id).value || "***"; 
+            let jo = document.getElementById('jo_'+id).value || "**"; 
+            let cl = document.getElementById('cl_'+id).value || "***";
+            let finalResult = `${op}-${jo}-${cl}`;
+            
+            // 🔥 NAYI SETTING: History Save Karega 🔥
+            let aajKiDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-'); 
+            db.ref('MarketHistory/' + aajKiDate + '/' + id).set(finalResult);
+
+            db.ref('market/' + id).update({ result: finalResult }).then(() => {
+                alert("✅ Live Done: " + finalResult);
+                document.getElementById('op_'+id).value = ''; document.getElementById('jo_'+id).value = ''; document.getElementById('cl_'+id).value = '';
+            }).catch(err => alert("Error: " + err.message));
+        }
+
+        function clearResult(id) {
+            if(confirm("Kya aap is market ka result hatana chahte hain?")) {
+                db.ref('market/' + id).update({ result: "***-**-***" }).then(() => alert("Result Cleared!"));
+            }
+        }
+    </script>
+</body>
+</html>
