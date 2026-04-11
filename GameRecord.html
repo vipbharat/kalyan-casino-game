@@ -11,9 +11,11 @@
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Roboto', sans-serif; }
         body { background-color:#0d0518; color:#fff; padding-bottom:70px; }
+        
         .header { background:linear-gradient(90deg, #2a0845, #6441A5); padding:15px; text-align: center; position:sticky; top:0; z-index:100; border-bottom: 3px solid #ffd700; box-shadow: 0 4px 15px rgba(255,215,0,0.2); }
         .header h1 { font-size: 20px; color: #ffd700; letter-spacing: 2px; margin-bottom: 5px; font-weight: 900; text-transform: uppercase; }
         
+        /* 🔥 Tabs System 🔥 */
         .tab-container { display: flex; background: #160a2c; border-bottom: 2px solid #3d1b63; }
         .tab-btn { flex: 1; padding: 15px; text-align: center; font-weight: 900; color: #b39ddb; background: transparent; border: none; cursor: pointer; text-transform: uppercase; transition: 0.3s; font-size: 14px; }
         .tab-btn.active { color: #ffd700; border-bottom: 4px solid #ffd700; background: rgba(255,215,0,0.1); }
@@ -21,6 +23,7 @@
         .content-section { display: none; padding: 15px; }
         .content-section.active { display: block; }
 
+        /* 🔥 Cards Styling 🔥 */
         .card { background:#150727; border-radius:12px; padding:15px; margin-bottom:15px; border: 1px solid #3d1b63; box-shadow: 0 5px 15px rgba(0,0,0,0.8); border-left: 5px solid #00ff88; }
         .card.pending { border-left-color: #ffd700; }
         .card.win { border-left-color: #00ff88; }
@@ -32,9 +35,11 @@
         .c-status.pending { color: #ffd700; border: 1px solid #ffd700; }
         .c-status.win { color: #00ff88; border: 1px solid #00ff88; }
         .c-status.loss { color: #ff3333; border: 1px solid #ff3333; }
+        
         .c-info { font-size: 13px; color: #ccc; }
         .c-amt { font-size: 18px; font-weight: 900; color: #fff; }
         
+        /* 🔥 History Table 🔥 */
         .date-header { background: #2a0845; padding: 10px; border-radius: 6px; font-weight: bold; color: #ffd700; margin-top: 15px; margin-bottom: 10px; border-left: 4px solid #ffd700; }
         .hist-table { width: 100%; border-collapse: collapse; background: #0a0312; border-radius: 8px; overflow: hidden; }
         .hist-table th, .hist-table td { padding: 12px; text-align: left; border-bottom: 1px solid #3d1b63; font-size: 14px; }
@@ -43,8 +48,9 @@
         .hist-table tr:last-child td { border-bottom: none; }
         .m-name-td { color: #fff !important; font-weight: normal !important; letter-spacing: 0 !important; }
 
+        /* 🔥 Nav Bar for Bottom 🔥 */
         .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #160a2c; display: flex; justify-content: space-around; padding: 12px; border-top: 1px solid #3d1b63; z-index: 90; }
-        .nav-btn { color: #b39ddb; text-decoration: none; font-weight: bold; font-size: 12px; text-align: center; }
+        .nav-btn { color: #b39ddb; text-decoration: none; font-weight: bold; font-size: 12px; text-align: center; cursor: pointer;}
         .nav-btn i { font-size: 18px; display: block; margin-bottom: 4px; }
         .nav-btn.active { color: #ffd700; }
     </style>
@@ -73,7 +79,7 @@
     </div>
 
     <div class="bottom-nav">
-        <a href="Market.html" class="nav-btn"><i class="fa-solid fa-gamepad"></i>Play</a>
+        <a onclick="history.back()" class="nav-btn"><i class="fa-solid fa-arrow-left"></i>Back</a>
         <a href="GameRecord.html" class="nav-btn active"><i class="fa-solid fa-clock-rotate-left"></i>History</a>
     </div>
 
@@ -82,7 +88,6 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 🔥 NUMBER FETCH FIX 🔥
         const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
         function switchTab(tab) {
@@ -97,6 +102,7 @@
             }
         }
 
+        // Fetch Player's Bets
         if(userPhone) {
             db.ref('BetHistory/' + userPhone).orderByChild('timestamp').limitToLast(50).on('value', snap => {
                 const container = document.getElementById('betsContainer');
@@ -138,6 +144,7 @@
             document.getElementById('betsContainer').innerHTML = '<p style="text-align:center; color:#ff3333; margin-top:20px; font-weight:bold;">Please Login to see your bets.</p>';
         }
 
+        // Fetch 7-Day Market History
         db.ref('MarketHistory').limitToLast(7).on('value', snap => {
             const container = document.getElementById('historyContainer');
             container.innerHTML = '';
