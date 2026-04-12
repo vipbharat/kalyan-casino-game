@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ANDAR BAHAR - Portrait Mobile Edition</title>
+    <title>ANDAR BAHAR - Khadi Screen Portrait Edition</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
@@ -13,6 +13,7 @@
             --andar-bg: #e6f2ff; --andar-text: #0059b3; 
             --bahar-bg: #ffcccc; --bahar-text: #b30000;
             --table-green: #00802b; 
+            --gold: #ffcc00;
         }
 
         body { 
@@ -21,18 +22,18 @@
             height: 100vh; width: 100vw; overflow: hidden;
         }
 
-        /* MAIN VERTICAL TABLE */
+        /* KHADI SCREEN MAIN TABLE */
         .casino-table {
             width: 100%; height: 100%; 
-            background: radial-gradient(circle at top, #00b33c, var(--table-green));
+            background: radial-gradient(circle at top, #00b33c 0%, var(--table-green) 100%);
             position: relative; display: flex; flex-direction: column;
-            box-sizing: border-box; overflow: hidden;
+            box-sizing: border-box; overflow: hidden; padding-bottom: 60px; /* Space for bottom controls */
         }
 
         /* TOP HISTORY BAR */
         .history-bar {
-            width: 100%; background: #003311; padding: 5px 0; display: flex; justify-content: center; gap: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            flex-wrap: nowrap; overflow: hidden; min-height: 25px;
+            width: 100%; background: rgba(0, 51, 17, 0.8); padding: 5px 0; display: flex; justify-content: center; gap: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            flex-wrap: nowrap; overflow: hidden; min-height: 25px; z-index: 100;
         }
         .record-dot {
             width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; color: #fff; flex-shrink: 0;
@@ -40,83 +41,91 @@
         .dot-a { background: #0099cc; border: 1px solid #fff; }
         .dot-b { background: #cc0000; border: 1px solid #fff; }
 
-        /* JOKER AND BOTS ROW (TOP MIDDLE) */
+        /* JOKER AND STATUS AREA (TOP MIDDLE) */
         .top-section {
-            display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 5px; height: 140px; position: relative;
+            display: flex; justify-content: center; align-items: center; padding: 10px 0; position: relative; gap: 15px;
         }
-        .side-players { display: flex; flex-direction: column; gap: 8px; }
-        .player-avatar {
-            width: 35px; height: 35px; background: #fff; border-radius: 50%; border: 2px solid #d98c21; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 18px;
-        }
-        .player-bal { background: rgba(0,0,0,0.8); font-size: 9px; padding: 2px 6px; border-radius: 10px; border: 1px solid #d98c21; margin-top: -5px; text-align: center;}
+        .side-players-placeholder { width: 40px; } /* Space for balance logic later */
 
         .center-joker { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .status-pill { background: #1a1a00; color: #ffff66; font-size: 11px; padding: 4px 12px; border-radius: 12px; border: 1px solid #ffff66; font-weight: bold; text-align: center; }
-        .joker-card { width: 55px; height: 80px; background: #fff; border-radius: 5px; box-shadow: 0 5px 10px rgba(0,0,0,0.5); padding: 3px; box-sizing: border-box; position: relative;}
+        .status-pill { background: rgba(26, 26, 0, 0.8); color: #ffff66; font-size: 11px; padding: 4px 12px; border-radius: 12px; border: 1px solid #ffff66; font-weight: bold; text-align: center; white-space: nowrap; }
         
+        .joker-card { width: 55px; height: 80px; background: #fff; border-radius: 5px; box-shadow: 0 5px 10px rgba(0,0,0,0.5); padding: 3px; box-sizing: border-box; position: relative; z-index: 10;}
         .card-back { width: 100%; height: 100%; background: url('https://deckofcardsapi.com/static/img/back.png') center/cover; border-radius: 3px; }
         .card-front { width: 100%; height: 100%; display: none; }
 
-        /* MIDDLE GAME AREA (CARDS & BETTING BOXES) */
-        .game-area { display: flex; justify-content: space-between; padding: 0 10px; gap: 10px; flex: 1; }
-        .side-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        /* MIDDLE GAME AREA (CARDS SHOWING HERE) */
+        .game-area { display: flex; justify-content: space-between; padding: 0 10px; gap: 10px; flex: 1; margin-top: 10px; }
+        .side-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
         
-        /* CARD SLOTS FOR DEALT CARDS */
-        .dealt-card-slot {
-            width: 55px; height: 80px; border-radius: 4px; border: 2px dashed rgba(255,255,255,0.4); 
-            display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2);
-            position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.3); padding: 3px; box-sizing: border-box;
+        /* THE VISIBLE CARDS DEALT ARE DISPLAYED HERE */
+        .dealt-cards-container {
+            width: 100%; height: 90px; /* Space for the card sequence to appear */
+            position: relative; display: flex; justify-content: center; align-items: center;
         }
-
-        /* BETTING BOXES */
+        
+        /* BETTING BOXES (Adjusted for Portrait) */
         .box { 
-            width: 100%; min-height: 100px; border-radius: 12px; display: flex; flex-direction: column; 
-            cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.4); position: relative;
+            width: 100%; height: 110px; border-radius: 12px; display: flex; flex-direction: column; 
+            cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.4); position: relative; transition: 0.1s;
         }
         .box:active { transform: scale(0.98); }
-        .andar-box { background: var(--andar-bg); }
-        .bahar-box { background: var(--bahar-bg); }
+        .andar-box { background: var(--andar-bg); border: 2px solid rgba(0, 89, 179, 0.2);}
+        .bahar-box { background: var(--bahar-bg); border: 2px solid rgba(179, 0, 0, 0.2);}
         
-        .box-header { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid rgba(0,0,0,0.1); align-items: center;}
-        .box-title { font-size: 16px; font-weight: 900; }
+        .box-header { display: flex; justify-content: space-between; padding: 4px 10px; border-bottom: 1px solid rgba(0,0,0,0.1); align-items: center;}
+        .box-title { font-size: 15px; font-weight: 900; }
         .andar-box .box-title { color: var(--andar-text); }
         .bahar-box .box-title { color: var(--bahar-text); }
         .ratio { font-size: 10px; color: #555; font-weight: bold; }
 
-        .chips-zone { flex: 1; position: relative; min-height: 60px; overflow: hidden;}
-        .pool-amt { text-align: center; padding: 5px 0; font-size: 14px; font-weight: 900; color: #000; border-top: 1px solid rgba(0,0,0,0.1); }
+        .chips-zone { flex: 1; position: relative; min-height: 50px; overflow: hidden;}
+        .pool-amt { text-align: center; padding: 4px 0; font-size: 13px; font-weight: 900; color: #000; border-top: 1px solid rgba(0,0,0,0.1); }
+
+        /* CARD STYLE FOR DEALT CARDS (Patte visible here) */
+        .dealt-card {
+            width: 50px; height: 75px;
+            position: absolute;
+            transition: transform 0.3s ease-out;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+            opacity: 0;
+            transform: scale(0.8) translateY(-20px);
+        }
 
         /* SIDE BETS */
-        .side-bets { width: 95%; margin: 10px auto; background: #3d3d5c; border-radius: 8px; border: 2px solid #5c5c8a; overflow: hidden; }
+        .side-bets { width: 95%; margin: 10px auto; background: rgba(61, 61, 92, 0.9); border-radius: 8px; border: 2px solid #5c5c8a; overflow: hidden; z-index: 10;}
         .sb-title { background: #5c5c8a; font-size: 10px; text-align: center; padding: 4px; font-weight: bold; }
         .sb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #29293d; }
         .sb-item { background: #3d3d5c; font-size: 10px; padding: 5px; display: flex; justify-content: space-between; align-items: center; }
         .sb-ratio { color: #ffd700; font-weight: bold; }
 
-        /* BOTTOM CONTROLS */
+        /* BOTTOM CONTROLS fixed at bottom of screen */
         .bottom-strip { 
+            position: fixed; bottom: 0; left: 0;
             width: 100%; display: flex; justify-content: space-between; align-items: center; 
             padding: 8px 10px; background: #000; box-sizing: border-box; border-top: 2px solid #ffcc00;
+            z-index: 200; height: 55px;
         }
         
         .user-info { display: flex; align-items: center; background: #4d0000; border: 1px solid #ffcc00; border-radius: 20px; padding: 2px 10px 2px 2px; }
         .u-avatar { width: 25px; height: 25px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-right: 5px; }
-        .u-bal { font-size: 10px; color: #fff; font-weight: bold; }
+        .u-bal { font-size: 11px; color: #fff; font-weight: bold; }
 
-        .chip-selector { display: flex; gap: 4px; }
-        .c-btn { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; border: 2px dashed #fff; cursor: pointer; }
+        .chip-selector { display: flex; gap: 3px; }
+        .c-btn { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; border: 2px dashed #fff; cursor: pointer; }
         .c10 { background: #ffcc00; color: #000; } .c50 { background: #3366ff; color: #fff; } .c100 { background: #00cc99; color: #fff; } .c500 { background: #cc33ff; color: #fff; } .c1k { background: #ff3333; color: #fff; } .c5k { background: #e6e600; color: #000; border: 2px solid #fff; }
         .selected { transform: translateY(-5px); border-style: solid; box-shadow: 0 0 10px #fff; }
 
-        .players-btn { background: #004d00; border: 1px solid #00ff00; padding: 5px 8px; border-radius: 5px; font-size: 14px; }
+        .players-btn { background: #004d00; border: 1px solid #00ff00; padding: 4px 6px; border-radius: 5px; font-size: 14px; }
 
-        .chip { width: 18px; height: 18px; border-radius: 50%; position: absolute; font-size: 7px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 1px solid #fff; box-shadow: 1px 1px 3px rgba(0,0,0,0.5); pointer-events: none;}
+        /* Dynamic chips for Andar/Bahar Boxes */
+        .chip { width: 16px; height: 16px; border-radius: 50%; position: absolute; font-size: 7px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 1px solid #fff; box-shadow: 1px 1px 3px rgba(0,0,0,0.5); pointer-events: none;}
         
         .win-glow { animation: blink 0.5s infinite alternate; }
         @keyframes blink { from { box-shadow: 0 0 10px #ffff00, inset 0 0 10px #ffff00; } to { box-shadow: 0 0 30px #ffff00, inset 0 0 30px #ffff00; } }
         
-        .deal-anim { animation: popIn 0.3s ease-out forwards; }
-        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .deal-anim { animation: popInDealt 0.3s ease-out forwards; opacity: 1; transform: scale(1) translateY(0); }
+        @keyframes popInDealt { 0% { transform: scale(1.5) translateY(-30px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
     </style>
 </head>
 <body onclick="initAudio()">
@@ -129,7 +138,7 @@
     <div class="history-bar" id="record-board"></div>
 
     <div class="top-section">
-        <div class="side-players" id="left-bots"></div>
+        <div class="side-players-placeholder"></div>
         
         <div class="center-joker">
             <div class="status-pill" id="game-status">Waiting...</div>
@@ -139,12 +148,13 @@
             </div>
         </div>
 
-        <div class="side-players" id="right-bots"></div>
+        <div class="side-players-placeholder"></div>
     </div>
 
     <div class="game-area">
         <div class="side-col">
-            <div class="dealt-card-slot" id="slot-andar"></div>
+            <div class="dealt-cards-container" id="andar-cards-display"></div>
+            
             <div class="box andar-box" id="box-andar" onclick="placeBet('andar')">
                 <div class="box-header">
                     <span class="box-title">Andar</span><span class="ratio">1:1.95</span>
@@ -155,7 +165,8 @@
         </div>
 
         <div class="side-col">
-            <div class="dealt-card-slot" id="slot-bahar"></div>
+            <div class="dealt-cards-container" id="bahar-cards-display"></div>
+            
             <div class="box bahar-box" id="box-bahar" onclick="placeBet('bahar')">
                 <div class="box-header">
                     <span class="box-title">Bahar</span><span class="ratio">1:1.95</span>
@@ -167,7 +178,7 @@
     </div>
 
     <div class="side-bets">
-        <div class="sb-title">Side Bets (Bet on number of cards dealt)</div>
+        <div class="sb-title">Side Bets (Bet dealt cards)</div>
         <div class="sb-grid">
             <div class="sb-item"><span>1-5</span><span class="sb-ratio">1:3</span></div>
             <div class="sb-item"><span>6-10</span><span class="sb-ratio">1:4</span></div>
@@ -217,17 +228,7 @@
     let currentChip = 10, isBettingOpen = false, pool = {andar:0, bahar:0}, myBets = {andar:0, bahar:0};
     let botInterval;
 
-    function renderBots() {
-        let leftH = '', rightH = '';
-        for(let i=0; i<6; i++) {
-            let bal = (Math.random()*10000 + 1000).toFixed(2);
-            let h = `<div><div class="player-avatar">🧑‍💼</div><div class="player-bal">${bal}</div></div>`;
-            if(i<3) leftH += h; else rightH += h;
-        }
-        document.getElementById('left-bots').innerHTML = leftH; document.getElementById('right-bots').innerHTML = rightH;
-    }
-    renderBots(); setInterval(renderBots, 5000);
-
+    // Firebase Data listeners setup here (truncated for BREVITY, same logic as before for balance and pool)
     if(phone) {
         db.ref('users/'+phone).on('value', s => { 
             let d = s.val() || {}; let total = (parseFloat(d.balance)||0) + (parseFloat(d.winning_balance)||0);
@@ -262,7 +263,7 @@
         let col = (amt===10||amt===5000)?'#000':'#fff';
         c.className = 'chip'; c.style.background = bg; c.style.color = col;
         c.innerText = amt >= 1000 ? (amt/1000)+'K' : amt;
-        c.style.left = Math.random()*70 + 5 + "%"; c.style.top = Math.random()*50 + 5 + "%";
+        c.style.left = Math.random()*70 + 10 + "%"; c.style.top = Math.random()*60 + 10 + "%";
         div.appendChild(c);
         if(div.children.length > 30) div.firstChild.remove();
     }
@@ -271,35 +272,36 @@
         if(!isBettingOpen) return;
         let botBetted = false;
         ['andar', 'bahar'].forEach(s => {
-            if(Math.random() > 0.3) { 
-                let amt = [10, 50, 100, 500, 1000][Math.floor(Math.random()*5)];
+            if(Math.random() > 0.4) { 
+                let amt = [10, 50, 100][Math.floor(Math.random()*3)]; // Bots bet small on mobile layout
                 spawnChip(s, amt); botBetted = true;
             }
         });
-        if(botBetted) { try { let snd = document.getElementById('coinSnd').cloneNode(); snd.volume = 0.1; snd.play().catch(e=>{}); } catch(e){} }
+        if(botBetted) { try { let snd = document.getElementById('coinSnd').cloneNode(); snd.volume = 0.05; snd.play().catch(e=>{}); } catch(e){} }
     }
 
-    function createCard(val, suit) {
+    function createCardHtml(val, suit) {
         let col = (suit==='H'||suit==='D') ? '#f00' : '#000'; let sym = suit==='S'?'♠':suit==='H'?'♥':suit==='D'?'♦':'♣';
-        return `<div style="background:#fff; color:${col}; width:100%; height:100%; border-radius:3px; display:flex; flex-direction:column; justify-content:space-between; padding:2px; box-sizing:border-box;">
+        return `<div style="background:#fff; color:${col}; width:100%; height:100%; border-radius:3px; display:flex; flex-direction:column; justify-content:space-between; padding:3px; box-sizing:border-box;">
             <div style="font-size:12px; font-weight:900;">${val==='0'?'10':val}</div>
-            <div style="font-size:28px; text-align:center; margin-top:-8px;">${sym}</div>
+            <div style="font-size:32px; text-align:center; margin-top:-8px;">${sym}</div>
             <div style="font-size:12px; font-weight:900; transform:rotate(180deg); margin-top:-8px;">${val==='0'?'10':val}</div>
         </div>`;
     }
 
+    // Server Status listener (Bets pool, Timer, Dealing state)
     db.ref('Game/AndarBahar/Status').on('value', snap => {
         let st = snap.val(); if(!st) return;
         let statusEl = document.getElementById('game-status');
         
         if(st.state === 'betting') {
-            document.getElementById('joker-front').innerHTML = createCard(st.jokerVal, st.jokerSuit);
+            document.getElementById('joker-front').innerHTML = createCardHtml(st.jokerVal, st.jokerSuit);
             document.getElementById('joker-back').style.display = 'none'; document.getElementById('joker-front').style.display = 'block';
             
             if(!isBettingOpen) {
                 isBettingOpen = true; resetUI();
                 speak(`${cardVoiceNames[st.jokerVal]} is Joker. Place your bets.`);
-                clearInterval(botInterval); botInterval = setInterval(botBetAction, 500); 
+                clearInterval(botInterval); botInterval = setInterval(botBetAction, 600); 
             }
             statusEl.innerText = "Place Bets: " + st.timer; statusEl.style.color = (st.timer <= 5) ? "#ff4d4d" : "#ffff66";
         } else if (st.state === 'dealing' && isBettingOpen) {
@@ -316,6 +318,7 @@
         document.getElementById('p-bahar').innerText = pool.bahar.toLocaleString() + ".00";
     });
 
+    // DEALING ANIMATION (Showing cards correctly in portrait)
     async function showAnim(win, jVal) {
         let steps = Math.floor(Math.random()*4)+6;
         if(win==='andar' && steps%2===0) steps++; if(win==='bahar' && steps%2!==0) steps++;
@@ -328,9 +331,23 @@
             let statusEl = document.getElementById('game-status');
             statusEl.innerText = `${side.toUpperCase()} : ${val==='0'?'10':val}`;
             
-            let slot = document.getElementById('slot-'+side);
-            slot.innerHTML = createCard(val, suit);
-            slot.classList.remove('deal-anim'); void slot.offsetWidth; slot.classList.add('deal-anim');
+            // CREATE AND ADD A NEW CARD TO THE DISPLAY CONTAINER
+            const cardsContainer = document.getElementById(side + '-cards-display');
+            const cardEl = document.createElement('div');
+            cardEl.className = 'dealt-card deal-anim';
+            cardEl.innerHTML = createCardHtml(val, suit);
+            
+            // Stacking logic so they overlap and history is visible
+            const dealtCount = cardsContainer.children.length;
+            cardEl.style.zIndex = 10 + dealtCount;
+            // Overlap from right to left or center based on count
+            if(side === 'andar') {
+                cardEl.style.right = (dealtCount * 8) + 'px'; // Stack Andar right to left
+            } else {
+                cardEl.style.left = (dealtCount * 8) + 'px'; // Stack Bahar left to right
+            }
+            
+            cardsContainer.appendChild(cardEl);
             
             try { document.getElementById('cardSnd').cloneNode().play(); } catch(e){}
             speak(cardVoiceNames[val]);
@@ -343,7 +360,7 @@
                 }, 500);
                 return;
             }
-            await new Promise(r => setTimeout(r, 1000));
+            await new Promise(r => setTimeout(r, 900)); // Slightly faster dealing for portrait
         }
     }
 
@@ -352,7 +369,8 @@
         ['andar','bahar'].forEach(s => { 
             document.getElementById('box-'+s).classList.remove('win-glow'); 
             document.getElementById('chips-'+s).innerHTML = ''; 
-            document.getElementById('slot-'+s).innerHTML = '';
+            // CLEAN DEALT CARDS CONTAINERS
+            document.getElementById(s+'-cards-display').innerHTML = '';
         });
         myBets = {andar:0, bahar:0}; document.getElementById('p-andar').innerText = "0.00"; document.getElementById('p-bahar').innerText = "0.00";
     }
