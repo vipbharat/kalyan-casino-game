@@ -3,275 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ANDAR BAHAR - Auto-Clean Edition</title>
+    <title>ANDAR BAHAR - Pro Layout</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800;900&display=swap');
-
-        :root { 
-            --andar-bg: linear-gradient(180deg, #ccffcc 0%, #e6ffe6 100%); 
-            --andar-text: #0033cc; 
-            --bahar-bg: linear-gradient(180deg, #ffcccc 0%, #ffe6e6 100%); 
-            --bahar-text: #cc0000;
-            --table-green: #00b33c; 
-        }
-
-        body { 
-            margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; background: #000; 
-            color: white; user-select: none; display: flex; flex-direction: column; 
-            height: 100vh; width: 100vw; overflow: hidden;
-        }
-
-        .casino-table {
-            width: 100%; height: 100%; 
-            background: var(--table-green);
-            position: relative; display: flex; flex-direction: column;
-            box-sizing: border-box; padding-bottom: 65px;
-        }
-
-        .history-bar {
-            width: 100%; background: #004d1a; padding: 6px 0; display: flex; justify-content: center; gap: 4px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5); overflow: hidden; height: 20px; align-items: center;
-        }
-        .record-dot {
-            width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-            font-size: 10px; font-weight: 900; color: #fff; flex-shrink: 0;
-        }
-        .dot-a { background: #0099cc; border: 1.5px solid #fff; }
-        .dot-b { background: #cc0000; border: 1.5px solid #fff; }
-
-        .status-container { display: flex; justify-content: center; margin-top: 10px; position: relative; z-index: 20;}
-        .status-pill { 
-            background: #000; color: #fff; font-size: 15px; padding: 6px 25px; 
-            border-radius: 25px; border: 2px solid #fff; font-weight: 900; 
-            text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-
-        .joker-area { display: flex; justify-content: center; margin-top: 10px; }
-        .joker-card { 
-            width: 50px; height: 75px; background: #fff; border-radius: 5px; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.6); padding: 3px; box-sizing: border-box;
-        }
-        .card-back { width: 100%; height: 100%; background: url('https://deckofcardsapi.com/static/img/back.png') center/cover; border-radius: 3px; }
-        .card-front { width: 100%; height: 100%; display: none; }
-
-        .card-track-wrapper {
-            width: 95%; margin: 10px auto; background: rgba(0,0,0,0.2); 
-            border-radius: 8px; padding: 5px; box-sizing: border-box; min-height: 80px;
-        }
-        .cards-track { 
-            display: flex; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; 
-            align-items: center; padding: 5px 10px; scroll-behavior: smooth;
-        }
-        .cards-track::-webkit-scrollbar { display: none; } 
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap');
+        body { margin:0; font-family:'Montserrat',sans-serif; background:#00b33c; color:#fff; display:flex; flex-direction:column; height:100vh; overflow:hidden; user-select:none; }
         
-        .dealt-card {
-            width: 45px; height: 65px; flex-shrink: 0; background: #fff; border-radius: 4px;
-            box-shadow: -3px 0px 5px rgba(0,0,0,0.4); padding: 2px; box-sizing: border-box;
-            margin-left: -30px; transition: transform 0.2s ease-out;
-        }
-        .dealt-card:first-child { margin-left: 0; }
-        .win-pop { transform: translateY(-10px) scale(1.15); z-index: 100; box-shadow: 0 0 15px #00ff00; border: 2px solid #00ff00;}
-
-        .betting-area { display: flex; justify-content: space-between; gap: 10px; padding: 0 10px; margin-top: 5px; }
-        .box { flex: 1; height: 110px; border-radius: 12px; display: flex; flex-direction: column; cursor: pointer; box-shadow: 0 5px 10px rgba(0,0,0,0.4); position: relative;}
-        .box:active { transform: scale(0.98); }
-        .andar-box { background: var(--andar-bg); border: 2px solid #99ff99; }
-        .bahar-box { background: var(--bahar-bg); border: 2px solid #ff9999; }
+        .main-area { flex:1; overflow-y:auto; padding-bottom:10px; display:flex; flex-direction:column; align-items:center; }
         
-        .box-header { display: flex; justify-content: space-between; padding: 6px 10px; align-items: center;}
-        .box-title { font-size: 16px; font-weight: 900; }
-        .andar-box .box-title { color: var(--andar-text); }
-        .bahar-box .box-title { color: var(--bahar-text); }
-        .ratio { font-size: 11px; color: #333; font-weight: 900; }
+        .hist-bar { width:100%; background:#004d1a; padding:5px 0; display:flex; justify-content:center; gap:3px; }
+        .dot { width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:900; border:1px solid #fff; }
+        .dot-a { background:#0059b3; } .dot-b { background:#cc0000; }
 
-        .chips-zone { flex: 1; position: relative; overflow: hidden; }
-        .pool-amt { text-align: center; padding: 5px 0; font-size: 16px; font-weight: 900; color: #000; border-top: 1px solid rgba(0,0,0,0.1); }
+        .status-pill { background:#000; padding:5px 20px; border-radius:20px; border:2px solid #fff; font-size:14px; font-weight:900; text-transform:uppercase; margin-top:8px; box-shadow:0 4px 8px rgba(0,0,0,0.5); }
+        .win-alert { border-color:#0f0; color:#0f0; box-shadow:0 0 15px #0f0; }
 
-        .side-bets { width: 95%; margin: 10px auto 0; background: #264d00; border-radius: 8px; overflow: hidden; border: 1px solid #4d9900; }
-        .sb-title { background: #336600; font-size: 11px; text-align: center; padding: 5px; font-weight: bold; color: #fff;}
-        .sb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #132600; }
-        .sb-box { background: #1a3300; padding: 5px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; cursor: pointer; position: relative; min-height: 45px; }
-        .sb-pool { font-size: 11px; font-weight: 900; color: #ffcc00; z-index: 2;}
-        .sb-chips-zone { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;}
-
-        .bottom-strip { position: fixed; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #111; border-top: 2px solid #ffcc00; z-index: 200; height: 60px;}
-        .user-info { display: flex; align-items: center; background: #4d0000; border: 1px solid #ffcc00; border-radius: 20px; padding: 2px 12px 2px 2px; }
-        .u-bal { font-size: 12px; color: #fff; font-weight: 900; margin-left: 5px; }
-
-        .chip-selector { display: flex; gap: 4px; }
-        .c-btn { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; border: 2px dashed #fff; cursor: pointer; }
-        .c10 { background: #ffcc00; color: #000; } .c1k { background: #ff3333; color: #fff; }
-        .selected { transform: translateY(-6px); box-shadow: 0 0 12px #fff; border-style: solid;}
-
-        .chip { width: 16px; height: 16px; border-radius: 50%; position: absolute; font-size: 6px; display: flex; align-items: center; justify-content: center; font-weight: 900; border: 1px solid #fff; pointer-events: none;}
+        .joker { width:45px; height:65px; background:#fff; border-radius:4px; margin-top:8px; box-shadow:0 4px 8px rgba(0,0,0,0.5); padding:2px; }
         
-        /* GLOW EFFECT */
-        .box-glow { animation: boxBlink 0.4s infinite alternate !important; }
-        @keyframes boxBlink { from { box-shadow: 0 0 5px #00ff00; border-color: #00ff00;} to { box-shadow: 0 0 30px #00ff00; border-color: #fff;} }
+        .track-wrap { width:95%; background:rgba(0,0,0,0.15); border-radius:8px; margin-top:8px; padding:5px; box-sizing:border-box; }
+        .track { display:flex; overflow-x:auto; padding:5px; scroll-behavior:smooth; }
+        .track::-webkit-scrollbar { display:none; }
+        .d-card { width:40px; height:60px; flex-shrink:0; background:#fff; border-radius:4px; padding:2px; margin-left:-25px; box-shadow:-2px 0 5px rgba(0,0,0,0.5); transition:0.2s; position:relative; }
+        .d-card:first-child { margin-left:0; }
+        .win-pop { transform:translateY(-10px) scale(1.1); border:2px solid #0f0; box-shadow:0 0 15px #0f0; z-index:100; }
+        .card-mark { position:absolute; bottom:2px; right:2px; font-size:10px; font-weight:900; }
+
+        .boxes { display:flex; width:95%; gap:10px; margin-top:8px; }
+        .box { flex:1; height:90px; border-radius:10px; cursor:pointer; position:relative; display:flex; flex-direction:column; box-shadow:0 4px 8px rgba(0,0,0,0.4); overflow:hidden;}
+        .box-a { background:#e6f2ff; border:2px solid #0059b3; } .box-b { background:#ffcccc; border:2px solid #cc0000; }
+        .b-head { display:flex; justify-content:space-between; padding:4px 8px; font-size:14px; font-weight:900; }
+        .box-a .b-head { color:#0059b3; } .box-b .b-head { color:#cc0000; }
+        .pool { background:rgba(0,0,0,0.1); text-align:center; padding:3px; color:#000; font-size:13px; font-weight:900; margin-top:auto; }
+
+        .sb-area { width:95%; background:#1a3300; border-radius:8px; margin-top:8px; border:1px solid #336600; overflow:hidden; }
+        .sb-head { background:#336600; font-size:10px; text-align:center; padding:4px; }
+        .sb-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:1px; background:#000; }
+        .sb-box { background:#1a3300; padding:4px; display:flex; flex-direction:column; align-items:center; cursor:pointer; position:relative; height:45px; }
+        .sb-txt { font-size:11px; font-weight:900; color:#fff; } .sb-rt { color:#ffcc00; font-size:9px; }
+        .sb-pool { font-size:10px; color:#ffcc00; margin-top:auto; font-weight:900; z-index:2;}
+
+        .chips { position:absolute; top:25px; left:0; right:0; bottom:20px; pointer-events:none; }
+        .chip { width:16px; height:16px; border-radius:50%; position:absolute; font-size:6px; font-weight:900; display:flex; align-items:center; justify-content:center; border:1px solid #fff; }
+        .glow { animation:gl 0.4s infinite alternate; } @keyframes gl { to { box-shadow:0 0 20px #0f0, inset 0 0 15px #0f0; } }
+
+        /* FIXED FOOTER */
+        .footer { height:55px; background:#111; display:flex; justify-content:space-between; align-items:center; padding:0 10px; border-top:2px solid #ffcc00; flex-shrink:0; }
+        .u-info { background:#4d0000; border:1px solid #ffcc00; border-radius:20px; padding:2px 10px; display:flex; align-items:center; }
+        .u-bal { font-size:12px; font-weight:900; margin-left:5px; }
+        .c-sel { display:flex; gap:4px; }
+        .c-btn { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:900; border:2px dashed #fff; cursor:pointer; }
+        .sel { transform:translateY(-5px); box-shadow:0 0 10px #fff; border-style:solid; }
     </style>
 </head>
 <body onclick="initAudio()">
+    <audio id="snd" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+    
+    <div class="main-area">
+        <div class="hist-bar" id="hist"></div>
+        <div class="status-container"><div class="status-pill" id="st-pill">WAITING...</div></div>
+        
+        <div class="joker" id="jk"></div>
+        
+        <div class="track-wrap"><div class="track" id="tr"></div></div>
 
-    <audio id="coinSnd" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
-    <audio id="cardSnd" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
-
-<div class="casino-table">
-    <div class="history-bar" id="record-board"></div>
-    <div class="status-container"><div class="status-pill" id="game-status">WAITING...</div></div>
-    <div class="joker-area"><div class="joker-card"><div id="joker-front" class="card-front"></div><div id="joker-back" class="card-back"></div></div></div>
-    <div class="card-track-wrapper"><div class="cards-track" id="dealt-cards-track"></div></div>
-
-    <div class="betting-area">
-        <div class="box andar-box" id="box-andar" onclick="placeBet('andar')">
-            <div class="box-header"><span class="box-title">Andar</span><span class="ratio">1:1.95</span></div>
-            <div class="chips-zone" id="chips-andar"></div>
-            <div class="pool-amt">₹<span id="p-andar">0</span></div>
+        <div class="boxes">
+            <div class="box box-a" id="bx-a" onclick="bet('andar')">
+                <div class="b-head"><span>Andar</span><span>1:1.95</span></div>
+                <div class="chips" id="ch-a"></div><div class="pool">₹<span id="p-a">0</span></div>
+            </div>
+            <div class="box box-b" id="bx-b" onclick="bet('bahar')">
+                <div class="b-head"><span>Bahar</span><span>1:1.95</span></div>
+                <div class="chips" id="ch-b"></div><div class="pool">₹<span id="p-b">0</span></div>
+            </div>
         </div>
-        <div class="box bahar-box" id="box-bahar" onclick="placeBet('bahar')">
-            <div class="box-header"><span class="box-title">Bahar</span><span class="ratio">1:1.95</span></div>
-            <div class="chips-zone" id="chips-bahar"></div>
-            <div class="pool-amt">₹<span id="p-bahar">0</span></div>
-        </div>
-    </div>
 
-    <div class="side-bets">
-        <div class="sb-title">Side Bets</div>
-        <div class="sb-grid" id="sb-grid-area">
-            <div class="sb-box" id="box-sb_1_5" onclick="placeBet('sb_1_5')"><span>1-5</span><div class="sb-pool">₹<span id="p-sb_1_5">0</span></div><div class="sb-chips-zone" id="chips-sb_1_5"></div></div>
-            <div class="sb-box" id="box-sb_6_10" onclick="placeBet('sb_6_10')"><span>6-10</span><div class="sb-pool">₹<span id="p-sb_6_10">0</span></div><div class="sb-chips-zone" id="chips-sb_6_10"></div></div>
-            <div class="sb-box" id="box-sb_11_15" onclick="placeBet('sb_11_15')"><span>11-15</span><div class="sb-pool">₹<span id="p-sb_11_15">0</span></div><div class="sb-chips-zone" id="chips-sb_11_15"></div></div>
-            <div class="sb-box" id="box-sb_16_25" onclick="placeBet('sb_16_25')"><span>16-25</span><div class="sb-pool">₹<span id="p-sb_16_25">0</span></div><div class="sb-chips-zone" id="chips-sb_16_25"></div></div>
-            <div class="sb-box" id="box-sb_26_35" onclick="placeBet('sb_26_35')"><span>26-35</span><div class="sb-pool">₹<span id="p-sb_26_35">0</span></div><div class="sb-chips-zone" id="chips-sb_26_35"></div></div>
-            <div class="sb-box" id="box-sb_36_40" onclick="placeBet('sb_36_40')"><span>36-40</span><div class="sb-pool">₹<span id="p-sb_36_40">0</span></div><div class="sb-chips-zone" id="chips-sb_36_40"></div></div>
-            <div class="sb-box" id="box-sb_41_52" onclick="placeBet('sb_41_52')"><span>41+</span><div class="sb-pool">₹<span id="p-sb_41_52">0</span></div><div class="sb-chips-zone" id="chips-sb_41_52"></div></div>
-        </div>
-    </div>
-
-    <div class="bottom-strip">
-        <div class="user-info"><div class="u-bal" id="balance">0.00</div></div>
-        <div class="chip-selector">
-            <div class="c-btn c10 selected" onclick="setChip(10, this)">10</div>
-            <div class="c-btn c50" style="background:#3366ff" onclick="setChip(50, this)">50</div>
-            <div class="c-btn c100" style="background:#00cc99" onclick="setChip(100, this)">100</div>
-            <div class="c-btn c1k" onclick="setChip(1000, this)">1K</div>
+        <div class="sb-area">
+            <div class="sb-head">Side Bets</div>
+            <div class="sb-grid">
+                <div class="sb-box" id="bx-sb_1_5" onclick="bet('sb_1_5')"><div class="sb-txt">1-5</div><div class="sb-rt">x3.0</div><div class="sb-pool">₹<span id="p-sb_1_5">0</span></div><div class="chips" id="ch-sb_1_5"></div></div>
+                <div class="sb-box" id="bx-sb_6_10" onclick="bet('sb_6_10')"><div class="sb-txt">6-10</div><div class="sb-rt">x4.0</div><div class="sb-pool">₹<span id="p-sb_6_10">0</span></div><div class="chips" id="ch-sb_6_10"></div></div>
+                <div class="sb-box" id="bx-sb_11_15" onclick="bet('sb_11_15')"><div class="sb-txt">11-15</div><div class="sb-rt">x5.5</div><div class="sb-pool">₹<span id="p-sb_11_15">0</span></div><div class="chips" id="ch-sb_11_15"></div></div>
+                <div class="sb-box" id="bx-sb_16_25" onclick="bet('sb_16_25')"><div class="sb-txt">16-25</div><div class="sb-rt">x4.5</div><div class="sb-pool">₹<span id="p-sb_16_25">0</span></div><div class="chips" id="ch-sb_16_25"></div></div>
+                <div class="sb-box" id="bx-sb_26_35" onclick="bet('sb_26_35')"><div class="sb-txt">26-35</div><div class="sb-rt">x15.0</div><div class="sb-pool">₹<span id="p-sb_26_35">0</span></div><div class="chips" id="ch-sb_26_35"></div></div>
+                <div class="sb-box" id="bx-sb_36_40" onclick="bet('sb_36_40')"><div class="sb-txt">36-40</div><div class="sb-rt">x50.0</div><div class="sb-pool">₹<span id="p-sb_36_40">0</span></div><div class="chips" id="ch-sb_36_40"></div></div>
+                <div class="sb-box" id="bx-sb_41_52" onclick="bet('sb_41_52')"><div class="sb-txt">41+</div><div class="sb-rt">x120.0</div><div class="sb-pool">₹<span id="p-sb_41_52">0</span></div><div class="chips" id="ch-sb_41_52"></div></div>
+                <div class="sb-box" style="pointer-events:none;"><div class="sb-txt">TOTAL</div><div class="sb-pool" style="color:#0f0">₹<span id="p-sb_tot">0</span></div></div>
+            </div>
         </div>
     </div>
-</div>
+
+    <div class="footer">
+        <div class="u-info">👤<div class="u-bal" id="bal">0.00</div></div>
+        <div class="c-sel">
+            <div class="c-btn sel" style="background:#ffcc00;color:#000" onclick="sC(10,this)">10</div>
+            <div class="c-btn" style="background:#3366ff;color:#fff" onclick="sC(50,this)">50</div>
+            <div class="c-btn" style="background:#00cc99;color:#fff" onclick="sC(100,this)">100</div>
+            <div class="c-btn" style="background:#cc33ff;color:#fff" onclick="sC(500,this)">500</div>
+            <div class="c-btn" style="background:#ff3333;color:#fff" onclick="sC(1k,this)">1K</div>
+            <div class="c-btn" style="background:#e6e600;color:#000" onclick="sC(5k,this)">5K</div>
+        </div>
+    </div>
 
 <script>
-    const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+    firebase.initializeApp({ apiKey:"AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL:"https://kalyan-casino-default-rtdb.firebaseio.com", projectId:"kalyan-casino" });
+    const db = firebase.database(), ph = localStorage.getItem('phone') || 'Guest';
+    let curC = 10, open = false, botInt, animId = 0, sbs = ['sb_1_5','sb_6_10','sb_11_15','sb_16_25','sb_26_35','sb_36_40','sb_41_52'];
+    
+    function initAudio(){ try{document.getElementById('snd').play().catch(e=>{});}catch(e){} }
+    window.sC = (v,el) => { curC=(v==='1k'?1000:v==='5k'?5000:v); document.querySelectorAll('.c-btn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); }
+    function cdH(v,s) { let c=(s=='H'||s=='D')?'#f00':'#000', m=s=='S'?'♠':s=='H'?'♥':s=='D'?'♦':'♣'; return `<div style="color:${c};height:100%;display:flex;flex-direction:column;justify-content:space-between;"><div style="font-size:11px;font-weight:900">${v=='0'?'10':v}</div><div style="font-size:24px;text-align:center;margin-top:-6px">${m}</div></div>`; }
 
-    let currentChip = 10, isBettingOpen = false, currentAnimId = 0;
-    const sideBetMultipliers = { 'sb_1_5': 3.0, 'sb_6_10': 4.0, 'sb_11_15': 5.5, 'sb_16_25': 4.5, 'sb_26_35': 15.0, 'sb_36_40': 50.0, 'sb_41_52': 120.0 };
+    db.ref('users/'+ph).on('value', s => { let d=s.val()||{}; document.getElementById('bal').innerText = ((parseFloat(d.balance)||0)+(parseFloat(d.winning_balance)||0)).toFixed(2); });
+    db.ref('Game/AndarBahar/History').on('value', s => {
+        let h=s.val(); if(h) document.getElementById('hist').innerHTML = [...h].reverse().slice(0,20).map(w=>`<div class="dot ${w=='andar'?'dot-a':'dot-b'}">${w=='andar'?'A':'B'}</div>`).join('');
+    });
 
-    function resetTable() {
-        currentAnimId++; // Stop any ongoing async animation loop
-        
-        // 1. Clean Status
-        const statusEl = document.getElementById('game-status');
-        statusEl.innerText = "WAITING...";
-        statusEl.style.color = "#fff";
-        statusEl.style.borderColor = "#fff";
-
-        // 2. Clean Boxes & Glow
-        document.querySelectorAll('.box, .sb-box').forEach(el => {
-            el.classList.remove('box-glow');
-        });
-
-        // 3. Clean Chips
-        document.querySelectorAll('.chips-zone, .sb-chips-zone').forEach(el => el.innerHTML = '');
-
-        // 4. Clean Track & Joker
-        document.getElementById('dealt-cards-track').innerHTML = '';
-        document.getElementById('joker-front').style.display = 'none';
-        document.getElementById('joker-back').style.display = 'block';
-
-        console.log("Table Cleared for New Round");
+    window.bet = (id) => { if(open){ db.ref(`Game/AndarBahar/Bets/${ph}/${id}`).set(firebase.database.ServerValue.increment(curC)); spC(id,curC); try{document.getElementById('snd').cloneNode().play()}catch(e){} } }
+    function spC(id,a) {
+        let d=document.getElementById('ch-'+id); if(!d)return;
+        let c=document.createElement('div'), bg=a==10?'#ffcc00':a==50?'#3366ff':a==100?'#00cc99':a==500?'#cc33ff':a==1000?'#ff3333':'#e6e600';
+        c.className='chip'; c.style.background=bg; c.style.color=(a==10||a==5000)?'#000':'#fff'; c.innerText=a>=1000?(a/1000)+'K':a;
+        c.style.left=Math.random()*60+10+'%'; c.style.top=Math.random()*50+10+'%';
+        d.appendChild(c); if(d.children.length>15) d.firstChild.remove();
     }
 
-    // Sync Betting State
-    db.ref('Game/AndarBahar/Status').on('value', snap => {
-        let st = snap.val(); if(!st) return;
-        let statusEl = document.getElementById('game-status');
-        
-        if(st.state === 'betting') {
-            if(!isBettingOpen) {
-                resetTable(); // 🔥 FULL CLEAN BEFORE START 🔥
-                isBettingOpen = true;
-                document.getElementById('joker-front').innerHTML = createCardHtml(st.jokerVal, st.jokerSuit);
-                document.getElementById('joker-back').style.display = 'none';
-                document.getElementById('joker-front').style.display = 'block';
+    // BOT LOGIC
+    function runBots(){
+        if(!open)return;
+        ['andar','bahar'].forEach(s=>{ if(Math.random()>0.3) spC(s,[10,50,100,500][Math.floor(Math.random()*4)]); });
+        if(Math.random()>0.4) spC(sbs[Math.floor(Math.random()*sbs.length)], [10,50][Math.floor(Math.random()*2)]);
+    }
+
+    db.ref('Game/AndarBahar/Bets').on('value', s => {
+        let all=s.val()||{}, p={andar:0,bahar:0}, tS=0; sbs.forEach(k=>p[k]=0);
+        for(let u in all) { p.andar+=(all[u].andar||0); p.bahar+=(all[u].bahar||0); sbs.forEach(k=> { p[k]+=(all[u][k]||0); tS+=(all[u][k]||0); }); }
+        document.getElementById('p-a').innerText=p.andar; document.getElementById('p-b').innerText=p.bahar;
+        sbs.forEach(k=>document.getElementById('p-'+k).innerText=p[k]); document.getElementById('p-sb_tot').innerText=tS;
+    });
+
+    db.ref('Game/AndarBahar/Status').on('value', s => {
+        let st=s.val(); if(!st)return; let pEl=document.getElementById('st-pill');
+        if(st.state == 'betting') {
+            if(!open){
+                animId++; open=true; document.querySelectorAll('.glow').forEach(e=>e.classList.remove('glow'));
+                document.querySelectorAll('.chips').forEach(e=>e.innerHTML=''); document.getElementById('tr').innerHTML='';
+                document.getElementById('jk').innerHTML = cdH(st.jokerVal, st.jokerSuit);
+                clearInterval(botInt); botInt = setInterval(runBots, 600);
             }
-            statusEl.innerText = "⏳ PLACE BETS: " + st.timer; 
-            statusEl.style.color = (st.timer <= 5) ? "#ff4d4d" : "#fff";
-        } else if (st.state === 'dealing' && isBettingOpen) {
-            isBettingOpen = false;
-            statusEl.innerText = "🛑 STOP BETTING"; 
-            showAnim(st.winner, st.jokerVal, currentAnimId);
+            pEl.innerText = "PLACE BETS: " + st.timer; pEl.style.borderColor=(st.timer<=5)?'#f00':'#fff'; pEl.className="status-pill";
+        } else if (st.state == 'dealing' && open) {
+            open=false; pEl.innerText = "STOP BETTING"; pEl.style.borderColor="#fff"; clearInterval(botInt); shA(st.winner, st.jokerVal, animId);
         }
     });
 
-    async function showAnim(win, jVal, animId) {
-        let totalSteps = Math.floor(Math.random() * 15) + 5; 
-        if(win==='andar' && totalSteps%2===0) totalSteps++; 
-        if(win==='bahar' && totalSteps%2!==0) totalSteps++; 
-
-        const track = document.getElementById('dealt-cards-track');
-
-        for(let i=0; i<totalSteps; i++) {
-            if(animId !== currentAnimId) return; // KILL LOOP IF RESET HAPPENED
-
-            let side = ((i+1)%2!==0) ? 'andar' : 'bahar';
-            let isLast = (i === totalSteps-1);
-            let val = isLast ? jVal : ["2","3","J","K","Q","7"][Math.floor(Math.random()*6)];
-            let suit = ["S","H","D","C"][Math.floor(Math.random()*4)];
+    async function shA(win, jV, id) {
+        let t = Math.floor(Math.random()*15)+5; if(win=='andar'&&t%2==0)t++; if(win=='bahar'&&t%2!=0)t++;
+        let tr = document.getElementById('tr');
+        for(let i=0; i<t; i++) {
+            if(id !== animId) return;
+            let sd = (i%2==0)?'A':'B', isL = (i==t-1);
+            let v = isL?jV:["2","3","4","J","Q","K"][Math.floor(Math.random()*6)], s=["S","H","D","C"][Math.floor(Math.random()*4)];
             
-            const cardEl = document.createElement('div');
-            cardEl.className = 'dealt-card';
-            cardEl.innerHTML = createCardHtml(val, suit);
-            track.appendChild(cardEl);
-            track.scrollLeft = track.scrollWidth;
+            let c = document.createElement('div'); c.className='d-card'; c.innerHTML = cdH(v,s) + `<div class="card-mark" style="color:${sd=='A'?'#0059b3':'#cc0000'}">${sd}</div>`;
+            c.style.zIndex=10+i; tr.appendChild(c); tr.scrollLeft = tr.scrollWidth;
+            try{document.getElementById('snd').cloneNode().play()}catch(e){}
 
-            try { document.getElementById('cardSnd').cloneNode().play(); } catch(e){}
-
-            if(isLast) {
-                cardEl.classList.add('win-pop');
-                document.getElementById('box-'+side).classList.add('box-glow');
-                document.getElementById('game-status').innerText = side.toUpperCase() + " WINS!";
-                // Side Bet Winner logic
-                let sbId = (totalSteps<=5)?'sb_1_5':(totalSteps<=10)?'sb_6_10':(totalSteps<=15)?'sb_11_15':(totalSteps<=25)?'sb_16_25':'sb_26_35';
-                let sbBox = document.getElementById('box-'+sbId);
-                if(sbBox) sbBox.classList.add('box-glow');
+            if(isL) {
+                c.classList.add('win-pop');
+                let side = win=='andar'?'a':'b';
+                document.getElementById('bx-'+side).classList.add('glow');
+                let p = document.getElementById('st-pill'); p.innerText=win.toUpperCase()+" WINS!"; p.classList.add('win-alert');
+                let sb = t<=5?'sb_1_5':t<=10?'sb_6_10':t<=15?'sb_11_15':t<=25?'sb_16_25':t<=35?'sb_26_35':t<=40?'sb_36_40':'sb_41_52';
+                document.getElementById('bx-'+sb).classList.add('glow');
                 return;
             }
-            await new Promise(r => setTimeout(r, 500)); 
+            await new Promise(r=>setTimeout(r,400));
         }
     }
-
-    function createCardHtml(val, suit) {
-        let col = (suit==='H'||suit==='D') ? '#f00' : '#000'; let sym = suit==='S'?'♠':suit==='H'?'♥':suit==='D'?'♦':'♣';
-        return `<div style="background:#fff; color:${col}; width:100%; height:100%; border-radius:3px; display:flex; flex-direction:column; justify-content:space-between; padding:2px; box-sizing:border-box;">
-            <div style="font-size:12px; font-weight:900;">${val==='0'?'10':val}</div>
-            <div style="font-size:28px; text-align:center;">${sym}</div>
-            <div style="font-size:12px; font-weight:900; transform:rotate(180deg);">${val==='0'?'10':val}</div>
-        </div>`;
-    }
-
-    window.placeBet = function(id) { if(isBettingOpen) spawnChip(id, currentChip); }
-    function spawnChip(id, amt) {
-        const div = document.getElementById('chips-'+id); if(!div) return;
-        const c = document.createElement('div');
-        c.className = 'chip'; c.style.background = '#ffcc00';
-        c.innerText = amt; c.style.left = Math.random()*60+20+"%"; c.style.top = Math.random()*40+20+"%";
-        div.appendChild(c);
-    }
-    window.setChip = function(v, el) { currentChip = v; document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); }
-    function initAudio() { }
 </script>
 </body>
 </html>
