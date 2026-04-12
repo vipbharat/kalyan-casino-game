@@ -10,17 +10,28 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
     <style>
-        :root { --neon-green: #00ff88; --bg-dark: #0f0f13; --red: #ff3333; --gold: #ffd700; --panel-bg: #1a1a24; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; user-select: none; }
-        body { background-color: var(--bg-dark); color: #fff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        :root { 
+            --neon-green: #00ff88; 
+            --bg-dark: #0f0f13; 
+            --red: #ff3333; 
+            --gold: #ffd700; 
+            --panel-bg: #1a1a24;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
         
+        /* Lock Screen */
+        html, body { background-color: var(--bg-dark); color: #fff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; overscroll-behavior: none; touch-action: none; }
+        
+        /* Header */
         .header { background: var(--panel-bg); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--neon-green); box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2); z-index: 10; }
         .rules-btn { background: rgba(255,255,255,0.1); border: 1px solid #aaa; color: #fff; padding: 6px 12px; border-radius: 15px; font-size: 12px; cursor: pointer; font-weight: bold; margin-right: 15px;}
         .wallet { font-weight: 900; font-size: 16px; color: var(--gold); background: rgba(255, 215, 0, 0.1); padding: 6px 15px; border-radius: 20px; border: 1px solid var(--gold); text-shadow: 0 0 5px rgba(255,215,0,0.5);}
 
+        /* Game Area */
         .game-area { flex: 1; position: relative; background: radial-gradient(circle at center, #1e222d 0%, #0b0e14 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; border-bottom: 3px solid #333; }
-        .multiplier-text { font-size: 80px; font-weight: 900; z-index: 5; text-shadow: 0 5px 20px rgba(0,0,0,0.9); transition: color 0.1s;}
+        .multiplier-text { font-size: 80px; font-weight: 900; z-index: 5; text-shadow: 0 5px 20px rgba(0,0,0,0.9); font-variant-numeric: tabular-nums; transition: color 0.1s;}
         
+        /* Loading/Status Box */
         .status-box { position: absolute; top: 20px; z-index: 10; display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.7); padding: 10px 25px; border-radius: 30px; border: 1px solid var(--neon-green); box-shadow: 0 0 15px rgba(0,255,136,0.2);}
         .status-text { font-size: 16px; font-weight: 900; color: #fff; letter-spacing: 1px; text-transform: uppercase;}
         .progress-bar-bg { width: 100%; height: 4px; background: #333; border-radius: 2px; margin-top: 5px; overflow: hidden; display: none;}
@@ -28,15 +39,18 @@
 
         #crashCanvas { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-        .controls { padding: 15px; background: var(--panel-bg); z-index: 10; border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
+        /* Premium Betting Controls */
+        .controls { padding: 15px; background: var(--panel-bg); z-index: 10; border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); touch-action: none; }
+        
         .bet-display-row { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 10px 15px; border-radius: 12px; border: 1px solid #444; margin-bottom: 10px; }
         .bet-display-row span { color: #aaa; font-size: 12px; font-weight: bold; text-transform: uppercase;}
         .bet-amount-text { color: #fff; font-size: 22px; font-weight: 900; }
-        .clear-btn { background: #333; color: #fff; border: none; padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;}
+        .clear-btn { background: #333; color: #fff; border: none; padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; touch-action: manipulation;}
 
+        /* Colorful Chips */
         .chips-container { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;}
         .chips-container::-webkit-scrollbar { display: none; }
-        .chip { flex: 1; min-width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: 900; color: #fff; cursor: pointer; border: 2px dashed rgba(255,255,255,0.4); box-shadow: 0 4px 10px rgba(0,0,0,0.4); transition: transform 0.1s;}
+        .chip { flex: 1; min-width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 14px; font-weight: 900; color: #fff; cursor: pointer; border: 2px dashed rgba(255,255,255,0.4); box-shadow: 0 4px 10px rgba(0,0,0,0.4); transition: transform 0.1s; touch-action: manipulation;}
         .chip:active { transform: scale(0.9); }
         .chip-10 { background: radial-gradient(circle, #ff4b4b, #b30000); }
         .chip-50 { background: radial-gradient(circle, #4b7bff, #002db3); }
@@ -44,27 +58,43 @@
         .chip-500 { background: radial-gradient(circle, #b84bff, #6b00b3); }
         .chip-1000 { background: radial-gradient(circle, #ffd700, #b38f00); color: #000;}
 
-        .btn-action { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 22px; font-weight: 900; cursor: pointer; text-transform: uppercase; transition: 0.2s; white-space: pre-line; line-height: 1.2; letter-spacing: 1px;}
+        /* Main Action Button */
+        .btn-action { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 22px; font-weight: 900; cursor: pointer; text-transform: uppercase; transition: 0.2s; white-space: pre-line; line-height: 1.2; letter-spacing: 1px; touch-action: manipulation;}
         .btn-bet { background: linear-gradient(to right, #00b09b, #96c93d); color: #000; box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4); border: 2px solid #fff;}
         .btn-cashout { background: linear-gradient(to right, #f5af19, #f12711); color: #fff; box-shadow: 0 5px 15px rgba(255, 51, 51, 0.4); border: 2px solid var(--gold); animation: pulse 1s infinite alternate;}
         .btn-disabled { background: #2a2a35; color: #666; cursor: not-allowed; border: 2px solid #444; }
 
         @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.02); } }
 
+        /* Win Message */
         #winMsg { position: absolute; top: 40%; background: linear-gradient(90deg, #00b09b, #96c93d); border: 2px solid #fff; color: #000; padding: 15px 40px; border-radius: 30px; font-weight: 900; font-size: 26px; display: none; z-index: 20; text-align: center; box-shadow: 0 10px 40px rgba(0,255,136,0.6); animation: popIn 0.3s ease-out;}
         @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #1a1a24; border: 2px solid var(--neon-green); border-radius: 15px; width: 85%; padding: 20px; position: relative; }
+        .close-btn { position: absolute; top: 10px; right: 20px; color: #ff3333; font-size: 28px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body onclick="initAudio()">
 
-    <audio id="sndChip" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
-    <audio id="sndCashout" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
     <audio id="soundFly" src="https://assets.mixkit.co/active_storage/sfx/1271/1271-preview.mp3" loop></audio>
     <audio id="soundBlast" src="https://assets.mixkit.co/active_storage/sfx/1702/1702-preview.mp3"></audio>
 
     <div class="header">
-        <div style="font-weight: 900; font-size: 18px; color: #fff;">CRASH <span style="color:var(--neon-green)">X</span></div>
+        <div style="display: flex; align-items: center;">
+            <button class="rules-btn" onclick="document.getElementById('rulesModal').style.display='flex'">RULES</button>
+            <div style="font-weight: 900; font-size: 18px; color: #fff;">CRASH <span style="color:var(--neon-green)">X</span></div>
+        </div>
         <div class="wallet">₹<span id="balance">0.00</span></div>
+    </div>
+
+    <div class="modal-overlay" id="rulesModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="this.parentElement.parentElement.style.display='none'">&times;</span>
+            <div style="font-size: 20px; font-weight: 900; color: var(--neon-green); margin-bottom: 15px; text-align: center;">GAME RULES</div>
+            <div style="font-size: 14px; color: #ddd; line-height: 1.6; white-space: pre-wrap;">1. 15 Second betting time.\n2. Cash out before crash.\n3. Min Bet ₹10.</div>
+        </div>
     </div>
 
     <div class="game-area">
@@ -106,20 +136,28 @@
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
-        // --- 2. AUDIO ENGINE (FIXED KHATARA SOUND) ---
+        // --- 2. AUDIO ENGINE FIX (No Khatara, No Overlap) ---
         let isAudioInit = false;
-        function initAudio() { if(!isAudioInit) { isAudioInit = true; } }
-        
-        function playSnd(audioEl, vol = 1.0) {
+        function initAudio() {
+            if(!isAudioInit) {
+                document.getElementById('soundFly').volume = 0.4; // Thoda dheema engine
+                document.getElementById('soundBlast').volume = 1.0; // Tez dhamaka
+                isAudioInit = true;
+            }
+        }
+        document.addEventListener('touchstart', initAudio, { once: true });
+        document.addEventListener('click', initAudio, { once: true });
+
+        function playSnd(audioEl) {
             if(!isAudioInit) return;
-            try { audioEl.volume = vol; audioEl.currentTime = 0; audioEl.play().catch(e=>{}); } catch(e){}
+            try { audioEl.currentTime = 0; audioEl.play().catch(e=>{}); } catch(e){}
         }
 
-        // --- 3. PERFECT WALLET LOGIC ---
+        // --- 3. WALLET & CHIPS LOGIC ---
         let depBal = 0, winBal = 0, bonBal = 0, currentBalance = 0;
         let selectedBetAmount = 10;
 
-        if (phone) {
+        if(phone) {
             db.ref('users/' + phone).on('value', (snapshot) => {
                 const d = snapshot.val() || {};
                 depBal = parseFloat(d.balance || 0); 
@@ -128,15 +166,12 @@
                 currentBalance = Math.max(0, depBal + winBal + bonBal);
                 document.getElementById('balance').innerText = currentBalance.toFixed(2);
             });
-        } else {
-            document.getElementById('balance').innerText = "0.00 (Guest)";
         }
 
         function addBet(val) {
             if(gameState !== "WAITING" || isBetPlaced) return;
             selectedBetAmount += val;
             document.getElementById('betAmountDisplay').innerText = selectedBetAmount;
-            playSnd(document.getElementById('sndChip'), 0.8); // Nayi Chip Awaaz
         }
         function clearBet() {
             if(gameState !== "WAITING" || isBetPlaced) return;
@@ -146,7 +181,7 @@
 
         // --- 4. GAME VARIABLES ---
         let gameState = "WAITING"; 
-        let previousState = ""; // Ye khatara sound rokne ke liye hai
+        let previousState = ""; // State lock for audio
         let currentMultiplier = 1.00;
         let finalCrashPoint = 1.00;
         let isBetPlaced = false;
@@ -163,14 +198,14 @@
 
         function updateBtn(txt, cls) { btn.innerText = txt; btn.className = "btn-action " + cls; }
 
-        // --- 5. FIREBASE SYNC (Audio Glitch Fixed) ---
+        // --- 5. FIREBASE SYNC (Fixes Audio Sync) ---
         db.ref('game_loop').on('value', (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
 
             gameState = data.state;
 
-            // Audio & UI Trigger (Sirf ek baar chalega jab state badlegi)
+            // 🔥 AUDIO AND STATE LOCK FIX 🔥
             if(gameState !== previousState) {
                 let sFly = document.getElementById('soundFly');
                 let sBlast = document.getElementById('soundBlast');
@@ -180,23 +215,31 @@
                     currentMultiplier = 1.00;
                     winMsg.style.display = "none";
                     progBg.style.display = "block";
-                    sFly.pause(); sFly.currentTime = 0;
+                    
+                    // Stop all sounds
+                    sFly.pause(); sBlast.pause(); 
+                    
                     isCashedOut = false;
                     if (!isBetPlaced) updateBtn("PLACE BET", "btn-bet");
                     else updateBtn("WAITING FOR ROCKET", "btn-disabled");
-                } 
-                else if (gameState === "FLYING") {
+
+                } else if (gameState === "FLYING") {
                     flightStartTime = data.startTime;
                     progBg.style.display = "none";
-                    playSnd(sFly, 0.4); // Smooth Jet Sound
+                    
+                    // Start Engine Sound
+                    sBlast.pause(); playSnd(sFly); 
+                    
                     if (isBetPlaced && !isCashedOut) updateBtn("CASH OUT", "btn-cashout");
                     else updateBtn("ROUND STARTED", "btn-disabled");
-                } 
-                else if (gameState === "CRASHED") {
+
+                } else if (gameState === "CRASHED") {
                     finalCrashPoint = data.crashMultiplier;
                     currentMultiplier = finalCrashPoint;
                     progBg.style.display = "none";
-                    sFly.pause(); playSnd(sBlast, 1.0); // Smooth Blast
+                    
+                    // Stop Engine, Play Blast!
+                    sFly.pause(); playSnd(sBlast); 
                     
                     if (isBetPlaced && !isCashedOut) {
                         updateBtn("YOU LOST", "btn-disabled");
@@ -205,18 +248,17 @@
                         updateBtn("CRASHED", "btn-disabled");
                     }
                 }
-                previousState = gameState; // Lock kar diya
+                previousState = gameState;
             }
         });
 
-        // --- 6. 100% PERFECT BET DEDUCTION LOGIC ---
+        // --- 6. BETTING & PROFIT LOGIC ---
         function handleAction() {
-            if(!phone) return alert("Please Login!");
+            if(!phone) return alert("Login Error!");
 
             if (gameState === "WAITING" && !isBetPlaced) {
                 if (selectedBetAmount > currentBalance) return alert("Low Balance!");
                 
-                // Real Deduction Logic
                 let nDep = depBal, nWin = winBal, rem = selectedBetAmount;
                 if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
 
@@ -229,9 +271,7 @@
                 isCashedOut = true;
                 let winAmount = (selectedBetAmount * currentMultiplier).toFixed(2);
                 
-                // Real Winning Add Logic
                 db.ref('users/' + phone).update({ winning_balance: firebase.database.ServerValue.increment(parseFloat(winAmount)) }).then(() => {
-                    playSnd(document.getElementById('sndCashout'), 1.0); // Real Win Sound
                     updateBtn("CASHED OUT ✅", "btn-disabled");
                     winMsg.innerHTML = `YOU WIN!<br>₹${winAmount}`;
                     winMsg.style.display = 'block';
@@ -240,10 +280,10 @@
             }
         }
 
-        // --- 7. COLORFUL CANVAS ENGINE ---
+        // --- 7. 🔥 CANVAS ENGINE (REAL AVIATOR FEEL) 🔥 ---
         const canvas = document.getElementById('crashCanvas');
         const ctx = canvas.getContext('2d');
-        let canvasW, canvasH, particles = [], bgOffset = 0;
+        let canvasW, canvasH, particles = [], bgOffsetX = 0, bgOffsetY = 0;
 
         function resize() { canvasW = canvas.parentElement.clientWidth; canvasH = canvas.parentElement.clientHeight; canvas.width = canvasW; canvas.height = canvasH; }
         window.addEventListener('resize', resize); resize();
@@ -272,10 +312,9 @@
                 let elapsedMs = Date.now() - flightStartTime;
                 if(elapsedMs < 0) elapsedMs = 0;
                 
-                currentMultiplier = Math.pow(Math.E, 0.00006 * elapsedMs); // Smooth speed
+                currentMultiplier = Math.pow(Math.E, 0.00006 * elapsedMs);
                 display.innerText = currentMultiplier.toFixed(2) + "x";
                 
-                // Color change based on multiplier
                 if(currentMultiplier > 10) display.style.color = "#ff33ff";
                 else if(currentMultiplier > 5) display.style.color = "#ff3333";
                 else if(currentMultiplier > 2) display.style.color = "#ffd700";
@@ -301,43 +340,59 @@
         requestAnimationFrame(renderFrame);
 
         function drawGraphEngine(elapsedMs) {
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.05)"; ctx.lineWidth = 1;
-            bgOffset += (gameState === "FLYING" ? 2 : 0);
-            if (bgOffset > 50) bgOffset = 0;
-            for(let i = 40; i < canvasW; i += 50) { ctx.beginPath(); ctx.moveTo(i - bgOffset, 0); ctx.lineTo(i - bgOffset, canvasH - 30); ctx.stroke(); }
-            for(let i = canvasH - 30; i > 0; i -= 50) { ctx.beginPath(); ctx.moveTo(40, i); ctx.lineTo(canvasW, i); ctx.stroke(); }
-
-            let maxSec = Math.max(5, elapsedMs / 1000);
-            let maxMult = Math.max(2.0, currentMultiplier); 
+            // 🔥 NAYA CAMERA SCALING SYSTEM 🔥
+            // Ab rocket boundary pe nahi atkega, balki graph peeche bhagega
+            let currentSec = elapsedMs / 1000;
             
+            // Limit the maximum visual position of the rocket so it stays on screen
+            let maxVisualSec = Math.max(5, currentSec * 1.25); 
+            let maxVisualMult = Math.max(2.0, currentMultiplier * 1.25); 
+
+            // Grid Animation
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.05)"; ctx.lineWidth = 1;
+            bgOffsetX += (gameState === "FLYING" ? 2 : 0);
+            bgOffsetY += (gameState === "FLYING" ? 1 : 0);
+            if (bgOffsetX > 50) bgOffsetX = 0;
+            if (bgOffsetY > 50) bgOffsetY = 0;
+            
+            for(let i = 40; i < canvasW; i += 50) { ctx.beginPath(); ctx.moveTo(i - bgOffsetX, 0); ctx.lineTo(i - bgOffsetX, canvasH - 30); ctx.stroke(); }
+            for(let i = canvasH - 30; i > 0; i -= 50) { ctx.beginPath(); ctx.moveTo(40, i + bgOffsetY); ctx.lineTo(canvasW, i + bgOffsetY); ctx.stroke(); }
+
+            // Axis Text
             ctx.fillStyle = "rgba(255, 255, 255, 0.5)"; ctx.font = "bold 11px Arial";
             ctx.textAlign = "right"; 
             for(let i=0; i<=4; i++) {
-                let v = 1 + ((maxMult-1)*(i/4)); 
+                let v = 1 + ((maxVisualMult-1)*(i/4)); 
                 let yp = canvasH - 30 - (i/4)*(canvasH*0.7);
                 if(i===0) yp = canvasH - 35;
                 ctx.fillText(v.toFixed(1)+"x", 35, yp+4);
             }
+            ctx.textAlign = "center"; 
+            for(let i=1; i<=5; i++) {
+                let v = (maxVisualSec*(i/5)); 
+                let xp = 40 + (i/5)*(canvasW*0.8);
+                ctx.fillText(v.toFixed(1)+"s", xp, canvasH - 10);
+            }
 
-            let xMap = (elapsedMs / 1000) / maxSec; 
-            let yMap = (currentMultiplier - 1) / (maxMult - 1); 
-            if(maxMult === 1) yMap = 0;
+            // Rocket Position Calculation
+            let xMap = currentSec / maxVisualSec; 
+            let yMap = (currentMultiplier - 1) / (maxVisualMult - 1); 
+            if(maxVisualMult === 1) yMap = 0;
 
             let startX = 40, startY = canvasH - 30;
             let x = startX + (xMap * canvasW * 0.8); 
             let y = startY - (yMap * canvasH * 0.7);
 
-            if (gameState === "FLYING") { x += (Math.random()-0.5)*4; y += (Math.random()-0.5)*4; }
+            if (gameState === "FLYING") { x += (Math.random()-0.5)*3; y += (Math.random()-0.5)*3; }
 
             ctx.beginPath(); ctx.moveTo(startX, startY); ctx.quadraticCurveTo(x * 0.5, startY, x, y);
             ctx.lineWidth = 6; 
             
-            // 🔥 NAYI RANGEEN (COLORFUL) LINE 🔥
-            let lineColor = "#00ff88"; // Default Green
-            if(currentMultiplier > 10) lineColor = "#ff33ff"; // Purple
-            else if(currentMultiplier > 5) lineColor = "#ff3333"; // Red
-            else if(currentMultiplier > 2) lineColor = "#ffd700"; // Yellow
-            if(gameState === "CRASHED") lineColor = "#ff3333"; // Crash pe Red
+            let lineColor = "#00ff88"; 
+            if(currentMultiplier > 10) lineColor = "#ff33ff"; 
+            else if(currentMultiplier > 5) lineColor = "#ff3333"; 
+            else if(currentMultiplier > 2) lineColor = "#ffd700"; 
+            if(gameState === "CRASHED") lineColor = "#ff3333"; 
             
             ctx.strokeStyle = lineColor; 
             ctx.stroke();
@@ -348,12 +403,13 @@
             fillGrad.addColorStop(1, "rgba(0, 255, 136, 0.0)");
             ctx.fillStyle = fillGrad; ctx.fill();
 
+            // Fire Particles
             if (gameState === "FLYING") particles.push({ px: x - 20, py: y + 20, life: 1.0 });
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i]; ctx.globalAlpha = p.life;
                 ctx.beginPath(); ctx.arc(p.px, p.py, 5 * p.life, 0, Math.PI * 2);
                 ctx.fillStyle = gameState === "CRASHED" ? "#555" : "#ffd700"; ctx.fill();
-                p.life -= 0.05; p.px -= 4; p.py += 4;
+                p.life -= 0.05; p.px -= 5; p.py += 5;
                 if (p.life <= 0) particles.splice(i, 1);
             }
             ctx.globalAlpha = 1.0;
@@ -364,7 +420,7 @@
             ctx.restore();
         }
 
-        // --- 8. SMART AUTO-SERVER (Fix Random Crash Logic) ---
+        // --- 8. SMART AUTO-SERVER (Admin Panel band ho toh bhi chalega) ---
         let isServer = false; 
 
         setInterval(() => {
@@ -384,14 +440,13 @@
             setTimeout(() => {
                 if (!isServer) return;
                 
-                // 🔥 NAYA ADVANCED RANDOM LOGIC (Har baar alag jageh udatega) 🔥
                 let chance = Math.random();
                 let cVal = 1.00;
-                if(chance < 0.10) cVal = 1.00; // 10% chance of instant blast
-                else if (chance < 0.50) cVal = 1.01 + Math.random() * 0.99; // 1x - 2x
-                else if (chance < 0.85) cVal = 2.00 + Math.random() * 3.00; // 2x - 5x
-                else if (chance < 0.95) cVal = 5.00 + Math.random() * 5.00; // 5x - 10x
-                else cVal = 10.00 + Math.random() * 15.00; // 10x - 25x Jackpot
+                if(chance < 0.10) cVal = 1.00; 
+                else if (chance < 0.50) cVal = 1.01 + Math.random() * 0.99; 
+                else if (chance < 0.85) cVal = 2.00 + Math.random() * 3.00; 
+                else if (chance < 0.95) cVal = 5.00 + Math.random() * 5.00; 
+                else cVal = 10.00 + Math.random() * 15.00; 
 
                 let fTime = Math.log(cVal) / 0.00006; 
                 db.ref('game_loop').update({ state: 'FLYING', startTime: Date.now(), lastHeartbeat: Date.now() });
