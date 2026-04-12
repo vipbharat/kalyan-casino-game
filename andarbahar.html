@@ -2,94 +2,101 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ANDAR BAHAR PRO VIP - Classic Table</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
+    <title>ANDAR BAHAR - Original Landscape Table</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Montserrat:wght@600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap');
 
-        :root { --andar: #ff1a1a; --bahar: #1a8cff; --gold: #FFD700; }
+        :root { 
+            --andar-bg: #e6f2ff; --andar-text: #0059b3; 
+            --bahar-bg: #ffcccc; --bahar-text: #b30000;
+            --table-green: #006622; --border-brown: #4d2600;
+        }
+
+        /* FORCE LANDSCAPE VIEW FOR MOBILE */
+        @media screen and (orientation: portrait) {
+            body { transform: rotate(90deg); transform-origin: left top; width: 100vh; height: 100vw; overflow: hidden; position: absolute; top: 100%; left: 0; }
+        }
         
-        body { 
-            margin: 0; font-family: 'Montserrat', sans-serif; overflow: hidden; color: white; user-select: none; 
-            background: #111; height: 100vh; display: flex; flex-direction: column;
-        }
+        body { margin: 0; font-family: 'Montserrat', sans-serif; background: #000; color: white; user-select: none; display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; overflow: hidden; }
 
-        /* TOP HEADER */
-        .top-bar { 
-            display: flex; justify-content: space-between; padding: 10px 15px; 
-            background: #000; border-bottom: 2px solid var(--gold); z-index: 1000;
-        }
-        .top-left { font-size: 12px; color: var(--gold); font-family: 'Cinzel', serif; font-weight: bold; }
-        .bal-box { background: #222; border: 1px solid var(--gold); padding: 5px 15px; border-radius: 5px; color: #0f0; font-size: 14px; font-weight: 900; }
-
-        /* CASINO TABLE (EVERYTHING IS INSIDE THIS) */
+        /* MAIN TABLE WRAPPER */
         .casino-table {
-            width: 96vw; height: calc(100vh - 160px); margin: 15px auto 0;
-            background: radial-gradient(ellipse at center, #0b4a24 0%, #041f0e 100%);
-            border-radius: 120px / 180px; border: 12px solid #3e1f04;
-            box-shadow: 0 15px 30px #000, inset 0 0 40px rgba(0,0,0,0.8);
-            position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
+            width: 100%; height: 100%; background: radial-gradient(circle at center, #00802b, var(--table-green));
+            border-bottom: 20px solid var(--border-brown); border-bottom-left-radius: 50% 15%; border-bottom-right-radius: 50% 15%;
+            position: relative; display: flex; flex-direction: column; align-items: center; box-sizing: border-box; overflow: hidden;
         }
 
-        /* HISTORY RECORD PANEL ON TABLE */
-        .history-panel {
-            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
-            background: rgba(0,0,0,0.6); padding: 8px 5px; border-radius: 20px;
-            border: 1px solid var(--gold); display: flex; flex-direction: column; gap: 4px;
-            height: 60%; overflow: hidden;
+        /* TOP HISTORY BAR */
+        .history-bar {
+            width: 100%; background: #003311; padding: 4px 0; display: flex; justify-content: center; gap: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
         .record-dot {
-            width: 20px; height: 20px; border-radius: 50%; border: 1px solid #fff;
-            display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;
+            width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; color: #fff;
         }
+        .dot-a { background: #0099cc; border: 1px solid #fff; }
+        .dot-b { background: #cc0000; border: 1px solid #fff; }
 
-        /* JOKER AREA */
-        .joker-area { text-align: center; }
-        .joker-title { font-family: 'Cinzel', serif; font-size: 12px; color: var(--gold); font-weight: 900; margin-bottom: 5px; letter-spacing: 2px; }
-        .card-slot { width: 60px; height: 85px; background: rgba(0,0,0,0.4); border: 1px dashed rgba(255,215,0,0.5); border-radius: 5px; position: relative; display: flex; align-items: center; justify-content: center; }
-        .card-back { position: absolute; width: 100%; height: 100%; top: 0; left: 0; border-radius: 5px; background: url('https://deckofcardsapi.com/static/img/back.png') center/cover; }
-        .card-front { position: absolute; width: 100%; height: 100%; top: 0; left: 0; border-radius: 5px; display: none; background: #fff; }
-
-        /* CARDS & TIMER AREA */
-        .cards-area { display: flex; justify-content: center; align-items: center; gap: 40px; width: 100%; }
-        .timer { font-family: 'Cinzel', serif; font-size: 45px; color: #fff; font-weight: 900; text-shadow: 0 0 10px var(--gold); text-align: center; width: 80px; }
-        .slot-title { font-family: 'Cinzel', serif; font-size: 14px; font-weight: 900; margin-bottom: 5px; text-align: center; }
-
-        /* BETTING BOXES (ZONES) */
-        .bet-zones { display: flex; justify-content: center; gap: 20px; width: 85%; }
-        .bet-box {
-            flex: 1; height: 130px; background: rgba(0,0,0,0.5); border: 2px solid; border-radius: 10px;
-            position: relative; cursor: pointer; overflow: hidden; display: flex; flex-direction: column; align-items: center;
+        /* SIDE PLAYERS (LEFT & RIGHT) */
+        .side-players { position: absolute; top: 40px; display: flex; flex-direction: column; gap: 15px; }
+        .left-players { left: 10px; } .right-players { right: 10px; }
+        .player-avatar {
+            width: 40px; height: 40px; background: #fff; border-radius: 50%; border: 3px solid #d98c21; display: flex; align-items: center; justify-content: center; margin: 0 auto; position: relative;
         }
-        .bet-box:active { transform: scale(0.95); }
-        .box-andar { border-color: var(--andar); }
-        .box-bahar { border-color: var(--bahar); }
+        .player-bal { background: rgba(0,0,0,0.7); font-size: 9px; padding: 2px 8px; border-radius: 10px; border: 1px solid #d98c21; margin-top: -8px; position: relative; z-index: 2; text-align: center;}
 
-        .zone-title { background: rgba(0,0,0,0.8); width: 100%; text-align: center; padding: 4px 0; font-family: 'Cinzel', serif; font-weight: 900; font-size: 14px; }
-        .total-pool { color: var(--gold); font-size: 16px; font-weight: 900; margin-top: 5px; }
-        .my-bet-badge { background: var(--gold); color: #000; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 10px; margin-top: 5px; display: none; z-index: 30; border: 1px solid #fff; }
-        .chips-container { position: absolute; top: 40px; left: 0; width: 100%; height: calc(100% - 40px); pointer-events: none; }
-
-        /* WIN TEXT INSIDE BOX */
-        .win-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px; font-weight: 900; color: #fff; text-shadow: 0 0 10px var(--gold); display: none; text-transform: uppercase; z-index: 50; animation: pulse 0.5s infinite alternate; width: 100%; text-align: center; }
-        @keyframes pulse { from { transform: translate(-50%, -50%) scale(1); } to { transform: translate(-50%, -50%) scale(1.1); } }
+        /* CENTER GAME AREA */
+        .game-area { display: flex; align-items: stretch; justify-content: center; gap: 10px; width: 55%; margin-top: 30px; }
         
-        .glow-a { animation: glowAndar 0.5s infinite alternate; background: rgba(255,51,51,0.3); }
-        @keyframes glowAndar { from { box-shadow: inset 0 0 10px var(--andar); } to { box-shadow: inset 0 0 30px var(--andar); } }
-        .glow-b { animation: glowBahar 0.5s infinite alternate; background: rgba(51,153,255,0.3); }
-        @keyframes glowBahar { from { box-shadow: inset 0 0 10px var(--bahar); } to { box-shadow: inset 0 0 30px var(--bahar); } }
+        .box { flex: 1; border-radius: 15px; position: relative; display: flex; flex-direction: column; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.6); }
+        .box:active { transform: scale(0.98); }
+        
+        .andar-box { background: var(--andar-bg); border-top-right-radius: 0; border-bottom-right-radius: 0; }
+        .bahar-box { background: var(--bahar-bg); border-top-left-radius: 0; border-bottom-left-radius: 0; }
+        
+        .box-header { text-align: center; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.1); }
+        .box-title { font-size: 16px; font-weight: 900; }
+        .andar-box .box-title { color: var(--andar-text); }
+        .bahar-box .box-title { color: var(--bahar-text); }
+        .ratio { font-size: 11px; color: #555; font-weight: bold; }
 
-        /* BOTTOM CHIPS FOOTER */
-        .chip-footer { position: fixed; bottom: 0; width: 100%; background: #000; display: flex; justify-content: center; gap: 8px; padding: 15px 0 25px; border-top: 2px solid var(--gold); z-index: 1100; }
-        .c-btn { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer; border: 2px dashed rgba(255,255,255,0.4); font-size: 13px; }
-        .c10 { background: #cd7f32; } .c100 { background: #c0c0c0; color: #000; } .c500 { background: #ffd700; color: #000; }
-        .c1k { background: #ff4d4d; } .c5k { background: #9933ff; } .c10k { background: #111; color: var(--gold); border: 2px solid var(--gold); }
-        .selected { transform: translateY(-8px); box-shadow: 0 0 15px var(--gold); border: 2px solid #fff; }
+        .chips-zone { flex: 1; position: relative; min-height: 70px; }
+        .pool-amt { text-align: center; padding: 8px 0; font-size: 14px; font-weight: 900; color: #333; border-top: 1px solid rgba(0,0,0,0.1); }
 
-        .deal-anim { animation: dealFly 0.3s ease-out forwards; }
-        @keyframes dealFly { 0% { transform: translateY(-100px) scale(1.5) rotateY(180deg); opacity: 0; } 100% { transform: translateY(0) scale(1) rotateY(0deg); opacity: 1; } }
+        /* CENTER JOKER AREA */
+        .center-joker { width: 80px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 5px; }
+        .status-pill { background: #1a1a00; color: #ffff66; font-size: 10px; padding: 4px 8px; border-radius: 12px; border: 1px solid #ffff66; font-weight: bold; text-align: center; white-space: nowrap; }
+        .card-slot { width: 60px; height: 85px; background: #fff; border-radius: 5px; box-shadow: 0 5px 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; padding: 4px; box-sizing: border-box; }
+
+        /* SIDE BETS TABLE */
+        .side-bets { width: 55%; background: #3d3d5c; border-radius: 8px; margin-top: 10px; border: 2px solid #5c5c8a; overflow: hidden; }
+        .sb-title { background: #5c5c8a; font-size: 9px; text-align: center; padding: 3px; font-weight: bold; }
+        .sb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #29293d; }
+        .sb-item { background: #3d3d5c; font-size: 10px; padding: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .sb-item:active { background: #5c5c8a; }
+        .sb-ratio { color: #ffd700; font-weight: bold; }
+
+        /* BOTTOM STRIP (USER & CHIPS) */
+        .bottom-strip { position: absolute; bottom: 0; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; padding: 5px 20px; box-sizing: border-box; }
+        
+        .user-info { display: flex; align-items: center; background: #4d0000; border: 1px solid #ffcc00; border-radius: 20px; padding: 2px 15px 2px 2px; }
+        .u-avatar { width: 30px; height: 30px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 8px; }
+        .u-bal { font-size: 12px; color: #fff; font-weight: bold; }
+
+        .chip-selector { display: flex; gap: 5px; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 25px; border: 2px solid #ffcc00; }
+        .c-btn { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; border: 2px dashed #fff; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.6); transition: 0.1s; }
+        .c-btn:active { transform: scale(0.9); }
+        .c10 { background: #ffcc00; color: #000; } .c50 { background: #3366ff; color: #fff; } .c100 { background: #00cc99; color: #fff; } .c500 { background: #cc33ff; color: #fff; } .c1k { background: #ff3333; color: #fff; } .c5k { background: #e6e600; color: #000; border: 2px solid #fff; }
+        .selected { transform: translateY(-5px); border-style: solid; box-shadow: 0 0 10px #fff; }
+
+        .players-btn { background: #004d00; border: 1px solid #00ff00; padding: 8px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+
+        .chip { width: 20px; height: 20px; border-radius: 50%; position: absolute; font-size: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 1px solid #fff; box-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+        
+        .win-glow { animation: blink 0.5s infinite alternate; }
+        @keyframes blink { from { box-shadow: inset 0 0 10px #ffff00; } to { box-shadow: inset 0 0 40px #ffff00; } }
     </style>
 </head>
 <body>
@@ -97,70 +104,69 @@
     <audio id="coinSnd" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
     <audio id="cardSnd" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
 
-<div class="top-bar">
-    <div class="top-left">VIP LOBBY<br><span id="live-date" style="font-size:9px; color:#ccc;"></span></div>
-    <div class="bal-box">₹ <span id="balance">0.00</span></div>
-</div>
-
 <div class="casino-table">
     
-    <div class="history-panel" id="record-board"></div>
+    <div class="history-bar" id="record-board"></div>
 
-    <div class="joker-area">
-        <div class="joker-title">MASTER JOKER</div>
-        <div class="card-slot" id="joker-slot">
-            <div class="card-back" id="joker-back"></div>
-            <div class="card-front" id="joker-front"></div>
+    <div class="side-players left-players" id="left-bots"></div>
+    <div class="side-players right-players" id="right-bots"></div>
+
+    <div class="game-area">
+        <div class="box andar-box" id="box-andar" onclick="placeBet('andar')">
+            <div class="box-header">
+                <div class="box-title">Andar</div><div class="ratio">1:1.95</div>
+            </div>
+            <div class="chips-zone" id="chips-andar"></div>
+            <div class="pool-amt" id="p-andar">0.00</div>
         </div>
-    </div>
 
-    <div class="cards-area">
-        <div>
-            <div class="slot-title" style="color:var(--andar);">ANDAR</div>
-            <div class="card-slot" id="slot-andar">
-                <div class="card-back" id="back-a"></div>
-                <div class="card-front" id="img-a"></div>
+        <div class="center-joker">
+            <div class="status-pill" id="game-status">Waiting...</div>
+            <div class="card-slot" id="joker-slot">
+                <div id="joker-front" style="display:none; width:100%; height:100%;"></div>
+                <div id="joker-back" style="width:100%; height:100%; background: url('https://deckofcardsapi.com/static/img/back.png') center/cover; border-radius:3px;"></div>
             </div>
         </div>
-        
-        <div class="timer" id="timer">00</div>
-        
-        <div>
-            <div class="slot-title" style="color:var(--bahar);">BAHAR</div>
-            <div class="card-slot" id="slot-bahar">
-                <div class="card-back" id="back-b"></div>
-                <div class="card-front" id="img-b"></div>
+
+        <div class="box bahar-box" id="box-bahar" onclick="placeBet('bahar')">
+            <div class="box-header">
+                <div class="box-title">Bahar</div><div class="ratio">1:1.95</div>
             </div>
+            <div class="chips-zone" id="chips-bahar"></div>
+            <div class="pool-amt" id="p-bahar">0.00</div>
         </div>
     </div>
 
-    <div class="bet-zones">
-        <div class="bet-box box-andar" id="box-andar" onclick="placeBet('andar')">
-            <div class="zone-title" style="color:var(--andar);">ANDAR</div>
-            <div class="total-pool">₹<span id="p-andar">0</span></div>
-            <div class="my-bet-badge" id="my-andar">MY BET: ₹0</div>
-            <div class="win-text" id="win-text-andar">ANDAR WIN</div>
-            <div class="chips-container" id="chips-andar"></div>
-        </div>
-        
-        <div class="bet-box box-bahar" id="box-bahar" onclick="placeBet('bahar')">
-            <div class="zone-title" style="color:var(--bahar);">BAHAR</div>
-            <div class="total-pool">₹<span id="p-bahar">0</span></div>
-            <div class="my-bet-badge" id="my-bahar">MY BET: ₹0</div>
-            <div class="win-text" id="win-text-bahar">BAHAR WIN</div>
-            <div class="chips-container" id="chips-bahar"></div>
+    <div class="side-bets">
+        <div class="sb-title">Side Bets (Bet on number of cards dealt)</div>
+        <div class="sb-grid">
+            <div class="sb-item"><span>1-5</span><span class="sb-ratio">1:3</span></div>
+            <div class="sb-item"><span>6-10</span><span class="sb-ratio">1:4</span></div>
+            <div class="sb-item"><span>11-15</span><span class="sb-ratio">1:5</span></div>
+            <div class="sb-item"><span>16-20</span><span class="sb-ratio">1:6</span></div>
+            <div class="sb-item"><span>21-25</span><span class="sb-ratio">1:7</span></div>
+            <div class="sb-item"><span>26-30</span><span class="sb-ratio">1:8</span></div>
         </div>
     </div>
 
-</div>
+    <div class="bottom-strip">
+        <div class="user-info">
+            <div class="u-avatar">👤</div>
+            <div class="u-bal" id="balance">0.00</div>
+        </div>
 
-<div class="chip-footer">
-    <div class="c-btn c10" onclick="setChip(10, this)">10</div>
-    <div class="c-btn c100" onclick="setChip(100, this)">100</div>
-    <div class="c-btn c500 selected" onclick="setChip(500, this)">500</div>
-    <div class="c-btn c1k" onclick="setChip(1000, this)">1K</div>
-    <div class="c-btn c5k" onclick="setChip(5000, this)">5K</div>
-    <div class="c-btn c10k" onclick="setChip(10000, this)">10K</div>
+        <div class="chip-selector">
+            <div class="c-btn c10 selected" onclick="setChip(10, this)">10</div>
+            <div class="c-btn c50" onclick="setChip(50, this)">50</div>
+            <div class="c-btn c100" onclick="setChip(100, this)">100</div>
+            <div class="c-btn c500" onclick="setChip(500, this)">500</div>
+            <div class="c-btn c1k" onclick="setChip(1000, this)">1K</div>
+            <div class="c-btn c5k" onclick="setChip(5000, this)">5K</div>
+        </div>
+
+        <div class="players-btn">👥</div>
+    </div>
+
 </div>
 
 <script>
@@ -172,53 +178,39 @@
     const cardVoiceNames = {"A":"Ace", "2":"Two", "3":"Three", "4":"Four", "5":"Five", "6":"Six", "7":"Seven", "8":"Eight", "9":"Nine", "10":"Ten", "J":"Jack", "Q":"Queen", "K":"King"};
     const suitVoiceNames = {"S":"Spades", "H":"Hearts", "D":"Diamonds", "C":"Clubs"};
 
-    function speak(text) {
-        if('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            let msg = new SpeechSynthesisUtterance(text);
-            msg.rate = 1.2; window.speechSynthesis.speak(msg);
-        }
-    }
+    function speak(text) { if('speechSynthesis' in window) { window.speechSynthesis.cancel(); let msg = new SpeechSynthesisUtterance(text); msg.rate = 1.1; window.speechSynthesis.speak(msg); } }
 
-    let currentChip = 500, isBettingOpen = false, pool = {andar:0, bahar:0}, myBets = {andar:0, bahar:0};
+    let currentChip = 10, isBettingOpen = false, pool = {andar:0, bahar:0}, myBets = {andar:0, bahar:0};
     let botInterval;
-    document.getElementById('live-date').innerText = new Date().toLocaleDateString();
 
+    // GENERATE BOTS
+    function renderBots() {
+        let leftH = '', rightH = '';
+        for(let i=0; i<6; i++) {
+            let bal = (Math.random()*10000 + 1000).toFixed(2);
+            let h = `<div style="text-align:center"><div class="player-avatar">🧑‍💼</div><div class="player-bal">${bal}</div></div>`;
+            if(i<3) leftH += h; else rightH += h;
+        }
+        document.getElementById('left-bots').innerHTML = leftH; document.getElementById('right-bots').innerHTML = rightH;
+    }
+    renderBots(); setInterval(renderBots, 5000);
+
+    // USER BALANCE
     if(phone) {
         db.ref('users/'+phone).on('value', s => { 
-            let d = s.val() || {};
-            let total = (parseFloat(d.balance)||0) + (parseFloat(d.winning_balance)||0);
+            let d = s.val() || {}; let total = (parseFloat(d.balance)||0) + (parseFloat(d.winning_balance)||0);
             document.getElementById('balance').innerText = total.toFixed(2); 
-        });
-
-        // RECOVERY MY BETS
-        db.ref(`Game/AndarBahar/Bets/${phone}`).once('value', snap => {
-            let saved = snap.val();
-            if(saved) {
-                setTimeout(() => {
-                    ['andar', 'bahar'].forEach(side => {
-                        let val = saved[side];
-                        if(val > 0) {
-                            myBets[side] = val;
-                            let myTag = document.getElementById('my-' + side);
-                            myTag.innerText = "MY BET: ₹" + val;
-                            myTag.style.display = 'block';
-                        }
-                    });
-                }, 500);
-            }
         });
     }
 
-    // HISTORY LOAD
+    // HISTORY
     db.ref('Game/AndarBahar/History').on('value', snap => {
         let hist = snap.val();
         if(hist && Array.isArray(hist)) {
             let hHtml = '';
-            [...hist].reverse().forEach(win => {
-                let char = win === 'andar' ? 'A' : 'B';
-                let col = win === 'andar' ? '#ff3333' : '#3399ff';
-                hHtml += `<div class="record-dot" style="background:${col};">${char}</div>`;
+            [...hist].reverse().slice(0, 20).forEach(win => {
+                let char = win === 'andar' ? 'A' : 'B'; let cls = win === 'andar' ? 'dot-a' : 'dot-b';
+                hHtml += `<div class="record-dot ${cls}">${char}</div>`;
             });
             document.getElementById('record-board').innerHTML = hHtml;
         }
@@ -228,9 +220,6 @@
         if(!isBettingOpen) return;
         db.ref(`Game/AndarBahar/Bets/${phone}/${side}`).set(firebase.database.ServerValue.increment(currentChip));
         myBets[side] += currentChip;
-        let myTag = document.getElementById('my-'+side);
-        myTag.innerText = "MY BET: ₹" + myBets[side];
-        myTag.style.display = "block";
         spawnChip(side, currentChip);
         try { document.getElementById('coinSnd').cloneNode().play(); } catch(e){}
     }
@@ -238,54 +227,52 @@
     function spawnChip(side, amt) {
         const div = document.getElementById('chips-'+side);
         const c = document.createElement('div');
-        let bg = amt===10?'#cd7f32':amt===100?'#c0c0c0':amt===500?'#ffd700':amt===1000?'#ff4d4d':amt===5000?'#9933ff':'#111';
-        let col = (amt===100||amt===500)?'#000':amt===10000?'var(--gold)':'#fff';
-        c.style.cssText = `width:20px; height:20px; border-radius:50%; background:${bg}; border:1px solid #fff; position:absolute; font-size:8px; display:flex; align-items:center; justify-content:center; color:${col}; font-weight:900; box-shadow:0 2px 5px rgba(0,0,0,0.8);`;
+        let bg = amt===10?'#ffcc00':amt===50?'#3366ff':amt===100?'#00cc99':amt===500?'#cc33ff':amt===1000?'#ff3333':'#e6e600';
+        let col = (amt===10||amt===5000)?'#000':'#fff';
+        c.className = 'chip'; c.style.background = bg; c.style.color = col;
         c.innerText = amt >= 1000 ? (amt/1000)+'K' : amt;
         c.style.left = Math.random()*80 + "%"; c.style.top = Math.random()*70 + "%";
         div.appendChild(c);
-        if(div.children.length > 30) div.firstChild.remove();
+        if(div.children.length > 40) div.firstChild.remove();
     }
 
     function botBetAction() {
         if(!isBettingOpen) return;
         let botBetted = false;
         ['andar', 'bahar'].forEach(s => {
-            if(Math.random() > 0.4) { 
-                let amt = [10, 100, 500, 1000, 5000, 10000][Math.floor(Math.random()*6)];
-                spawnChip(s, amt);
-                botBetted = true;
+            if(Math.random() > 0.3) { 
+                let amt = [10, 50, 100, 500, 1000][Math.floor(Math.random()*5)];
+                spawnChip(s, amt); botBetted = true;
             }
         });
         if(botBetted) { try { let snd = document.getElementById('coinSnd').cloneNode(); snd.volume = 0.1; snd.play().catch(e=>{}); } catch(e){} }
     }
 
     function createCard(val, suit) {
-        let col = (suit==='H'||suit==='D') ? '#f00' : '#000';
-        let sym = suit==='S'?'♠':suit==='H'?'♥':suit==='D'?'♦':'♣';
-        return `<div style="background:#fff; width:100%; height:100%; border-radius:4px; color:${col}; padding:2px; box-sizing:border-box;">
-            <div style="font-size:12px; font-weight:900;">${val==='0'?'10':val}<br><span style="font-size:8px">${sym}</span></div>
-            <div style="font-size:26px; text-align:center; margin-top:-5px;">${sym}</div>
+        let col = (suit==='H'||suit==='D') ? '#f00' : '#000'; let sym = suit==='S'?'♠':suit==='H'?'♥':suit==='D'?'♦':'♣';
+        return `<div style="color:${col}; width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;">
+            <div style="font-size:14px; font-weight:900;">${val==='0'?'10':val}</div>
+            <div style="font-size:35px; text-align:center; margin-top:-10px;">${sym}</div>
+            <div style="font-size:14px; font-weight:900; transform:rotate(180deg);">${val==='0'?'10':val}</div>
         </div>`;
     }
 
     db.ref('Game/AndarBahar/Status').on('value', snap => {
         let st = snap.val(); if(!st) return;
-        let tEl = document.getElementById('timer');
+        let statusEl = document.getElementById('game-status');
         
         if(st.state === 'betting') {
             document.getElementById('joker-front').innerHTML = createCard(st.jokerVal, st.jokerSuit);
-            document.getElementById('joker-back').style.display = 'none';
-            document.getElementById('joker-front').style.display = 'block';
+            document.getElementById('joker-back').style.display = 'none'; document.getElementById('joker-front').style.display = 'block';
             
             if(!isBettingOpen) {
                 isBettingOpen = true; resetUI();
-                speak(`${cardVoiceNames[st.jokerVal]} is Joker. Start betting.`);
-                clearInterval(botInterval); botInterval = setInterval(botBetAction, 600); 
+                speak(`${cardVoiceNames[st.jokerVal]} is Joker. Place your bets.`);
+                clearInterval(botInterval); botInterval = setInterval(botBetAction, 400); 
             }
-            tEl.innerText = st.timer;
+            statusEl.innerText = "Place Bets: " + st.timer; statusEl.style.color = (st.timer <= 5) ? "#ff4d4d" : "#ffff66";
         } else if (st.state === 'dealing' && isBettingOpen) {
-            isBettingOpen = false; tEl.innerText = "STOP";
+            isBettingOpen = false; statusEl.innerText = "Stop Betting"; statusEl.style.color = "#fff";
             clearInterval(botInterval); speak("Stop betting");
             showAnim(st.winner, st.jokerVal);
         }
@@ -294,35 +281,29 @@
     db.ref('Game/AndarBahar/Bets').on('value', snap => {
         let all = snap.val() || {}; pool = {andar:0, bahar:0};
         for(let u in all) { pool.andar += (all[u].andar||0); pool.bahar += (all[u].bahar||0); }
-        document.getElementById('p-andar').innerText = pool.andar.toLocaleString();
-        document.getElementById('p-bahar').innerText = pool.bahar.toLocaleString();
+        document.getElementById('p-andar').innerText = pool.andar.toLocaleString() + ".00";
+        document.getElementById('p-bahar').innerText = pool.bahar.toLocaleString() + ".00";
     });
 
     async function showAnim(win, jVal) {
         let steps = Math.floor(Math.random()*4)+6;
-        if(win==='andar' && steps%2===0) steps++;
-        if(win==='bahar' && steps%2!==0) steps++;
-
-        document.getElementById('back-a').style.display = 'none'; document.getElementById('back-b').style.display = 'none';
+        if(win==='andar' && steps%2===0) steps++; if(win==='bahar' && steps%2!==0) steps++;
 
         for(let i=0; i<steps; i++) {
-            let side = ((i+1)%2!==0) ? 'andar' : 'bahar';
-            let isLast = (i === steps-1);
+            let side = ((i+1)%2!==0) ? 'andar' : 'bahar'; let isLast = (i === steps-1);
             let val = isLast ? jVal : ["2","3","4","5","J","K"][Math.floor(Math.random()*6)];
             let suit = ["S","H","D","C"][Math.floor(Math.random()*4)];
-
-            let img = document.getElementById(side==='andar'?'img-a':'img-b');
-            img.innerHTML = createCard(val, suit);
-            img.style.display = 'block';
-            img.classList.remove('deal-anim'); void img.offsetWidth; img.classList.add('deal-anim');
+            
+            let statusEl = document.getElementById('game-status');
+            statusEl.innerText = `${side.toUpperCase()} : ${val==='0'?'10':val}`;
             
             try { document.getElementById('cardSnd').cloneNode().play(); } catch(e){}
             speak(cardVoiceNames[val]);
 
             if(isLast) {
                 setTimeout(() => {
-                    document.getElementById('box-'+side).classList.add(side==='andar'?'glow-a':'glow-b');
-                    document.getElementById('win-text-'+side).style.display = 'block';
+                    document.getElementById('box-'+side).classList.add('win-glow');
+                    statusEl.innerText = side.toUpperCase() + " WINS!";
                     speak(side + " wins");
                 }, 500);
                 return;
@@ -332,23 +313,12 @@
     }
 
     function resetUI() {
-        ['andar','bahar'].forEach(s => {
-            document.getElementById('img-'+(s==='andar'?'a':'b')).style.display = 'none';
-            document.getElementById('back-'+(s==='andar'?'a':'b')).style.display = 'block';
-            document.getElementById('win-text-'+s).style.display = 'none';
-            document.getElementById('box-'+s).classList.remove(s==='andar'?'glow-a':'glow-b');
-            document.getElementById('chips-'+s).innerHTML = '';
-            document.getElementById('my-'+s).style.display = 'none';
-        });
-        myBets = {andar:0, bahar:0};
-        document.getElementById('p-andar').innerText = "0"; document.getElementById('p-bahar').innerText = "0";
+        document.getElementById('joker-front').style.display = 'none'; document.getElementById('joker-back').style.display = 'block';
+        ['andar','bahar'].forEach(s => { document.getElementById('box-'+s).classList.remove('win-glow'); document.getElementById('chips-'+s).innerHTML = ''; });
+        myBets = {andar:0, bahar:0}; document.getElementById('p-andar').innerText = "0.00"; document.getElementById('p-bahar').innerText = "0.00";
     }
 
-    window.setChip = function(v, el) {
-        currentChip = v;
-        document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected'));
-        el.classList.add('selected');
-    }
+    window.setChip = function(v, el) { currentChip = v; document.querySelectorAll('.c-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); }
 </script>
 </body>
 </html>
