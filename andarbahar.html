@@ -36,7 +36,6 @@
             color: #0f0; font-size: 15px; font-weight: 800; box-shadow: 0 5px 10px rgba(0,0,0,0.8);
         }
 
-        /* HISTORY PANEL */
         .record-panel { 
             position: absolute; right: 15px; top: 75px; display: flex; flex-direction: column; gap: 6px; 
             z-index: 1050; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 10px; 
@@ -49,7 +48,6 @@
             box-shadow: inset 0 0 10px rgba(0,0,0,0.8); flex-shrink: 0;
         }
 
-        /* SCROLLING WINNERS (CASINO STYLE) */
         .winner-scroll-container {
             position: fixed; left: 10px; bottom: 150px; height: 160px; width: 130px;
             overflow: hidden; z-index: 1050; background: linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0.6)); 
@@ -126,11 +124,21 @@
             box-shadow: 0 1px 0 #888, 0 2px 0 #777, 0 3px 0 #666, 0 4px 0 #555, 0 10px 10px rgba(0,0,0,0.8); transform: translateZ(25px); transition: 0.3s; pointer-events: none;
         }
 
-        #win-overlay { 
-            position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; display: none; font-size: 45px; font-family: 'Cinzel', serif; font-weight: 900; 
-            background: linear-gradient(135deg, #D4AF37, #FFDF00); padding: 20px 60px; border-radius: 15px; border: 4px solid #fff; color: #000; text-align: center; pointer-events: none; box-shadow: 0 30px 50px rgba(0,0,0,0.9); text-transform: uppercase; animation: popIn 0.5s forwards;
+        /* NEW WIN TEXT & GLOW ANIMATION */
+        .box-win-text {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) translateZ(30px);
+            font-size: 20px; font-family: 'Cinzel', serif; font-weight: 900; color: #fff; 
+            text-shadow: 0 0 10px #000, 0 0 20px var(--gold), 0 0 30px #fff;
+            z-index: 100; display: none; text-transform: uppercase; letter-spacing: 2px;
+            animation: textPulse 0.5s infinite alternate; pointer-events: none;
         }
-        @keyframes popIn { 0% { transform: translate(-50%, -50%) scale(0); } 100% { transform: translate(-50%, -50%) scale(1); } }
+        @keyframes textPulse { from { transform: translate(-50%, -50%) translateZ(30px) scale(1); } to { transform: translate(-50%, -50%) translateZ(30px) scale(1.2); } }
+
+        .box-glow-andar { animation: glowAndar 0.5s infinite alternate; border-color: #fff !important; }
+        @keyframes glowAndar { from { box-shadow: 0 0 20px var(--andar), inset 0 0 20px var(--andar); } to { box-shadow: 0 0 50px var(--andar), inset 0 0 50px var(--andar); } }
+
+        .box-glow-bahar { animation: glowBahar 0.5s infinite alternate; border-color: #fff !important; }
+        @keyframes glowBahar { from { box-shadow: 0 0 20px var(--bahar), inset 0 0 20px var(--bahar); } to { box-shadow: 0 0 50px var(--bahar), inset 0 0 50px var(--bahar); } }
 
         .chip-footer { 
             position: fixed; bottom: 0; width: 100%; background: linear-gradient(to top, #111, #222); display: flex; justify-content: center; gap: 10px; padding: 25px 0 35px 0; border-top: 4px solid var(--dark-wood); z-index: 1100; box-shadow: 0 -20px 40px rgba(0,0,0,0.9); perspective: 500px;
@@ -208,18 +216,18 @@
                 <span class="pool-amt">₹<span id="p-andar">0</span></span>
                 <div class="my-box-bet" id="my-andar">₹0</div>
                 <div id="chips-andar" style="transform-style: preserve-3d; width: 100%; height: 100%; position: absolute; top:0; left:0;"></div>
+                <div class="box-win-text" id="win-text-andar">ANDAR WINS</div>
             </div>
             <div class="box bahar-box" id="box-bahar" onclick="placeBet('bahar')">
                 <div class="box-title-bg"><span class="slot-title title-b" style="font-size:16px;">BAHAR (B)</span></div>
                 <span class="pool-amt">₹<span id="p-bahar">0</span></span>
                 <div class="my-box-bet" id="my-bahar">₹0</div>
                 <div id="chips-bahar" style="transform-style: preserve-3d; width: 100%; height: 100%; position: absolute; top:0; left:0;"></div>
+                <div class="box-win-text" id="win-text-bahar">BAHAR WINS</div>
             </div>
         </div>
     </div>
 </div>
-
-<div id="win-overlay">WINNER</div>
 
 <div class="live-players" id="player-row"></div>
 
@@ -237,7 +245,6 @@
         try { let snd = document.getElementById(audioId).cloneNode(); snd.volume = vol; snd.play().catch(e=>{}); } catch(e){}
     }
 
-    // Voice Synthesis Setup
     const cardVoiceNames = {"A":"Ace", "2":"Two", "3":"Three", "4":"Four", "5":"Five", "6":"Six", "7":"Seven", "8":"Eight", "9":"Nine", "10":"Ten", "J":"Jack", "Q":"Queen", "K":"King"};
     const suitVoiceNames = {"S":"Spades", "H":"Hearts", "D":"Diamonds", "C":"Clubs"};
 
@@ -293,7 +300,6 @@
     }
     generateBots();
 
-    // Fill Scrolling Winners List with dummy data
     function generateScrollingWinners() {
         let scroller = document.getElementById('scrolling-winners');
         let names = ["Rahul", "Amit", "ID_4592", "ID_1023", "Vikas", "ID_9921", "Sumit", "ID_3421", "Neha", "ID_5510"];
@@ -306,7 +312,7 @@
         scroller.innerHTML = html;
     }
     generateScrollingWinners();
-    setInterval(generateScrollingWinners, 15000); // refresh list every 15s
+    setInterval(generateScrollingWinners, 15000); 
 
     if(phone) {
         db.ref('users/'+phone).on('value', s => { 
@@ -334,7 +340,6 @@
         });
     }
 
-    // Load History
     db.ref('Game/AndarBahar/History').once('value', snap => {
         let hist = snap.val();
         if(hist && Array.isArray(hist)) {
@@ -480,11 +485,11 @@
 
             if(isLast) {
                 setTimeout(() => {
-                    const ov = document.getElementById('win-overlay');
-                    ov.innerText = side.toUpperCase() + " WINS!"; ov.style.display = 'block';
+                    // CHANGED: Added glow class and shown small text inside the box instead of big overlay
+                    document.getElementById('win-text-' + side).style.display = 'block';
+                    document.getElementById('box-' + side).classList.add('box-glow-' + side);
                     speakAnnouncement(side === 'andar' ? "Andar Win!" : "Bahar Win!");
 
-                    // Update History Panel Live
                     let hHtml = document.getElementById('record-board').innerHTML;
                     let cCol = side === 'andar' ? 'var(--andar)' : 'var(--bahar)';
                     let cDot = `<div class="record-dot" style="background:rgba(0,0,0,0.5); border-color:${cCol}; color:${cCol};">${side === 'andar' ? 'A' : 'B'}</div>`;
@@ -503,12 +508,18 @@
     }
 
     function resetUI() {
-        document.getElementById('win-overlay').style.display = 'none';
         document.getElementById('img-a').innerHTML = ''; document.getElementById('img-b').innerHTML = '';
         document.getElementById('img-a').style.display = 'none'; document.getElementById('img-b').style.display = 'none';
         document.getElementById('back-a').style.display = 'block'; document.getElementById('back-b').style.display = 'block';
         document.querySelectorAll('.chip').forEach(c => c.remove());
         document.querySelectorAll('.my-box-bet').forEach(m => { m.style.display = 'none'; m.innerText = '₹0'; });
+        
+        // CHANGED: Hide win text and remove glow effect on reset
+        document.getElementById('win-text-andar').style.display = 'none';
+        document.getElementById('win-text-bahar').style.display = 'none';
+        document.getElementById('box-andar').classList.remove('box-glow-andar');
+        document.getElementById('box-bahar').classList.remove('box-glow-bahar');
+
         pool = {andar:0, bahar:0}; myBets = {andar:0, bahar:0}; 
         document.getElementById('p-andar').innerText = "0"; document.getElementById('p-bahar').innerText = "0";
     }
