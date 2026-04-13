@@ -59,6 +59,7 @@
 
         .track-label { color: rgba(255, 255, 255, 0.9); font-weight: bold; margin-right: 15px; width: 55px; flex-shrink: 0; font-size: 13px;}
 
+        /* CARDS STACKING - Perfect Overlap */
         .playing-card {
             width: 45px; height: 65px; border-radius: 4px; 
             box-shadow: -2px 0px 5px rgba(0,0,0,0.5); 
@@ -103,14 +104,14 @@
         .p-id { font-size: 9px; color: #ccc; margin-top: 2px; font-weight: bold;}
         .p-bal { font-size: 10px; color: #00ff88; font-weight: bold;}
 
-        /* Bottom Bar (Chips) */
-        .bottom-bar { background-color: #1a0b1c; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #d4af37; z-index: 100;}
-        .chips-area { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;}
+        /* Bottom Bar */
+        .bottom-bar { background-color: #1a0b1c; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #d4af37; z-index: 100;}
+        .chips-area { display: flex; gap: 4px; overflow-x: auto; width: 100%; justify-content: space-around; padding-bottom: 2px;}
         .chips-area::-webkit-scrollbar { display: none; }
         
         .chip {
-            width: 36px; height: 36px; border-radius: 50%; background-color: white; color: black; flex-shrink: 0;
-            display: flex; justify-content: center; align-items: center; font-size: 11px; font-weight: 900;
+            width: 32px; height: 32px; border-radius: 50%; background-color: white; color: black; flex-shrink: 0;
+            display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: 900;
             border: 2px dashed #333; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.5);
         }
         .chip.active { border-color: #d4af37; transform: scale(1.15) translateY(-5px); box-shadow: 0 5px 15px #d4af37; }
@@ -131,7 +132,6 @@
     <audio id="cardSnd" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
 
     <div class="game-container">
-        
         <div class="dealer-area">
             <div class="live-count">● 1250 LIVE</div>
             <div class="user-id">VIP USER</div>
@@ -141,14 +141,9 @@
         </div>
 
         <div class="play-area">
-            
             <div class="track-container">
-                <div class="card-track" id="track-andar">
-                    <span class="track-label">ANDAR</span>
-                </div>
-                <div class="card-track bahar" id="track-bahar">
-                    <span class="track-label">BAHAR</span>
-                </div>
+                <div class="card-track" id="track-andar"><span class="track-label">ANDAR</span></div>
+                <div class="card-track bahar" id="track-bahar"><span class="track-label">BAHAR</span></div>
             </div>
 
             <div class="main-bets">
@@ -184,7 +179,7 @@
         <div class="live-players" id="player-row"></div>
 
         <div class="bottom-bar">
-            <div style="font-size: 14px; font-weight: 900; color: #00ff88; min-width: 70px;">₹<span id="balance">0.00</span></div>
+            <div style="font-size: 14px; font-weight: 900; color: #00ff88; margin-right: 5px;">₹<span id="balance">0.00</span></div>
             <div class="chips-area">
                 <div class="chip c10" onclick="selectChip(this, 10)">10</div>
                 <div class="chip c50 active" onclick="selectChip(this, 50)">50</div>
@@ -195,15 +190,17 @@
                 <div class="chip c10k" onclick="selectChip(this, 10000)">10K</div>
             </div>
         </div>
-
     </div>
 
     <script>
-        // 🔥 PRELOAD IMAGES FIX (Patte Goli ki speed se aayenge) 🔥
+        // PULL-TO-REFRESH BLOCKER
+        document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
+
+        // FAST PRELOAD IMAGES
         const preloadedCards = {};
         function preloadCards() {
             const suits = ["S", "H", "D", "C"];
-            const ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "0", "J", "Q", "K"]; // 0 is 10 for API
+            const ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "0", "J", "Q", "K"]; 
             suits.forEach(s => {
                 ranks.forEach(r => {
                     let img = new Image();
@@ -228,14 +225,9 @@
         
         let currentChip = 50, isBettingOpen = false;
         let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0;
-        
-        let realPool = {andar:0, bahar:0};
-        let botPool = {andar:0, bahar:0};
-        let myBets = {andar:0, bahar:0};
+        let realPool = {andar:0, bahar:0}, botPool = {andar:0, bahar:0}, myBets = {andar:0, bahar:0};
         let botInterval;
-        
         let animationActive = false;
-        let lockedJokerVal = ""; // 🔥 JOKER LOCK FIX 🔥
 
         let botsList = [];
         function generateBots() {
@@ -255,8 +247,7 @@
         }, 2500);
 
         function renderBotsUI() {
-            let h = "";
-            let avatars = ['👨','👩','👱‍♂️','👲','🧔'];
+            let h = ""; let avatars = ['👨','👩','👱‍♂️','👲','🧔'];
             botsList.forEach((b, i) => {
                 let displayBal = b.bal >= 100000 ? "1.0L" : (b.bal/1000).toFixed(1) + "K";
                 h += `<div class="player"><div class="p-avatar">${avatars[i%5]}</div><div class="p-id">ID_${b.id}</div><div class="p-bal">₹${displayBal}</div></div>`;
@@ -387,6 +378,10 @@
             return img;
         }
 
+        // ==============================================================
+        // 🔥 TRUE MULTIPLAYER SERVER SYNC (SEED BASED) 🔥
+        // Ab server se sequence aayega, 1000 phones par same patte khulenge
+        // ==============================================================
         const statusMsg = document.getElementById('status-msg');
         const trackAndar = document.getElementById('track-andar');
         const trackBahar = document.getElementById('track-bahar');
@@ -396,7 +391,7 @@
             let st = snap.val(); if(!st) return;
             
             if(st.state === 'betting') {
-                if (animationActive) return; // 🔥 Agar patte khul rahe hain to chhed-chhad block 🔥
+                animationActive = false; // Kill old animation
                 
                 if (!isBettingOpen) {
                     isBettingOpen = true;
@@ -409,8 +404,6 @@
                     myBets = {andar:0, bahar:0};
                     botPool = {andar:0, bahar:0};
                     updatePoolUI();
-                    
-                    lockedJokerVal = st.jokerVal; // Joker lock kar diya!
                     
                     clearInterval(botInterval);
                     botInterval = setInterval(botBetAction, 700); 
@@ -429,35 +422,27 @@
                 clearInterval(botInterval);
                 statusMsg.innerText = "DEALING CARDS...";
                 statusMsg.style.color = '#d4af37';
-                showAnimation(st.winner, lockedJokerVal || st.jokerVal);
+                
+                // Pass the sequence to animation
+                showAnimation(st.winner, st.jokerVal, st.cardSequence);
             }
         });
 
-        async function showAnimation(win, jVal) {
+        async function showAnimation(win, jVal, sequence) {
             animationActive = true; 
             
-            let steps = Math.floor(Math.random() * 5) + 6; 
-            if(win === 'andar' && steps % 2 === 0) steps++; 
-            if(win === 'bahar' && steps % 2 !== 0) steps++; 
+            if(!sequence || sequence.length === 0) return; // Wait for correct sequence from server
 
             let step = 0;
-            for (let i = 0; i < steps; i++) {
+            for (let i = 0; i < sequence.length; i++) {
+                if(!animationActive) return; // Strict Animation Lock 
+                
                 step++;
                 let side = (step % 2 !== 0) ? 'andar' : 'bahar'; 
-                let isLast = (i === steps - 1);
-                
-                let resVal, resSuit;
-                if(isLast) { 
-                    resVal = jVal; 
-                    resSuit = cardSuits[Math.floor(Math.random()*4)]; 
-                } else { 
-                    do { 
-                        resVal = cardValues[Math.floor(Math.random()*13)]; 
-                    } while (resVal === jVal); // 🔥 NAYA FIX: Lock wale joker se match check hoga 🔥
-                    resSuit = cardSuits[Math.floor(Math.random()*4)]; 
-                }
+                let cardData = sequence[i];
+                let isLast = (i === sequence.length - 1);
 
-                let cardEl = createHTMLCard(resVal, resSuit);
+                let cardEl = createHTMLCard(cardData.val, cardData.suit);
                 let track = side === 'andar' ? trackAndar : trackBahar;
                 
                 track.appendChild(cardEl);
@@ -476,17 +461,22 @@
                     return;
                 }
                 
+                // Fast dealing speed (600ms)
                 await new Promise(r => setTimeout(r, 600)); 
             }
         }
 
-        // 🔥 HOST ELECTION (SERVER CONFLICT FIX) 🔥
+        // ==============================================================
+        // 🔥 MASTER HOST ELECTION (SERVER CREATOR) 🔥
+        // Ye browser ab "Server" ki tarah act karega aur pure sequence ko DB me dalega
+        // ==============================================================
         let isServer = false;
-        let myServerId = Math.random().toString(36).substr(2, 9);
+        let myServerId = Math.random().toString(36).substr(2, 9); // Har mobile ka apna ID
         
         setInterval(() => {
             db.ref('Game/AndarBahar/Heartbeat').once('value', snap => {
                 let data = snap.val() || { time: 0, host: '' };
+                // Agar 20 second se koi admin zinda nahi hai, toh main admin ban jaunga
                 if (Date.now() - data.time > 20000) { 
                     db.ref('Game/AndarBahar/Heartbeat').set({ time: Date.now(), host: myServerId });
                     if(!isServer) {
@@ -494,14 +484,14 @@
                         runDealerLoop(); 
                     }
                 } else if (data.host !== myServerId) {
-                    isServer = false;
+                    isServer = false; // Koi aur admin ban chuka hai, main chup baithunga
                 }
             });
         }, 5000);
 
         function runDealerLoop() {
             if (!isServer) return;
-            db.ref('Game/AndarBahar/Heartbeat').set({ time: Date.now(), host: myServerId });
+            db.ref('Game/AndarBahar/Heartbeat').set({ time: Date.now(), host: myServerId }); // I am alive
             
             let jVal = cardValues[Math.floor(Math.random()*13)];
             let jSuit = cardSuits[Math.floor(Math.random()*4)];
@@ -527,9 +517,40 @@
                                 tB += (allB[u].bahar || 0);
                             }
                         }
+                        // Loss minimization logic
                         let winSide = (tA < tB) ? 'andar' : (tB < tA) ? 'bahar' : (Math.random() > 0.5 ? 'andar' : 'bahar');
                         
-                        db.ref('Game/AndarBahar/Status').set({ state: 'dealing', winner: winSide, timer: 0, jokerVal: jVal, jokerSuit: jSuit });
+                        // 🔥 SERVER GENERATES SEQUENCE HERE 🔥
+                        let sequence = [];
+                        let steps = Math.floor(Math.random() * 5) + 6; 
+                        if(winSide === 'andar' && steps % 2 === 0) steps++; 
+                        if(winSide === 'bahar' && steps % 2 !== 0) steps++;
+
+                        for (let i = 0; i < steps; i++) {
+                            let isLast = (i === steps - 1);
+                            let resVal, resSuit;
+                            if(isLast) { 
+                                resVal = jVal; 
+                                resSuit = cardSuits[Math.floor(Math.random()*4)]; 
+                            } else { 
+                                do { 
+                                    resVal = cardValues[Math.floor(Math.random()*13)]; 
+                                } while (resVal === jVal); 
+                                resSuit = cardSuits[Math.floor(Math.random()*4)]; 
+                            }
+                            sequence.push({val: resVal, suit: resSuit});
+                        }
+
+                        // Push everything to Firebase at once
+                        db.ref('Game/AndarBahar/Status').set({ 
+                            state: 'dealing', 
+                            winner: winSide, 
+                            timer: 0, 
+                            jokerVal: jVal, 
+                            jokerSuit: jSuit,
+                            cardSequence: sequence // Saare 1000 mobiles ko yahi list milegi
+                        });
+                        
                         setTimeout(runDealerLoop, 20000); 
                     });
                 }
