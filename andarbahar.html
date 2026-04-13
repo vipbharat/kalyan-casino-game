@@ -107,7 +107,7 @@
     
     let iBO=0, cC=1000, cCc='radial-gradient(circle, #e57373, #d32f2f)', tB=0, dB=0, wB=0, bB=0;
     let mB={andar:0, bahar:0}, sPl={andar:0, bahar:0}, bPl={andar:0, bahar:0};
-    let bI, iAI=0, iD=0, bL=[], lockedJoker = "";
+    let bI, iAI=0, iD=0, bL=[], lockedJoker = "A", lockedSuit = "S";
 
     function sT(m){ let t=$('tst'); if(!t){t=document.createElement('div');t.id='tst';t.className='tst';document.body.appendChild(t);} t.innerText=m; t.classList.add('sh'); pS('bS',0.5); setTimeout(()=>t.classList.remove('sh'),2500); }
     function uA(){ if(!iAI){ ['bS','cS'].forEach(i=>{let e=$(i); if(e){e.play().then(()=>{e.pause();e.currentTime=0;}).catch(()=>{});}}); iAI=1; } }
@@ -115,7 +115,6 @@
     
     setInterval(()=>{$('oc').innerText=Math.floor(Math.random()*50)+1200},4000);
 
-    // Balance & Auto-recover
     if(ph){
         db.ref('users/'+ph).on('value', s=>{ let d=s.val()||{}; dB=parseFloat(d.balance||0); wB=parseFloat(d.winning_balance||0); bB=parseFloat(d.bonus_balance||0); tB=Math.max(0,dB+wB+bB); $('bal').innerText=tB.toFixed(2); });
         db.ref(`Game/AndarBahar/Bets/${ph}`).once('value', s=>{
@@ -130,7 +129,6 @@
         });
     }
 
-    // Bot Logic
     function gB(){ bL=[]; for(let i=0;i<5;i++) bL.push({b:Math.floor(Math.random()*100000)+50000}); } gB();
     function uP(){ $('md').innerText="₹"+(sPl.andar+bPl.andar).toLocaleString(); $('mt').innerText="₹"+(sPl.bahar+bPl.bahar).toLocaleString(); }
     
@@ -158,15 +156,15 @@
         }); if(bb){ uP(); pS('bS',.05); }
     }
 
-    // MAIN LISTENER (Connected to Engine)
     db.ref('Game/AndarBahar/Status').on('value', s=>{
         let st=s.val(); if(!st) return; let te=$('tmr');
         
         if(st.state === 'betting'){
             if(!iBO){
                 iBO=1; iD=0; rUI();
-                lockedJoker = st.jokerVal; // Engine sends jokerVal
-                $('joker-spot').innerHTML = cCD(st.jokerVal, st.jokerSuit || 'S');
+                lockedJoker = st.jokerVal || "A"; 
+                lockedSuit = st.jokerSuit || "S";
+                $('joker-spot').innerHTML = cCD(lockedJoker, lockedSuit);
                 clearInterval(bI); bI=setInterval(bBA,700);
             }
             te.innerText=st.timer+"s";
@@ -176,7 +174,7 @@
             if(iBO && !iD){
                 iBO=0; iD=1; clearInterval(bI);
                 te.innerText="DEALING..."; te.style.color="#fff";
-                if(st.winner) sR(st.winner, st.jokerVal, st.jokerSuit || 'S');
+                if(st.winner) sR(st.winner, st.jokerVal || lockedJoker, st.jokerSuit || lockedSuit);
             }
         }
     });
@@ -186,36 +184,37 @@
         for(let u in a){ if(!u.includes('bot')){ sPl.andar+=(a[u].andar||0); sPl.bahar+=(a[u].bahar||0); } } uP();
     });
 
-    // Client-Side Card Generation Logic
     function cCD(v,s){
-        let y=s==='S'?'♠':s==='H'?'♥':s==='D'?'♦':'♣', c=(s==='H'||s==='D')?'#ff1a1a':'#000';
         let actV = v == "10" ? "0" : v;
         return `<img src="https://deckofcardsapi.com/static/img/${actV}${s}.png" style="width:100%; height:100%; border-radius:4px; box-shadow:0 0 5px rgba(0,0,0,0.5);">`;
     }
 
-    // MAGIC: Generate deterministic cards so all phones show the same sequence!
+    // 🔥 UPGRADED CARD GENERATION (Faster & Safe) 🔥
     async function sR(w, jVal, jSuit){
         const vs=["A","2","3","4","5","6","7","8","9","0","J","Q","K"], ss=["S","D","C","H"];
         
-        // Use Winner and Joker to seed the number of cards (Hack for Syncing)
-        let seed = w.charCodeAt(0) + jVal.charCodeAt(0);
-        let numCards = (seed % 10) + 3; // Random 3 to 12 cards before win
-        if (w === 'andar' && numCards % 2 !== 0) numCards++; // Andar wins on Even index (0, 2, 4...)
-        if (w === 'bahar' && numCards % 2 === 0) numCards++; // Bahar wins on Odd index (1, 3, 5...)
+        // Handle Dragon Tiger server override
+        let winnerSide = (w === 'dragon' || w === 'andar') ? 'andar' : 'bahar';
+
+        let seed = winnerSide.charCodeAt(0) + jVal.charCodeAt(0);
+        // Reduced max cards from 12 to 8 so animation finishes within 3-4 seconds max
+        let numCards = (seed % 6) + 3; 
+        
+        if (winnerSide === 'andar' && numCards % 2 !== 0) numCards++; 
+        if (winnerSide === 'bahar' && numCards % 2 === 0) numCards++; 
 
         for (let i = 0; i <= numCards; i++) {
+            if(!iD) break; // <--- EMERGENCY STOP if server starts new betting round early!
+
             let side = (i % 2 === 0) ? 'andar' : 'bahar';
             let cV, cS;
             
             if (i === numCards) {
-                // Final card is the winner
                 cV = jVal; cS = ss[Math.floor((seed+i)%4)];
             } else {
-                // Random non-winning card
                 do { 
-                    cV = vs[(seed+i*7)%13]; 
-                    cS = ss[(seed+i)%4]; 
-                } while(cV === jVal); // Don't show joker before end
+                    cV = vs[(seed+i*7)%13]; cS = ss[(seed+i)%4]; 
+                } while(cV === jVal); 
             }
 
             let track = $('track-' + side);
@@ -226,16 +225,16 @@
             track.scrollTo({ left: track.scrollWidth, behavior: 'smooth' });
             
             pS('cS', 1);
-            await new Promise(r => setTimeout(r, 700)); // Delay between cards
+            await new Promise(r => setTimeout(r, 400)); // Fast Dealing: 400ms instead of 700ms
         }
 
-        // Announce Winner
-        $('tmr').innerText = w.toUpperCase() + " WINS!";
-        $('bx-' + (w === 'andar' ? 'd' : 't')).classList.add('gw');
-        
-        // Payout
-        let wa=0; if(w==='andar') wa=mB.andar*1.9; else if(w==='bahar') wa=mB.bahar*2.0;
-        if(wa>0 && ph) db.ref('users/'+ph+'/winning_balance').set(wB+wa);
+        if(iD) { // Check if animation completed successfully without interruption
+            $('tmr').innerText = winnerSide.toUpperCase() + " WINS!";
+            $('bx-' + (winnerSide === 'andar' ? 'd' : 't')).classList.add('gw');
+            
+            let wa=0; if(winnerSide==='andar') wa=mB.andar*1.9; else if(winnerSide==='bahar') wa=mB.bahar*2.0;
+            if(wa>0 && ph) db.ref('users/'+ph+'/winning_balance').set(wB+wa);
+        }
     }
 
     function rUI(){
