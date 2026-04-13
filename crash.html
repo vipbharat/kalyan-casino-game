@@ -40,7 +40,7 @@
 </head>
 <body onclick="initAudio()">
 
-    <audio id="sndFly" src="https://assets.mixkit.co/active_storage/sfx/1271/1271-preview.mp3" loop></audio>
+    <audio id="sndFly" src="https://assets.mixkit.co/active_storage/sfx/1701/1701-preview.mp3" loop></audio>
     <audio id="sndBlast" src="https://assets.mixkit.co/active_storage/sfx/1702/1702-preview.mp3"></audio>
 
     <div class="header">
@@ -85,7 +85,7 @@
 
     function initAudio() {
         if(!audioReady) {
-            sFly.volume = 0.3; sBlast.volume = 1.0;
+            sFly.volume = 0.5; sBlast.volume = 1.0;
             sFly.play().then(() => sFly.pause()).catch(()=>{});
             audioReady = true;
         }
@@ -123,6 +123,8 @@
                 waitEnd = d.waitEndTime; currMult = 1.00; isCashed = false;
                 document.getElementById('win-popup').style.display = "none";
                 sFly.pause(); sBlast.pause();
+                particles = []; // 🔥 Aag bujha do jab wait kare 🔥
+                
                 if(!isBetted) { mainBtn.innerText = "PLACE BET"; mainBtn.className = "action-btn btn-bet"; }
                 else { mainBtn.innerText = "BET PLACED"; mainBtn.className = "action-btn btn-lock"; }
                 
@@ -164,14 +166,14 @@
         }
     }
 
-    // --- 🔥 DYNAMIC CAMERA & GANIT (MATH) GRAPH ENGINE 🔥 ---
+    // --- FIRE PARTICLES ENGINE 🔥 ---
+    let particles = [];
+
     const canvas = document.getElementById('graphCanvas');
     const ctx = canvas.getContext('2d');
     let cw, ch;
     function resize() { cw = canvas.width = window.innerWidth; ch = canvas.height = canvas.parentElement.clientHeight; }
     window.onresize = resize; resize();
-
-    let gridOffset = 0;
 
     function draw() {
         ctx.clearRect(0,0,cw,ch);
@@ -180,7 +182,7 @@
             statusLabel.innerText = "BETTING: " + left.toFixed(1) + "s";
             statusLabel.style.color = "var(--neon)";
             multLabel.innerText = "1.00x"; multLabel.style.color = "#fff";
-            renderRocket(0); // Render stable graph at 0
+            renderRocket(0, true);
         } else if(gameState === "FLYING") {
             statusLabel.innerText = "ROCKET FLYING!";
             statusLabel.style.color = "#fff";
@@ -188,93 +190,74 @@
             currMult = Math.pow(Math.E, 0.00006 * elapsed);
             multLabel.innerText = currMult.toFixed(2) + "x";
             multLabel.style.color = (currMult > 2) ? (currMult > 5 ? "#ff3333" : "#ffd700") : "var(--neon)";
-            renderRocket(elapsed);
+            renderRocket(elapsed, false);
         } else {
             statusLabel.innerText = "FLEW AWAY!";
             statusLabel.style.color = "var(--red)";
             multLabel.innerText = crashPoint.toFixed(2) + "x"; multLabel.style.color = "var(--red)";
-            renderRocket(Math.log(crashPoint)/0.00006);
+            renderRocket(Math.log(crashPoint)/0.00006, false);
         }
         requestAnimationFrame(draw);
     }
 
-    function renderRocket(elapsed) {
+    function renderRocket(elapsed, isWaiting) {
         let sec = elapsed / 1000;
+        let maxS = Math.max(5, sec * 1.2);
+        let maxM = Math.max(2, currMult * 1.2);
         
-        // 🔥 CAMERA FOCUS LOGIC 🔥 (Rocket kabhi screen se bahar nahi jayega)
-        let maxS = Math.max(5, sec * 1.25);
-        let maxM = Math.max(2, currMult * 1.25);
-        if(gameState === "WAITING") { maxM = 2.0; maxS = 5.0; }
-        
-        // Moving Grid Background for speed effect
-        gridOffset += (gameState === "FLYING" ? 1.5 : 0);
-        if(gridOffset > 50) gridOffset = 0;
-
         ctx.strokeStyle = "rgba(255,255,255,0.05)"; ctx.lineWidth = 1;
+        for(let x=40; x<cw; x+=50) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x, ch-40); ctx.stroke(); }
+        for(let y=ch-40; y>0; y-=50) { ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(cw, y); ctx.stroke(); }
+
+        let xPos = 40 + (sec/maxS)*(cw-80);
+        let yPos = (ch-40) - ((currMult-1)/(maxM-1))*(ch-120);
         
-        // Vertical Lines
-        for(let x=45; x<cw; x+=50) { 
-            let offset = (gameState === "FLYING") ? gridOffset : 0;
-            ctx.beginPath(); ctx.moveTo(x - offset, 0); ctx.lineTo(x - offset, ch-45); ctx.stroke(); 
-        }
-        // Horizontal Lines
-        for(let y=ch-45; y>0; y-=50) { 
-            let offset = (gameState === "FLYING") ? gridOffset : 0;
-            ctx.beginPath(); ctx.moveTo(45, y + offset); ctx.lineTo(cw, y + offset); ctx.stroke(); 
-        }
+        if (isWaiting) { xPos = 40; yPos = ch-40; }
 
-        // 🔥 GANIT (MATH/SCALE) ON AXES 🔥
-        ctx.fillStyle = "#888"; 
-        ctx.font = "bold 11px Arial";
-        ctx.textAlign = "right";
+        ctx.beginPath(); ctx.lineWidth = 6; ctx.strokeStyle = (gameState === "CRASHED") ? "var(--red)" : "var(--neon)";
+        ctx.moveTo(40, ch-40); ctx.quadraticCurveTo(40 + (xPos-40)*0.5, ch-40, xPos, yPos); ctx.stroke();
         
-        // Y-Axis (Multiplier)
-        for(let i=0; i<=4; i++) {
-            let mVal = 1 + (maxM - 1) * (i/4);
-            let yPosLabel = (ch-45) - ((mVal-1)/(maxM-1))*(ch-100);
-            if(i === 0) yPosLabel = ch - 50; 
-            ctx.fillText(mVal.toFixed(1)+"x", 40, yPosLabel + 4);
+        // 🔥 AAG (FIRE) KA ANIMATION 🔥
+        if(gameState === "FLYING") {
+            for(let p=0; p<4; p++) {
+                particles.push({
+                    x: xPos - 25 + (Math.random() * 15 - 7.5),
+                    y: yPos + 35 + (Math.random() * 15 - 7.5),
+                    vx: -Math.random() * 3 - 1,
+                    vy: Math.random() * 3 + 1,
+                    life: 1.0,
+                    color: Math.random() > 0.5 ? '#ff3333' : (Math.random() > 0.5 ? '#ff9900' : '#ffff00')
+                });
+            }
         }
         
-        // X-Axis (Seconds)
-        ctx.textAlign = "center";
-        for(let i=1; i<=4; i++) {
-            let sVal = maxS * (i/4);
-            let xPosLabel = 45 + (sVal/maxS)*(cw-80);
-            ctx.fillText(sVal.toFixed(1)+"s", xPosLabel, ch-20);
+        // Render Particles
+        for(let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            ctx.globalAlpha = Math.max(0, p.life);
+            ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 6 * p.life, 0, Math.PI * 2); ctx.fill();
+            p.x += p.vx; p.y += p.vy; p.life -= 0.04;
+            if(p.life <= 0) particles.splice(i, 1);
         }
+        ctx.globalAlpha = 1.0;
 
-        // Axes Lines
-        ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(45, 0); ctx.lineTo(45, ch-45); ctx.lineTo(cw, ch-45); ctx.stroke();
-
-        // Position of Rocket
-        let xPos = 45 + (sec/maxS)*(cw-80);
-        let yPos = (ch-45) - ((currMult-1)/(maxM-1))*(ch-100);
-
-        // Draw Line Curve
-        ctx.beginPath(); ctx.lineWidth = 6; 
-        ctx.strokeStyle = (gameState === "CRASHED") ? "var(--red)" : "var(--neon)";
-        ctx.moveTo(45, ch-45); ctx.quadraticCurveTo(45 + (xPos-45)*0.5, ch-45, xPos, yPos); ctx.stroke();
-
-        // Green/Red Area Fill under the line
-        ctx.lineTo(xPos, ch-45); ctx.lineTo(45, ch-45);
-        let grad = ctx.createLinearGradient(0, yPos, 0, ch-45);
-        grad.addColorStop(0, gameState === "CRASHED" ? "rgba(255, 51, 51, 0.4)" : "rgba(0, 255, 136, 0.4)");
-        grad.addColorStop(1, "rgba(0, 0, 0, 0)");
-        ctx.fillStyle = grad; ctx.fill();
-        
-        // Draw Rocket Emoji
-        ctx.font = "40px Arial";
+        // Rocket Rotate & Render
+        ctx.save();
+        ctx.translate(xPos, yPos);
         if(gameState === "CRASHED") {
-            ctx.fillText("💥", xPos-25, yPos+15);
+            ctx.font = "55px Arial";
+            ctx.fillText("💥", -30, 20);
         } else {
-            ctx.fillText("🚀", xPos-25, yPos+15);
+            ctx.font = "50px Arial";
+            ctx.rotate(-Math.PI / 6); // Rocket ka muh thoda upar ki taraf
+            ctx.fillText("🚀", -30, 20);
         }
+        ctx.restore();
     }
     draw();
 
-    // --- LEAST AMOUNT WINS SERVER LOGIC ---
+    // --- MASTER SERVER LOGIC (PROFIT CONTROL) ---
     let isMaster = false;
     setInterval(() => {
         if(isMaster) return;
@@ -291,7 +274,6 @@
         db.ref('current_bets').remove();
         await new Promise(r => setTimeout(r, 10000));
 
-        // System Profit Logic
         const betSnap = await db.ref('current_bets').get();
         let totalBets = 0;
         if(betSnap.exists()) Object.values(betSnap.val()).forEach(b => totalBets += b.amount);
@@ -303,9 +285,8 @@
             targetCrash = adminControl.val();
             db.ref('admin_control/next_crash').set(0);
         } else {
-            // 🔥 PROFIT CHECK 🔥 : Agar amount bada hai toh turant phatega
-            if(totalBets > 2000) targetCrash = 1.01 + Math.random() * 0.49;
-            else targetCrash = 1.20 + Math.pow(Math.random(), 3) * 15; 
+            if(totalBets > 3000) targetCrash = 1.01 + Math.random() * 0.49;
+            else targetCrash = 1.15 + Math.pow(Math.random(), 3) * 15; 
         }
 
         let fDuration = Math.log(targetCrash) / 0.00006;
