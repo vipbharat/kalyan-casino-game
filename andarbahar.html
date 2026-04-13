@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Andar Bahar - Bulletproof VIP</title>
+    <title>Andar Bahar - Zero Crash VIP</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
@@ -88,7 +88,6 @@
     function uA(){ if(!iAI){ ['bS','cS'].forEach(i=>{let e=$(i); if(e){e.play().then(()=>{e.pause();e.currentTime=0;})}}); iAI=1; } }
     function pS(i,v){ try{let s=$(i); if(s){s.currentTime=0; s.volume=v; s.play();}} catch(e){} }
     
-    // HTML/CSS Card Generator
     function cCD(v, s) {
         let suitChar = s === 'S' ? '♠' : s === 'H' ? '♥' : s === 'D' ? '♦' : '♣';
         let color = (s === 'H' || s === 'D') ? '#ff1a1a' : '#000000';
@@ -119,7 +118,6 @@
 
     let lockedJoker = "A", lockedSuit = "S";
 
-    // PURE MATCH WITH UNTOUCHED SERVER
     db.ref('Game/AndarBahar/Status').on('value', s=>{
         let st=s.val(); if(!st) return;
         
@@ -152,19 +150,16 @@
         $('md').innerText="₹"+sPl.andar; $('mt').innerText="₹"+sPl.bahar;
     });
 
-    // 🃏 STRICT CARD GENERATION 🃏
+    // 💥 CRASH FIXED (INFINITE LOOP REMOVED) 💥
     async function sR(w, jV, jS){
         if (isAnimating) return;
         isAnimating = true;
 
-        // "10" is exactly "10", matching the server logic perfectly.
         const vs=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
         const ss=["S","D","C","H"];
         
         let winnerSide = (w === 'dragon' || w === 'andar') ? 'andar' : 'bahar';
         let seed = winnerSide.charCodeAt(0) + jV.charCodeAt(0);
-        
-        // Server gives 20 seconds. This logic generates 5 to 14 cards (Max 7 seconds animation).
         let numCards = (seed % 10) + 5; 
         
         if (winnerSide === 'andar' && numCards % 2 !== 0) numCards++; 
@@ -177,9 +172,12 @@
             if (i === numCards) { 
                 cV = jV; cS = ss[Math.floor((seed+i)%4)]; 
             } else { 
+                let attempt = 0; // 🔥 YAHI THA WO FIX JAB BROWSER CRASH HOTA THA! 🔥
                 do { 
-                    cV = vs[(seed+i*7)%13]; cS = ss[(seed+i)%4]; 
-                } while(cV === jV); // Joker ab beech mein kabhi nahi aayega!
+                    cV = vs[(seed + i * 7 + attempt) % 13]; 
+                    cS = ss[(seed + i + attempt) % 4]; 
+                    attempt++; 
+                } while(cV === jV); // Ab kabhi stuck nahi hoga!
             }
 
             let track = $('track-' + side);
@@ -190,7 +188,7 @@
             track.scrollLeft = track.scrollWidth;
             
             pS('cS', 1);
-            await new Promise(r => setTimeout(r, 500)); // Perfect smooth speed
+            await new Promise(r => setTimeout(r, 450)); 
         }
 
         $('tmr').innerText = winnerSide.toUpperCase() + " WINS!";
