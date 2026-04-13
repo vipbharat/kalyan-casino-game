@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Andar Bahar - Zero Crash VIP</title>
+    <title>Andar Bahar - VIP Master</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
@@ -82,19 +82,21 @@
     const db = firebase.database(), ph = localStorage.getItem('phone') || localStorage.getItem('userPhone');
     
     let iBO=0, cC=1000, cCc='radial-gradient(circle, #e57373, #d32f2f)', tB=0, dB=0, wB=0;
-    let mB={andar:0, bahar:0}, sPl={andar:0, bahar:0}, bPl={andar:0, bahar:0}, bI, iAI=0, iD=0;
-    let isAnimating = false;
+    let mB={andar:0, bahar:0}, sPl={andar:0, bahar:0}, bI, iAI=0;
+    let isAnimating = false; // 🔥 MASTER LOCK 🔥
 
     function uA(){ if(!iAI){ ['bS','cS'].forEach(i=>{let e=$(i); if(e){e.play().then(()=>{e.pause();e.currentTime=0;})}}); iAI=1; } }
     function pS(i,v){ try{let s=$(i); if(s){s.currentTime=0; s.volume=v; s.play();}} catch(e){} }
     
+    // Pure CSS Card (NO NETWORK LAG)
     function cCD(v, s) {
+        let displayV = v === "0" ? "10" : v; // Standardize 0 to 10
         let suitChar = s === 'S' ? '♠' : s === 'H' ? '♥' : s === 'D' ? '♦' : '♣';
         let color = (s === 'H' || s === 'D') ? '#ff1a1a' : '#000000';
         return `<div style="width:100%;height:100%;background:#fff;border-radius:4px;display:flex;flex-direction:column;justify-content:space-between;padding:2px 3px;box-sizing:border-box;color:${color};border:1px solid #ccc;">
-            <div style="font-size:12px;font-weight:900;line-height:1;">${v}<br><span style="font-size:10px;">${suitChar}</span></div>
+            <div style="font-size:12px;font-weight:900;line-height:1;">${displayV}<br><span style="font-size:10px;">${suitChar}</span></div>
             <div style="font-size:22px;text-align:center;margin-top:-8px;">${suitChar}</div>
-            <div style="font-size:12px;font-weight:900;line-height:1;transform:rotate(180deg);text-align:left;">${v}<br><span style="font-size:10px;">${suitChar}</span></div>
+            <div style="font-size:12px;font-weight:900;line-height:1;transform:rotate(180deg);text-align:left;">${displayV}<br><span style="font-size:10px;">${suitChar}</span></div>
         </div>`;
     }
 
@@ -116,31 +118,24 @@
         setTimeout(()=>{ p.style.left=(Math.random()*60+20)+"%"; p.style.top=(Math.random()*60+20)+"%"; },50);
     }
 
-    let lockedJoker = "A", lockedSuit = "S";
-
+    // 🔴 100% SYNCED LISTENER 🔴
     db.ref('Game/AndarBahar/Status').on('value', s=>{
         let st=s.val(); if(!st) return;
         
         if(st.state === 'betting'){
             if(!isAnimating){
                 if(!iBO){ 
-                    iBO=1; iD=0; rUI(); 
-                    lockedJoker = st.jokerVal || "A";
-                    lockedSuit = st.jokerSuit || "S";
-                    $('joker-spot').innerHTML = cCD(lockedJoker, lockedSuit); 
+                    iBO=1; rUI(); 
+                    $('joker-spot').innerHTML = cCD(st.jokerVal, st.jokerSuit||'S'); 
                 }
-                if(st.timer > 0){
-                    $('tmr').innerText=st.timer+"s";
-                    $('tmr').style.color=st.timer<=5?"#f33":"#d4af37";
-                }
+                $('tmr').innerText=st.timer+"s";
+                $('tmr').style.color=st.timer<=5?"#f33":"#d4af37";
             }
         } 
-        else if (st.state === 'dealing' || st.timer <= 0){
-            if(!isAnimating && iBO){
-                iBO=0; iD=1;
-                $('tmr').innerText="DEALING..."; $('tmr').style.color="#fff";
-                sR(st.winner, st.jokerVal || lockedJoker, st.jokerSuit || lockedSuit);
-            }
+        else if ((st.state === 'dealing' || st.state === 'result' || st.timer <= 0) && iBO && !isAnimating){
+            iBO=0;
+            $('tmr').innerText="DEALING..."; $('tmr').style.color="#fff";
+            sR(st.winner, st.jokerVal, st.jokerSuit||'S');
         }
     });
 
@@ -150,7 +145,6 @@
         $('md').innerText="₹"+sPl.andar; $('mt').innerText="₹"+sPl.bahar;
     });
 
-    // 💥 CRASH FIXED (INFINITE LOOP REMOVED) 💥
     async function sR(w, jV, jS){
         if (isAnimating) return;
         isAnimating = true;
@@ -160,7 +154,7 @@
         
         let winnerSide = (w === 'dragon' || w === 'andar') ? 'andar' : 'bahar';
         let seed = winnerSide.charCodeAt(0) + jV.charCodeAt(0);
-        let numCards = (seed % 10) + 5; 
+        let numCards = (seed % 6) + 4; // 4 se 10 patte girenge (Sync format)
         
         if (winnerSide === 'andar' && numCards % 2 !== 0) numCards++; 
         if (winnerSide === 'bahar' && numCards % 2 === 0) numCards++; 
@@ -172,12 +166,12 @@
             if (i === numCards) { 
                 cV = jV; cS = ss[Math.floor((seed+i)%4)]; 
             } else { 
-                let attempt = 0; // 🔥 YAHI THA WO FIX JAB BROWSER CRASH HOTA THA! 🔥
+                let attempt = 0;
                 do { 
                     cV = vs[(seed + i * 7 + attempt) % 13]; 
                     cS = ss[(seed + i + attempt) % 4]; 
                     attempt++; 
-                } while(cV === jV); // Ab kabhi stuck nahi hoga!
+                } while(cV === jV && attempt < 13); // 🔥 INFINITE LOOP CRASH FIXED 🔥
             }
 
             let track = $('track-' + side);
@@ -188,16 +182,14 @@
             track.scrollLeft = track.scrollWidth;
             
             pS('cS', 1);
-            await new Promise(r => setTimeout(r, 450)); 
+            await new Promise(r => setTimeout(r, 600)); 
         }
 
         $('tmr').innerText = winnerSide.toUpperCase() + " WINS!";
         $('bx-' + (winnerSide === 'andar' ? 'd' : 't')).classList.add('gw');
         
-        let wa=0; if(winnerSide==='andar') wa=mB.andar*1.9; else if(winnerSide==='bahar') wa=mB.bahar*2.0;
-        if(wa>0 && ph) db.ref('users/'+ph+'/winning_balance').set(wB+wa);
-
-        setTimeout(() => { isAnimating = false; }, 3000);
+        // Payout update handled by server but UI sync
+        setTimeout(() => { isAnimating = false; iBO = 0; }, 4000); 
     }
 
     function rUI(){
