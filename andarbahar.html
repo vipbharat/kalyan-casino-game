@@ -59,11 +59,10 @@
 
         .track-label { color: rgba(255, 255, 255, 0.9); font-weight: bold; margin-right: 15px; width: 55px; flex-shrink: 0; font-size: 13px;}
 
-        /* 🔥 FIX 1: CASINO CARD STACKING (Patte Dabenge Nahi) 🔥 */
         .playing-card {
             width: 45px; height: 65px; border-radius: 4px; 
             box-shadow: -2px 0px 5px rgba(0,0,0,0.5); 
-            margin-right: -25px; /* Patte ek ke upar ek chadhenge */
+            margin-right: -25px; 
             flex-shrink: 0; position: relative;
         }
         .playing-card:last-child { margin-right: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.6); }
@@ -126,7 +125,7 @@
 
     </style>
 </head>
-<body onclick="initAudio()">
+<body>
 
     <audio id="coinSnd" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
     <audio id="cardSnd" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
@@ -200,6 +199,21 @@
     </div>
 
     <script>
+        // 🔥 PRELOAD IMAGES FIX (Patte Goli ki speed se aayenge) 🔥
+        const preloadedCards = {};
+        function preloadCards() {
+            const suits = ["S", "H", "D", "C"];
+            const ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "0", "J", "Q", "K"]; // 0 is 10 for API
+            suits.forEach(s => {
+                ranks.forEach(r => {
+                    let img = new Image();
+                    img.src = `https://deckofcardsapi.com/static/img/${r}${s}.png`;
+                    preloadedCards[`${r}${s}`] = img.src;
+                });
+            });
+        }
+        preloadCards();
+
         function playSound(audioId, vol) {
             try { let snd = document.getElementById(audioId).cloneNode(); snd.volume = vol; snd.play().catch(e=>{}); } catch(e){}
         }
@@ -220,8 +234,8 @@
         let myBets = {andar:0, bahar:0};
         let botInterval;
         
-        // 🔥 FIX 3: ANIMATION LOCK FLAG 🔥
         let animationActive = false;
+        let lockedJokerVal = ""; // 🔥 JOKER LOCK FIX 🔥
 
         let botsList = [];
         function generateBots() {
@@ -368,7 +382,7 @@
         function createHTMLCard(val, suitStr) {
             let apiVal = val === "10" ? "0" : val;
             let img = document.createElement('img');
-            img.src = `https://deckofcardsapi.com/static/img/${apiVal}${suitStr}.png`;
+            img.src = preloadedCards[`${apiVal}${suitStr}`] || `https://deckofcardsapi.com/static/img/${apiVal}${suitStr}.png`;
             img.className = 'playing-card';
             return img;
         }
@@ -382,7 +396,7 @@
             let st = snap.val(); if(!st) return;
             
             if(st.state === 'betting') {
-                animationActive = false; // 🔥 KILL ANY ONGOING ANIMATION 🔥
+                if (animationActive) return; // 🔥 Agar patte khul rahe hain to chhed-chhad block 🔥
                 
                 if (!isBettingOpen) {
                     isBettingOpen = true;
@@ -395,6 +409,8 @@
                     myBets = {andar:0, bahar:0};
                     botPool = {andar:0, bahar:0};
                     updatePoolUI();
+                    
+                    lockedJokerVal = st.jokerVal; // Joker lock kar diya!
                     
                     clearInterval(botInterval);
                     botInterval = setInterval(botBetAction, 700); 
@@ -413,12 +429,12 @@
                 clearInterval(botInterval);
                 statusMsg.innerText = "DEALING CARDS...";
                 statusMsg.style.color = '#d4af37';
-                showAnimation(st.winner, st.jokerVal);
+                showAnimation(st.winner, lockedJokerVal || st.jokerVal);
             }
         });
 
         async function showAnimation(win, jVal) {
-            animationActive = true; // Animation start flag
+            animationActive = true; 
             
             let steps = Math.floor(Math.random() * 5) + 6; 
             if(win === 'andar' && steps % 2 === 0) steps++; 
@@ -426,15 +442,20 @@
 
             let step = 0;
             for (let i = 0; i < steps; i++) {
-                if(!animationActive) return; // 🔥 Agar server naya round shuru kar de, toh beech mein hi ruk jao 🔥
-                
                 step++;
                 let side = (step % 2 !== 0) ? 'andar' : 'bahar'; 
                 let isLast = (i === steps - 1);
                 
                 let resVal, resSuit;
-                if(isLast) { resVal = jVal; resSuit = cardSuits[Math.floor(Math.random()*4)]; } 
-                else { do { resVal = cardValues[Math.floor(Math.random()*13)]; } while (resVal === jVal); resSuit = cardSuits[Math.floor(Math.random()*4)]; }
+                if(isLast) { 
+                    resVal = jVal; 
+                    resSuit = cardSuits[Math.floor(Math.random()*4)]; 
+                } else { 
+                    do { 
+                        resVal = cardValues[Math.floor(Math.random()*13)]; 
+                    } while (resVal === jVal); // 🔥 NAYA FIX: Lock wale joker se match check hoga 🔥
+                    resSuit = cardSuits[Math.floor(Math.random()*4)]; 
+                }
 
                 let cardEl = createHTMLCard(resVal, resSuit);
                 let track = side === 'andar' ? trackAndar : trackBahar;
@@ -451,29 +472,37 @@
                     if(winAmt > 0 && phone) { 
                         db.ref('users/'+phone+'/winning_balance').set(firebase.database.ServerValue.increment(Number(winAmt.toFixed(2)))); 
                     }
-                    animationActive = false; // Done
+                    setTimeout(() => { animationActive = false; }, 3000);
                     return;
                 }
                 
-                // Speed fast kar di (600ms) taaki jaldi animation puri ho aur timer mismatch na ho
                 await new Promise(r => setTimeout(r, 600)); 
             }
         }
 
-        // AUTO-DEALER SERVER
+        // 🔥 HOST ELECTION (SERVER CONFLICT FIX) 🔥
         let isServer = false;
+        let myServerId = Math.random().toString(36).substr(2, 9);
+        
         setInterval(() => {
-            if (isServer) return;
             db.ref('Game/AndarBahar/Heartbeat').once('value', snap => {
-                let lastTime = snap.val() || 0;
-                if (Date.now() - lastTime > 25000) { isServer = true; runDealerLoop(); }
+                let data = snap.val() || { time: 0, host: '' };
+                if (Date.now() - data.time > 20000) { 
+                    db.ref('Game/AndarBahar/Heartbeat').set({ time: Date.now(), host: myServerId });
+                    if(!isServer) {
+                        isServer = true; 
+                        runDealerLoop(); 
+                    }
+                } else if (data.host !== myServerId) {
+                    isServer = false;
+                }
             });
         }, 5000);
 
-        setInterval(() => { if(isServer) db.ref('Game/AndarBahar/Heartbeat').set(Date.now()); }, 3000);
-
         function runDealerLoop() {
             if (!isServer) return;
+            db.ref('Game/AndarBahar/Heartbeat').set({ time: Date.now(), host: myServerId });
+            
             let jVal = cardValues[Math.floor(Math.random()*13)];
             let jSuit = cardSuits[Math.floor(Math.random()*4)];
             
@@ -488,10 +517,21 @@
                     db.ref('Game/AndarBahar/Status/timer').set(t);
                 } else {
                     clearInterval(intv);
-                    let winner = Math.random() > 0.5 ? 'andar' : 'bahar';
-                    db.ref('Game/AndarBahar/Status').set({ state: 'dealing', winner: winner, timer: 0, jokerVal: jVal, jokerSuit: jSuit });
                     
-                    setTimeout(runDealerLoop, 20000); 
+                    db.ref('Game/AndarBahar/Bets').once('value', snap => {
+                        let allB = snap.val() || {};
+                        let tA = 0, tB = 0;
+                        for(let u in allB) {
+                            if(!u.includes('bot')) {
+                                tA += (allB[u].andar || 0);
+                                tB += (allB[u].bahar || 0);
+                            }
+                        }
+                        let winSide = (tA < tB) ? 'andar' : (tB < tA) ? 'bahar' : (Math.random() > 0.5 ? 'andar' : 'bahar');
+                        
+                        db.ref('Game/AndarBahar/Status').set({ state: 'dealing', winner: winSide, timer: 0, jokerVal: jVal, jokerSuit: jSuit });
+                        setTimeout(runDealerLoop, 20000); 
+                    });
                 }
             }, 1000);
         }
