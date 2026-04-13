@@ -76,13 +76,12 @@
         .red-suit { color: #d32f2f !important; }
         .black-suit { color: #212121 !important; }
 
-        /* 🔥 FIX 3: BADE BETTING BOXES 🔥 */
+        /* Main Betting Boxes */
         .main-bets { display: flex; gap: 15px; width: 95%; margin-bottom: 10px; }
         .bet-btn {
             flex: 1; padding: 20px 10px; border-radius: 15px; text-align: center; cursor: pointer;
             border: 2px solid #d4af37; background-color: rgba(0, 0, 0, 0.6); transition: 0.2s; position: relative;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 110px; /* Bada Box */
+            display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 110px;
         }
         .bet-btn.andar { border-color: #4db8ff; color: #4db8ff; }
         .bet-btn.bahar { border-color: #ff4d94; color: #ff4d94; }
@@ -104,22 +103,29 @@
         .sb-payout { color: #ffcccc; font-size: 9px; font-weight: bold; }
         .sb-placed { position: absolute; top: -5px; right: -5px; background: #00ff88; color: #000; width: 16px; height: 16px; border-radius: 50%; font-size: 8px; font-weight: 900; display: none; align-items: center; justify-content: center; }
 
-        /* Chips Bar */
+        /* Bottom Bar */
         .bottom-bar { background-color: #1a0b1c; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #d4af37; }
         .chips-area { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 2px; width: 80%; justify-content: space-around;}
         .chips-area::-webkit-scrollbar { display: none; }
         .chip {
-            width: 36px; height: 36px; border-radius: 50%; background-color: white; color: black; flex-shrink: 0;
-            display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: 900;
-            border: 2px dashed #333; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.8);
+            width: 34px; height: 34px; border-radius: 50%; background-color: white; color: black; flex-shrink: 0;
+            display: flex; justify-content: center; align-items: center; font-size: 9px; font-weight: 900;
+            border: 2px dashed #333; cursor: pointer; transition: 0.2s;
         }
-        .chip.active { border-color: #d4af37; transform: scale(1.2) translateY(-4px); box-shadow: 0 4px 15px #d4af37; border-style: solid;}
+        .chip.active { border-color: #d4af37; transform: scale(1.2) translateY(-4px); box-shadow: 0 4px 10px #d4af37; border-style: solid;}
         
         .c10 { background: #fff; } .c50 { background: #4fc3f7; } .c100 { background: #81c784; } .c500 { background: #ba68c8; color: #fff;}
         .c1k { background: #e57373; color: #fff;} .c5k { background: #f06292; color: #fff;} .c10k { background: #ffd54f; }
 
         .chips-container-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         .small-chip { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #fff; position: absolute; font-size: 7px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 1px 1px 3px #000; color: white; transition: 0.3s;}
+        
+        /* Bots area */
+        .live-players { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; background: rgba(0,0,0,0.4); padding: 6px; width: 100%; border-top: 1px solid #d4af37; }
+        .player { text-align: center; }
+        .p-avatar { width: 26px; height: 26px; background: linear-gradient(135deg, #d4af37, #8a6a1c); border-radius: 50%; margin: 0 auto; line-height: 26px; font-size: 12px; color: black; font-weight: bold; border: 1px solid white;}
+        .p-id { font-size: 9px; color: #ccc; margin-top: 2px; font-weight: bold;}
+        .p-bal { font-size: 10px; color: #00ff88; font-weight: bold;}
     </style>
 </head>
 <body>
@@ -200,8 +206,10 @@
             </div>
         </div>
 
+        <div class="live-players" id="player-row"></div>
+
         <div class="bottom-bar">
-            <div style="font-size: 14px; font-weight: 900; color: #00ff88;">₹<span id="balance">0.00</span></div>
+            <div style="font-size: 13px; font-weight: 900; color: #00ff88;">₹<span id="balance">0.00</span></div>
             <div class="chips-area">
                 <div class="chip c10 active" onclick="selectChip(this, 10)">10</div>
                 <div class="chip c50" onclick="selectChip(this, 50)">50</div>
@@ -220,11 +228,15 @@
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
+        const cardSuits = ["S", "H", "D", "C"];
+        const cardValues = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+
         let currentChip = 10, isBettingOpen = false, animationActive = false;
         let depBal = 0, winBal = 0, bonBal = 0, totalBal = 0;
         let myBets = { andar: 0, bahar: 0 }, mySideBets = {};
+        let botInterval;
         
-        // 🔥 FIX 2: AUDIO UNLOCK SYSTEM 🔥
+        // AUDIO SYSTEM
         let audioUnlocked = false;
         document.body.addEventListener('touchstart', () => { audioUnlocked = true; }, { once: true });
         document.body.addEventListener('click', () => { audioUnlocked = true; }, { once: true });
@@ -234,14 +246,27 @@
             try { 
                 let snd = document.getElementById(id);
                 if(snd) {
-                    snd.currentTime = 0;
-                    snd.volume = vol;
-                    let p = snd.play();
-                    if(p !== undefined) p.catch(e=>{});
+                    snd.currentTime = 0; snd.volume = vol;
+                    let p = snd.play(); if(p !== undefined) p.catch(e=>{});
                 }
             } catch(e){}
         }
 
+        // BOTS LOGIC
+        let botsList = [];
+        for(let i=0; i<5; i++) botsList.push({id: Math.floor(1000+Math.random()*9000), bal: Math.floor(20000+Math.random()*50000)});
+        
+        function renderBotsUI() {
+            let h = ""; let avatars = ['👨','👩','👱‍♂️','👲','🧔'];
+            botsList.forEach((b, i) => {
+                let displayBal = b.bal >= 100000 ? "1.0L" : (b.bal/1000).toFixed(1) + "K";
+                h += `<div class="player"><div class="p-avatar">${avatars[i%5]}</div><div class="p-id">ID_${b.id}</div><div class="p-bal">₹${displayBal}</div></div>`;
+            });
+            document.getElementById('player-row').innerHTML = h;
+        }
+        renderBotsUI();
+
+        // ONLINE COUNT
         let baseCount = 1250;
         setInterval(() => {
             baseCount += Math.floor(Math.random() * 15) - 7;
@@ -309,7 +334,7 @@
             if(div.children.length > 30) div.firstChild.remove();
         }
 
-        // DUMMY POOL UPDATE FOR VISUALS
+        // POOL SYNC
         db.ref('Game/AndarBahar/Bets').on('value', snap => {
             let allB = snap.val() || {};
             let pA = 0, pB = 0;
@@ -328,30 +353,115 @@
             return div;
         }
 
+        // ==============================================================
+        // 🔥 TRUE MULTIPLAYER SYNC (SERVER DRIVEN) 🔥
+        // Aapka asli server Firebase mein status, winner aur timer bhejega.
+        // Ye code us winner ke hisab se EXACT same patte generate karega.
+        // ==============================================================
         db.ref('Game/AndarBahar/Status').on('value', snap => {
             let st = snap.val(); if(!st) return;
             let msg = document.getElementById('status-msg');
 
             if(st.state === 'betting') {
                 if(!isBettingOpen) {
-                    isBettingOpen = true; animationActive = false;
+                    isBettingOpen = true; 
+                    animationActive = false; // Reset Animation Lock
+
                     document.getElementById('track-andar').innerHTML = '<span class="track-label">ANDAR</span>';
                     document.getElementById('track-bahar').innerHTML = '<span class="track-label">BAHAR</span>';
                     document.querySelectorAll('.placed-bet, .sb-placed').forEach(d => d.style.display = 'none');
                     document.querySelectorAll('.chips-container-overlay').forEach(c => c.innerHTML = '');
+                    
                     myBets = {andar:0, bahar:0}; mySideBets = {};
+                    
+                    // Bots Start Betting
+                    clearInterval(botInterval);
+                    botInterval = setInterval(() => {
+                        let sides = ['andar', 'bahar'];
+                        let s = sides[Math.floor(Math.random()*2)];
+                        spawnChip(s); playSound('coinSnd', 0.05);
+                    }, 800);
                 }
+                
                 document.getElementById('joker-spot').innerHTML = '';
                 document.getElementById('joker-spot').appendChild(createCard(st.jokerVal, st.jokerSuit));
+                
                 msg.innerText = `PLACE BETS: ${st.timer}s`;
                 msg.style.color = st.timer <= 5 ? '#ff3333' : '#00ff88';
             } 
             else if(st.state === 'dealing' && isBettingOpen) {
-                isBettingOpen = false; msg.innerText = "DEALING...";
-                showAnimation(st.winner, st.cardSequence); // Read from sequence directly
+                isBettingOpen = false; 
+                clearInterval(botInterval);
+                msg.innerText = "DEALING CARDS...";
+                msg.style.color = '#d4af37';
+                
+                // Show exact cards based on the server's Joker and Winner
+                showAnimation(st.winner, st.jokerVal);
+            }
+            else if(st.state === 'waiting') {
+                isBettingOpen = false;
+                clearInterval(botInterval);
+                msg.innerText = "WAITING FOR NEXT ROUND...";
+                msg.style.color = '#fff';
             }
         });
 
+        // 🔥 MAGIC SYNC: SAME CARDS ON EVERY DEVICE 🔥
+        async function showAnimation(win, jVal) {
+            animationActive = true; 
+            
+            // Generate a secure, deterministic seed based on Joker and Winner
+            let seedStr = String(jVal) + String(win) + "KALYANVIPSYNC";
+            let hash = 0;
+            for (let i = 0; i < seedStr.length; i++) hash = Math.imul(31, hash) + seedStr.charCodeAt(i) | 0;
+            let a = hash ^ 0xDEADBEEF;
+            let prng = function() {
+                let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            };
+
+            // 🔥 STRICT FILTER: Remove Joker from deck so it never comes early 🔥
+            let safeCards = cardValues.filter(v => v != jVal);
+
+            let steps = Math.floor(prng() * 12) + 5; 
+            if(win === 'andar' && steps % 2 === 0) steps++; 
+            if(win === 'bahar' && steps % 2 !== 0) steps++; 
+
+            let step = 0;
+            for (let i = 0; i < steps; i++) {
+                if(!animationActive) return; // Strict Lock to prevent overlapping rounds
+                
+                step++;
+                let side = (step % 2 !== 0) ? 'andar' : 'bahar'; 
+                let isLast = (i === steps - 1);
+                
+                let resVal, resSuit;
+                if(isLast) { 
+                    resVal = jVal; // Winner is the Joker
+                    resSuit = cardSuits[Math.floor(prng()*4)]; 
+                } else { 
+                    resVal = safeCards[Math.floor(prng() * safeCards.length)]; // Joker is filtered out!
+                    resSuit = cardSuits[Math.floor(prng()*4)]; 
+                }
+
+                let track = document.getElementById('track-'+side);
+                track.appendChild(createCard(resVal, resSuit));
+                track.scrollLeft = track.scrollWidth; 
+                playSound('cardSnd', 1.0); 
+
+                if(isLast) {
+                    document.getElementById('status-msg').innerText = `${win.toUpperCase()} WINS!`;
+                    calculatePayouts(win, steps);
+                    return;
+                }
+                
+                // Card falling speed
+                await new Promise(r => setTimeout(r, 600)); 
+            }
+        }
+
+        // 🔥 HISTORY SYNC 🔥
         db.ref('Game/AndarBahar/History').on('value', snap => {
             let hist = snap.val(); if(!hist) return;
             let hHtml = "";
@@ -363,33 +473,7 @@
             document.getElementById('record-board').innerHTML = hHtml;
         });
 
-        async function showAnimation(win, sequence) {
-            animationActive = true;
-            if(!sequence || sequence.length === 0) return;
-
-            let step = 0;
-            for (let i = 0; i < sequence.length; i++) {
-                if(!animationActive) return;
-                
-                step++;
-                let side = (step % 2 !== 0) ? 'andar' : 'bahar'; 
-                let cardData = sequence[i];
-                let isLast = (i === sequence.length - 1);
-
-                let track = document.getElementById('track-'+side);
-                track.appendChild(createCard(cardData.val, cardData.suit));
-                track.scrollLeft = track.scrollWidth;
-                playSound('cardSnd', 1.0);
-
-                if(isLast) {
-                    document.getElementById('status-msg').innerText = `${win.toUpperCase()} WINS!`;
-                    calculatePayouts(win, sequence.length); 
-                    return;
-                }
-                await new Promise(r => setTimeout(r, 600)); // Smooth 600ms deal
-            }
-        }
-
+        // 🔥 PAYOUTS INCLUDING SIDE BETS 🔥
         function calculatePayouts(win, totalCards) {
             if(!phone) return;
             let winAmt = (win === 'andar') ? myBets.andar * 1.95 : myBets.bahar * 2.0;
@@ -407,95 +491,12 @@
                 db.ref(`users/${phone}/winning_balance`).set(firebase.database.ServerValue.increment(Number(winAmt.toFixed(2))));
             }
             
+            // Push history result
             db.ref('Game/AndarBahar/History').once('value', snap => {
                 let h = snap.val() || [];
                 h.push(win); if(h.length > 20) h.shift();
                 db.ref('Game/AndarBahar/History').set(h);
             });
-        }
-        
-        // ==============================================================
-        // 🔥 100% STRICT JOKER FILTER (PUNJA BUG FIXED) 🔥
-        // ==============================================================
-        let isServer = false;
-        let myServerId = Math.random().toString(36).substr(2, 9);
-        const cardSuitsList = ["S", "H", "D", "C"];
-        const cardValuesList = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
-
-        setInterval(() => {
-            db.ref('Game/AndarBahar/Heartbeat').once('value', snap => {
-                let data = snap.val() || { time: 0, host: '' };
-                if (Date.now() - data.time > 20000) { 
-                    db.ref('Game/AndarBahar/Heartbeat').set({ time: Date.now(), host: myServerId });
-                    if(!isServer) { isServer = true; runDealerLoop(); }
-                } else if (data.host !== myServerId) { isServer = false; }
-            });
-        }, 5000);
-
-        function runDealerLoop() {
-            if (!isServer) return;
-            db.ref('Game/AndarBahar/Heartbeat').set({ time: Date.now(), host: myServerId }); 
-            
-            let jVal = cardValuesList[Math.floor(Math.random()*13)];
-            let jSuit = cardSuitsList[Math.floor(Math.random()*4)];
-            
-            db.ref('Game/AndarBahar/Status').set({ state: 'betting', timer: 15, jokerVal: jVal, jokerSuit: jSuit });
-            db.ref('Game/AndarBahar/Bets').remove(); 
-            
-            let t = 15;
-            let intv = setInterval(() => {
-                if(!isServer) { clearInterval(intv); return; }
-                t--;
-                if(t > 0) {
-                    db.ref('Game/AndarBahar/Status/timer').set(t);
-                } else {
-                    clearInterval(intv);
-                    
-                    db.ref('Game/AndarBahar/Bets').once('value', snap => {
-                        let allB = snap.val() || {};
-                        let tA = 0, tB = 0;
-                        for(let u in allB) {
-                            if(!u.includes('bot')) { tA += (allB[u].andar || 0); tB += (allB[u].bahar || 0); }
-                        }
-
-                        let winSide = (tA < tB) ? 'andar' : (tB < tA) ? 'bahar' : (Math.random() > 0.5 ? 'andar' : 'bahar');
-                        
-                        let sequence = [];
-                        let steps = Math.floor(Math.random() * 15) + 5; 
-                        if(winSide === 'andar' && steps % 2 === 0) steps++; 
-                        if(winSide === 'bahar' && steps % 2 !== 0) steps++;
-
-                        // 🔥 THE ULTIMATE FIX: JOKER KO DECK SE BAHAR NIKAL DIYA 🔥
-                        // Ab 100% guarantee hai ki beech mein matching patta nahi aayega!
-                        let safeCards = cardValuesList.filter(v => v !== jVal);
-
-                        for (let i = 0; i < steps; i++) {
-                            let isLast = (i === steps - 1);
-                            let resVal, resSuit;
-                            if(isLast) { 
-                                resVal = jVal; // Sirf aakhiri patta Joker hoga
-                                resSuit = cardSuitsList[Math.floor(Math.random()*4)]; 
-                            } else { 
-                                resVal = safeCards[Math.floor(Math.random() * safeCards.length)]; // Joker aa hi nahi sakta!
-                                resSuit = cardSuitsList[Math.floor(Math.random()*4)]; 
-                            }
-                            sequence.push({val: resVal, suit: resSuit});
-                        }
-
-                        db.ref('Game/AndarBahar/Status').set({ 
-                            state: 'dealing', 
-                            winner: winSide, 
-                            timer: 0, 
-                            jokerVal: jVal, 
-                            jokerSuit: jSuit,
-                            cardSequence: sequence
-                        });
-                        
-                        let waitTimeForNextRound = (steps * 600) + 4000; 
-                        setTimeout(runDealerLoop, waitTimeForNextRound); 
-                    });
-                }
-            }, 1000);
         }
     </script>
 </body>
