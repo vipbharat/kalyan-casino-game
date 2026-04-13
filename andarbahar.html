@@ -59,7 +59,7 @@
 
         .track-label { color: rgba(255, 255, 255, 0.9); font-weight: bold; margin-right: 15px; width: 55px; flex-shrink: 0; font-size: 13px;}
 
-        /* CSS WALE FAST LOAD CARDS */
+        /* 🔥 CODING WALE CSS CARDS (Super Fast Load) 🔥 */
         .playing-card {
             width: 48px; height: 68px; border-radius: 5px; 
             box-shadow: -2px 0px 5px rgba(0,0,0,0.5); 
@@ -217,8 +217,6 @@
         let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0;
         let realPool = {andar:0, bahar:0}, botPool = {andar:0, bahar:0}, myBets = {andar:0, bahar:0};
         let botInterval;
-        
-        let currentPhase = 'wait'; 
         let animationActive = false;
 
         let botsList = [];
@@ -362,20 +360,22 @@
             document.getElementById('p-bahar').innerText = (realPool.bahar + botPool.bahar).toLocaleString();
         }
 
-        // FAST LOAD CSS CARDS
+        // 🔥 CSS WALE FAST CARDS 🔥
         function createHTMLCard(val, suitStr) {
-            let displayVal = val === "0" || val === 10 ? "10" : val; 
+            let displayVal = val === "0" || val == 10 ? "10" : val; 
             let suitSym = suitStr === 'S' ? '♠' : suitStr === 'H' ? '♥' : suitStr === 'D' ? '♦' : '♣';
             let colClass = (suitStr === 'H' || suitStr === 'D') ? 'red-suit' : 'black-suit';
             
             const cardDiv = document.createElement('div');
             cardDiv.className = `playing-card ${colClass}`;
-            cardDiv.innerHTML = `${displayVal}<span style="font-size:14px; margin-left:2px;">${suitSym}</span>`;
+            cardDiv.innerHTML = `${displayVal}<span style="font-size:16px; margin-left:1px;">${suitSym}</span>`;
             return cardDiv;
         }
 
         // ==============================================================
-        // 🔥 TRUE MULTIPLAYER SYNC (PLAYER SIDE) 🔥
+        // 🔥 TRUE MULTIPLAYER SYNC (LISTENING TO YOUR ADMIN SERVER) 🔥
+        // Ab Sequence server se nahi aayegi. Client khud Seed se sequence banayega.
+        // Isse 1000 player par EXACT wahi patte aayenge, Bina server pe load dale!
         // ==============================================================
         const statusMsg = document.getElementById('status-msg');
         const trackAndar = document.getElementById('track-andar');
@@ -385,58 +385,89 @@
         db.ref('Game/AndarBahar/Status').on('value', snap => {
             let st = snap.val(); if(!st) return;
             
-            if(st.state === 'betting' && currentPhase !== 'betting') {
-                currentPhase = 'betting';
-                animationActive = false; 
+            if(st.state === 'betting') {
+                animationActive = false; // Kill animation
                 
-                isBettingOpen = true;
-                trackAndar.innerHTML = '<span class="track-label">ANDAR</span>';
-                trackBahar.innerHTML = '<span class="track-label">BAHAR</span>';
-                document.getElementById('bet-amt-andar').style.display = 'none';
-                document.getElementById('bet-amt-bahar').style.display = 'none';
-                document.getElementById('chips-andar').innerHTML = '';
-                document.getElementById('chips-bahar').innerHTML = '';
-                myBets = {andar:0, bahar:0};
-                botPool = {andar:0, bahar:0};
-                updatePoolUI();
-                
-                clearInterval(botInterval);
-                botInterval = setInterval(botBetAction, 700); 
+                if (!isBettingOpen) {
+                    isBettingOpen = true;
+                    trackAndar.innerHTML = '<span class="track-label">ANDAR</span>';
+                    trackBahar.innerHTML = '<span class="track-label">BAHAR</span>';
+                    document.getElementById('bet-amt-andar').style.display = 'none';
+                    document.getElementById('bet-amt-bahar').style.display = 'none';
+                    document.getElementById('chips-andar').innerHTML = '';
+                    document.getElementById('chips-bahar').innerHTML = '';
+                    myBets = {andar:0, bahar:0};
+                    botPool = {andar:0, bahar:0};
+                    updatePoolUI();
+                    
+                    clearInterval(botInterval);
+                    botInterval = setInterval(botBetAction, 700); 
+                }
 
                 jokerSpot.innerHTML = '';
                 jokerSpot.style.background = 'transparent';
                 jokerSpot.appendChild(createHTMLCard(st.jokerVal, st.jokerSuit));
-            } 
-            
-            if(st.state === 'betting') {
+                
                 statusMsg.innerText = `PLACE BETS: ${st.timer}s`;
                 if(st.timer <= 5) statusMsg.style.color = '#ff3333';
                 else statusMsg.style.color = '#00ff88';
-            }
-            
-            else if (st.state === 'dealing' && currentPhase !== 'dealing') {
-                currentPhase = 'dealing';
+            } 
+            else if (st.state === 'dealing' && isBettingOpen) {
                 isBettingOpen = false;
                 clearInterval(botInterval);
                 statusMsg.innerText = "DEALING CARDS...";
                 statusMsg.style.color = '#d4af37';
                 
-                showAnimation(st.winner, st.cardSequence);
+                // Show exact 52 cards deck matching server's winner
+                showAnimation(st.winner, st.jokerVal);
             }
         });
 
-        // 🔥 STRICT SEQUENCE BASED ANIMATION (NO RANDOM) 🔥
-        async function showAnimation(win, sequence) {
+        // 🔥 SMART PRNG: GENERATE EXACT 52 CARD DECK ON ALL MOBILES 🔥
+        async function showAnimation(win, jVal) {
             animationActive = true; 
             
-            if(!sequence || sequence.length === 0) return; 
+            // 1. Asli 52 cards ka deck banate hain
+            let deck = [];
+            cardSuits.forEach(s => { cardValues.forEach(v => { deck.push({ val: v, suit: s }); }); });
 
+            // 2. PRNG Seed (Server ka data + Total Pool mila kar ek Password banayenge)
+            // Isse chahe kitne bhi mobile hon, sabke andar ek hi jaisa card niklega
+            let seedStr = String(jVal) + String(win) + String(realPool.andar) + String(realPool.bahar);
+            let hash = 0;
+            for (let i = 0; i < seedStr.length; i++) hash = Math.imul(31, hash) + seedStr.charCodeAt(i) | 0;
+            let a = hash ^ 0xDEADBEEF;
+            let prng = function() {
+                let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            };
+
+            // 3. Deck ko is Seed se Shuffle karte hain
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(prng() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+
+            // 4. Winning aur Non-Winning cards ko alag karte hain
+            let matchingCards = deck.filter(c => c.val == jVal); // Joker se match
+            let nonMatchingCards = deck.filter(c => c.val != jVal); // Joker se alag
+
+            let sequence = [];
+            // Winner Andar hai toh total patte ODD (1,3,5...) honge. Bahar hai toh EVEN (2,4,6...) honge.
+            let steps = Math.floor(prng() * 9) + 5; // 5 se 13 patte khulenge
+            if(win === 'andar' && steps % 2 === 0) steps++;
+            if(win === 'bahar' && steps % 2 !== 0) steps++;
+
+            // Pehle bina match wale patte lagate hain
+            for(let i=0; i < steps - 1; i++) { sequence.push(nonMatchingCards.pop()); }
+            // Aakhir mein match wala patta lagate hain
+            sequence.push(matchingCards.pop());
+
+            // 5. Ab ek-ek karke patte screen par dikhate hain
             let step = 0;
             for (let i = 0; i < sequence.length; i++) {
-                if(currentPhase !== 'dealing') {
-                    animationActive = false;
-                    return; // KILL ANIMATION IF ROUND CHANGES
-                }
+                if(!animationActive) return; // Strict lock
                 
                 step++;
                 let side = (step % 2 !== 0) ? 'andar' : 'bahar'; 
@@ -462,100 +493,9 @@
                     return;
                 }
                 
+                // Speed of cards opening
                 await new Promise(r => setTimeout(r, 600)); 
             }
-        }
-
-        // ==============================================================
-        // 🔥 MASTER HOST ELECTION (SERVER TIMING FIX) 🔥
-        // Server exact time calculate karega ki patte khulne me kitna time lagega
-        // aur tabhi naya round shuru karega.
-        // ==============================================================
-        let isServer = false;
-        let myServerId = Math.random().toString(36).substr(2, 9);
-        const cardSuitsList = ["S", "H", "D", "C"];
-        const cardValuesList = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
-
-        setInterval(() => {
-            db.ref('Game/AndarBahar/Heartbeat').once('value', snap => {
-                let data = snap.val() || { time: 0, host: '' };
-                if (Date.now() - data.time > 20000) { 
-                    db.ref('Game/AndarBahar/Heartbeat').set({ time: Date.now(), host: myServerId });
-                    if(!isServer) {
-                        isServer = true; 
-                        runDealerLoop(); 
-                    }
-                } else if (data.host !== myServerId) {
-                    isServer = false; 
-                }
-            });
-        }, 5000);
-
-        function runDealerLoop() {
-            if (!isServer) return;
-            db.ref('Game/AndarBahar/Heartbeat').set({ time: Date.now(), host: myServerId }); 
-            
-            let jVal = cardValuesList[Math.floor(Math.random()*13)];
-            let jSuit = cardSuitsList[Math.floor(Math.random()*4)];
-            
-            db.ref('Game/AndarBahar/Status').set({ state: 'betting', timer: 15, jokerVal: jVal, jokerSuit: jSuit });
-            db.ref('Game/AndarBahar/Bets').remove(); 
-            
-            let t = 15;
-            let intv = setInterval(() => {
-                if(!isServer) { clearInterval(intv); return; }
-                t--;
-                if(t > 0) {
-                    db.ref('Game/AndarBahar/Status/timer').set(t);
-                } else {
-                    clearInterval(intv);
-                    
-                    db.ref('Game/AndarBahar/Bets').once('value', snap => {
-                        let allB = snap.val() || {};
-                        let tA = 0, tB = 0;
-                        for(let u in allB) {
-                            if(!u.includes('bot')) { tA += (allB[u].andar || 0); tB += (allB[u].bahar || 0); }
-                        }
-
-                        // 🔥 LEAST AMOUNT WINS (Profit Engine) 🔥
-                        let winSide = (tA < tB) ? 'andar' : (tB < tA) ? 'bahar' : (Math.random() > 0.5 ? 'andar' : 'bahar');
-                        
-                        let sequence = [];
-                        let steps = Math.floor(Math.random() * 15) + 5; // 5 se 19 patte khulenge
-                        if(winSide === 'andar' && steps % 2 === 0) steps++; 
-                        if(winSide === 'bahar' && steps % 2 !== 0) steps++;
-
-                        for (let i = 0; i < steps; i++) {
-                            let isLast = (i === steps - 1);
-                            let resVal, resSuit;
-                            if(isLast) { 
-                                resVal = jVal; 
-                                resSuit = cardSuitsList[Math.floor(Math.random()*4)]; 
-                            } else { 
-                                do { 
-                                    resVal = cardValuesList[Math.floor(Math.random()*13)]; 
-                                } while (resVal == jVal);  
-                                resSuit = cardSuitsList[Math.floor(Math.random()*4)]; 
-                            }
-                            sequence.push({val: resVal, suit: resSuit});
-                        }
-
-                        db.ref('Game/AndarBahar/Status').set({ 
-                            state: 'dealing', 
-                            winner: winSide, 
-                            timer: 0, 
-                            jokerVal: jVal, 
-                            jokerSuit: jSuit,
-                            cardSequence: sequence
-                        });
-                        
-                        // 🔥 FIX: SERVER WAIT TIME CALCULATION 🔥
-                        // 600ms per card + 4 seconds wait for popup
-                        let waitTimeForNextRound = (steps * 600) + 4000; 
-                        setTimeout(runDealerLoop, waitTimeForNextRound); 
-                    });
-                }
-            }, 1000);
         }
     </script>
 </body>
