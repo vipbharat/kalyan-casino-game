@@ -3,37 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Andar Bahar - Zero Lag VIP</title>
+    <title>Andar Bahar - Bulletproof VIP</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        /* Pro UI Design */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial Black', sans-serif; user-select: none; }
         body { background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; color: white; overflow: hidden; }
         body::before { content:""; position:fixed; inset:0; background:radial-gradient(circle at top,#330000,#000 80%); z-index:-1; }
-        
         .game-container { width: 100%; height: 100vh; position: relative; display: flex; flex-direction: column; }
-        
-        /* Top Bar */
         .tb { display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:rgba(0,0,0,.85); border-bottom:2px solid #d4af37; z-index:10; }
         .bbx { background:linear-gradient(to bottom,#333,#111); border:1.5px solid #d4af37; padding:6px 18px; border-radius:25px; color:#0f0; font-size:15px; font-weight:700; box-shadow:0 0 10px rgba(0,255,0,.3); }
-        
-        /* Dealer Area */
         .dealer-area { height: 28%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 10px; }
         #joker-spot { height: 95px; width: 65px; border: 2px dashed #d4af37; border-radius: 5px; margin-bottom: 5px; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.5); padding: 3px; }
         .dealer-message { font-size: 22px; font-weight: 900; color: #d4af37; text-shadow: 0 0 10px #d4af37; text-align: center; text-transform: uppercase; margin-bottom: 5px; }
-        
-        /* Tracks */
         .play-area { flex: 1; padding: 5px 10px; display: flex; flex-direction: column; align-items: center; }
         .card-track { width: 100%; border: 1.5px solid #1a8cff; background: rgba(26, 140, 255, 0.1); border-radius: 8px; padding: 6px; margin-bottom: 8px; display: flex; align-items: center; min-height: 80px; overflow-x: auto; white-space: nowrap; scroll-behavior: auto; }
         .card-track.bahar { border-color: #ff1a1a; background: rgba(255, 26, 26, 0.1); }
         .track-label { color: #fff; font-weight: 900; margin-right: 15px; width: 55px; flex-shrink: 0; font-size: 13px; }
-        
-        /* Optimized Card CSS */
         .playing-card { width: 45px; height: 65px; border-radius: 4px; margin-right: -20px; flex-shrink: 0; position: relative; will-change: transform; transition: transform 0.2s; }
         .playing-card:last-child { margin-right: 5px; transform: scale(1.05); z-index: 5; }
-
-        /* Betting UI */
         .btbl { display:flex; justify-content:center; gap:15px; width: 100%; padding: 0 10px; }
         .bx { flex: 1; height: 130px; border: 3px solid rgba(255,255,255,.4); border-radius: 12px; position: relative; background: rgba(0,0,0,.7); display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 20px; font-weight: 900; cursor: pointer; }
         .dbx { border-color: #1a8cff; color: #fff; background: linear-gradient(rgba(0,170,255,.3),rgba(0,0,0,.9)); }
@@ -41,9 +29,7 @@
         .pa { color: #0f0; font-size: 14px; margin-bottom: 5px; background: rgba(0,0,0,.8); padding: 2px 8px; border-radius: 10px; border: 1px solid #0f0; }
         .mbb { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #000; background: #d4af37; padding: 4px 10px; border-radius: 12px; font-weight: 900; display: none; }
         .gw { box-shadow: 0 0 30px #d4af37, inset 0 0 20px #d4af37 !important; border-color: #d4af37 !important; transform: scale(1.05); }
-
-        /* Chips & Popup */
-        .cf { position: fixed; bottom: 0; width: 100%; background: #111; display: flex; justify-content: center; gap: 6px; padding: 15px 0; border-top: 3px solid #d4af37; }
+        .cf { position: fixed; bottom: 0; width: 100%; background: #111; display: flex; justify-content: center; gap: 6px; padding: 15px 0; border-top: 3px solid #d4af37; z-index: 100; }
         .cb { width: 42px; height: 42px; border-radius: 50%; border: 2px solid rgba(255,255,255,.5); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px; cursor: pointer; color: #fff; }
         .sel { border-color: #d4af37 !important; transform: scale(1.1) translateY(-5px); box-shadow: 0 0 15px #d4af37; }
         .cp { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #fff; position: absolute; font-size: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; transition: all 0.4s ease-out; box-shadow: 2px 2px 5px rgba(0,0,0,.8); pointer-events: none; }
@@ -97,19 +83,19 @@
     
     let iBO=0, cC=1000, cCc='radial-gradient(circle, #e57373, #d32f2f)', tB=0, dB=0, wB=0;
     let mB={andar:0, bahar:0}, sPl={andar:0, bahar:0}, bPl={andar:0, bahar:0}, bI, iAI=0, iD=0;
+    let isAnimating = false;
 
     function uA(){ if(!iAI){ ['bS','cS'].forEach(i=>{let e=$(i); if(e){e.play().then(()=>{e.pause();e.currentTime=0;})}}); iAI=1; } }
     function pS(i,v){ try{let s=$(i); if(s){s.currentTime=0; s.volume=v; s.play();}} catch(e){} }
     
-    // Pure CSS Card Generator (Instant Loading)
+    // HTML/CSS Card Generator
     function cCD(v, s) {
-        let displayV = v === "0" ? "10" : v;
         let suitChar = s === 'S' ? '♠' : s === 'H' ? '♥' : s === 'D' ? '♦' : '♣';
         let color = (s === 'H' || s === 'D') ? '#ff1a1a' : '#000000';
         return `<div style="width:100%;height:100%;background:#fff;border-radius:4px;display:flex;flex-direction:column;justify-content:space-between;padding:2px 3px;box-sizing:border-box;color:${color};border:1px solid #ccc;">
-            <div style="font-size:12px;font-weight:900;line-height:1;">${displayV}<br><span style="font-size:10px;">${suitChar}</span></div>
+            <div style="font-size:12px;font-weight:900;line-height:1;">${v}<br><span style="font-size:10px;">${suitChar}</span></div>
             <div style="font-size:22px;text-align:center;margin-top:-8px;">${suitChar}</div>
-            <div style="font-size:12px;font-weight:900;line-height:1;transform:rotate(180deg);text-align:left;">${displayV}<br><span style="font-size:10px;">${suitChar}</span></div>
+            <div style="font-size:12px;font-weight:900;line-height:1;transform:rotate(180deg);text-align:left;">${v}<br><span style="font-size:10px;">${suitChar}</span></div>
         </div>`;
     }
 
@@ -118,7 +104,7 @@
     }
 
     window.pB = (s) => {
-        if(!iBO || tB<cC) return;
+        if(!iBO || tB<cC || isAnimating) return;
         dB -= cC; db.ref('users/'+ph).update({balance: Math.max(0, dB)});
         db.ref(`Game/AndarBahar/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
         mB[s]+=cC; let mt=$('mb-'+(s=='andar'?'d':'t')); mt.innerText="MY BET: ₹"+mB[s]; mt.style.display='block';
@@ -131,31 +117,70 @@
         setTimeout(()=>{ p.style.left=(Math.random()*60+20)+"%"; p.style.top=(Math.random()*60+20)+"%"; },50);
     }
 
+    let lockedJoker = "A", lockedSuit = "S";
+
+    // PURE MATCH WITH UNTOUCHED SERVER
     db.ref('Game/AndarBahar/Status').on('value', s=>{
         let st=s.val(); if(!st) return;
+        
         if(st.state === 'betting'){
-            if(!iBO){ iBO=1; iD=0; rUI(); $('joker-spot').innerHTML = cCD(st.jokerVal, st.jokerSuit||'S'); }
-            $('tmr').innerText=st.timer+"s";
-        } else if (st.state === 'dealing' && iBO){
-            iBO=0; iD=1; $('tmr').innerText="DEALING...";
-            sR(st.winner, st.jokerVal, st.jokerSuit||'S');
+            if(!isAnimating){
+                if(!iBO){ 
+                    iBO=1; iD=0; rUI(); 
+                    lockedJoker = st.jokerVal || "A";
+                    lockedSuit = st.jokerSuit || "S";
+                    $('joker-spot').innerHTML = cCD(lockedJoker, lockedSuit); 
+                }
+                if(st.timer > 0){
+                    $('tmr').innerText=st.timer+"s";
+                    $('tmr').style.color=st.timer<=5?"#f33":"#d4af37";
+                }
+            }
+        } 
+        else if (st.state === 'dealing' || st.timer <= 0){
+            if(!isAnimating && iBO){
+                iBO=0; iD=1;
+                $('tmr').innerText="DEALING..."; $('tmr').style.color="#fff";
+                sR(st.winner, st.jokerVal || lockedJoker, st.jokerSuit || lockedSuit);
+            }
         }
     });
 
+    db.ref('Game/AndarBahar/Bets').on('value', s=>{
+        let a=s.val()||{}; sPl={andar:0, bahar:0};
+        for(let u in a){ if(!u.includes('bot')){ sPl.andar+=(a[u].andar||0); sPl.bahar+=(a[u].bahar||0); } }
+        $('md').innerText="₹"+sPl.andar; $('mt').innerText="₹"+sPl.bahar;
+    });
+
+    // 🃏 STRICT CARD GENERATION 🃏
     async function sR(w, jV, jS){
-        const vs=["A","2","3","4","5","6","7","8","9","0","J","Q","K"], ss=["S","D","C","H"];
+        if (isAnimating) return;
+        isAnimating = true;
+
+        // "10" is exactly "10", matching the server logic perfectly.
+        const vs=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+        const ss=["S","D","C","H"];
+        
         let winnerSide = (w === 'dragon' || w === 'andar') ? 'andar' : 'bahar';
         let seed = winnerSide.charCodeAt(0) + jV.charCodeAt(0);
-        let numCards = (seed % 5) + 4; 
+        
+        // Server gives 20 seconds. This logic generates 5 to 14 cards (Max 7 seconds animation).
+        let numCards = (seed % 10) + 5; 
+        
         if (winnerSide === 'andar' && numCards % 2 !== 0) numCards++; 
         if (winnerSide === 'bahar' && numCards % 2 === 0) numCards++; 
 
         for (let i = 0; i <= numCards; i++) {
-            if(!iD) break;
             let side = (i % 2 === 0) ? 'andar' : 'bahar';
             let cV, cS;
-            if (i === numCards) { cV = jV; cS = ss[Math.floor((seed+i)%4)]; }
-            else { do { cV = vs[(seed+i*7)%13]; cS = ss[(seed+i)%4]; } while(cV === jV); }
+            
+            if (i === numCards) { 
+                cV = jV; cS = ss[Math.floor((seed+i)%4)]; 
+            } else { 
+                do { 
+                    cV = vs[(seed+i*7)%13]; cS = ss[(seed+i)%4]; 
+                } while(cV === jV); // Joker ab beech mein kabhi nahi aayega!
+            }
 
             let track = $('track-' + side);
             let div = document.createElement('div');
@@ -163,13 +188,18 @@
             div.innerHTML = cCD(cV, cS);
             track.appendChild(div);
             track.scrollLeft = track.scrollWidth;
+            
             pS('cS', 1);
-            await new Promise(r => setTimeout(r, 600)); 
+            await new Promise(r => setTimeout(r, 500)); // Perfect smooth speed
         }
-        if(iD){
-            $('tmr').innerText = winnerSide.toUpperCase() + " WINS!";
-            $('bx-' + (winnerSide === 'andar' ? 'd' : 't')).classList.add('gw');
-        }
+
+        $('tmr').innerText = winnerSide.toUpperCase() + " WINS!";
+        $('bx-' + (winnerSide === 'andar' ? 'd' : 't')).classList.add('gw');
+        
+        let wa=0; if(winnerSide==='andar') wa=mB.andar*1.9; else if(winnerSide==='bahar') wa=mB.bahar*2.0;
+        if(wa>0 && ph) db.ref('users/'+ph+'/winning_balance').set(wB+wa);
+
+        setTimeout(() => { isAnimating = false; }, 3000);
     }
 
     function rUI(){
@@ -180,6 +210,7 @@
         document.querySelectorAll('.cp').forEach(c=>c.remove());
         mB={andar:0, bahar:0};
     }
+    
     window.sC=(v,e)=>{cC=v; cCc=window.getComputedStyle(e).background; document.querySelectorAll('.cb').forEach(b=>b.classList.remove('sel')); e.classList.add('sel'); pS('bS',.5);}
 </script>
 </body>
