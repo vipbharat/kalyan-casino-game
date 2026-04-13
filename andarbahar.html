@@ -156,23 +156,27 @@
         }); if(bb){ uP(); pS('bS',.05); }
     }
 
+    // 🔴 FIREBASE SYNC WITH SERVER ENGINE 🔴
     db.ref('Game/AndarBahar/Status').on('value', s=>{
         let st=s.val(); if(!st) return; let te=$('tmr');
         
         if(st.state === 'betting'){
             if(!iBO){
-                iBO=1; iD=0; rUI();
+                iBO=1; iD=0; rUI(); // Restarts game UI smoothly
                 lockedJoker = st.jokerVal || "A"; 
                 lockedSuit = st.jokerSuit || "S";
                 $('joker-spot').innerHTML = cCD(lockedJoker, lockedSuit);
                 clearInterval(bI); bI=setInterval(bBA,700);
             }
-            te.innerText=st.timer+"s";
-            te.style.color=st.timer<=5?"#f33":"#d4af37";
+            // Timer formatting
+            if (st.timer > 0) {
+                te.innerText=st.timer+"s";
+                te.style.color=st.timer<=5?"#f33":"#d4af37";
+            }
         } 
-        else if (st.state === 'result' || st.state === 'dealing'){
+        else if (st.state === 'dealing' || st.timer <= 0){
             if(iBO && !iD){
-                iBO=0; iD=1; clearInterval(bI);
+                iBO=0; iD=1; clearInterval(bI); // Lock betting immediately
                 te.innerText="DEALING..."; te.style.color="#fff";
                 if(st.winner) sR(st.winner, st.jokerVal || lockedJoker, st.jokerSuit || lockedSuit);
             }
@@ -189,32 +193,32 @@
         return `<img src="https://deckofcardsapi.com/static/img/${actV}${s}.png" style="width:100%; height:100%; border-radius:4px; box-shadow:0 0 5px rgba(0,0,0,0.5);">`;
     }
 
-    // 🔥 UPGRADED CARD GENERATION (Faster & Safe) 🔥
+    // 🃏 SERVER CONTROLLED DETERMINISTIC CARD DEALING 🃏
     async function sR(w, jVal, jSuit){
         const vs=["A","2","3","4","5","6","7","8","9","0","J","Q","K"], ss=["S","D","C","H"];
         
-        // Handle Dragon Tiger server override
         let winnerSide = (w === 'dragon' || w === 'andar') ? 'andar' : 'bahar';
 
         let seed = winnerSide.charCodeAt(0) + jVal.charCodeAt(0);
-        // Reduced max cards from 12 to 8 so animation finishes within 3-4 seconds max
-        let numCards = (seed % 6) + 3; 
+        
+        // Auto-Adjusting Card Count: Ensures animation finishes before the 20 sec (-20 timer) ends
+        let numCards = (seed % 6) + 4; 
         
         if (winnerSide === 'andar' && numCards % 2 !== 0) numCards++; 
         if (winnerSide === 'bahar' && numCards % 2 === 0) numCards++; 
 
         for (let i = 0; i <= numCards; i++) {
-            if(!iD) break; // <--- EMERGENCY STOP if server starts new betting round early!
+            if(!iD) break; // Safety Break
 
             let side = (i % 2 === 0) ? 'andar' : 'bahar';
             let cV, cS;
             
             if (i === numCards) {
-                cV = jVal; cS = ss[Math.floor((seed+i)%4)];
+                cV = jVal; cS = ss[Math.floor((seed+i)%4)]; // Winning Card
             } else {
                 do { 
                     cV = vs[(seed+i*7)%13]; cS = ss[(seed+i)%4]; 
-                } while(cV === jVal); 
+                } while(cV === jVal); // Ensure Joker doesn't appear early
             }
 
             let track = $('track-' + side);
@@ -222,13 +226,15 @@
             div.className = 'playing-card';
             div.innerHTML = cCD(cV, cS);
             track.appendChild(div);
+            
+            // Smooth Scroll to the latest card
             track.scrollTo({ left: track.scrollWidth, behavior: 'smooth' });
             
             pS('cS', 1);
-            await new Promise(r => setTimeout(r, 400)); // Fast Dealing: 400ms instead of 700ms
+            await new Promise(r => setTimeout(r, 450)); // Perfect speed to match your server's timing
         }
 
-        if(iD) { // Check if animation completed successfully without interruption
+        if(iD) {
             $('tmr').innerText = winnerSide.toUpperCase() + " WINS!";
             $('bx-' + (winnerSide === 'andar' ? 'd' : 't')).classList.add('gw');
             
