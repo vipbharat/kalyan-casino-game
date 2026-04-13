@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dragon Tiger - Photo VIP Pro</title>
+    <title>Dragon Tiger - Video Animation VIP</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
@@ -17,112 +17,96 @@
 
         .game-container {
             width: 100%; height: 100vh; max-width: 600px;
-            background: #1e103c;
-            position: relative; display: flex; flex-direction: column; overflow: hidden;
+            background: #1e103c; position: relative; display: flex; flex-direction: column; overflow: hidden;
             border: 1px solid #ffd700;
         }
 
-        /* Top Nav */
-        .top-nav {
-            height: 40px; background: #130826; border-bottom: 2px solid #ffd700;
-            display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 200;
-        }
+        /* Top Nav & History */
+        .top-nav { height: 40px; background: #130826; border-bottom: 2px solid #ffd700; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 200; }
         .online-status { font-size: 12px; font-weight: 900; color: #00ff88; text-shadow: 0 0 5px #00ff88; }
         .vip-user { font-size: 12px; font-weight: 900; color: #ffd700; letter-spacing: 1px;}
+        .history-strip { background: rgba(0,0,0,0.6); padding: 5px 10px; display: flex; gap: 5px; overflow-x: hidden; border-bottom: 1px solid rgba(255,215,0,0.3); z-index: 200; align-items: center;}
+        .h-dot { width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 1.5px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.8); flex-shrink: 0;}
 
-        /* 🔥 PHOTO BATTLE AREA (EXACT LIKE IMAGE) 🔥 */
+        /* 🔥 ANIMATED BATTLE AREA 🔥 */
         .battle-area {
-            height: 240px; position: relative; overflow: hidden;
+            height: 250px; position: relative;
             display: flex; justify-content: center; align-items: center; 
             border-bottom: 3px solid #ffd700;
             background: radial-gradient(circle at center, #4a0000 0%, #000 100%);
             box-shadow: inset 0 -10px 30px rgba(0,0,0,0.8);
         }
 
-        /* Real Photos */
+        /* Fighters */
         .fighter-dragon {
-            position: absolute; left: -30px; bottom: -20px;
-            width: 220px; height: 240px;
+            position: absolute; left: -20px; bottom: -10px;
+            width: 200px; height: 230px;
             background: url('https://freepngimg.com/thumb/dragon/10-2-dragon-png-hd.png') no-repeat bottom left;
-            background-size: contain; z-index: 5;
+            background-size: contain; z-index: 10;
             filter: drop-shadow(10px 10px 15px rgba(255, 50, 0, 0.8));
+            transform-origin: bottom left;
+            transition: all 0.3s;
         }
         .fighter-tiger {
-            position: absolute; right: -20px; bottom: -20px;
-            width: 210px; height: 240px;
+            position: absolute; right: -10px; bottom: -10px;
+            width: 210px; height: 230px;
             background: url('https://freepngimg.com/thumb/tiger/32-tiger-png-image.png') no-repeat bottom right;
-            background-size: contain; z-index: 5;
+            background-size: contain; z-index: 10;
             filter: drop-shadow(-10px 10px 15px rgba(255, 200, 0, 0.8));
-            transform: scaleX(-1); /* Flips tiger to face dragon */
+            transform: scaleX(-1); /* Facing Dragon */
+            transform-origin: bottom right;
+            transition: all 0.3s;
         }
 
-        .cards-center {
-            display: flex; align-items: center; gap: 20px; z-index: 20;
-            margin-bottom: 20px;
+        /* 🎬 ATTACK ANIMATIONS (JAB KOI JEETEGA) 🎬 */
+        @keyframes dragonAttack {
+            0% { transform: scale(1); filter: brightness(1) drop-shadow(10px 10px 15px rgba(255, 50, 0, 0.8)); }
+            50% { transform: scale(1.4) translateY(-10px) translateX(20px); filter: brightness(1.5) drop-shadow(10px 10px 40px #ff3333); z-index: 100; }
+            100% { transform: scale(1); filter: brightness(1) drop-shadow(10px 10px 15px rgba(255, 50, 0, 0.8)); }
         }
-        .vs-badge {
-            font-size: 35px; font-weight: 900; color: #ffd700; 
-            text-shadow: 0 0 20px #ff9900, 2px 2px 5px #000; font-style: italic;
+        @keyframes tigerAttack {
+            0% { transform: scaleX(-1) scale(1); filter: brightness(1) drop-shadow(-10px 10px 15px rgba(255, 200, 0, 0.8)); }
+            50% { transform: scaleX(-1) scale(1.4) translateY(-10px) translateX(20px); filter: brightness(1.5) drop-shadow(-10px 10px 40px #ffd700); z-index: 100; }
+            100% { transform: scaleX(-1) scale(1); filter: brightness(1) drop-shadow(-10px 10px 15px rgba(255, 200, 0, 0.8)); }
         }
+
+        .dragon-wins-anim { animation: dragonAttack 2s ease-in-out; z-index: 100 !important; }
+        .tiger-wins-anim { animation: tigerAttack 2s ease-in-out; z-index: 100 !important; }
+
+        .cards-center { display: flex; align-items: center; gap: 20px; z-index: 20; margin-bottom: 30px; }
+        .vs-badge { font-size: 35px; font-weight: 900; color: #ffd700; text-shadow: 0 0 20px #ff9900, 2px 2px 5px #000; font-style: italic; }
         
         .card-wrapper { text-align: center; }
-        .card-title { font-size: 14px; font-weight: 900; margin-bottom: 8px; text-shadow: 2px 2px 4px #000; }
-        .dragon-title { color: #ff4d4d; }
-        .tiger-title { color: #ffd700; }
+        .card-title { font-size: 15px; font-weight: 900; margin-bottom: 8px; text-shadow: 2px 2px 4px #000; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 10px;}
+        .dragon-title { color: #80bfff; } .tiger-title { color: #ffcc99; }
 
-        .card-slot { width: 60px; height: 85px; border: 2.5px solid #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); position: relative; transition: 0.3s; box-shadow: 0 0 15px rgba(255,255,255,0.3);}
-        .playing-card { width: 100%; height: 100%; border-radius: 6px; background: #ffffff; border: 1px solid #ccc; display: flex; justify-content: center; align-items: center; font-size: 28px; font-weight: 900; color: black; letter-spacing: -2px; box-shadow: 0 0 15px rgba(255,255,255,0.8); position: absolute; z-index: 10;}
-        .red-suit { color: #d32f2f !important; }
-        .black-suit { color: #212121 !important; }
+        .card-slot { width: 65px; height: 90px; border: 2.5px solid #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); position: relative; transition: 0.3s; box-shadow: 0 0 15px rgba(255,255,255,0.3);}
+        .playing-card { width: 100%; height: 100%; border-radius: 6px; background: #ffffff; border: 1px solid #ccc; display: flex; justify-content: center; align-items: center; font-size: 30px; font-weight: 900; color: black; letter-spacing: -2px; box-shadow: 0 0 20px rgba(255,255,255,1); position: absolute; z-index: 10;}
+        .red-suit { color: #d32f2f !important; } .black-suit { color: #212121 !important; }
 
-        .status-badge {
-            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
-            z-index: 25; background: #000; border: 2px solid #ffd700;
-            color: #ffd700; padding: 6px 25px; border-radius: 20px; 
-            font-size: 14px; font-weight: 900; box-shadow: 0 0 15px rgba(255,215,0,0.6); letter-spacing: 1px;
-        }
+        .status-badge { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 25; background: #000; border: 2px solid #ffd700; color: #ffd700; padding: 6px 25px; border-radius: 20px; font-size: 15px; font-weight: 900; box-shadow: 0 0 15px rgba(255,215,0,0.6); letter-spacing: 1px; white-space: nowrap;}
 
-        /* 🔥 MAIN BETTING BOXES (LIKE YOUR IMAGE) 🔥 */
+        /* Main Betting Boxes */
         .play-area { flex: 1; padding: 10px; display: flex; flex-direction: column; touch-action: none; overflow-y: auto;}
-        
-        .main-bets-row { display: flex; gap: 10px; margin-bottom: 10px; height: 120px;}
-        
-        .bet-box {
-            flex: 1; border-radius: 12px; border: 2px solid; display: flex; flex-direction: column; align-items: center; padding-top: 10px;
-            cursor: pointer; position: relative; transition: 0.2s; overflow: hidden;
-        }
+        .main-bets-row { display: flex; gap: 10px; margin-bottom: 10px; height: 110px;}
+        .bet-box { flex: 1; border-radius: 12px; border: 2px solid; display: flex; flex-direction: column; align-items: center; padding-top: 10px; cursor: pointer; position: relative; transition: 0.2s; overflow: hidden; }
         .bet-box:active { transform: scale(0.96); }
 
-        /* Colors exactly like the image */
         .dragon-box { background: linear-gradient(to bottom, #1a4a8c, #0d2546); border-color: #4da6ff; }
         .tie-box { background: linear-gradient(to bottom, #2b7a30, #133d16); border-color: #4dff66; }
         .tiger-box { background: linear-gradient(to bottom, #b34700, #662900); border-color: #ff9933; }
-
         .win-glow { transform: scale(1.03); box-shadow: 0 0 30px #ffd700, inset 0 0 20px #ffd700 !important; border-color: #ffd700 !important; z-index: 20;}
 
         .box-title { font-size: 22px; font-weight: 900; letter-spacing: 1px; text-shadow: 2px 2px 4px #000; z-index: 25; position: relative;}
-        .dragon-box .box-title { color: #80bfff; }
-        .tie-box .box-title { color: #99ff99; }
-        .tiger-box .box-title { color: #ffcc99; }
-
+        .dragon-box .box-title { color: #80bfff; } .tie-box .box-title { color: #99ff99; } .tiger-box .box-title { color: #ffcc99; }
         .box-payout { font-size: 11px; font-weight: bold; color: #fff; margin-bottom: 5px; z-index: 25; position: relative;}
         .pool-text { font-size: 11px; color: #fff; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 5px; font-weight: 900; z-index: 25; position: relative;}
-        
         .placed-bet { position: absolute; top: 5px; left: 5px; background: #ffd700; color: black; border-radius: 10px; padding: 2px 6px; font-size: 10px; font-weight: 900; display: none; z-index: 50; border: 1.5px solid #fff;}
 
-        /* Side Bets (Like Image) */
-        .side-bets-header { text-align: center; font-size: 11px; color: #ffd700; font-weight: 900; letter-spacing: 1px; margin-bottom: 5px;}
-        .side-bets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: rgba(0,0,0,0.3); padding: 6px; border: 1px solid #d4af37; border-radius: 8px;}
-        .sb-box { border: 1px solid rgba(212,175,55,0.4); text-align: center; padding: 6px 0; background: rgba(0,0,0,0.6); border-radius: 6px; position: relative; transition: 0.2s;}
-        .sb-box:active { background: rgba(255,215,0,0.2); }
-        .sb-range { color: #ffd700; font-weight: 900; font-size: 12px; }
-        .sb-payout { color: #ccc; font-size: 10px; font-weight: bold; }
-
-        /* Chips Overlay */
         .chips-container-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15;}
         .small-chip { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #fff; position: absolute; font-size: 8px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 6px rgba(0,0,0,0.8); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);}
 
-        /* Bots */
+        /* Bots & Footer */
         .live-players { display: flex; gap: 10px; overflow-x: auto; background: rgba(0,0,0,0.5); padding: 8px; border-top: 1px solid #ffd700; }
         .live-players::-webkit-scrollbar { display: none; }
         .player { text-align: center; flex-shrink: 0;}
@@ -130,7 +114,6 @@
         .p-id { font-size: 9px; color: #ccc; margin-top: 2px; font-weight: bold;}
         .p-bal { font-size: 10px; color: #00ff88; font-weight: 900;}
 
-        /* Bottom Bar */
         .bottom-bar { background-color: #0b0514; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #ffd700; z-index: 100;}
         .bal-display { font-size: 15px; font-weight: 900; color: #00ff88; letter-spacing: 1px;}
         .chips-area { display: flex; gap: 6px; overflow-x: auto; width: 70%; justify-content: flex-end; padding-bottom: 2px;}
@@ -139,19 +122,15 @@
         .chip { width: 36px; height: 36px; border-radius: 50%; background-color: white; color: black; flex-shrink: 0; display: flex; justify-content: center; align-items: center; font-size: 11px; font-weight: 900; border: 2px dashed #333; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.8);}
         .chip.active { border-color: #ffd700; transform: scale(1.15) translateY(-4px); box-shadow: 0 4px 15px #ffd700; border-style: solid;}
         
-        .c10 { background: radial-gradient(circle, #ffffff, #cccccc); color: black;} 
-        .c50 { background: radial-gradient(circle, #4fc3f7, #0288d1); color: white;} 
-        .c100 { background: radial-gradient(circle, #81c784, #388e3c); color: white;} 
-        .c500 { background: radial-gradient(circle, #ba68c8, #7b1fa2); color: white;}
-        .c1k { background: radial-gradient(circle, #e57373, #d32f2f); color: white;} 
-        .c5k { background: radial-gradient(circle, #f06292, #c2185b); color: white;} 
-        .c10k { background: radial-gradient(circle, #ffd54f, #f57f17); color: black;}
+        .c10 { background: radial-gradient(circle, #ffffff, #cccccc); color: black;} .c50 { background: radial-gradient(circle, #4fc3f7, #0288d1); color: white;} .c100 { background: radial-gradient(circle, #81c784, #388e3c); color: white;} .c500 { background: radial-gradient(circle, #ba68c8, #7b1fa2); color: white;} .c1k { background: radial-gradient(circle, #e57373, #d32f2f); color: white;} .c5k { background: radial-gradient(circle, #f06292, #c2185b); color: white;} .c10k { background: radial-gradient(circle, #ffd54f, #f57f17); color: black;}
     </style>
 </head>
 <body>
 
     <audio id="coinSnd" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
     <audio id="cardSnd" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
+    <audio id="dragonRoar" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2793/2793-preview.mp3"></audio>
+    <audio id="tigerRoar" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/120/120-preview.mp3"></audio>
 
     <div class="game-container">
         
@@ -160,8 +139,10 @@
             <div class="vip-user">KALYAN VIP USER</div>
         </div>
 
+        <div class="history-strip" id="record-board"></div>
+
         <div class="battle-area">
-            <div class="fighter-dragon"></div>
+            <div class="fighter-dragon" id="dragon-avatar"></div>
             
             <div class="cards-center">
                 <div class="card-wrapper">
@@ -177,7 +158,7 @@
                 </div>
             </div>
 
-            <div class="fighter-tiger"></div>
+            <div class="fighter-tiger" id="tiger-avatar"></div>
             <div class="status-badge" id="status-msg">WAITING FOR BETS...</div>
         </div>
 
@@ -186,7 +167,7 @@
                 <div class="bet-box dragon-box" id="btn-dragon" onclick="placeBet('dragon')">
                     <div class="text-layer">
                         <div class="box-title">DRAGON</div>
-                        <div class="box-payout">2X Payout</div>
+                        <div class="box-payout">1:1 Payout</div>
                         <div class="pool-text">Pool: ₹<span id="p-dragon">0</span></div>
                     </div>
                     <div class="placed-bet" id="bet-amt-dragon">₹0</div>
@@ -196,7 +177,7 @@
                 <div class="bet-box tie-box" id="btn-tie" onclick="placeBet('tie')">
                     <div class="text-layer">
                         <div class="box-title">TIE</div>
-                        <div class="box-payout">9X Payout</div>
+                        <div class="box-payout">8:1 Payout</div>
                         <div class="pool-text">Pool: ₹<span id="p-tie">0</span></div>
                     </div>
                     <div class="placed-bet" id="bet-amt-tie">₹0</div>
@@ -206,24 +187,12 @@
                 <div class="bet-box tiger-box" id="btn-tiger" onclick="placeBet('tiger')">
                     <div class="text-layer">
                         <div class="box-title">TIGER</div>
-                        <div class="box-payout">2X Payout</div>
+                        <div class="box-payout">1:1 Payout</div>
                         <div class="pool-text">Pool: ₹<span id="p-tiger">0</span></div>
                     </div>
                     <div class="placed-bet" id="bet-amt-tiger">₹0</div>
                     <div class="chips-container-overlay" id="chips-tiger"></div>
                 </div>
-            </div>
-
-            <div class="side-bets-header">SIDE BETS: TOTAL CARDS</div>
-            <div class="side-bets">
-                <div class="sb-box"><div class="sb-range">1 - 5</div><div class="sb-payout">2x</div></div>
-                <div class="sb-box"><div class="sb-range">6 - 10</div><div class="sb-payout">3x</div></div>
-                <div class="sb-box"><div class="sb-range">11 - 15</div><div class="sb-payout">4x</div></div>
-                <div class="sb-box"><div class="sb-range">16 - 25</div><div class="sb-payout">3x</div></div>
-                <div class="sb-box"><div class="sb-range">26 - 30</div><div class="sb-payout">12x</div></div>
-                <div class="sb-box"><div class="sb-range">31 - 35</div><div class="sb-payout">20x</div></div>
-                <div class="sb-box"><div class="sb-range">36 - 40</div><div class="sb-payout">45x</div></div>
-                <div class="sb-box"><div class="sb-range">41+</div><div class="sb-payout">100x</div></div>
             </div>
         </div>
 
@@ -253,7 +222,7 @@
         const cardValues = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
         const cardMap = { "A":1, "2":2, "3":3, "4":4, "5":5, "6":6, "7":7, "8":8, "9":9, "10":10, "J":11, "Q":12, "K":13 };
 
-        let currentChip = 500, isBettingOpen = false, animationActive = false;
+        let currentChip = 500, isBettingOpen = false;
         let depBal = 0, winBal = 0, bonBal = 0, totalBal = 0;
         let myBets = { dragon: 0, tie: 0, tiger: 0 };
         let realPool = { dragon:0, tie:0, tiger:0 }, botPool = { dragon:0, tie:0, tiger:0 };
@@ -281,21 +250,10 @@
             document.getElementById('player-row').innerHTML = h;
         }
         renderBotsUI();
-
         setInterval(() => {
-            botsList.forEach(b => {
-                b.bal += Math.floor(Math.random() * 8000) - 3000; 
-                if(b.bal > 150000) b.bal = 90000; 
-                if(b.bal < 10000) b.bal = 30000;
-            });
+            botsList.forEach(b => { b.bal += Math.floor(Math.random() * 8000) - 3000; if(b.bal > 150000) b.bal = 90000; if(b.bal < 10000) b.bal = 30000; });
             renderBotsUI();
         }, 3000); 
-
-        let baseCount = 1350;
-        setInterval(() => {
-            baseCount += Math.floor(Math.random() * 15) - 7;
-            document.getElementById('live-users').innerText = `● ${baseCount} LIVE`;
-        }, 3500);
 
         if(phone) {
             db.ref('users/'+phone).on('value', s => { 
@@ -304,7 +262,6 @@
                 totalBal = depBal + winBal;
                 document.getElementById('balance').innerText = totalBal.toFixed(2); 
             });
-
             db.ref(`Game/DragonTiger/Bets/${phone}`).once('value', snap => {
                 let saved = snap.val();
                 if(saved) {
@@ -325,14 +282,12 @@
 
         window.selectChip = function(el, val) {
             document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            el.classList.add('active'); currentChip = val;
-            playSound('coinSnd', 0.5);
+            el.classList.add('active'); currentChip = val; playSound('coinSnd', 0.5);
         };
 
         window.placeBet = function(side) {
             if(!isBettingOpen) return;
             if(totalBal < currentChip) return alert("Low Balance!");
-
             let rem = currentChip, nDep = depBal, nWin = winBal;
             if(nDep >= rem) nDep -= rem; else { rem -= nDep; nDep = 0; nWin -= rem; }
             db.ref('users/'+phone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
@@ -342,9 +297,7 @@
             
             let display = document.getElementById(`bet-amt-${side}`);
             display.style.display = 'block'; display.innerText = "₹" + (myBets[side] >= 1000 ? (myBets[side]/1000)+'K' : myBets[side]);
-            
-            spawnChip(side, currentChip);
-            playSound('coinSnd', 1.0);
+            spawnChip(side, currentChip); playSound('coinSnd', 1.0);
         };
 
         function getBotChipColor(amt) {
@@ -353,8 +306,7 @@
             if(amt === 100) return 'radial-gradient(circle, #81c784, #388e3c)';
             if(amt === 500) return 'radial-gradient(circle, #ba68c8, #7b1fa2)';
             if(amt === 1000) return 'radial-gradient(circle, #e57373, #d32f2f)';
-            if(amt === 5000) return 'radial-gradient(circle, #f06292, #c2185b)';
-            return 'radial-gradient(circle, #ffd54f, #f57f17)'; 
+            return 'radial-gradient(circle, #f06292, #c2185b)'; 
         }
 
         function spawnChip(side, amt) {
@@ -364,13 +316,10 @@
             c.style.background = getBotChipColor(amt); 
             c.style.color = (amt === 10 || amt >= 10000) ? "#000" : "#fff"; 
             c.innerText = amt >= 1000 ? (amt/1000)+'K' : amt; 
-            
-            // Focus chips in the lower part of the box
             c.style.left = (Math.random()*60 + 20)+"%"; 
             c.style.top = (Math.random()*40 + 45)+"%"; 
             c.style.transform = "scale(2) translateY(50px)";
             c.style.opacity = "0";
-            
             div.appendChild(c);
             setTimeout(() => { c.style.transform = "scale(1) translateY(0)"; c.style.opacity = "1"; }, 50);
             if(div.children.length > 30) div.firstChild.remove();
@@ -380,18 +329,12 @@
             if(!isBettingOpen) return;
             let sides = ['dragon', 'tie', 'tiger'];
             let botBetted = false;
-
             sides.forEach(s => {
                 if(s === 'tie' && Math.random() > 0.15) return; 
                 let amt = [10, 50, 100, 500, 1000][Math.floor(Math.random()*5)];
                 let randomBot = botsList[Math.floor(Math.random() * botsList.length)];
-                
                 if(randomBot.bal >= amt) {
-                    randomBot.bal -= amt; 
-                    spawnChip(s, amt);
-                    botPool[s] += amt; 
-                    updatePoolUI();
-                    botBetted = true;
+                    randomBot.bal -= amt; spawnChip(s, amt); botPool[s] += amt; updatePoolUI(); botBetted = true;
                 }
             });
             if(botBetted) { renderBotsUI(); playSound('coinSnd', 0.05); }
@@ -401,11 +344,7 @@
             let allB = snap.val() || {};
             realPool = {dragon:0, tie:0, tiger:0};
             for(let u in allB) { 
-                if(!u.includes('bot')) {
-                    realPool.dragon += (allB[u].dragon || 0);
-                    realPool.tie += (allB[u].tie || 0);
-                    realPool.tiger += (allB[u].tiger || 0);
-                }
+                if(!u.includes('bot')) { realPool.dragon += (allB[u].dragon || 0); realPool.tie += (allB[u].tie || 0); realPool.tiger += (allB[u].tiger || 0); }
             }
             updatePoolUI();
         });
@@ -421,12 +360,12 @@
             let sym = suit == 'S' ? '♠' : suit == 'H' ? '♥' : suit == 'D' ? '♦' : '♣';
             let col = (suit == 'H' || suit == 'D') ? 'red-suit' : 'black-suit';
             let div = document.createElement('div'); div.className = `playing-card ${col}`;
-            div.innerHTML = `${dv}<span style="font-size:20px; margin-left:2px;">${sym}</span>`;
+            div.innerHTML = `${dv}<span style="font-size:18px; margin-left:2px;">${sym}</span>`;
             return div;
         }
 
         // ==============================================================
-        // 🔥 SERVER SYNC & LEAST AMOUNT WINS 🔥
+        // 🔥 SYNC & ANIMATION LOGIC (WITH ROAR AND POP-OUT) 🔥
         // ==============================================================
         db.ref('Game/DragonTiger/Status').on('value', snap => {
             let st = snap.val(); if(!st) return;
@@ -435,11 +374,13 @@
             if(st.state === 'betting') {
                 if(!isBettingOpen) {
                     isBettingOpen = true; 
-                    animationActive = false; 
-
+                    
                     document.getElementById('btn-dragon').classList.remove('win-glow');
                     document.getElementById('btn-tie').classList.remove('win-glow');
                     document.getElementById('btn-tiger').classList.remove('win-glow');
+                    
+                    document.getElementById('dragon-avatar').classList.remove('dragon-wins-anim');
+                    document.getElementById('tiger-avatar').classList.remove('tiger-wins-anim');
 
                     document.getElementById('slot-dragon').innerHTML = '';
                     document.getElementById('slot-tiger').innerHTML = '';
@@ -454,7 +395,6 @@
                     clearInterval(botInterval);
                     botInterval = setInterval(botBetAction, 700);
                 }
-                
                 msg.innerText = `PLACE BETS: ${st.timer}s`;
                 msg.style.color = st.timer <= 5 ? '#ff4d4d' : '#ffd700';
             } 
@@ -469,31 +409,47 @@
         });
 
         async function showDTAnimation(win, cD, cT) {
-            animationActive = true;
-            
             let slotD = document.getElementById('slot-dragon');
             slotD.appendChild(createCard(cD.val, cD.suit));
-            slotD.style.transform = "scale(1.2)";
             playSound('cardSnd', 1.0);
-            setTimeout(()=> slotD.style.transform = "scale(1)", 200);
             
             await new Promise(r => setTimeout(r, 800));
-            if(!animationActive) return;
             
             let slotT = document.getElementById('slot-tiger');
             slotT.appendChild(createCard(cT.val, cT.suit));
-            slotT.style.transform = "scale(1.2)";
             playSound('cardSnd', 1.0);
-            setTimeout(()=> slotT.style.transform = "scale(1)", 200);
 
             await new Promise(r => setTimeout(r, 1000));
-            if(!animationActive) return;
 
+            // 🔥 WINNER ANNOUNCEMENT & BEAST ATTACK 🔥
             document.getElementById('status-msg').innerText = `${win.toUpperCase()} WINS!`;
             document.getElementById('btn-'+win).classList.add('win-glow');
             
+            if(win === 'dragon') {
+                playSound('dragonRoar', 1.0);
+                document.getElementById('dragon-avatar').classList.add('dragon-wins-anim');
+            } else if (win === 'tiger') {
+                playSound('tigerRoar', 1.0);
+                document.getElementById('tiger-avatar').classList.add('tiger-wins-anim');
+            } else if (win === 'tie') {
+                // If Tie, both roar lightly
+                playSound('dragonRoar', 0.5);
+                playSound('tigerRoar', 0.5);
+            }
+            
             calculatePayouts(win);
         }
+
+        db.ref('Game/DragonTiger/History').on('value', snap => {
+            let hist = snap.val(); if(!hist) return;
+            let hHtml = "";
+            [...hist].reverse().slice(0, 15).forEach(w => {
+                let col = w === 'dragon' ? '#4da6ff' : (w === 'tiger' ? '#ff9933' : '#4dff66');
+                let char = w === 'dragon' ? 'D' : (w === 'tiger' ? 'T' : 'Tie');
+                hHtml += `<div class="h-dot" style="color:${col}; border-color:${col}">${char}</div>`;
+            });
+            document.getElementById('record-board').innerHTML = hHtml;
+        });
 
         function calculatePayouts(win) {
             if(!phone) return;
