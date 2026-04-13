@@ -59,15 +59,21 @@
 
         .track-label { color: rgba(255, 255, 255, 0.9); font-weight: bold; margin-right: 15px; width: 55px; flex-shrink: 0; font-size: 13px;}
 
-        /* CARDS STACKING - Perfect Overlap */
+        /* 🔥 CODING WALE (CSS) CARDS 🔥 */
         .playing-card {
-            width: 45px; height: 65px; border-radius: 4px; 
+            width: 48px; height: 68px; border-radius: 5px; 
             box-shadow: -2px 0px 5px rgba(0,0,0,0.5); 
             margin-right: -25px; 
             flex-shrink: 0; position: relative;
+            background: #ffffff; border: 1px solid #ddd;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 20px; font-weight: 900; letter-spacing: -1px;
         }
         .playing-card:last-child { margin-right: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.6); }
-        #joker-spot .playing-card { width: 100%; height: 100%; margin: 0; box-shadow: none; border-radius: 3px;}
+        #joker-spot .playing-card { width: 100%; height: 100%; margin: 0; box-shadow: 0 0 15px rgba(255,215,0,0.5); border-radius: 4px; font-size: 26px;}
+        
+        .red-suit { color: #d32f2f; }
+        .black-suit { color: #212121; }
 
         /* Main Betting Buttons */
         .main-bets { display: flex; gap: 15px; width: 95%; margin-bottom: 10px; }
@@ -193,23 +199,7 @@
     </div>
 
     <script>
-        // PULL-TO-REFRESH BLOCKER
         document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
-
-        // FAST PRELOAD IMAGES
-        const preloadedCards = {};
-        function preloadCards() {
-            const suits = ["S", "H", "D", "C"];
-            const ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "0", "J", "Q", "K"]; 
-            suits.forEach(s => {
-                ranks.forEach(r => {
-                    let img = new Image();
-                    img.src = `https://deckofcardsapi.com/static/img/${r}${s}.png`;
-                    preloadedCards[`${r}${s}`] = img.src;
-                });
-            });
-        }
-        preloadCards();
 
         function playSound(audioId, vol) {
             try { let snd = document.getElementById(audioId).cloneNode(); snd.volume = vol; snd.play().catch(e=>{}); } catch(e){}
@@ -370,12 +360,17 @@
             document.getElementById('p-bahar').innerText = (realPool.bahar + botPool.bahar).toLocaleString();
         }
 
+        // 🔥 CSS (CODING) WALE CARDS 🔥
         function createHTMLCard(val, suitStr) {
-            let apiVal = val == "10" ? "0" : val; 
-            let img = document.createElement('img');
-            img.src = preloadedCards[`${apiVal}${suitStr}`] || `https://deckofcardsapi.com/static/img/${apiVal}${suitStr}.png`;
-            img.className = 'playing-card';
-            return img;
+            let displayVal = val === "0" ? "10" : val; 
+            let suitSym = suitStr === 'S' ? '♠' : suitStr === 'H' ? '♥' : suitStr === 'D' ? '♦' : '♣';
+            let colClass = (suitStr === 'H' || suitStr === 'D') ? 'red-suit' : 'black-suit';
+            
+            const cardDiv = document.createElement('div');
+            cardDiv.className = `playing-card ${colClass}`;
+            // Nice stacked text layout
+            cardDiv.innerHTML = `${displayVal}<span style="font-size:16px; margin-left:2px;">${suitSym}</span>`;
+            return cardDiv;
         }
 
         // ==============================================================
@@ -423,7 +418,6 @@
                 statusMsg.innerText = "DEALING CARDS...";
                 statusMsg.style.color = '#d4af37';
                 
-                // Animation directly uses sequence from the server
                 showAnimation(st.winner, st.cardSequence);
             }
         });
@@ -436,7 +430,7 @@
 
             let step = 0;
             for (let i = 0; i < sequence.length; i++) {
-                if(!animationActive) return; // Cut animation if next round started
+                if(!animationActive) return; 
                 
                 step++;
                 let side = (step % 2 !== 0) ? 'andar' : 'bahar'; 
@@ -534,7 +528,7 @@
                             } else { 
                                 do { 
                                     resVal = cardValuesList[Math.floor(Math.random()*13)]; 
-                                } while (resVal == jVal);  // Type coercion to catch "10" and 10
+                                } while (resVal == jVal);  
                                 resSuit = cardSuitsList[Math.floor(Math.random()*4)]; 
                             }
                             sequence.push({val: resVal, suit: resSuit});
