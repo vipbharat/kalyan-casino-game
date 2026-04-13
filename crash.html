@@ -40,7 +40,7 @@
 </head>
 <body onclick="initAudio()">
 
-    <audio id="sndFly" src="https://assets.mixkit.co/active_storage/sfx/1701/1701-preview.mp3" loop></audio>
+    <audio id="sndFly" src="https://assets.mixkit.co/active_storage/sfx/1271/1271-preview.mp3" loop></audio>
     <audio id="sndBlast" src="https://assets.mixkit.co/active_storage/sfx/1702/1702-preview.mp3"></audio>
 
     <div class="header">
@@ -79,13 +79,14 @@
     const db = firebase.database();
     const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
+    // 🔥 AUDIO ENGINE FIX 🔥
     let audioReady = false;
     const sFly = document.getElementById('sndFly');
     const sBlast = document.getElementById('sndBlast');
 
     function initAudio() {
         if(!audioReady) {
-            sFly.volume = 0.5; sBlast.volume = 1.0;
+            sFly.volume = 0.3; sBlast.volume = 1.0;
             sFly.play().then(() => sFly.pause()).catch(()=>{});
             audioReady = true;
         }
@@ -123,7 +124,7 @@
                 waitEnd = d.waitEndTime; currMult = 1.00; isCashed = false;
                 document.getElementById('win-popup').style.display = "none";
                 sFly.pause(); sBlast.pause();
-                particles = []; // 🔥 Aag bujha do jab wait kare 🔥
+                particles = []; // Clear particles
                 
                 if(!isBetted) { mainBtn.innerText = "PLACE BET"; mainBtn.className = "action-btn btn-bet"; }
                 else { mainBtn.innerText = "BET PLACED"; mainBtn.className = "action-btn btn-lock"; }
@@ -160,15 +161,14 @@
             let winAmt = (selectedBet * currMult).toFixed(2);
             db.ref('users/'+phone).update({ winning_balance: firebase.database.ServerValue.increment(parseFloat(winAmt)) }).then(() => {
                 const pop = document.getElementById('win-popup');
-                pop.innerText = "WON: ₹" + winAmt; pop.style.display = "block";
+                pop.innerText = "₹" + winAmt; pop.style.display = "block";
                 isBetted = false;
             });
         }
     }
 
-    // --- FIRE PARTICLES ENGINE 🔥 ---
+    // --- CANVAS GRAPH ENGINE (BORDER & FILL FIX) ---
     let particles = [];
-
     const canvas = document.getElementById('graphCanvas');
     const ctx = canvas.getContext('2d');
     let cw, ch;
@@ -205,44 +205,71 @@
         let maxS = Math.max(5, sec * 1.2);
         let maxM = Math.max(2, currMult * 1.2);
         
+        let startX = 40;
+        let startY = ch - 40;
+
+        // 🔥 AXIS & GRID LINES FIX 🔥
         ctx.strokeStyle = "rgba(255,255,255,0.05)"; ctx.lineWidth = 1;
-        for(let x=40; x<cw; x+=50) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x, ch-40); ctx.stroke(); }
-        for(let y=ch-40; y>0; y-=50) { ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(cw, y); ctx.stroke(); }
+        for(let x=startX; x<cw; x+=50) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x, startY); ctx.stroke(); }
+        for(let y=startY; y>0; y-=50) { ctx.beginPath(); ctx.moveTo(startX, y); ctx.lineTo(cw, y); ctx.stroke(); }
 
-        let xPos = 40 + (sec/maxS)*(cw-80);
-        let yPos = (ch-40) - ((currMult-1)/(maxM-1))*(ch-120);
+        // 🔥 AXIS TEXT (MULTIPLIER LABELS) 🔥
+        ctx.fillStyle = "rgba(255, 255, 255, 0.5)"; ctx.font = "bold 11px Arial";
+        ctx.textAlign = "right"; 
+        for(let i=0; i<=4; i++) {
+            let v = 1 + ((maxM-1)*(i/4)); 
+            let yp = startY - (i/4)*(ch-80);
+            if(i===0) yp = startY - 5;
+            ctx.fillText(v.toFixed(1)+"x", startX - 5, yp+4);
+        }
+
+        let xPos = startX + (sec/maxS)*(cw-80);
+        let yPos = startY - ((currMult-1)/(maxM-1))*(ch-100);
         
-        if (isWaiting) { xPos = 40; yPos = ch-40; }
+        if (isWaiting) { xPos = startX; yPos = startY; }
 
+        // 🔥 FILL UNDER THE LINE FIX 🔥
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.quadraticCurveTo(startX + (xPos-startX)*0.5, startY, xPos, yPos);
+        ctx.lineTo(xPos, startY);
+        ctx.lineTo(startX, startY);
+        
+        let fillGrad = ctx.createLinearGradient(0, yPos, 0, startY);
+        fillGrad.addColorStop(0, gameState === "CRASHED" ? "rgba(255, 51, 51, 0.4)" : "rgba(0, 255, 136, 0.4)");
+        fillGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+        ctx.fillStyle = fillGrad; 
+        ctx.fill();
+
+        // The Stroke Line
         ctx.beginPath(); ctx.lineWidth = 6; ctx.strokeStyle = (gameState === "CRASHED") ? "var(--red)" : "var(--neon)";
-        ctx.moveTo(40, ch-40); ctx.quadraticCurveTo(40 + (xPos-40)*0.5, ch-40, xPos, yPos); ctx.stroke();
+        ctx.moveTo(startX, startY); ctx.quadraticCurveTo(startX + (xPos-startX)*0.5, startY, xPos, yPos); ctx.stroke();
         
-        // 🔥 AAG (FIRE) KA ANIMATION 🔥
+        // Fire Animation
         if(gameState === "FLYING") {
-            for(let p=0; p<4; p++) {
+            for(let p=0; p<3; p++) {
                 particles.push({
-                    x: xPos - 25 + (Math.random() * 15 - 7.5),
-                    y: yPos + 35 + (Math.random() * 15 - 7.5),
-                    vx: -Math.random() * 3 - 1,
-                    vy: Math.random() * 3 + 1,
+                    x: xPos - 25 + (Math.random() * 10 - 5),
+                    y: yPos + 35 + (Math.random() * 10 - 5),
+                    vx: -Math.random() * 2 - 1,
+                    vy: Math.random() * 2 + 1,
                     life: 1.0,
                     color: Math.random() > 0.5 ? '#ff3333' : (Math.random() > 0.5 ? '#ff9900' : '#ffff00')
                 });
             }
         }
         
-        // Render Particles
         for(let i = particles.length - 1; i >= 0; i--) {
             let p = particles[i];
             ctx.globalAlpha = Math.max(0, p.life);
             ctx.fillStyle = p.color;
-            ctx.beginPath(); ctx.arc(p.x, p.y, 6 * p.life, 0, Math.PI * 2); ctx.fill();
-            p.x += p.vx; p.y += p.vy; p.life -= 0.04;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 5 * p.life, 0, Math.PI * 2); ctx.fill();
+            p.x += p.vx; p.y += p.vy; p.life -= 0.05;
             if(p.life <= 0) particles.splice(i, 1);
         }
         ctx.globalAlpha = 1.0;
 
-        // Rocket Rotate & Render
+        // Rocket emoji
         ctx.save();
         ctx.translate(xPos, yPos);
         if(gameState === "CRASHED") {
@@ -250,14 +277,14 @@
             ctx.fillText("💥", -30, 20);
         } else {
             ctx.font = "50px Arial";
-            ctx.rotate(-Math.PI / 6); // Rocket ka muh thoda upar ki taraf
+            ctx.rotate(-Math.PI / 6); 
             ctx.fillText("🚀", -30, 20);
         }
         ctx.restore();
     }
     draw();
 
-    // --- MASTER SERVER LOGIC (PROFIT CONTROL) ---
+    // --- ADMIN & PROFIT ENGINE ---
     let isMaster = false;
     setInterval(() => {
         if(isMaster) return;
@@ -281,10 +308,12 @@
         let targetCrash = 1.00;
         const adminControl = await db.ref('admin_control/next_crash').get();
         
+        // Admin Force Control
         if(adminControl.exists() && adminControl.val() > 0) {
             targetCrash = adminControl.val();
             db.ref('admin_control/next_crash').set(0);
         } else {
+            // "Least Amount Wins" Profit Logic
             if(totalBets > 3000) targetCrash = 1.01 + Math.random() * 0.49;
             else targetCrash = 1.15 + Math.pow(Math.random(), 3) * 15; 
         }
