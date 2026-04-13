@@ -59,7 +59,7 @@
 
         .track-label { color: rgba(255, 255, 255, 0.9); font-weight: bold; margin-right: 15px; width: 55px; flex-shrink: 0; font-size: 13px;}
 
-        /* 🔥 CODING WALE (CSS) CARDS 🔥 */
+        /* CSS WALE FAST LOAD CARDS */
         .playing-card {
             width: 48px; height: 68px; border-radius: 5px; 
             box-shadow: -2px 0px 5px rgba(0,0,0,0.5); 
@@ -67,10 +67,10 @@
             flex-shrink: 0; position: relative;
             background: #ffffff; border: 1px solid #ddd;
             display: flex; justify-content: center; align-items: center;
-            font-size: 20px; font-weight: 900; letter-spacing: -1px;
+            font-size: 22px; font-weight: 900; letter-spacing: -1px;
         }
         .playing-card:last-child { margin-right: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.6); }
-        #joker-spot .playing-card { width: 100%; height: 100%; margin: 0; box-shadow: 0 0 15px rgba(255,215,0,0.5); border-radius: 4px; font-size: 26px;}
+        #joker-spot .playing-card { width: 100%; height: 100%; margin: 0; box-shadow: 0 0 15px rgba(255,215,0,0.5); border-radius: 4px; font-size: 30px;}
         
         .red-suit { color: #d32f2f; }
         .black-suit { color: #212121; }
@@ -217,6 +217,8 @@
         let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0;
         let realPool = {andar:0, bahar:0}, botPool = {andar:0, bahar:0}, myBets = {andar:0, bahar:0};
         let botInterval;
+        
+        let currentPhase = 'wait'; 
         let animationActive = false;
 
         let botsList = [];
@@ -360,22 +362,20 @@
             document.getElementById('p-bahar').innerText = (realPool.bahar + botPool.bahar).toLocaleString();
         }
 
-        // 🔥 CSS (CODING) WALE CARDS 🔥
+        // FAST LOAD CSS CARDS
         function createHTMLCard(val, suitStr) {
-            let displayVal = val === "0" ? "10" : val; 
+            let displayVal = val === "0" || val === 10 ? "10" : val; 
             let suitSym = suitStr === 'S' ? '♠' : suitStr === 'H' ? '♥' : suitStr === 'D' ? '♦' : '♣';
             let colClass = (suitStr === 'H' || suitStr === 'D') ? 'red-suit' : 'black-suit';
             
             const cardDiv = document.createElement('div');
             cardDiv.className = `playing-card ${colClass}`;
-            // Nice stacked text layout
-            cardDiv.innerHTML = `${displayVal}<span style="font-size:16px; margin-left:2px;">${suitSym}</span>`;
+            cardDiv.innerHTML = `${displayVal}<span style="font-size:14px; margin-left:2px;">${suitSym}</span>`;
             return cardDiv;
         }
 
         // ==============================================================
         // 🔥 TRUE MULTIPLAYER SYNC (PLAYER SIDE) 🔥
-        // Sequence directly from server. No client side math.random.
         // ==============================================================
         const statusMsg = document.getElementById('status-msg');
         const trackAndar = document.getElementById('track-andar');
@@ -385,34 +385,37 @@
         db.ref('Game/AndarBahar/Status').on('value', snap => {
             let st = snap.val(); if(!st) return;
             
-            if(st.state === 'betting') {
+            if(st.state === 'betting' && currentPhase !== 'betting') {
+                currentPhase = 'betting';
                 animationActive = false; 
                 
-                if (!isBettingOpen) {
-                    isBettingOpen = true;
-                    trackAndar.innerHTML = '<span class="track-label">ANDAR</span>';
-                    trackBahar.innerHTML = '<span class="track-label">BAHAR</span>';
-                    document.getElementById('bet-amt-andar').style.display = 'none';
-                    document.getElementById('bet-amt-bahar').style.display = 'none';
-                    document.getElementById('chips-andar').innerHTML = '';
-                    document.getElementById('chips-bahar').innerHTML = '';
-                    myBets = {andar:0, bahar:0};
-                    botPool = {andar:0, bahar:0};
-                    updatePoolUI();
-                    
-                    clearInterval(botInterval);
-                    botInterval = setInterval(botBetAction, 700); 
-                }
+                isBettingOpen = true;
+                trackAndar.innerHTML = '<span class="track-label">ANDAR</span>';
+                trackBahar.innerHTML = '<span class="track-label">BAHAR</span>';
+                document.getElementById('bet-amt-andar').style.display = 'none';
+                document.getElementById('bet-amt-bahar').style.display = 'none';
+                document.getElementById('chips-andar').innerHTML = '';
+                document.getElementById('chips-bahar').innerHTML = '';
+                myBets = {andar:0, bahar:0};
+                botPool = {andar:0, bahar:0};
+                updatePoolUI();
+                
+                clearInterval(botInterval);
+                botInterval = setInterval(botBetAction, 700); 
 
                 jokerSpot.innerHTML = '';
                 jokerSpot.style.background = 'transparent';
                 jokerSpot.appendChild(createHTMLCard(st.jokerVal, st.jokerSuit));
-                
+            } 
+            
+            if(st.state === 'betting') {
                 statusMsg.innerText = `PLACE BETS: ${st.timer}s`;
                 if(st.timer <= 5) statusMsg.style.color = '#ff3333';
                 else statusMsg.style.color = '#00ff88';
-            } 
-            else if (st.state === 'dealing' && isBettingOpen) {
+            }
+            
+            else if (st.state === 'dealing' && currentPhase !== 'dealing') {
+                currentPhase = 'dealing';
                 isBettingOpen = false;
                 clearInterval(botInterval);
                 statusMsg.innerText = "DEALING CARDS...";
@@ -430,7 +433,10 @@
 
             let step = 0;
             for (let i = 0; i < sequence.length; i++) {
-                if(!animationActive) return; 
+                if(currentPhase !== 'dealing') {
+                    animationActive = false;
+                    return; // KILL ANIMATION IF ROUND CHANGES
+                }
                 
                 step++;
                 let side = (step % 2 !== 0) ? 'andar' : 'bahar'; 
@@ -461,8 +467,9 @@
         }
 
         // ==============================================================
-        // 🔥 MASTER HOST ELECTION (SERVER CREATOR) 🔥
-        // This generates the exact sequence and sends it to Firebase
+        // 🔥 MASTER HOST ELECTION (SERVER TIMING FIX) 🔥
+        // Server exact time calculate karega ki patte khulne me kitna time lagega
+        // aur tabhi naya round shuru karega.
         // ==============================================================
         let isServer = false;
         let myServerId = Math.random().toString(36).substr(2, 9);
@@ -510,12 +517,11 @@
                             if(!u.includes('bot')) { tA += (allB[u].andar || 0); tB += (allB[u].bahar || 0); }
                         }
 
-                        // 🔥 LEAST AMOUNT WINS LOGIC 🔥 (Profit maximization)
+                        // 🔥 LEAST AMOUNT WINS (Profit Engine) 🔥
                         let winSide = (tA < tB) ? 'andar' : (tB < tA) ? 'bahar' : (Math.random() > 0.5 ? 'andar' : 'bahar');
                         
-                        // 🔥 GENERATE SEQUENCE FOR ALL CLIENTS 🔥
                         let sequence = [];
-                        let steps = Math.floor(Math.random() * 5) + 6; 
+                        let steps = Math.floor(Math.random() * 15) + 5; // 5 se 19 patte khulenge
                         if(winSide === 'andar' && steps % 2 === 0) steps++; 
                         if(winSide === 'bahar' && steps % 2 !== 0) steps++;
 
@@ -540,10 +546,13 @@
                             timer: 0, 
                             jokerVal: jVal, 
                             jokerSuit: jSuit,
-                            cardSequence: sequence // List passed directly to DB
+                            cardSequence: sequence
                         });
                         
-                        setTimeout(runDealerLoop, 20000); 
+                        // 🔥 FIX: SERVER WAIT TIME CALCULATION 🔥
+                        // 600ms per card + 4 seconds wait for popup
+                        let waitTimeForNextRound = (steps * 600) + 4000; 
+                        setTimeout(runDealerLoop, waitTimeForNextRound); 
                     });
                 }
             }, 1000);
