@@ -3,211 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger VIP - Beast Unleashed Pro</title>
+    <title>Dragon Tiger VIP - Code Graphics Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
+        :root { --g: #ffd700; --red: #ff3333; --green: #00ff88; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
 
         html, body {
-            height: 100vh; width: 100vw; background-color: #0d001a; color: white;
-            overflow: hidden; overscroll-behavior: none; touch-action: none;
+            height: 100vh; width: 100vw; background-color: #000; color: white;
+            overflow: hidden; touch-action: none;
         }
 
-        /* 🔥 ULTRA FULL SCREEN - ZARA BHI JAGA NA BACHE 🔥 */
-        .full-game-container {
-            width: 100vw; height: 100vh;
-            background: radial-gradient(circle at center, #2e0854 0%, #0d001a 100%);
+        /* START OVERLAY FOR SYNTHESIZER FIX */
+        #start-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+        }
+        .start-btn { background: linear-gradient(45deg, #ffd700, #ff9900); padding: 15px 40px; border-radius: 30px; font-size: 22px; font-weight: 900; color: #000; border: 3px solid #fff; box-shadow: 0 0 30px #ffd700; animation: pulse 1s infinite alternate; cursor: pointer; text-align: center;}
+        @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.05); } }
+
+        .game-container {
+            width: 100%; height: 100%; max-width: 500px; margin: 0 auto;
+            background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
             display: flex; flex-direction: column; position: relative;
         }
 
-        /* Top Bar - Minimal */
-        .vip-header {
-            height: 40px; background: rgba(0,0,0,0.8); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 200; border-bottom: 1px solid #d4af37;
-        }
-        .live-count { font-size: 13px; font-weight: 900; color: #00ff88; text-shadow: 0 0 5px #00ff88; }
-        .vip-title { font-size: 14px; font-weight: 900; color: #d4af37; letter-spacing: 1px;}
+        /* Header */
+        .vip-header { height: 40px; min-height: 40px; background: #000; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 2px solid var(--g); z-index: 100; }
+        .live-count { font-size: 13px; font-weight: 900; color: var(--green); text-shadow: 0 0 5px var(--green); }
+        .history-strip { background: rgba(0,0,0,0.8); height: 35px; min-height: 35px; display: flex; gap: 5px; align-items: center; padding: 0 15px; overflow-x: auto; border-bottom: 1px solid rgba(255,215,0,0.3); }
+        .h-icon { width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 1.5px solid #fff; flex-shrink: 0;}
 
-        /* 🔥 BATTLE AREA (EFFECTS) 🔥 */
+        /* 🔥 BATTLE AREA 🔥 */
         .battle-stage {
-            flex: 2; position: relative; overflow: hidden;
+            height: 25%; min-height: 180px; position: relative;
             display: flex; justify-content: center; align-items: center; 
-            border-bottom: 3px solid #d4af37;
-            background: url('https://freepngimg.com/thumb/pattern/9-pattern-png-texture.png'), radial-gradient(circle at top, #4a0000 0%, #000 100%);
-            box-shadow: inset 0 -15px 40px rgba(0,0,0,0.9);
+            border-bottom: 3px solid var(--g);
+            background: radial-gradient(circle at top, #330000 0%, #000 100%);
         }
-
-        /* Battle Effects */
-        .fire-bg { position: absolute; left: 0; bottom: 0; width: 50%; height: 80%; background: radial-gradient(circle, rgba(255, 51, 51, 0.4) 0%, rgba(0,0,0,0) 70%); z-index: 5; }
-        .lightning-bg { position: absolute; right: 0; bottom: 0; width: 50%; height: 80%; background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, rgba(0,0,0,0) 70%); z-index: 5; }
-
-        .cards-vs-overlay {
-            display: flex; align-items: center; gap: 20px; z-index: 20; position: relative;
-        }
-        .vs-icon-gold { font-size: 40px; font-weight: 900; color: #d4af37; text-shadow: 0 0 20px #ff9900, 2px 2px 5px #000; font-style: italic;}
+        .timer-popup { position: absolute; top: 10px; z-index: 25; background: rgba(0,0,0,0.9); border: 2px solid var(--g); color: var(--g); padding: 5px 20px; border-radius: 20px; font-size: 14px; font-weight: 900; box-shadow: 0 0 15px var(--g); }
         
-        .card-slot-vip { width: 65px; height: 90px; border: 3px solid #fff; border-radius: 8px; background: rgba(0,0,0,0.7); position: relative; transition: 0.3s; box-shadow: 0 0 20px rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center;}
+        .cards-vs-overlay { display: flex; align-items: center; gap: 20px; z-index: 20; position: relative; }
+        .vs-text { font-size: 35px; font-weight: 900; color: var(--g); font-style: italic; text-shadow: 0 0 15px #ff9900; }
+        .card-slot { width: 60px; height: 85px; border: 2px dashed rgba(255,255,255,0.5); border-radius: 6px; background: rgba(0,0,0,0.5); position: relative; display: flex; justify-content: center; align-items: center; }
+        .playing-card { width: 100%; height: 100%; border-radius: 5px; background: #fff; display: flex; justify-content: center; align-items: center; font-size: 30px; font-weight: 900; color: #000; position: absolute; z-index: 10; box-shadow: 0 0 15px #fff;}
+
+        /* POP-OUT IMAGES (CODED SVGs) */
+        .pop-beast { position: absolute; bottom: 0; width: 140px; height: 140px; opacity: 0; pointer-events: none; z-index: 100; }
+        .pop-dragon { left: -10px; }
+        .pop-tiger { right: -10px; transform: scaleX(-1); }
+
+        .attack-anim { animation: roarZoom 2.5s ease-out forwards; }
+        @keyframes roarZoom {
+            0% { transform: scale(0.5) translateY(50px); opacity: 0; }
+            30% { transform: scale(1.5) translateY(-20px); opacity: 1; filter: drop-shadow(0 0 20px var(--g)); }
+            70% { transform: scale(1.5) translateY(-20px); opacity: 1; }
+            100% { transform: scale(0.5) translateY(50px); opacity: 0; }
+        }
+
+        /* 🔥 BETTING AREA 🔥 */
+        .play-bet-area { flex: 1; padding: 10px 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+
+        .bet-box {
+            flex: 1; border-radius: 15px; border: 3px solid; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; position: relative; transition: 0.2s; min-height: 100px; overflow: hidden;
+        }
+        .bet-box:active { transform: scale(0.96); }
+
+        /* Backgrounds */
+        .dbx { background: linear-gradient(135deg, rgba(30,0,100,0.9), rgba(10,0,50,0.9)); border-color: #4da6ff; }
+        .tibx { background: linear-gradient(135deg, rgba(0,100,20,0.9), rgba(0,50,10,0.9)); border-color: #00ff88; }
+        .tbx { background: linear-gradient(135deg, rgba(150,50,0,0.9), rgba(80,20,0,0.9)); border-color: #ff9800; }
+
+        /* SVG Code inside boxes */
+        .box-svg-bg { position: absolute; left: -10px; bottom: -10px; height: 110px; width: 110px; opacity: 0.4; pointer-events: none; z-index: 5; }
+        .box-svg-bg-tiger { right: -10px; left: auto; transform: scaleX(-1); }
+
+        .win-glow { transform: scale(1.03); box-shadow: 0 0 30px var(--g), inset 0 0 20px var(--g) !important; border-color: var(--g) !important; z-index: 50;}
+
+        /* Text Layer fixes */
+        .box-title { font-size: 28px; font-weight: 900; letter-spacing: 2px; text-shadow: 2px 2px 5px #000; z-index: 20; position: relative;}
+        .dbx .box-title { color: #80bfff; } .tibx .box-title { color: #99ff99; } .tbx .box-title { color: #ffcc99; }
+        .pool-text { font-size: 14px; color: var(--g); background: rgba(0,0,0,0.8); padding: 4px 12px; border-radius: 8px; font-weight: 900; border: 1px solid var(--g); z-index: 20; position: relative; margin-top: 5px;}
+        .my-bet-amt { position: absolute; top: -5px; right: 10px; background: var(--g); color: #000; border-radius: 8px; padding: 2px 8px; font-size: 11px; font-weight: 900; display: none; z-index: 50; border: 2px solid #fff;}
+
+        .chips-container-grid { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;}
+        .mini-chip { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #fff; position: absolute; font-size: 9px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 5px #000; transition: 0.3s; z-index: 10;}
+
+        /* 🔥 FIXED BOTTOM BAR 🔥 */
+        .bottom-action-bar { height: 75px; min-height: 75px; background: #0b0514; padding: 0 10px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid var(--g); z-index: 200; width: 100%;}
+        .total-bal-area { font-size: 16px; font-weight: 900; color: var(--green); background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 10px; border: 1px solid var(--green);}
         
-        .card-emoji { width: 100%; height: 100%; border-radius: 6px; background: #ffffff; border: 1px solid #ccc; display: flex; justify-content: center; align-items: center; font-size: 32px; font-weight: 900; color: black; letter-spacing: -2px; box-shadow: 0 0 15px rgba(255,255,255,0.8); position: absolute; z-index: 10;}
-        .red-card { color: #d32f2f !important; }
-        .black-card { color: #212121 !important; }
-
-        .timer-popup {
-            position: absolute; top: 15px; z-index: 25;
-            background: rgba(0,0,0,0.9); border: 2px solid #d4af37;
-            color: #d4af37; padding: 6px 25px; border-radius: 20px; 
-            font-size: 16px; font-weight: 900; box-shadow: 0 0 15px rgba(212,175,55,0.8);
-        }
-
-        /* History board - Minimal */
-        .history-board { position: absolute; bottom: 8px; right: 10px; display: flex; gap: 3px; z-index: 50;}
-        .h-icon { width: 16px; height: 16px; border-radius: 50%; font-size: 9px; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 1.5px solid #fff;}
-
-        /* 🔥 BETTING AREA (VERTICAL, PHOTO BOXES) 🔥 */
-        .play-bet-area { flex: 3; padding: 15px; display: flex; flex-direction: column; gap: 15px; touch-action: none; overflow-y: auto;}
-
-        .bet-photo-box {
-            flex: 1; border-radius: 20px; border: 3px solid; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; position: relative; transition: 0.2s; min-height: 120px; overflow: visible; /* overflow visible for roar animation */
-        }
-        .bet-photo-box:active { transform: scale(0.97); }
-
-        /* Boxes exactly as your request with photos */
-        .dbx {
-            background: url('https://freepngimg.com/thumb/dragon/10-2-dragon-png-hd.png') no-repeat left bottom, linear-gradient(135deg, rgba(150,0,0,0.8), rgba(60,0,0,0.9));
-            background-size: 70px, cover; border-color: #ff3333; 
-            box-shadow: 0 0 20px rgba(255,0,0,0.4), inset 0 0 30px rgba(100,0,0,0.8);
-        }
-        .tibx { background: linear-gradient(135deg, rgba(0,150,50,0.8), rgba(0,60,20,0.9)); border-color: #00ff88; box-shadow: 0 0 20px rgba(0,255,136,0.3); }
-        .tbx {
-            background: url('https://freepngimg.com/thumb/tiger/32-tiger-png-image.png') no-repeat right bottom, linear-gradient(135deg, rgba(200,100,0,0.8), rgba(100,50,0,0.9));
-            background-size: 80px, cover; border-color: #ff9800; 
-            box-shadow: 0 0 20px rgba(255,152,0,0.4), inset 0 0 30px rgba(100,50,0,0.8);
-        }
-
-        .win-beast-glow { transform: scale(1.03); box-shadow: 0 0 40px #ffd700, inset 0 0 30px #ffd700 !important; border-color: #ffd700 !important; z-index: 100;}
-
-        /* Text Styling in boxes */
-        .box-title { font-size: 32px; font-weight: 900; letter-spacing: 2px; text-shadow: 2px 2px 5px rgba(0,0,0,0.9); z-index: 25;}
-        .dbx .box-title { color: #ffcccc; } .tibx .box-title { color: #ccffcc; } .tbx .box-title { color: #ffe8cc; }
-        .box-multiplier { font-size: 14px; font-weight: bold; color: #fff; margin-bottom: 5px; background: rgba(0,0,0,0.5); padding: 2px 10px; border-radius: 10px; z-index: 25;}
-        .pool-text { font-size: 15px; color: #ffd700; background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 10px; font-weight: 900; border: 1.5px solid rgba(212,175,55,0.5); z-index: 25;}
-        
-        /* Your placed bet badge */
-        .my-bet-amt { position: absolute; top: -10px; left: -10px; background: #ffd700; color: black; border-radius: 50%; width: 32px; height: 32px; font-size: 11px; font-weight: 900; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 10px #000; z-index: 50; border: 2.5px solid #fff;}
-
-        /* 🔥 BEAST ATTACK (BAHAR NIKALNA) ANIMATION 🔥 */
-        .beast-attack-overlay {
-            width: 150px; height: 150px; position: absolute; background-size: contain; background-repeat: no-repeat;
-            opacity: 0; pointer-events: none; z-index: 150;
-        }
-        .attack-anim { animation: roarAndPop 2.5s ease-out forwards; }
-
-        @keyframes roarAndPop {
-            0% { transform: scale(0.5) translateY(100px); opacity: 0; }
-            30% { transform: scale(1.8) translateY(-30px); opacity: 1; filter: drop-shadow(0 0 30px #ffd700); }
-            70% { transform: scale(1.6) translateY(-30px); opacity: 1; }
-            100% { transform: scale(0.8) translateY(100px); opacity: 0; }
-        }
-
-        /* Chips Container Overlay */
-        .chips-container-grid { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15;}
-        .mini-chip { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #fff; position: absolute; font-size: 9px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 6px rgba(0,0,0,0.8); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);}
-
-        /* Lower Bottom Player Minimal Bar */
-        .player-minimal-bar { display: flex; gap: 8px; overflow-x: auto; background: rgba(0,0,0,0.8); padding: 5px 10px; border-top: 1px solid rgba(255,215,0,0.3); }
-        .player-minimal-bar::-webkit-scrollbar { display: none; }
-        .bot-user { display: flex; align-items: center; gap: 4px; border: 1px solid rgba(255,255,255,0.2); border-radius: 15px; padding: 2px 8px; flex-shrink: 0;}
-        .bot-ava { width: 18px; height: 18px; background: linear-gradient(135deg, #ffd700, #8a6a1c); border-radius: 50%; line-height: 18px; font-size: 10px; color: black; font-weight: bold; border: 1px solid white; text-align: center;}
-        .bot-id { font-size: 9px; color: #ccc; font-weight: bold;}
-        .bot-money { font-size: 10px; color: #00ff88; font-weight: 900;}
-
-        /* Final Action Bar */
-        .bottom-action-bar { background-color: #1a0b1c; padding: 12px 10px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #d4af37; z-index: 100;}
-        .total-bal-area { font-size: 17px; font-weight: 900; color: #00ff88; }
-        .chips-selector { display: flex; gap: 5px; overflow-x: auto; width: 70%; justify-content: flex-end; padding-bottom: 2px;}
+        .chips-selector { display: flex; gap: 5px; overflow-x: auto; width: 65%; justify-content: flex-end; align-items: center; height: 100%; padding: 0 5px;}
         .chips-selector::-webkit-scrollbar { display: none; }
         
-        .chip {
-            width: 40px; height: 40px; border-radius: 50%; background-color: white; color: black; flex-shrink: 0;
-            display: flex; justify-content: center; align-items: center; font-size: 13px; font-weight: 900;
-            border: 2.5px dashed #333; cursor: pointer; transition: 0.2s; box-shadow: 0 5px 10px rgba(0,0,0,0.8);
-        }
-        .chip.sel-vip { border-color: #d4af37; transform: scale(1.18) translateY(-5px); box-shadow: 0 5px 15px rgba(212,175,55,0.8); border-style: solid;}
+        .chip { width: 42px; height: 42px; border-radius: 50%; background-color: #fff; color: #000; flex-shrink: 0; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: 900; border: 2px dashed #333; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 8px #000;}
+        .chip.sel-vip { border-color: var(--g); transform: scale(1.2) translateY(-4px); box-shadow: 0 5px 15px var(--g); border-style: solid;}
         
-        .cv10 { background: radial-gradient(circle, #ffffff, #cccccc); color: black;} 
-        .cv50 { background: radial-gradient(circle, #4fc3f7, #0288d1); color: white;} 
-        .cv100 { background: radial-gradient(circle, #81c784, #388e3c); color: white;} 
-        .cv500 { background: radial-gradient(circle, #ba68c8, #7b1fa2); color: white;}
-        .cv1k { background: radial-gradient(circle, #e57373, #d32f2f); color: white;} 
-        .cv10k { background: radial-gradient(circle, #ffd54f, #f57f17); color: black; border-color: #a67c00 !important; }
+        .cv10 { background: radial-gradient(circle, #fff, #ccc); } 
+        .cv50 { background: radial-gradient(circle, #4fc3f7, #0288d1); color: #fff;} 
+        .cv100 { background: radial-gradient(circle, #81c784, #388e3c); color: #fff;} 
+        .cv500 { background: radial-gradient(circle, #ba68c8, #7b1fa2); color: #fff;}
+        .cv1k { background: radial-gradient(circle, #e57373, #d32f2f); color: #fff;} 
+        .cv10k { background: radial-gradient(circle, #ffd54f, #f57f17); }
     </style>
 </head>
-<body onclick="initVipAudio()">
+<body>
 
-    <audio id="sndBackground" src="https://freesound.org/data/previews/127/127411_2236471-lq.mp3" loop preload="auto"></audio>
-    <audio id="sndChipPlace" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
-    <audio id="sndCardReveal" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
-    <audio id="sndDragonRoar" src="https://assets.mixkit.co/active_storage/sfx/2793/2793-preview.mp3"></audio>
-    <audio id="sndTigerRoar" src="https://assets.mixkit.co/active_storage/sfx/120/120-preview.mp3"></audio>
+    <div id="start-overlay" onclick="initVipEngine()">
+        <div class="start-btn">TAP TO START GAME</div>
+        <div style="font-size: 12px; color: #fff; margin-top: 10px;">Enabling Synthesizer Engine...</div>
+    </div>
 
-    <div class="full-game-container">
-        
+    <svg id="svg-dragon" style="display:none;" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="10,40 40,30 70,10 80,40 90,70 50,80 20,90 30,60" fill="darkred"/>
+        <polygon points="40,30 30,5 50,20" fill="gold"/><polygon points="70,10 65,0 80,15" fill="gold"/>
+        <polygon points="60,40 75,45 65,50" fill="yellow"/><circle cx="68" cy="45" r="2" fill="black"/>
+        <polygon points="20,90 40,75 50,80" fill="maroon"/><polygon points="30,75 35,85 40,75" fill="white"/>
+        <polygon points="40,75 45,82 50,75" fill="white"/><polygon points="20,90 0,80 10,70 0,60 20,70" fill="orange"/>
+    </svg>
+
+    <svg id="svg-tiger" style="display:none;" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="20,50 50,90 80,50 90,20 50,10 10,20" fill="darkorange"/>
+        <polygon points="35,60 65,60 50,85" fill="white"/><polygon points="45,70 55,70 50,78" fill="black"/>
+        <circle cx="35" cy="45" r="5" fill="white"/><circle cx="35" cy="45" r="2" fill="black"/>
+        <circle cx="65" cy="45" r="5" fill="white"/><circle cx="65" cy="45" r="2" fill="black"/>
+        <polygon points="50,10 45,30 55,30" fill="black"/><polygon points="10,35 30,40 15,45" fill="black"/>
+        <polygon points="90,35 70,40 85,45" fill="black"/><polygon points="15,55 30,55 20,65" fill="black"/>
+        <polygon points="85,55 70,55 80,65" fill="black"/>
+    </svg>
+
+    <div class="game-container">
         <div class="vip-header">
-            <div class="live-count">● 1250 LIVE</div>
-            <div class="vip-title">KALYAN VIP</div>
+            <div class="live-count">● 1450 LIVE</div>
+            <div style="font-weight:900; color:var(--g); font-size:12px;">#KALYAN-PRO</div>
         </div>
+
+        <div class="history-strip" id="h-board"></div>
 
         <div class="battle-stage">
             <div class="timer-popup" id="tmr">CONNECTING...</div>
-            <div class="fire-bg"></div>
-            <div class="lightning-bg"></div>
             
             <div class="cards-vs-overlay">
-                <div class="card-slot-vip" id="slot-d"></div>
-                <div class="vs-icon-gold">VS</div>
-                <div class="card-slot-vip" id="slot-t"></div>
+                <div class="card-slot" id="slot-d"></div>
+                <div class="vs-text">VS</div>
+                <div class="card-slot" id="slot-t"></div>
             </div>
 
-            <div id="dragon-roar-div" class="beast-attack-overlay" style="left: -100px; bottom: 0; background-image: url('https://freepngimg.com/thumb/dragon/10-2-dragon-png-hd.png');"></div>
-            <div id="tiger-roar-div" class="beast-attack-overlay" style="right: -80px; bottom: 0; background-image: url('https://freepngimg.com/thumb/tiger/32-tiger-png-image.png'); transform: scaleX(-1);"></div>
-
-            <div class="history-board" id="h-board"></div>
+            <div id="pop-drag" class="pop-beast pop-dragon">
+                <svg viewBox="0 0 100 100"><use href="#svg-dragon"/></svg>
+            </div>
+            <div id="pop-tig" class="pop-beast pop-tiger">
+                <svg viewBox="0 0 100 100"><use href="#svg-tiger"/></svg>
+            </div>
         </div>
 
         <div class="play-bet-area">
-            <div class="bet-photo-box dbx" id="btn-d" onclick="pB('dragon')">
-                <div style="position: relative; z-index: 25; display: flex; flex-direction: column; align-items: center; width: 100%;">
-                    <div class="box-title">DRAGON</div>
-                    <div class="box-multiplier">1.1 PAYOUT</div>
-                    <div class="pool-text">Pool: ₹<span id="pd">0</span></div>
-                </div>
+            <div class="bet-box dbx" id="btn-d" onclick="pB('dragon')">
+                <div class="box-svg-bg"><svg viewBox="0 0 100 100"><use href="#svg-dragon"/></svg></div>
+                <div class="box-title">DRAGON</div>
+                <div class="pool-text">Pool: ₹<span id="pd">0</span></div>
                 <div class="my-bet-amt" id="mb-d">₹0</div>
                 <div class="chips-container-grid" id="cd"></div>
             </div>
 
-            <div class="bet-photo-box tibx" id="btn-ti" onclick="pB('tie')">
-                <div style="position: relative; z-index: 25; display: flex; flex-direction: column; align-items: center; width: 100%;">
-                    <div class="box-title">TIE</div>
-                    <div class="box-multiplier">9X PAYOUT</div>
-                    <div class="pool-text">Pool: ₹<span id="pti">0</span></div>
-                </div>
+            <div class="bet-box tibx" id="btn-ti" onclick="pB('tie')">
+                <div class="box-title">TIE (9X)</div>
+                <div class="pool-text">Pool: ₹<span id="pti">0</span></div>
                 <div class="my-bet-amt" id="mb-ti">₹0</div>
                 <div class="chips-container-grid" id="cti"></div>
             </div>
 
-            <div class="bet-photo-box tbx" id="btn-t" onclick="pB('tiger')">
-                <div style="position: relative; z-index: 25; display: flex; flex-direction: column; align-items: center; width: 100%;">
-                    <div class="box-title">TIGER</div>
-                    <div class="box-multiplier">1.1 PAYOUT</div>
-                    <div class="pool-text">Pool: ₹<span id="pt">0</span></div>
-                </div>
+            <div class="bet-box tbx" id="btn-t" onclick="pB('tiger')">
+                <div class="box-svg-bg box-svg-bg-tiger"><svg viewBox="0 0 100 100"><use href="#svg-tiger"/></svg></div>
+                <div class="box-title">TIGER</div>
+                <div class="pool-text">Pool: ₹<span id="pt">0</span></div>
                 <div class="my-bet-amt" id="mb-t">₹0</div>
                 <div class="chips-container-grid" id="ct"></div>
             </div>
         </div>
-
-        <div class="player-minimal-bar" id="player-row"></div>
 
         <div class="bottom-action-bar">
             <div class="total-bal-area">₹<span id="balance">0.00</span></div>
@@ -223,190 +198,208 @@
     </div>
 
     <script>
+        // 1. FIREBASE SETUP
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
-        // Card Setup
-        const cardSuits = ["S", "H", "D", "C"];
-        const cardValues = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
-        const cardMap = { "A":1, "2":2, "3":3, "4":4, "5":5, "6":6, "7":7, "8":8, "9":9, "10":10, "J":11, "Q":12, "K":13 };
+        // 2. 🔥 PURE CODE AUDIO SYNTHESIZER (NO EXTERNAL MP3) 🔥
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let actx, synthReady = false;
 
-        let currentChip = 100, isBettingOpen = false, currentBalance = 0, winningBal = 0;
-        let myBets = { dragon: 0, tie: 0, tiger: 0 };
-        let realPool = { dragon:0, tie:0, tiger:0 }, botPool = { dragon:0, tie:0, tiger:0 };
-        let botBetInterval;
-        
-        let audioUnlocked = false;
-        function initVipAudio() {
-            if(!audioReady) {
-                const sounds = ['sndBackground', 'sndChipPlace', 'sndCardReveal', 'sndDragonRoar', 'sndTigerRoar'];
-                sounds.forEach(id => {
-                    let snd = document.getElementById(id);
-                    if(snd) snd.play().then(()=>{snd.pause(); snd.currentTime=0;}).catch(()=>{});
-                });
-                let bgm = document.getElementById('sndBackground');
-                if(bgm) { bgm.volume = 0.2; bgm.play(); }
-                audioReady = true;
+        function initVipEngine() {
+            if(synthReady) return;
+            document.getElementById('start-overlay').style.display = 'none';
+            if(!actx) actx = new AudioContext();
+            if(actx.state === 'suspended') actx.resume();
+            synthReady = true;
+        }
+
+        // Code generated 2-second Roar!
+        function playCodeRoar(type) {
+            if(!actx || !synthReady) return;
+            let osc = actx.createOscillator(), gain = actx.createGain(), now = actx.currentTime;
+            osc.connect(gain); gain.connect(actx.destination);
+
+            if (type === 'tiger') {
+                osc.type = 'sawtooth'; // Deep growl
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 1.8);
+            } else {
+                osc.type = 'square'; // Harsh dragon roar
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 2.0);
             }
-        }
-        document.body.addEventListener('touchstart', initVipAudio, { once: true });
-        document.body.addEventListener('click', initVipAudio, { once: true });
 
-        function pSound(id, vol=1.0) {
-            if(!audioReady) return;
-            try { let snd = document.getElementById(id); if(snd) { snd.currentTime = 0; snd.volume = vol; snd.play().catch(e=>{}); } } catch(e){}
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(1, now + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 2.0); // 2 second duration
+            
+            osc.start(now); osc.stop(now + 2.1);
         }
 
-        // Bots Setup - Minimal
-        let botsList = [];
-        for(let i=0; i<6; i++) botsList.push({id: Math.floor(1000+Math.random()*9000), bal: Math.floor(20000+Math.random()*50000)});
-        function renderBots() {
-            let h = ""; let avatars = ['😎','👩','🧑','👲','🧔','👱‍♀️'];
-            botsList.forEach((b, i) => {
-                let displayBal = b.bal >= 100000 ? "1.0L" : (b.bal/1000).toFixed(1) + "K";
-                h += `<div class="bot-user"><div class="bot-ava">${avatars[i%6]}</div><div class="bot-id">ID_${b.id}</div><div class="bot-money">₹${displayBal}</div></div>`;
-            });
-            document.getElementById('player-row').innerHTML = h;
+        // Code generated Chip/Coin sound
+        function playCodeChip() {
+            if(!actx || !synthReady) return;
+            let osc = actx.createOscillator(), gain = actx.createGain(), now = actx.currentTime;
+            osc.connect(gain); gain.connect(actx.destination);
+            osc.type = 'sine'; osc.frequency.setValueAtTime(1200, now); osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+            gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.3, now + 0.01); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now+0.15);
         }
-        renderBots();
-        setInterval(() => {
-            botsList.forEach(b => { b.bal += Math.floor(Math.random() * 5000) - 1000; if(b.bal > 100000) b.bal = 70000; if(b.bal < 10000) b.bal = 25000; });
-            renderBots();
-        }, 4000); 
+
+        // 3. CORE VARIABLES & BALANCE
+        let currentChip = 100, isBettingOpen = false, curBal = 0, winBal = 0;
+        let myBets = { dragon: 0, tie: 0, tiger: 0 };
+        let rPool = { dragon:0, tie:0, tiger:0 }, bPool = { dragon:0, tie:0, tiger:0 };
+        let botInterval;
 
         if(phone) {
             db.ref('users/'+phone).on('value', snap => { 
                 let d = snap.val() || {};
-                currentBalance = parseFloat(d.balance || 0); winningBal = parseFloat(d.winning_balance || 0);
-                document.getElementById('balance').innerText = (currentBalance + winningBal).toFixed(2); 
+                curBal = parseFloat(d.balance || 0); winBal = parseFloat(d.winning_balance || 0);
+                document.getElementById('balance').innerText = (curBal + winBal).toFixed(2); 
             });
         }
 
+        // 4. BETTING LOGIC
         window.sC = function(v, el) {
             document.querySelectorAll('.chip').forEach(c => c.classList.remove('sel-vip'));
-            el.classList.add('sel-vip'); currentChip = v; pSound('sndChipPlace', 0.5);
+            el.classList.add('sel-vip'); currentChip = v; playCodeChip();
         };
 
         window.pB = function(s) {
             if(!isBettingOpen) return;
-            if((currentBalance + winningBal) < currentChip) return alert("Low Balance!");
-            let nDep = currentBalance, nWin = winningBal, rm = currentChip;
+            if((curBal + winBal) < currentChip) return alert("Low Balance!");
+            
+            let nDep = curBal, nWin = winBal, rm = currentChip;
             if(nDep >= rm) nDep -= rm; else { rm -= nDep; nDep = 0; nWin -= rm; }
             db.ref('users/'+phone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
+            
             myBets[s] += currentChip;
             db.ref(`Game/DragonTiger/Bets/${phone}/${s}`).set(firebase.database.ServerValue.increment(currentChip));
+            
             let disp = document.getElementById(`mb-${s.charAt(0)}` + (s==='tie'?'ti':''));
-            disp.style.display = 'flex'; disp.innerText = "₹" + (myBets[s] >= 1000 ? (myBets[s]/1000)+'K' : myBets[s]);
-            sChip(s, currentChip); pSound('sndChipPlace', 1.0);
+            disp.style.display = 'flex'; disp.innerText = "MY BET: ₹" + (myBets[s] >= 1000 ? (myBets[s]/1000)+'K' : myBets[s]);
+            
+            throwChip(s, currentChip); playCodeChip();
         };
 
-        function getChipColorVip(amt) {
-            if(amt === 10) return 'radial-gradient(circle, #ffffff, #cccccc)';
+        function getChipColor(amt) {
+            if(amt === 10) return 'radial-gradient(circle, #fff, #ccc)';
             if(amt === 50) return 'radial-gradient(circle, #4fc3f7, #0288d1)';
             if(amt === 100) return 'radial-gradient(circle, #81c784, #388e3c)';
             if(amt === 500) return 'radial-gradient(circle, #ba68c8, #7b1fa2)';
             if(amt === 1000) return 'radial-gradient(circle, #e57373, #d32f2f)';
-            return 'radial-gradient(circle, #ffd54f, #f57f17)'; // 10K
+            return 'radial-gradient(circle, #ffd54f, #f57f17)'; 
         }
 
-        function sChip(side, amt) {
+        function throwChip(side, amt) {
             let sid = (side==='tie'?'ti':side.charAt(0));
             const div = document.getElementById('c'+sid), c = document.createElement('div');
-            c.className = 'mini-chip'; 
-            c.style.background = getChipColorVip(amt); 
+            c.className = 'mini-chip'; c.style.background = getChipColor(amt); 
             c.style.color = (amt === 10 || amt >= 10000) ? "#000" : "#fff"; 
             c.innerText = amt >= 1000 ? (amt/1000)+'K' : amt; 
-            c.style.left = (Math.random()*60 + 20)+"%"; c.style.top = (Math.random()*40 + 45)+"%"; 
-            c.style.transform = "scale(2) translateY(50px)"; c.style.opacity = "0";
+            
+            c.style.left = (Math.random()*70 + 10)+"%"; c.style.top = (Math.random()*50 + 20)+"%"; 
+            c.style.transform = "scale(2) translateY(30px)"; c.style.opacity = "0";
             div.appendChild(c);
+            
             setTimeout(() => { c.style.transform = "scale(1) translateY(0)"; c.style.opacity = "1"; }, 50);
-            if(div.children.length > 30) div.firstChild.remove();
+            if(div.children.length > 25) div.firstChild.remove();
         }
 
-        function botBetVip() {
+        function runBots() {
             if(!isBettingOpen) return;
             let sides = ['dragon', 'tie', 'tiger'], bBet = false;
             sides.forEach(s => {
                 if(s === 'tie' && Math.random() > 0.1) return; 
-                let amt = [10, 50, 100, 500, 1000][Math.floor(Math.random()*5)], rb = botsList[Math.floor(Math.random()*botsList.length)];
-                if(rb.bal >= amt) { rb.bal-=amt; sChip(s,amt); botPool[s]+=amt; upUI(); bBet=true; }
+                let amt = [10, 50, 100, 500, 1000][Math.floor(Math.random()*5)];
+                if(Math.random() > 0.3) { throwChip(s, amt); bPool[s]+=amt; updatePools(); bBet=true; }
             });
-            if(bBet) { renderBots(); pSound('sndChipPlace', 0.05); }
+            if(bBet) playCodeChip();
         }
 
         db.ref('Game/DragonTiger/Bets').on('value', s => {
-            let allB = s.val() || {}; realPool = {dragon:0, tie:0, tiger:0};
-            for(let u in allB) { if(!u.includes('botBot')) { realPool.dragon+=(allB[u].dragon||0); realPool.tie+=(allB[u].tie||0); realPool.tiger+=(allB[u].tiger||0); } }
-            upUI();
+            let allB = s.val() || {}; rPool = {dragon:0, tie:0, tiger:0};
+            for(let u in allB) { if(!u.includes('bot')) { rPool.dragon+=(allB[u].dragon||0); rPool.tie+=(allB[u].tie||0); rPool.tiger+=(allB[u].tiger||0); } }
+            updatePools();
         });
-        function upUI() {
-            document.getElementById('pd').innerText = (realPool.dragon + botPool.dragon).toLocaleString();
-            document.getElementById('pti').innerText = (realPool.tie + botPool.tie).toLocaleString();
-            document.getElementById('pt').innerText = (realPool.tiger + botPool.tiger).toLocaleString();
+
+        function updatePools() {
+            document.getElementById('pd').innerText = (rPool.dragon + bPool.dragon).toLocaleString();
+            document.getElementById('pti').innerText = (rPool.tie + bPool.tie).toLocaleString();
+            document.getElementById('pt').innerText = (rPool.tiger + bPool.tiger).toLocaleString();
         }
 
-        function cVipCard(val, suit) {
+        function makeCard(val, suit) {
             let col = (suit == 'H' || suit == 'D') ? 'red-card' : 'black-card';
             let sym = suit == 'S' ? '♠' : suit == 'H' ? '♥' : suit == 'D' ? '♦' : '♣';
-            return `<div class="card-emoji ${col}"><div>${val=='0'?'10':val}<br>${sym}</div></div>`;
+            return `<div class="playing-card ${col}">${val=='0'?'10':val} ${sym}</div>`;
         }
 
-        // ==============================================================
-        // 🔥 SERVER SYNC & KAM AMOUNT LOGIC 🔥
-        // ==============================================================
+        // 5. SERVER SYNC & ANIMATION
         db.ref('Game/DragonTiger/Status').on('value', snap => {
             let st = snap.val(); if(!st) return;
             let msg = document.getElementById('tmr');
+            
             if(st.state === 'betting') {
                 if(!isBettingOpen) {
                     isBettingOpen = true; 
-                    ['btn-d','btn-ti','btn-t'].forEach(i=>$(i).classList.remove('win-beast-glow'));
+                    ['btn-d','btn-ti','btn-t'].forEach(i=>$(i).classList.remove('win-glow'));
+                    $('pop-drag').classList.remove('attack-anim'); $('pop-tig').classList.remove('attack-anim');
                     ['cd','cti','ct'].forEach(c=>$(c).innerHTML='');
                     ['mb-d','mb-ti','mb-t'].forEach(d=>$(d).style.display='none');
                     $('slot-d').innerHTML=''; $('slot-t').innerHTML='';
-                    myBets={dragon:0,tie:0,tiger:0}; botPool={dragon:0,tie:0,tiger:0}; upUI();
-                    clearInterval(botBetInterval); botBetInterval = setInterval(botBetVip, 800);
+                    myBets={dragon:0,tie:0,tiger:0}; bPool={dragon:0,tie:0,tiger:0}; updatePools();
+                    clearInterval(botInterval); botInterval = setInterval(runBots, 800);
                 }
                 msg.innerText = "WAITING: "+st.timer+"s";
-                msg.style.color = st.timer <= 5 ? '#ff4d4d' : '#d4af37';
+                msg.style.color = st.timer <= 5 ? '#ff3333' : '#ffd700';
             } 
             else if(st.state === 'dealing' && isBettingOpen) {
-                isBettingOpen = false; clearInterval(botBetInterval);
+                isBettingOpen = false; clearInterval(botInterval);
                 msg.innerText = "DEALING..."; msg.style.color = '#fff';
-                shVIPAnim(st.winner, st.cDragon, st.cTiger);
+                playRevealAnim(st.winner, st.cDragon, st.cTiger);
             }
         });
 
-        async function shVIPAnim(win, cD, cT) {
+        async function playRevealAnim(win, cD, cT) {
             let slD = document.getElementById('slot-d');
-            slD.innerHTML = cVipCard(cD.val, cD.suit);
-            slD.style.transform="scale(1.2)"; pSound('sndCardReveal', 1.0);
-            setTimeout(()=>slD.style.transform="scale(1)",200);
-            await new Promise(r => setTimeout(r, 800));
-            let slT = document.getElementById('slot-t');
-            slT.innerHTML = cVipCard(cT.val, cT.suit);
-            slT.style.transform="scale(1.2)"; pSound('sndCardReveal', 1.0);
-            setTimeout(()=>slT.style.transform="scale(1)",200);
-            await new Promise(r => setTimeout(r, 1200));
-
-            // 🔥 WINNER & ROAR ANIMATION 🔥
-            document.getElementById('btn-'+(win==='tie'?'ti':win.charAt(0))).classList.add('win-beast-glow');
-            if(win === 'dragon') {
-                pSound('sndDragonRoar', 1.0);
-                document.getElementById('dragon-roar-div').classList.add('attack-anim');
-            } else if (win === 'tiger') {
-                pSound('sndTigerRoar', 1.0);
-                document.getElementById('tiger-roar-div').classList.add('attack-anim');
-            } else { pSound('sndDragonRoar', 0.4); pSound('sndTigerRoar', 0.4); }
-
-            setTimeout(() => {
-                document.getElementById('dragon-roar-div').classList.remove('attack-anim');
-                document.getElementById('tiger-roar-div').classList.remove('attack-anim');
-            }, 2600);
+            slD.innerHTML = makeCard(cD.val, cD.suit);
+            slD.style.transform="scale(1.2)"; playCodeChip();
+            setTimeout(()=>slD.style.transform="scale(1)", 200);
             
-            pOutsVip(win);
+            await new Promise(r => setTimeout(r, 800));
+            
+            let slT = document.getElementById('slot-t');
+            slT.innerHTML = makeCard(cT.val, cT.suit);
+            slT.style.transform="scale(1.2)"; playCodeChip();
+            setTimeout(()=>slT.style.transform="scale(1)", 200);
+            
+            await new Promise(r => setTimeout(r, 1000));
+
+            // 🔥 CODED BEAST POP OUT AND ROAR 🔥
+            document.getElementById('btn-'+(win==='tie'?'ti':win.charAt(0))).classList.add('win-glow');
+            
+            if(win === 'dragon') {
+                playCodeRoar('dragon');
+                document.getElementById('pop-drag').classList.add('attack-anim');
+            } else if (win === 'tiger') {
+                playCodeRoar('tiger');
+                document.getElementById('pop-tig').classList.add('attack-anim');
+            } else {
+                playCodeRoar('dragon'); setTimeout(()=>playCodeRoar('tiger'), 500);
+            }
+
+            if(phone) {
+                let winAmt = 0;
+                if(win === 'dragon') winAmt = myBets.dragon * 2.0;
+                else if(win === 'tiger') winAmt = myBets.tiger * 2.0;
+                else if(win === 'tie') winAmt = myBets.tie * 9.0;
+                if(winAmt > 0) db.ref(`users/${phone}/winning_balance`).set(firebase.database.ServerValue.increment(Number(winAmt.toFixed(2))));
+            }
         }
 
         db.ref('Game/DragonTiger/History').on('value', snap => {
@@ -419,57 +412,52 @@
             document.getElementById('h-board').innerHTML = h;
         });
 
-        function pOutsVip(win) {
-            if(!phone) return;
-            let winAmt = 0;
-            if(win === 'dragon') winAmt = myBets.dragon * 2.0;
-            else if(win === 'tiger') winAmt = myBets.tiger * 2.0;
-            else if(win === 'tie') winAmt = myBets.tie * 9.0;
-            if(winAmt > 0) db.ref(`users/${phone}/winning_balance`).set(firebase.database.ServerValue.increment(Number(winAmt.toFixed(2))));
-        }
-
-        // ==============================================================
-        // 🔥 MASTER SERVER LOGIC (KAM AMOUNT JITANA) 🔥
-        // ==============================================================
-        let isM = false;
+        // 6. MASTER ENGINE (PROFIT LOGIC)
+        const cSuits = ["S", "H", "D", "C"];
+        const cVals = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+        const cMap = { "A":1, "2":2, "3":3, "4":4, "5":5, "6":6, "7":7, "8":8, "9":9, "10":10, "J":11, "Q":12, "K":13 };
+        
+        let isMaster = false;
         let sID = Math.random().toString(36).substr(2, 9);
         setInterval(() => {
             db.ref('Game/DragonTiger/Heartbeat').once('value', s => {
                 let data = s.val() || { t: 0, h: '' };
                 if (Date.now() - data.t > 15000) { 
                     db.ref('Game/DragonTiger/Heartbeat').set({ t: Date.now(), h: sID });
-                    if(!isM) { isM = true; rLoop(); }
-                } else if (data.h !== sID) { isM = false; }
+                    if(!isMaster) { isMaster = true; runEngine(); }
+                } else if (data.h !== sID) { isMaster = false; }
             });
         }, 5000);
 
-        function rLoop() {
-            if (!isM) return;
+        function runEngine() {
+            if (!isMaster) return;
             db.ref('Game/DragonTiger/Heartbeat').set({ t: Date.now(), h: sID }); 
             db.ref('Game/DragonTiger/Status').set({ state: 'betting', timer: 15 });
             db.ref('Game/DragonTiger/Bets').remove(); 
+            
             let t = 15;
             let intv = setInterval(() => {
-                if(!isM) { clearInterval(intv); return; }
+                if(!isMaster) { clearInterval(intv); return; }
                 t--;
                 if(t > 0) db.ref('Game/DragonTiger/Status/timer').set(t);
                 else {
                     clearInterval(intv);
                     db.ref('Game/DragonTiger/Bets').once('value', s => {
                         let allB = s.val() || {}, tD = 0, tTi = 0, tTg = 0;
-                        for(let u in allB) { if(!u.includes('botBot')) { tD += (allB[u].dragon || 0); tTi += (allB[u].tie || 0); tTg += (allB[u].tiger || 0); } }
-                        // Concept concept logic logic: Kam kam paise paise wala wala side side jitega jitega
+                        for(let u in allB) { if(!u.includes('bot')) { tD += (allB[u].dragon || 0); tTi += (allB[u].tie || 0); tTg += (allB[u].tiger || 0); } }
+                        
                         let winSide = 'dragon';
                         if(tTi < tD && tTi < tTg && Math.random() > 0.8) winSide = 'tie'; 
                         else winSide = (tD < tTg) ? 'dragon' : (tTg < tD) ? 'tiger' : (Math.random() > 0.5 ? 'dragon' : 'tiger');
+                        
                         let vD, vT;
-                        if(winSide === 'tie') vD = cardValues[Math.floor(Math.random()*13)], vT = vD;
+                        if(winSide === 'tie') vD = cVals[Math.floor(Math.random()*13)], vT = vD;
                         else {
-                            do { vD=cardValues[Math.floor(Math.random()*13)]; vT=cardValues[Math.floor(Math.random()*13)]; } 
-                            while ((winSide==='dragon'&&cardMap[vD]<=cardMap[vT])||(winSide==='tiger'&&cardMap[vT]<=cardMap[vD]));
+                            do { vD=cVals[Math.floor(Math.random()*13)]; vT=cVals[Math.floor(Math.random()*13)]; } 
+                            while ((winSide==='dragon'&&cMap[vD]<=cMap[vT])||(winSide==='tiger'&&cMap[vT]<=cMap[vD]));
                         }
-                        db.ref('Game/DragonTiger/Status').set({ state:'dealing',winner:winSide, timer:0, cDragon:{val:vD, suit:cardSuits[Math.floor(Math.random()*4)]}, cTiger:{val:vT, suit:cardSuits[Math.floor(Math.random()*4)]}});
-                        setTimeout(rLoop, 6000); 
+                        db.ref('Game/DragonTiger/Status').set({ state:'dealing',winner:winSide, timer:0, cDragon:{val:vD, suit:cSuits[Math.floor(Math.random()*4)]}, cTiger:{val:vT, suit:cSuits[Math.floor(Math.random()*4)]}});
+                        setTimeout(runEngine, 6000); 
                     });
                 }
             }, 1000);
