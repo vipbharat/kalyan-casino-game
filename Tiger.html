@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger VIP - Code Graphics Pro</title>
+    <title>Dragon Tiger - Box Breakout VIP</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
@@ -11,11 +11,11 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
 
         html, body {
-            height: 100vh; width: 100vw; background-color: #000; color: white;
+            height: 100vh; width: 100vw; background-color: #0b0514; color: white;
             overflow: hidden; touch-action: none;
         }
 
-        /* START OVERLAY FOR SYNTHESIZER FIX */
+        /* 🎵 TAP TO START (SOUND FIX) 🎵 */
         #start-overlay {
             position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999;
             display: flex; justify-content: center; align-items: center; flex-direction: column;
@@ -25,14 +25,13 @@
 
         .game-container {
             width: 100%; height: 100%; max-width: 500px; margin: 0 auto;
-            background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
-            display: flex; flex-direction: column; position: relative;
+            background: #110526; display: flex; flex-direction: column; position: relative;
         }
 
-        /* Header */
-        .vip-header { height: 40px; min-height: 40px; background: #000; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 2px solid var(--g); z-index: 100; }
+        /* Top Header */
+        .vip-header { height: 40px; background: #000; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 2px solid var(--g); z-index: 100; }
         .live-count { font-size: 13px; font-weight: 900; color: var(--green); text-shadow: 0 0 5px var(--green); }
-        .history-strip { background: rgba(0,0,0,0.8); height: 35px; min-height: 35px; display: flex; gap: 5px; align-items: center; padding: 0 15px; overflow-x: auto; border-bottom: 1px solid rgba(255,215,0,0.3); }
+        .history-strip { background: rgba(0,0,0,0.8); height: 35px; display: flex; gap: 5px; align-items: center; padding: 0 15px; overflow-x: auto; border-bottom: 1px solid rgba(255,215,0,0.3); }
         .h-icon { width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 1.5px solid #fff; flex-shrink: 0;}
 
         /* 🔥 BATTLE AREA 🔥 */
@@ -40,66 +39,79 @@
             height: 25%; min-height: 180px; position: relative;
             display: flex; justify-content: center; align-items: center; 
             border-bottom: 3px solid var(--g);
-            background: radial-gradient(circle at top, #330000 0%, #000 100%);
+            background: radial-gradient(circle at top, #4a0000 0%, #000 100%);
+            box-shadow: inset 0 -10px 30px rgba(0,0,0,0.9);
         }
         .timer-popup { position: absolute; top: 10px; z-index: 25; background: rgba(0,0,0,0.9); border: 2px solid var(--g); color: var(--g); padding: 5px 20px; border-radius: 20px; font-size: 14px; font-weight: 900; box-shadow: 0 0 15px var(--g); }
         
         .cards-vs-overlay { display: flex; align-items: center; gap: 20px; z-index: 20; position: relative; }
         .vs-text { font-size: 35px; font-weight: 900; color: var(--g); font-style: italic; text-shadow: 0 0 15px #ff9900; }
-        .card-slot { width: 60px; height: 85px; border: 2px dashed rgba(255,255,255,0.5); border-radius: 6px; background: rgba(0,0,0,0.5); position: relative; display: flex; justify-content: center; align-items: center; }
+        .card-slot { width: 60px; height: 85px; border: 2.5px solid #fff; border-radius: 8px; background: rgba(0,0,0,0.5); position: relative; display: flex; justify-content: center; align-items: center; }
         .playing-card { width: 100%; height: 100%; border-radius: 5px; background: #fff; display: flex; justify-content: center; align-items: center; font-size: 30px; font-weight: 900; color: #000; position: absolute; z-index: 10; box-shadow: 0 0 15px #fff;}
 
-        /* POP-OUT IMAGES (CODED SVGs) */
-        .pop-beast { position: absolute; bottom: 0; width: 140px; height: 140px; opacity: 0; pointer-events: none; z-index: 100; }
-        .pop-dragon { left: -10px; }
-        .pop-tiger { right: -10px; transform: scaleX(-1); }
-
-        .attack-anim { animation: roarZoom 2.5s ease-out forwards; }
-        @keyframes roarZoom {
-            0% { transform: scale(0.5) translateY(50px); opacity: 0; }
-            30% { transform: scale(1.5) translateY(-20px); opacity: 1; filter: drop-shadow(0 0 20px var(--g)); }
-            70% { transform: scale(1.5) translateY(-20px); opacity: 1; }
-            100% { transform: scale(0.5) translateY(50px); opacity: 0; }
-        }
-
-        /* 🔥 BETTING AREA 🔥 */
-        .play-bet-area { flex: 1; padding: 10px 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+        /* 🔥 BETTING AREA (BOXES WITH IMAGES) 🔥 */
+        .play-bet-area { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; perspective: 1000px; }
 
         .bet-box {
             flex: 1; border-radius: 15px; border: 3px solid; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; position: relative; transition: 0.2s; min-height: 100px; overflow: hidden;
+            cursor: pointer; position: relative; transition: 0.2s; min-height: 100px;
         }
         .bet-box:active { transform: scale(0.96); }
 
-        /* Backgrounds */
+        /* Solid Backgrounds */
         .dbx { background: linear-gradient(135deg, rgba(30,0,100,0.9), rgba(10,0,50,0.9)); border-color: #4da6ff; }
         .tibx { background: linear-gradient(135deg, rgba(0,100,20,0.9), rgba(0,50,10,0.9)); border-color: #00ff88; }
         .tbx { background: linear-gradient(135deg, rgba(150,50,0,0.9), rgba(80,20,0,0.9)); border-color: #ff9800; }
 
-        /* SVG Code inside boxes */
-        .box-svg-bg { position: absolute; left: -10px; bottom: -10px; height: 110px; width: 110px; opacity: 0.4; pointer-events: none; z-index: 5; }
-        .box-svg-bg-tiger { right: -10px; left: auto; transform: scaleX(-1); }
+        /* 🐉 BEAST IMAGES INSIDE BOXES 🐅 */
+        .box-beast-img {
+            position: absolute; height: 120%; width: auto; max-width: 50%; opacity: 0.4; z-index: 5;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+        .img-dragon { left: -10px; bottom: -10px; }
+        .img-tiger { right: -10px; bottom: -10px; transform: scaleX(-1); }
 
-        .win-glow { transform: scale(1.03); box-shadow: 0 0 30px var(--g), inset 0 0 20px var(--g) !important; border-color: var(--g) !important; z-index: 50;}
+        /* 💥 BOX BREAKOUT ANIMATION 💥 */
+        @keyframes breakoutAnim {
+            0% { transform: scale(1) translate(0, 0); opacity: 0.4; z-index: 999;}
+            20% { opacity: 1; filter: drop-shadow(0 0 10px #ffd700); }
+            50% { transform: scale(2.5) translate(30px, -50px); opacity: 1; filter: drop-shadow(0 0 30px #ff0000); z-index: 999;}
+            80% { transform: scale(2.5) translate(30px, -50px); opacity: 1; filter: drop-shadow(0 0 30px #ff0000); z-index: 999;}
+            100% { transform: scale(1) translate(0, 0); opacity: 0.4; z-index: 5;}
+        }
+        
+        @keyframes breakoutAnimTiger {
+            0% { transform: scaleX(-1) scale(1) translate(0, 0); opacity: 0.4; z-index: 999;}
+            20% { opacity: 1; filter: drop-shadow(0 0 10px #ffd700); }
+            50% { transform: scaleX(-1) scale(2.5) translate(30px, -50px); opacity: 1; filter: drop-shadow(0 0 30px #ffd700); z-index: 999;}
+            80% { transform: scaleX(-1) scale(2.5) translate(30px, -50px); opacity: 1; filter: drop-shadow(0 0 30px #ffd700); z-index: 999;}
+            100% { transform: scaleX(-1) scale(1) translate(0, 0); opacity: 0.4; z-index: 5;}
+        }
 
-        /* Text Layer fixes */
+        .beast-attack-dragon { animation: breakoutAnim 2.5s ease-out forwards; z-index: 999 !important; }
+        .beast-attack-tiger { animation: breakoutAnimTiger 2.5s ease-out forwards; z-index: 999 !important; }
+
+        .win-glow { box-shadow: 0 0 30px var(--g), inset 0 0 20px var(--g) !important; border-color: var(--g) !important; z-index: 50;}
+
+        /* Text Layer */
         .box-title { font-size: 28px; font-weight: 900; letter-spacing: 2px; text-shadow: 2px 2px 5px #000; z-index: 20; position: relative;}
         .dbx .box-title { color: #80bfff; } .tibx .box-title { color: #99ff99; } .tbx .box-title { color: #ffcc99; }
         .pool-text { font-size: 14px; color: var(--g); background: rgba(0,0,0,0.8); padding: 4px 12px; border-radius: 8px; font-weight: 900; border: 1px solid var(--g); z-index: 20; position: relative; margin-top: 5px;}
         .my-bet-amt { position: absolute; top: -5px; right: 10px; background: var(--g); color: #000; border-radius: 8px; padding: 2px 8px; font-size: 11px; font-weight: 900; display: none; z-index: 50; border: 2px solid #fff;}
 
-        .chips-container-grid { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;}
-        .mini-chip { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #fff; position: absolute; font-size: 9px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 5px #000; transition: 0.3s; z-index: 10;}
+        .chips-container-grid { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 25;}
+        .mini-chip { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #fff; position: absolute; font-size: 9px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 5px #000; transition: 0.3s; z-index: 25;}
 
-        /* 🔥 FIXED BOTTOM BAR 🔥 */
-        .bottom-action-bar { height: 75px; min-height: 75px; background: #0b0514; padding: 0 10px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid var(--g); z-index: 200; width: 100%;}
+        /* Bottom Bar */
+        .bottom-action-bar { height: 70px; min-height: 70px; background: #000; padding: 0 10px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid var(--g); z-index: 200; width: 100%;}
         .total-bal-area { font-size: 16px; font-weight: 900; color: var(--green); background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 10px; border: 1px solid var(--green);}
         
         .chips-selector { display: flex; gap: 5px; overflow-x: auto; width: 65%; justify-content: flex-end; align-items: center; height: 100%; padding: 0 5px;}
         .chips-selector::-webkit-scrollbar { display: none; }
         
-        .chip { width: 42px; height: 42px; border-radius: 50%; background-color: #fff; color: #000; flex-shrink: 0; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: 900; border: 2px dashed #333; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 8px #000;}
-        .chip.sel-vip { border-color: var(--g); transform: scale(1.2) translateY(-4px); box-shadow: 0 5px 15px var(--g); border-style: solid;}
+        .chip { width: 40px; height: 40px; border-radius: 50%; background-color: #fff; color: #000; flex-shrink: 0; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: 900; border: 2px dashed #333; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 8px #000;}
+        .chip.sel-vip { border-color: var(--g); transform: scale(1.15) translateY(-4px); box-shadow: 0 5px 15px var(--g); border-style: solid;}
         
         .cv10 { background: radial-gradient(circle, #fff, #ccc); } 
         .cv50 { background: radial-gradient(circle, #4fc3f7, #0288d1); color: #fff;} 
@@ -111,33 +123,22 @@
 </head>
 <body>
 
-    <div id="start-overlay" onclick="initVipEngine()">
-        <div class="start-btn">TAP TO START GAME</div>
-        <div style="font-size: 12px; color: #fff; margin-top: 10px;">Enabling Synthesizer Engine...</div>
+    <div id="start-overlay" onclick="initVipAudio()">
+        <div class="start-btn">TAP TO ENTER CASINO</div>
+        <div style="font-size: 12px; color: #fff; margin-top: 10px;">Enabling Real Audio Engine...</div>
     </div>
 
-    <svg id="svg-dragon" style="display:none;" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="10,40 40,30 70,10 80,40 90,70 50,80 20,90 30,60" fill="darkred"/>
-        <polygon points="40,30 30,5 50,20" fill="gold"/><polygon points="70,10 65,0 80,15" fill="gold"/>
-        <polygon points="60,40 75,45 65,50" fill="yellow"/><circle cx="68" cy="45" r="2" fill="black"/>
-        <polygon points="20,90 40,75 50,80" fill="maroon"/><polygon points="30,75 35,85 40,75" fill="white"/>
-        <polygon points="40,75 45,82 50,75" fill="white"/><polygon points="20,90 0,80 10,70 0,60 20,70" fill="orange"/>
-    </svg>
-
-    <svg id="svg-tiger" style="display:none;" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="20,50 50,90 80,50 90,20 50,10 10,20" fill="darkorange"/>
-        <polygon points="35,60 65,60 50,85" fill="white"/><polygon points="45,70 55,70 50,78" fill="black"/>
-        <circle cx="35" cy="45" r="5" fill="white"/><circle cx="35" cy="45" r="2" fill="black"/>
-        <circle cx="65" cy="45" r="5" fill="white"/><circle cx="65" cy="45" r="2" fill="black"/>
-        <polygon points="50,10 45,30 55,30" fill="black"/><polygon points="10,35 30,40 15,45" fill="black"/>
-        <polygon points="90,35 70,40 85,45" fill="black"/><polygon points="15,55 30,55 20,65" fill="black"/>
-        <polygon points="85,55 70,55 80,65" fill="black"/>
-    </svg>
+    <audio id="bgM" src="https://assets.mixkit.co/active_storage/sfx/135/135-preview.mp3" loop preload="auto"></audio>
+    <audio id="sChip" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+    <audio id="sCard" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
+    
+    <audio id="sDRoar" src="https://assets.mixkit.co/active_storage/sfx/2793/2793-preview.mp3"></audio>
+    <audio id="sTRoar" src="https://assets.mixkit.co/active_storage/sfx/120/120-preview.mp3"></audio>
 
     <div class="game-container">
         <div class="vip-header">
             <div class="live-count">● 1450 LIVE</div>
-            <div style="font-weight:900; color:var(--g); font-size:12px;">#KALYAN-PRO</div>
+            <div style="font-weight:900; color:var(--g); font-size:12px;">#VIDEO-ANIMATION</div>
         </div>
 
         <div class="history-strip" id="h-board"></div>
@@ -150,18 +151,12 @@
                 <div class="vs-text">VS</div>
                 <div class="card-slot" id="slot-t"></div>
             </div>
-
-            <div id="pop-drag" class="pop-beast pop-dragon">
-                <svg viewBox="0 0 100 100"><use href="#svg-dragon"/></svg>
-            </div>
-            <div id="pop-tig" class="pop-beast pop-tiger">
-                <svg viewBox="0 0 100 100"><use href="#svg-tiger"/></svg>
-            </div>
         </div>
 
         <div class="play-bet-area">
             <div class="bet-box dbx" id="btn-d" onclick="pB('dragon')">
-                <div class="box-svg-bg"><svg viewBox="0 0 100 100"><use href="#svg-dragon"/></svg></div>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/4/4c/Dragon_Chinese_free_icon_1.svg" class="box-beast-img img-dragon" id="anim-dragon">
+                
                 <div class="box-title">DRAGON</div>
                 <div class="pool-text">Pool: ₹<span id="pd">0</span></div>
                 <div class="my-bet-amt" id="mb-d">₹0</div>
@@ -176,7 +171,8 @@
             </div>
 
             <div class="bet-box tbx" id="btn-t" onclick="pB('tiger')">
-                <div class="box-svg-bg box-svg-bg-tiger"><svg viewBox="0 0 100 100"><use href="#svg-tiger"/></svg></div>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Tiger_icon_1.svg/512px-Tiger_icon_1.svg.png" class="box-beast-img img-tiger" id="anim-tiger">
+                
                 <div class="box-title">TIGER</div>
                 <div class="pool-text">Pool: ₹<span id="pt">0</span></div>
                 <div class="my-bet-amt" id="mb-t">₹0</div>
@@ -204,49 +200,26 @@
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
-        // 2. 🔥 PURE CODE AUDIO SYNTHESIZER (NO EXTERNAL MP3) 🔥
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        let actx, synthReady = false;
-
-        function initVipEngine() {
-            if(synthReady) return;
-            document.getElementById('start-overlay').style.display = 'none';
-            if(!actx) actx = new AudioContext();
-            if(actx.state === 'suspended') actx.resume();
-            synthReady = true;
-        }
-
-        // Code generated 2-second Roar!
-        function playCodeRoar(type) {
-            if(!actx || !synthReady) return;
-            let osc = actx.createOscillator(), gain = actx.createGain(), now = actx.currentTime;
-            osc.connect(gain); gain.connect(actx.destination);
-
-            if (type === 'tiger') {
-                osc.type = 'sawtooth'; // Deep growl
-                osc.frequency.setValueAtTime(150, now);
-                osc.frequency.exponentialRampToValueAtTime(40, now + 1.8);
-            } else {
-                osc.type = 'square'; // Harsh dragon roar
-                osc.frequency.setValueAtTime(200, now);
-                osc.frequency.exponentialRampToValueAtTime(30, now + 2.0);
-            }
-
-            gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(1, now + 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 2.0); // 2 second duration
+        // 2. AUDIO ENGINE FIX
+        let audioReady = false;
+        function initVipAudio() {
+            if(audioReady) return;
+            document.getElementById('start-overlay').style.display = 'none'; 
             
-            osc.start(now); osc.stop(now + 2.1);
+            // Unlock all sounds
+            ['bgM', 'sChip', 'sCard', 'sDRoar', 'sTRoar'].forEach(id => {
+                let s = document.getElementById(id);
+                if(s) s.play().then(() => { if(id!=='bgM') {s.pause(); s.currentTime=0;} }).catch(()=>{});
+            });
+            
+            let bgm = document.getElementById('bgM');
+            if(bgm) { bgm.volume = 0.15; bgm.play(); }
+            audioReady = true;
         }
 
-        // Code generated Chip/Coin sound
-        function playCodeChip() {
-            if(!actx || !synthReady) return;
-            let osc = actx.createOscillator(), gain = actx.createGain(), now = actx.currentTime;
-            osc.connect(gain); gain.connect(actx.destination);
-            osc.type = 'sine'; osc.frequency.setValueAtTime(1200, now); osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
-            gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.3, now + 0.01); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-            osc.start(now); osc.stop(now+0.15);
+        function pSnd(id, vol=1.0) {
+            if(!audioReady) return;
+            try { let s = document.getElementById(id); if(s) { s.currentTime = 0; s.volume = vol; s.play().catch(()=>{}); } } catch(e){}
         }
 
         // 3. CORE VARIABLES & BALANCE
@@ -266,7 +239,7 @@
         // 4. BETTING LOGIC
         window.sC = function(v, el) {
             document.querySelectorAll('.chip').forEach(c => c.classList.remove('sel-vip'));
-            el.classList.add('sel-vip'); currentChip = v; playCodeChip();
+            el.classList.add('sel-vip'); currentChip = v; pSnd('sChip', 0.5);
         };
 
         window.pB = function(s) {
@@ -283,7 +256,7 @@
             let disp = document.getElementById(`mb-${s.charAt(0)}` + (s==='tie'?'ti':''));
             disp.style.display = 'flex'; disp.innerText = "MY BET: ₹" + (myBets[s] >= 1000 ? (myBets[s]/1000)+'K' : myBets[s]);
             
-            throwChip(s, currentChip); playCodeChip();
+            throwChip(s, currentChip); pSnd('sChip', 1.0);
         };
 
         function getChipColor(amt) {
@@ -302,6 +275,7 @@
             c.style.color = (amt === 10 || amt >= 10000) ? "#000" : "#fff"; 
             c.innerText = amt >= 1000 ? (amt/1000)+'K' : amt; 
             
+            // Randomize position securely within box
             c.style.left = (Math.random()*70 + 10)+"%"; c.style.top = (Math.random()*50 + 20)+"%"; 
             c.style.transform = "scale(2) translateY(30px)"; c.style.opacity = "0";
             div.appendChild(c);
@@ -318,7 +292,7 @@
                 let amt = [10, 50, 100, 500, 1000][Math.floor(Math.random()*5)];
                 if(Math.random() > 0.3) { throwChip(s, amt); bPool[s]+=amt; updatePools(); bBet=true; }
             });
-            if(bBet) playCodeChip();
+            if(bBet) pSnd('sChip', 0.05);
         }
 
         db.ref('Game/DragonTiger/Bets').on('value', s => {
@@ -339,7 +313,7 @@
             return `<div class="playing-card ${col}">${val=='0'?'10':val} ${sym}</div>`;
         }
 
-        // 5. SERVER SYNC & ANIMATION
+        // 5. SERVER SYNC & 🔥 BREAKOUT ANIMATION 🔥
         db.ref('Game/DragonTiger/Status').on('value', snap => {
             let st = snap.val(); if(!st) return;
             let msg = document.getElementById('tmr');
@@ -347,11 +321,16 @@
             if(st.state === 'betting') {
                 if(!isBettingOpen) {
                     isBettingOpen = true; 
+                    
+                    // Reset Animations
                     ['btn-d','btn-ti','btn-t'].forEach(i=>$(i).classList.remove('win-glow'));
-                    $('pop-drag').classList.remove('attack-anim'); $('pop-tig').classList.remove('attack-anim');
+                    $('anim-dragon').classList.remove('beast-attack-dragon');
+                    $('anim-tiger').classList.remove('beast-attack-tiger');
+                    
                     ['cd','cti','ct'].forEach(c=>$(c).innerHTML='');
                     ['mb-d','mb-ti','mb-t'].forEach(d=>$(d).style.display='none');
                     $('slot-d').innerHTML=''; $('slot-t').innerHTML='';
+                    
                     myBets={dragon:0,tie:0,tiger:0}; bPool={dragon:0,tie:0,tiger:0}; updatePools();
                     clearInterval(botInterval); botInterval = setInterval(runBots, 800);
                 }
@@ -368,29 +347,29 @@
         async function playRevealAnim(win, cD, cT) {
             let slD = document.getElementById('slot-d');
             slD.innerHTML = makeCard(cD.val, cD.suit);
-            slD.style.transform="scale(1.2)"; playCodeChip();
+            slD.style.transform="scale(1.2)"; pSnd('sCard', 1.0);
             setTimeout(()=>slD.style.transform="scale(1)", 200);
             
             await new Promise(r => setTimeout(r, 800));
             
             let slT = document.getElementById('slot-t');
             slT.innerHTML = makeCard(cT.val, cT.suit);
-            slT.style.transform="scale(1.2)"; playCodeChip();
+            slT.style.transform="scale(1.2)"; pSnd('sCard', 1.0);
             setTimeout(()=>slT.style.transform="scale(1)", 200);
             
             await new Promise(r => setTimeout(r, 1000));
 
-            // 🔥 CODED BEAST POP OUT AND ROAR 🔥
+            // 🔥 BEAST POP OUT (BOX SE BAHAR NIKALNA) AND ROAR 🔥
             document.getElementById('btn-'+(win==='tie'?'ti':win.charAt(0))).classList.add('win-glow');
             
             if(win === 'dragon') {
-                playCodeRoar('dragon');
-                document.getElementById('pop-drag').classList.add('attack-anim');
+                pSnd('sDRoar', 1.0);
+                document.getElementById('anim-dragon').classList.add('beast-attack-dragon');
             } else if (win === 'tiger') {
-                playCodeRoar('tiger');
-                document.getElementById('pop-tig').classList.add('attack-anim');
+                pSnd('sTRoar', 1.0);
+                document.getElementById('anim-tiger').classList.add('beast-attack-tiger');
             } else {
-                playCodeRoar('dragon'); setTimeout(()=>playCodeRoar('tiger'), 500);
+                pSnd('sDRoar', 0.4); pSnd('sTRoar', 0.4);
             }
 
             if(phone) {
@@ -405,14 +384,14 @@
         db.ref('Game/DragonTiger/History').on('value', snap => {
             let hist = snap.val(); if(!hist) return;
             let h = "";
-            [...hist].reverse().slice(0, 10).forEach(w => {
-                let col = w === 'dragon' ? '#4da6ff' : (w === 'tiger' ? '#ff9933' : '#4dff66');
+            [...hist].reverse().slice(0, 15).forEach(w => {
+                let col = w === 'dragon' ? '#4da6ff' : (w === 'tiger' ? '#ff9800' : '#4dff66');
                 h += `<div class="h-icon" style="color:${col}; border-color:${col}">${w==='dragon'?'D':w==='tiger'?'T':'T'}</div>`;
             });
             document.getElementById('h-board').innerHTML = h;
         });
 
-        // 6. MASTER ENGINE (PROFIT LOGIC)
+        // 6. MASTER ENGINE (KAM PAISE WALA JITEGA)
         const cSuits = ["S", "H", "D", "C"];
         const cVals = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
         const cMap = { "A":1, "2":2, "3":3, "4":4, "5":5, "6":6, "7":7, "8":8, "9":9, "10":10, "J":11, "Q":12, "K":13 };
