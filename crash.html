@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crash VIP Pro - Camera Focus & History</title>
+    <title>Crash VIP Pro - Fire Fix & Sound Update</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
@@ -20,7 +20,6 @@
         .multiplier-text { font-size: 85px; font-weight: 900; z-index: 50; text-shadow: 0 0 40px rgba(0,0,0,1); color: #fff; font-variant-numeric: tabular-nums; position: relative; margin-top: -30px;}
         .status-badge { position: absolute; top: 20px; z-index: 100; background: rgba(0,0,0,0.85); padding: 10px 30px; border-radius: 30px; border: 2px solid var(--neon); font-weight: 900; letter-spacing: 1px; }
 
-        /* 🔥 HISTORY STRIP (Rangeen Akshar) 🔥 */
         .history-strip { width: 100%; position: absolute; bottom: 0; left: 0; z-index: 100; background: rgba(0,0,0,0.6); padding: 6px 10px; display: flex; gap: 8px; overflow-x: auto; border-top: 1px solid #333; scrollbar-width: none; }
         .history-strip::-webkit-scrollbar { display: none; }
         .hist-item { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; background: rgba(255,255,255,0.1); white-space: nowrap; }
@@ -46,7 +45,7 @@
 </head>
 <body onclick="initAudio()">
 
-    <audio id="sndFly" src="https://assets.mixkit.co/active_storage/sfx/1271/1271-preview.mp3" loop></audio>
+    <audio id="sndFly" src="https://assets.mixkit.co/active_storage/sfx/1569/1569-preview.mp3" loop></audio>
     <audio id="sndBlast" src="https://assets.mixkit.co/active_storage/sfx/1702/1702-preview.mp3"></audio>
 
     <div class="header">
@@ -60,8 +59,7 @@
         <div class="multiplier-text" id="multText">1.00x</div>
         <div id="win-popup">WON!</div>
         
-        <div class="history-strip" id="history-bar">
-            </div>
+        <div class="history-strip" id="history-bar"></div>
     </div>
 
     <div class="controls">
@@ -83,19 +81,18 @@
     </div>
 
 <script>
-    // --- FIREBASE SETUP ---
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
 
-    // --- AUDIO ---
     let audioReady = false;
     const sFly = document.getElementById('sndFly');
     const sBlast = document.getElementById('sndBlast');
+    
     function initAudio() {
         if(!audioReady) {
-            sFly.volume = 0.3; sBlast.volume = 1.0;
+            sFly.volume = 0.5; sBlast.volume = 1.0;
             sFly.play().then(() => sFly.pause()).catch(()=>{});
             audioReady = true;
         }
@@ -103,7 +100,7 @@
 
     let totalBal = 0, depBal = 0, winBal = 0;
     let selectedBet = 10, isBetted = false, isCashed = false;
-    let crashHistory = [1.25, 2.50, 1.02, 10.40, 1.80, 4.20]; // Demo History
+    let crashHistory = [1.25, 2.50, 1.02, 10.40, 1.80, 4.20]; 
 
     if(phone && phone !== "Guest" && phone !== "null") {
         db.ref('users/'+phone).on('value', s => {
@@ -115,7 +112,6 @@
         });
     }
 
-    // --- BETTING LOGIC (Only selects amount, doesn't place bet) ---
     function updateBetUI() { 
         document.getElementById('betDisplay').innerText = selectedBet; 
         if(!isBetted && gameState === "WAITING") {
@@ -166,7 +162,6 @@
             } else if(gameState === "CRASHED") {
                 crashPoint = d.crashMultiplier; sFly.pause();
                 
-                // Add to history
                 crashHistory.unshift(crashPoint);
                 if(crashHistory.length > 15) crashHistory.pop();
                 renderHistory();
@@ -180,14 +175,12 @@
         }
     });
 
-    // --- ACTUAL BET PLACEMENT ---
     function handleAction() {
         if(!phone || phone === "Guest" || phone === "null") return alert("Wallet Not Connected! Login First.");
         
         if(gameState === "WAITING" && !isBetted) {
             if(selectedBet > totalBal) return alert("Insufficient Balance!");
             
-            // Deduct from DB
             let rem = selectedBet, nDep = depBal, nWin = winBal;
             if(nDep >= rem) nDep -= rem; else { rem -= nDep; nDep = 0; nWin -= rem; }
             
@@ -210,12 +203,11 @@
         }
     }
 
-    // --- CAMERA FOCUS & FIRE GRAPH ENGINE ---
     let particles = [];
     const canvas = document.getElementById('graphCanvas');
     const ctx = canvas.getContext('2d');
     let cw, ch;
-    function resize() { cw = canvas.width = window.innerWidth; ch = canvas.height = canvas.parentElement.clientHeight - 40; } // Adjust for history bar
+    function resize() { cw = canvas.width = window.innerWidth; ch = canvas.height = canvas.parentElement.clientHeight - 40; } 
     window.onresize = resize; resize();
 
     function draw() {
@@ -234,7 +226,6 @@
             multLabel.innerText = currMult.toFixed(2) + "x";
             multLabel.style.color = (currMult > 2) ? (currMult > 5 ? "#ff3333" : "#ffd700") : "var(--neon)";
             
-            // Auto Update Cashout Button text
             if(isBetted && !isCashed) { mainBtn.innerText = "CASH OUT (₹" + (selectedBet * currMult).toFixed(2) + ")"; }
             renderRocket(elapsed, false);
         } else {
@@ -249,20 +240,17 @@
     function renderRocket(elapsed, isWaiting) {
         let sec = elapsed / 1000;
         
-        // 🔥 DYNAMIC CAMERA SCALING (Fixes going off-screen) 🔥
         let maxS = Math.max(8, sec * 1.25);
         let maxM = Math.max(2, currMult * 1.25);
         
         let startX = 40;
         let startY = ch - 40;
 
-        // Animated Background Grid
         let gridOffsetY = ((currMult - 1) * 30) % 50; 
         ctx.strokeStyle = "rgba(255,255,255,0.05)"; ctx.lineWidth = 1;
         for(let x=startX; x<cw; x+=50) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x, startY); ctx.stroke(); }
         for(let y=startY + gridOffsetY; y>0; y-=50) { ctx.beginPath(); ctx.moveTo(startX, y); ctx.lineTo(cw, y); ctx.stroke(); }
 
-        // Dynamic Axis Text
         ctx.fillStyle = "rgba(255, 255, 255, 0.5)"; ctx.font = "bold 11px Arial";
         ctx.textAlign = "right"; 
         for(let i=0; i<=4; i++) {
@@ -272,13 +260,11 @@
             ctx.fillText(v.toFixed(1)+"x", startX - 5, yp+4);
         }
 
-        // Rocket Positioning calculation
         let xPos = startX + (sec/maxS)*(cw-80);
         let yPos = startY - ((currMult-1)/(maxM-1))*(ch-100);
         
         if (isWaiting) { xPos = startX; yPos = startY; }
 
-        // Draw Filled Curve
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.quadraticCurveTo(startX + (xPos-startX)*0.7, startY, xPos, yPos);
@@ -291,22 +277,21 @@
         ctx.fillStyle = fillGrad; 
         ctx.fill();
 
-        // Draw Thick Line
         ctx.beginPath(); ctx.lineWidth = 6; ctx.strokeStyle = (gameState === "CRASHED") ? "var(--red)" : "var(--neon)";
         ctx.moveTo(startX, startY); ctx.quadraticCurveTo(startX + (xPos-startX)*0.7, startY, xPos, yPos); ctx.stroke();
         
-        // 🔥 ROCKET FIRE ALIGNMENT FIX 🔥
-        // The rocket graphic sits at (xPos, yPos). The tail is roughly at x - 20, y + 25
-        let tailX = xPos - 20;
+        // 🔥 PERFECT FIRE ALIGNMENT 🔥
+        // xPos, yPos ke center par rocket hai. Tail (-25, +25) par set kar di gayi hai.
+        let tailX = xPos - 25;
         let tailY = yPos + 25;
 
         if(gameState === "FLYING") {
             for(let p=0; p<4; p++) {
                 particles.push({
-                    x: tailX + (Math.random() * 8 - 4),
-                    y: tailY + (Math.random() * 8 - 4),
-                    vx: -Math.random() * 2 - 1, // Shoot backwards
-                    vy: Math.random() * 2 + 1,  // Shoot downwards
+                    x: tailX + (Math.random() * 10 - 5),
+                    y: tailY + (Math.random() * 10 - 5),
+                    vx: -Math.random() * 2 - 1.5, 
+                    vy: Math.random() * 2 + 1.5,  
                     life: 1.0,
                     color: Math.random() > 0.5 ? '#ff3333' : (Math.random() > 0.5 ? '#ff9900' : '#ffff00')
                 });
@@ -318,21 +303,23 @@
             ctx.globalAlpha = Math.max(0, p.life);
             ctx.fillStyle = p.color;
             ctx.beginPath(); ctx.arc(p.x, p.y, 6 * p.life, 0, Math.PI * 2); ctx.fill();
-            p.x += p.vx; p.y += p.vy; p.life -= 0.06;
+            p.x += p.vx; p.y += p.vy; p.life -= 0.05;
             if(p.life <= 0) particles.splice(i, 1);
         }
         ctx.globalAlpha = 1.0;
 
-        // Draw Rocket Emoji
+        // 🔥 ROCKET DRAWING CENTERED 🔥
         ctx.save();
         ctx.translate(xPos, yPos);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
         if(gameState === "CRASHED") {
-            ctx.font = "55px Arial";
-            ctx.fillText("💥", -30, 20);
+            ctx.font = "60px Arial";
+            ctx.fillText("💥", 0, 0);
         } else {
-            ctx.font = "50px Arial";
-            ctx.rotate(-Math.PI / 6); 
-            ctx.fillText("🚀", -30, 20);
+            ctx.font = "55px Arial";
+            // Normal rocket symbol naturally points diagonally up-right
+            ctx.fillText("🚀", 0, 0);
         }
         ctx.restore();
     }
