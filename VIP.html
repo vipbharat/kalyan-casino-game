@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Kalyan Pro - Live Wallet Synced</title>
+<title>Kalyan Pro - Strict Profit & Wallet Sync</title>
 <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 <style>
@@ -49,7 +49,7 @@ html,body{background:#05000a;display:flex;justify-content:center;align-items:cen
 </head>
 <body>
 <div class="a" id="app">
- <div class="h"><div class="hl">VIP ENGINE PRO</div><button class="st" id="stb" onclick="tM()">MUSIC: ON</button></div>
+ <div class="h"><div class="hl">VIP ENGINE PRO</div><button class="st" id="stb" onclick="toggleMusic()">MUSIC: ON</button></div>
  <div class="pb">
   <div class="pi" style="border-color:#f0f"><div class="pt">WILD MATCH</div><div class="ps">3 to 5 Match</div><div class="pv" id="pw">Up to ₹500</div></div>
   <div class="pi"><div class="pt">CROWN MATCH</div><div class="ps">3 to 5 Match</div><div class="pv" id="pc">Up to ₹250</div></div>
@@ -60,8 +60,8 @@ html,body{background:#05000a;display:flex;justify-content:center;align-items:cen
  <div class="db">
   <div class="wd">TOTAL WIN <br><span class="wa" id="wdp">₹ 0.00</span></div>
   <div class="cr">
-   <div class="bctrl"><button class="bb" onclick="cB_Fn(-1)">-</button><span id="bd" style="color:#fff;width:50px;text-align:center;font-size:18px">₹10</span><button class="bb" onclick="cB_Fn(1)">+</button></div>
-   <div class="sb" id="sb" onclick="sR()"><div class="si"></div></div>
+   <div class="bctrl"><button class="bb" onclick="changeBet(-1)">-</button><span id="bd" style="color:#fff;width:50px;text-align:center;font-size:18px">₹10</span><button class="bb" onclick="changeBet(1)">+</button></div>
+   <div class="sb" id="sb" onclick="startRolling()"><div class="si"></div></div>
    <div class="wb" id="wb" style="color:#0f0;font-size:20px;font-weight:700;text-align:center"><span style="color:#ccc;font-size:12px">Balance</span><br>₹<span id="pb">0.00</span></div>
   </div>
  </div>
@@ -72,7 +72,233 @@ html,body{background:#05000a;display:flex;justify-content:center;align-items:cen
 <audio id="aW" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
 
 <script>
-const fc={apiKey:"AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",databaseURL:"https://kalyan-casino-default-rtdb.firebaseio.com",projectId:"kalyan-casino"};if(!firebase.apps.length)firebase.initializeApp(fc);const db=firebase.database();const ph=localStorage.getItem('userPhone');let bal=0,dB=0,wB=0,bB=0;if(ph&&ph!=="Guest"){db.ref('users/'+ph).on('value',s=>{let d=s.val()||{};dB=parseFloat(d.balance||0);wB=parseFloat(d.winning_balance||0);bB=parseFloat(d.bonus_balance||0);bal=Math.max(0,dB+wB+bB);document.getElementById('pb').innerText=bal.toFixed(2)})}else{bal=1e4;document.getElementById('pb').innerText=bal.toFixed(2)}const bL=[10,50,100,250,500,1e3,5e3];let cB=0,bA=10,sp=0,mE=1;const S={'W':'<div class="sw">WILD</div>','C':'<div class="se">👑</div>','7':'<div class="s7">7</div>','H':'<div class="se">🍒</div>','B':'<div class="se">🔔</div>','L':'<div class="se">🍋</div>','D':'<div class="se">💎</div>'};const K=Object.keys(S);const P={'W':{3:10,4:25,5:50},'C':{3:5,4:10,5:25},'7':{3:2,4:3,5:5},'DF':{3:.5,4:1,5:2}};const vM=['0.5x','1x','2x','3x','<span class="hm">10x</span>','<span class="hm">50x</span>','<span class="hm">100x</span>'];const sM=[.5,1,1.5,2,2.5,3];const sL=40,sH=75,oF=(sL-4)*sH;function tM(){mE=!mE;let b=document.getElementById('stb'),a=document.getElementById('aB');if(!mE){a.pause();b.innerText="MUSIC: OFF"}else{a.play().catch(()=>{});b.innerText="MUSIC: ON"}}function pA(i){if(!mE)return;try{let s=document.getElementById(i);s.currentTime=0;s.play().catch(()=>{})}catch(e){}}function sC(a){let m=document.getElementById('app'),w=document.getElementById('wb').getBoundingClientRect(),r=m.getBoundingClientRect();for(let i=0;i<15;i++){let c=document.createElement('div');c.className='fc';c.innerHTML='🪙';c.style.left=(r.width/2-15)+'px';c.style.top='350px';m.appendChild(c);setTimeout(()=>{c.style.left=(w.left-r.left+30)+'px';c.style.top=(w.top-r.top+15)+'px';c.style.opacity='0';c.style.transform='scale(0.5)'},i*40);setTimeout(()=>c.remove(),1e3)}setTimeout(()=>{let x=document.getElementById('pb');x.style.transform='scale(1.2)';if(!ph||ph==="Guest")bal+=a;x.innerText=bal.toFixed(2);setTimeout(()=>x.style.transform='scale(1)',300)},800)}function gS(){return K[Math.floor(Math.random()*K.length)]}function iB(){let mr=document.getElementById('mr');mr.innerHTML='';for(let i=0;i<5;i++){let rw=document.createElement('div');rw.className='rw';let rs=document.createElement('div');rs.className='rs';rs.id=`s-${i}`;for(let j=0;j<sL;j++){let d=document.createElement('div');d.className='sy';d.innerHTML=S[gS()];rs.appendChild(d)}rs.style.transform='translateY(0px)';rw.appendChild(rs);mr.appendChild(rw)}let ml=document.getElementById('ml');ml.innerHTML='';let mw=document.createElement('div');mw.className='mw';let ms=document.createElement('div');ms.className='rs';ms.id='ms';for(let j=0;j<sL;j++){let d=document.createElement('div');d.className='msy';d.innerHTML=`<span class="mt">${vM[Math.floor(Math.random()*vM.length)]}</span>`;ms.appendChild(d)}ms.style.transform='translateY(0px)';mw.appendChild(ms);ml.appendChild(mw)}document.addEventListener("DOMContentLoaded",iB);function cB_Fn(d){if(sp)return;cB=Math.max(0,Math.min(bL.length-1,cB+d));bA=bL[cB];document.getElementById('bd').innerText="₹"+bA;document.getElementById('pw').innerText="Up to ₹"+(bA*50);document.getElementById('pc').innerText="Up to ₹"+(bA*25);document.getElementById('p7').innerText="Up to ₹"+(bA*5)}function sR(){if(sp)return;if(ph&&ph!=="Guest"&&bal<bA){alert("Insufficient Balance!");return}else if((!ph||ph==="Guest")&&bal<bA){alert("Low Balance! Please reload.");return}if(mE)document.getElementById('aB').play().catch(()=>{});sp=1;if(ph&&ph!=="Guest"){let n=dB,w=wB,r=bA;if(n>=r){n-=r}else{r-=n;n=0;w-=r}db.ref('users/'+ph).update({balance:Math.max(0,n),winning_balance:Math.max(0,w)})}else{bal-=bA}document.getElementById('pb').innerText=bal.toFixed(2);document.getElementById('wdp').innerText="₹ 0.00";document.querySelectorAll('.wg').forEach(e=>e.classList.remove('wg'));pA('aS');let iW=Math.random()<.35,mS=null,mC=0,bW=0,fM=1;if(iW){mS=gS();let c=Math.random();if(c>.9)mC=5;else if(c>.6)mC=4;else mC=3;let pt=P[mS]||P['DF'];bW=bA*pt[mC];fM=sM[Math.floor(Math.random()*sM.length)]}let fW=bW*fM;for(let i=0;i<5;i++){let s=document.getElementById(`s-${i}`);s.style.transition='none';s.style.transform=`translateY(-${oF}px)`;let ch=s.children;for(let j=0;j<ch.length;j++)ch[j].innerHTML=S[gS()];if(iW){if(i<mC)ch[1].innerHTML=S[mS];else{let bs=gS();while(bs===mS||bs==='W')bs=gS();ch[1].innerHTML=S[bs]}}else{if(i===0)ch[1].innerHTML=S['7'];if(i===1)ch[1].innerHTML=S['H'];if(i===2)ch[1].innerHTML=S['D']}void s.offsetWidth;setTimeout(()=>{s.style.transition='transform 2s cubic-bezier(0.15,0.85,0.2,1.15)';s.style.transform='translateY(0px)';setTimeout(()=>pA('aE'),2e3)},i*150)}let m=document.getElementById('ms');m.style.transition='none';m.style.transform=`translateY(-${oF}px)`;let mC_=m.children;for(let j=0;j<mC_.length;j++)mC_[j].innerHTML=`<span class="mt">${vM[Math.floor(Math.random()*vM.length)]}</span>`;mC_[1].innerHTML=`<span class="mt" style="color:#0f0">${fM}x</span>`;let tz='<span class="hm">'+(Math.random()>.5?'50x':'100x')+'</span>';if(Math.random()>.5)mC_[0].innerHTML=`<span class="mt">${tz}</span>`;else mC_[2].innerHTML=`<span class="mt">${tz}</span>`;void m.offsetWidth;setTimeout(()=>{m.style.transition='transform 2s cubic-bezier(0.15,0.85,0.2,1.15)';m.style.transform='translateY(0px)'},750);setTimeout(()=>{if(iW&&fW>0){pA('aW');if(ph&&ph!=="Guest")db.ref('users/'+ph+'/winning_balance').set(wB+fW);sC(fW);for(let i=0;i<mC;i++)document.getElementById(`s-${i}`).children[1].classList.add('wg');m.children[1].classList.add('wg');let w=document.getElementById('wdp');w.innerHTML=`₹ ${fW.toFixed(2)} <br><span style="font-size:14px;color:#f9f">(${mC} Match + ${fM}x)</span>`;w.style.color="#0f0";setTimeout(()=>w.style.color="#b8860b",2500)}sp=0},2800)}
+    // ==========================================
+    // 🔥 FIREBASE WALLET CONNECTION (STRICT) 🔥
+    // ==========================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
+        databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
+        projectId: "kalyan-casino"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    
+    // Exactly matches your Dashboard and Andar Bahar logic
+    const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+    
+    let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0;
+
+    if (phone && phone !== "Guest" && phone !== "null") {
+        db.ref('users/' + phone).on('value', snap => {
+            let data = snap.val() || {};
+            depBal = parseFloat(data.balance || 0);
+            winBal = parseFloat(data.winning_balance || 0);
+            bonBal = parseFloat(data.bonus_balance || 0);
+            totalBal = Math.max(0, depBal + winBal + bonBal);
+            document.getElementById('pb').innerText = totalBal.toFixed(2);
+        });
+    } else {
+        document.getElementById('pb').innerText = "LOGIN!";
+        document.getElementById('pb').style.color = "#ff0000";
+    }
+
+    // ==========================================
+    // 💀 BRUTAL PROFIT LOGIC & MATH ENGINE 💀
+    // ==========================================
+    const betLevels = [10, 50, 100, 250, 500, 1000, 5000];
+    let currentBetIndex = 0, betAmount = 10, isSpinning = false, musicEnabled = true;
+
+    const S = {
+        'W': '<div class="sw">WILD</div>', 'C': '<div class="se">👑</div>', '7': '<div class="s7">7</div>',
+        'H': '<div class="se">🍒</div>', 'B': '<div class="se">🔔</div>', 'L': '<div class="se">🍋</div>', 'D': '<div class="se">💎</div>'
+    };
+    const K = Object.keys(S);
+    
+    // Payouts based on match count (3, 4, or 5)
+    const P = {
+        'W': {3: 5, 4: 10, 5: 25}, // Reduced payouts
+        'C': {3: 2, 4: 5, 5: 10},
+        '7': {3: 1, 4: 2, 5: 5},
+        'DF': {3: 0.5, 4: 1, 5: 2}
+    };
+
+    // VISUAL MULTIPLIERS (To tease the player)
+    const vM = ['0.5x', '1x', '2x', '<span class="hm">10x</span>', '<span class="hm">50x</span>', '<span class="hm">100x</span>'];
+    
+    // SAFE MULTIPLIERS (What they actually get if they win)
+    const sM = [0.5, 1, 1.5, 2]; // Max multiplier is just 2x
+
+    const sL = 40, sH = 75, oF = (sL - 4) * sH;
+
+    // --- AUDIO ---
+    function toggleMusic() {
+        musicEnabled = !musicEnabled;
+        let b = document.getElementById('stb'), a = document.getElementById('aB');
+        if (!musicEnabled) { a.pause(); b.innerText = "MUSIC: OFF"; } 
+        else { a.play().catch(()=>{}); b.innerText = "MUSIC: ON"; }
+    }
+    function pA(i) {
+        if (!musicEnabled) return;
+        try { let s = document.getElementById(i); s.currentTime = 0; s.play().catch(()=>{}); } catch(e) {}
+    }
+
+    // --- COINS ANIMATION ---
+    function sC(amount) {
+        let m = document.getElementById('app'), w = document.getElementById('wb').getBoundingClientRect(), r = m.getBoundingClientRect();
+        for (let i = 0; i < 15; i++) {
+            let c = document.createElement('div'); c.className = 'fc'; c.innerHTML = '🪙';
+            c.style.left = (r.width / 2 - 15) + 'px'; c.style.top = '350px';
+            m.appendChild(c);
+            setTimeout(() => {
+                c.style.left = (w.left - r.left + 30) + 'px'; c.style.top = (w.top - r.top + 15) + 'px';
+                c.style.opacity = '0'; c.style.transform = 'scale(0.5)';
+            }, i * 40);
+            setTimeout(() => c.remove(), 1000);
+        }
+        setTimeout(() => {
+            let x = document.getElementById('pb'); x.style.transform = 'scale(1.2)';
+            setTimeout(() => x.style.transform = 'scale(1)', 300);
+        }, 800);
+    }
+
+    function gS() { return K[Math.floor(Math.random() * K.length)]; }
+
+    // --- INITIALIZE REELS ---
+    function iB() {
+        let mr = document.getElementById('mr'); mr.innerHTML = '';
+        for (let i = 0; i < 5; i++) {
+            let rw = document.createElement('div'); rw.className = 'rw';
+            let rs = document.createElement('div'); rs.className = 'rs'; rs.id = `s-${i}`;
+            for (let j = 0; j < sL; j++) {
+                let d = document.createElement('div'); d.className = 'sy'; d.innerHTML = S[gS()]; rs.appendChild(d);
+            }
+            rs.style.transform = 'translateY(0px)'; rw.appendChild(rs); mr.appendChild(rw);
+        }
+        let ml = document.getElementById('ml'); ml.innerHTML = '';
+        let mw = document.createElement('div'); mw.className = 'mw';
+        let ms = document.createElement('div'); ms.className = 'rs'; ms.id = 'ms';
+        for (let j = 0; j < sL; j++) {
+            let d = document.createElement('div'); d.className = 'msy';
+            d.innerHTML = `<span class="mt">${vM[Math.floor(Math.random() * vM.length)]}</span>`; ms.appendChild(d);
+        }
+        ms.style.transform = 'translateY(0px)'; mw.appendChild(ms); ml.appendChild(mw);
+    }
+    document.addEventListener("DOMContentLoaded", iB);
+
+    function changeBet(d) {
+        if (isSpinning) return;
+        currentBetIndex = Math.max(0, Math.min(betLevels.length - 1, currentBetIndex + d));
+        betAmount = betLevels[currentBetIndex];
+        document.getElementById('bd').innerText = "₹" + betAmount;
+        document.getElementById('pw').innerText = "Up to ₹" + (betAmount * 50);
+        document.getElementById('pc').innerText = "Up to ₹" + (betAmount * 25);
+        document.getElementById('p7').innerText = "Up to ₹" + (betAmount * 5);
+    }
+
+    // --- SPIN ENGINE ---
+    function startRolling() {
+        if (isSpinning) return;
+        
+        if (!phone || phone === "Guest" || phone === "null") {
+            alert("Wallet Not Connected! Please login."); return;
+        }
+        if (totalBal < betAmount) {
+            alert("Insufficient Balance!"); return;
+        }
+
+        if (musicEnabled) document.getElementById('aB').play().catch(()=>{});
+        isSpinning = true;
+        
+        // 💰 MONEY DEDUCTION LOGIC (Same as Andar Bahar) 💰
+        let rem = betAmount, nDep = depBal, nWin = winBal;
+        if (nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
+        db.ref('users/' + phone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
+        
+        document.getElementById('wdp').innerText = "₹ 0.00";
+        document.querySelectorAll('.wg').forEach(e => e.classList.remove('wg'));
+        pA('aS');
+
+        // 💀 80% LOSS RATE (Only 20% Win Chance) 💀
+        let isWin = Math.random() < 0.20; 
+        let matchSymbol = null, matchCount = 0, baseWin = 0, finalMulti = 1;
+
+        if (isWin) {
+            matchSymbol = gS();
+            let c = Math.random();
+            if (c > 0.95) matchCount = 5; // Very rare 5 match
+            else if (c > 0.70) matchCount = 4;
+            else matchCount = 3;
+
+            let pt = P[matchSymbol] || P['DF'];
+            baseWin = betAmount * pt[matchCount];
+            finalMulti = sM[Math.floor(Math.random() * sM.length)]; // Safe multiplier
+        }
+        
+        let finalWin = baseWin * finalMulti;
+
+        for (let i = 0; i < 5; i++) {
+            let s = document.getElementById(`s-${i}`);
+            s.style.transition = 'none'; s.style.transform = `translateY(-${oF}px)`;
+            let ch = s.children;
+            for (let j = 0; j < ch.length; j++) ch[j].innerHTML = S[gS()];
+            
+            if (isWin) {
+                if (i < matchCount) ch[1].innerHTML = S[matchSymbol];
+                else {
+                    let bs = gS(); while (bs === matchSymbol || bs === 'W') bs = gS();
+                    ch[1].innerHTML = S[bs];
+                }
+            } else {
+                // Ensure absolute loss on line 1
+                if (i === 0) ch[1].innerHTML = S['7'];
+                if (i === 1) ch[1].innerHTML = S['H'];
+                if (i === 2) ch[1].innerHTML = S['D'];
+            }
+            
+            void s.offsetWidth;
+            setTimeout(() => {
+                s.style.transition = 'transform 2s cubic-bezier(0.15,0.85,0.2,1.15)';
+                s.style.transform = 'translateY(0px)';
+                setTimeout(() => pA('aE'), 2000);
+            }, i * 150);
+        }
+
+        let m = document.getElementById('ms');
+        m.style.transition = 'none'; m.style.transform = `translateY(-${oF}px)`;
+        let mC = m.children;
+        for (let j = 0; j < mC.length; j++) {
+            mC[j].innerHTML = `<span class="mt">${vM[Math.floor(Math.random() * vM.length)]}</span>`;
+        }
+        
+        mC[1].innerHTML = `<span class="mt" style="color:#0f0">${finalMulti}x</span>`;
+        let tz = '<span class="hm">' + (Math.random() > 0.5 ? '50x' : '100x') + '</span>';
+        if (Math.random() > 0.5) mC[0].innerHTML = `<span class="mt">${tz}</span>`;
+        else mC[2].innerHTML = `<span class="mt">${tz}</span>`;
+        
+        void m.offsetWidth;
+        setTimeout(() => {
+            m.style.transition = 'transform 2s cubic-bezier(0.15,0.85,0.2,1.15)';
+            m.style.transform = 'translateY(0px)';
+        }, 750);
+
+        setTimeout(() => {
+            if (isWin && finalWin > 0) {
+                pA('aW');
+                // 💰 MONEY ADDITION LOGIC 💰
+                db.ref('users/' + phone + '/winning_balance').set(winBal + finalWin);
+                sC(finalWin);
+                
+                for (let i = 0; i < matchCount; i++) document.getElementById(`s-${i}`).children[1].classList.add('wg');
+                m.children[1].classList.add('wg');
+                
+                let w = document.getElementById('wdp');
+                w.innerHTML = `₹ ${finalWin.toFixed(2)} <br><span style="font-size:14px;color:#f9f">(${matchCount} Match + ${finalMulti}x)</span>`;
+                w.style.color = "#0f0";
+                setTimeout(() => w.style.color = "#b8860b", 2500);
+            }
+            isSpinning = false;
+        }, 2800);
+    }
 </script>
 </body>
 </html>
