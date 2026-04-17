@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Kalyan Pro - Number & Multiplier VIP</title>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;font-family:'Oswald',sans-serif}
+html,body{background:#05000a;display:flex;justify-content:center;align-items:center;width:100%;height:100%;position:fixed;top:0;left:0;overflow:hidden;touch-action:none;}
+.a{width:100%;max-width:450px;height:100%;background:linear-gradient(180deg,#1b0a2b 0%,#0d0415 50%,#000 100%);display:flex;flex-direction:column}
+.h{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:#000;border-bottom:2px solid #d4af37}
+.hl{color:#ffd700;font-size:22px;font-weight:bold; letter-spacing: 1px; text-shadow: 0 0 10px #ffd700;}
+.st{background:#222;border:1px solid #ffd700;color:#ffd700;padding:4px 12px;border-radius:5px;font-size:14px;cursor:pointer}
+.pb{background:linear-gradient(90deg,#330000,#4d0000,#330000);padding:8px 5px;border-bottom:2px solid #ff3333;display:flex;justify-content:space-around;align-items:center}
+.pi{display:flex;flex-direction:column;align-items:center;width:24%;background:rgba(0,0,0,0.6);border:1px solid #ffcc00;border-radius:5px;padding:5px;text-align:center}
+.pv{color:#00ff00;font-size:14px;font-weight:bold;margin-top:2px;text-shadow:0 0 5px #00ff00;white-space:nowrap}
+.pt{color:#ffcc00;font-size:10px;font-family:Arial; font-weight:900;}
+.ps{font-size:9px;color:#aaa;margin-top:-2px;margin-bottom:2px}
+.sm{flex:1;display:flex;justify-content:center;align-items:center;padding:10px;background:radial-gradient(circle,#331a00,#000)}
+
+/* 🔥 BOARD & LASER LINE 🔥 */
+.bc{display:flex;gap:6px;width:100%;height:250px;position:relative; justify-content:center;}
+
+/* THE TARGET LINE THAT CUTS SYMBOLS IN HALF */
+.target-line { position:absolute; top:50%; left:0; width:100%; height:4px; background:rgba(255,0,0,0.8); box-shadow:0 0 15px #ff0000, 0 0 5px #fff; transform:translateY(-50%); z-index:15; pointer-events:none; border-radius:2px;}
+
+.rb{flex:4; display:flex;gap:6px;padding:6px;background:#1a0a00;border:3px solid #b8860b;border-radius:10px;height:100%;overflow:hidden;}
+.mb{flex:1.2; padding:6px;background:#2a0033;border:3px solid #ff00ff;border-radius:10px;height:100%;overflow:hidden;box-shadow:inset 0 0 20px #000}
+
+.rw,.mw{width:100%;height:100%;overflow:hidden;position:relative;background:linear-gradient(to bottom, #111, #222, #111);border-radius:4px;display:block; box-shadow: inset 0 0 15px #000;}
+.rs{display:block;width:100%}
+
+/* SYMBOL HEIGHT FIXED TO EXACTLY 1/3 OF CONTAINER */
+.sy{height:78px;width:100%;display:flex;justify-content:center;align-items:center;flex-shrink:0; font-size:55px; font-weight:900; color:#fff; text-shadow: 0 4px 10px rgba(0,0,0,0.8), 0 0 15px #ffdf00; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.3);}
+.msy{height:78px;width:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;border-bottom:1px solid rgba(255,0,255,0.2); background:radial-gradient(circle,#4d004d,#000);color:#ffdf00;flex-shrink:0}
+.mt{font-size:24px;font-weight:bold}
+.hm{color:#ff0000;text-shadow:0 0 10px #ff0000,0 0 20px #ffdf00;font-size:28px!important}
+
+@keyframes nb{0%{box-shadow:0 0 10px #0f0,inset 0 0 15px #0f0;border-color:#0f0;background:linear-gradient(135deg,#030,#01a00); color:#0f0;}50%{box-shadow:0 0 25px #0f0,inset 0 0 30px #0f0;border-color:#fff;background:linear-gradient(135deg,#04d00,#030); color:#fff;}100%{box-shadow:0 0 10px #0f0,inset 0 0 15px #0f0;border-color:#0f0;background:linear-gradient(135deg,#030,#01a00); color:#0f0;}}
+.wg{animation:nb 0.6s infinite;z-index:20;border: 2px solid #0f0;}
+
+.db{background:#0a0300;padding:15px;display:flex;flex-direction:column;gap:15px;border-top:3px solid #d4af37;z-index:50}
+.wd{text-align:center;color:#b8860b;font-size:18px;font-weight:bold}
+.wa{color:#fff;font-size:32px;text-shadow:0 0 15px #fff}
+.cr{display:flex;justify-content:space-around;align-items:center}
+.bctrl{display:flex;align-items:center;gap:15px;background:#111;padding:10px 15px;border-radius:25px;border:1px solid #444}
+.bb{width:35px;height:35px;border-radius:50%;background:#333;color:#fff;border:none;font-size:22px;font-weight:bold;cursor:pointer}
+.sb{width:85px;height:85px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#ffdf00 0%,#b8860b 50%,#5a3a15 100%);border:4px solid #fff;box-shadow:0 5px 15px rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;cursor:pointer;transition:0.1s}
+.sb:active{transform:scale(0.95)}
+.si{width:30px;height:30px;border:4px solid #331a00;border-radius:50%;border-top-color:transparent;border-right-color:transparent;transform:rotate(-45deg);position:relative}
+.si::before{content:'';position:absolute;top:-8px;left:-6px;border:6px solid transparent;border-bottom-color:#331a00;transform:rotate(45deg)}
+.fc{position:absolute;width:30px;height:30px;background:radial-gradient(circle,#ffd700,#b8860b);border-radius:50%;border:2px solid #fff;z-index:100;transition:all 0.8s cubic-bezier(0.25,0.1,0.25,1);pointer-events:none;display:flex;justify-content:center;align-items:center;font-size:14px}
+</style>
+</head>
+<body>
+<div class="a" id="app">
+ <div class="h"><div class="hl">NUMBER VIP PRO 🎰</div><button class="st" id="stb" onclick="toggleMusic()">MUSIC: ON</button></div>
+ <div class="pb">
+  <div class="pi" style="border-color:#f0f"><div class="pt">4 MATCH</div><div class="ps">Mega Win</div><div class="pv" id="pw">Up to ₹5000</div></div>
+  <div class="pi"><div class="pt">3 MATCH</div><div class="ps">Mini Win</div><div class="pv" id="pc">Up to ₹500</div></div>
+  <div class="pi"><div class="pt">2 MATCH</div><div class="ps">Small Win</div><div class="pv" id="p7">Up to ₹50</div></div>
+  <div class="pi" style="border-color:#0f0;"><div class="pt">MULTIPLIER</div><div class="ps">Bonus Boost</div><div class="pv" style="color:#0f0">Up to 100x</div></div>
+ </div>
+ <div class="sm"><div class="bc">
+    <div class="target-line"></div>
+    <div class="rb" id="mr">
+        </div>
+    <div class="mb" id="ml">
+        </div>
+ </div></div>
+ <div class="db">
+  <div class="wd">TOTAL WIN <br><span class="wa" id="wdp">₹ 0.00</span></div>
+  <div class="cr">
+   <div class="bctrl"><button class="bb" onclick="changeBet(-1)">-</button><span id="bd" style="color:#fff;width:55px;text-align:center;font-size:20px; font-weight:bold;">₹10</span><button class="bb" onclick="changeBet(1)">+</button></div>
+   <div class="sb" id="sb" onclick="startRolling()"><div class="si"></div></div>
+   <div class="wb" id="wb" style="color:#0f0;font-size:16px;font-weight:700;text-align:center; min-width:80px;">
+        <span style="color:#ccc;font-size:12px">Balance</span><br>
+        ₹<span id="pb">Checking...</span>
+   </div>
+  </div>
+ </div>
+</div>
+<audio id="aB" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" loop></audio>
+<audio id="aS" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3"></audio>
+<audio id="aE" src="https://assets.mixkit.co/active_storage/sfx/134/134-preview.mp3"></audio>
+<audio id="aW" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+
+<script>
+    // 🔥 WALLET CONNECTION 🔥
+    const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+    
+    let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0;
+    const balanceText = document.getElementById('pb');
+
+    if (phone && phone !== "Guest" && phone !== "null") {
+        balanceText.innerText = "Syncing..."; balanceText.style.color = "#ffd700";
+        db.ref('users/' + phone).on('value', snap => {
+            if(snap.exists()) {
+                let data = snap.val();
+                depBal = parseFloat(data.balance || 0); winBal = parseFloat(data.winning_balance || 0); bonBal = parseFloat(data.bonus_balance || 0);
+                totalBal = Math.max(0, depBal + winBal + bonBal);
+                balanceText.innerText = totalBal.toFixed(2); balanceText.style.color = "#00ff00";
+            } else { balanceText.innerText = "0.00"; balanceText.style.color = "#00ff00"; }
+        });
+    } else {
+        balanceText.innerText = "LOGIN REQ"; balanceText.style.color = "#ff3333"; balanceText.style.fontSize = "14px";
+    }
+
+    // 💀 ENGINE & MATH 💀
+    const bL=[10,50,100,250,500,1e3,5e3]; let cB=0,bA=10,sp=0,mE=1;
+    const NUMS = ['0','1','2','3','4','5','6','7','8','9'];
+    const vM=['0.5x','1x','2x','3x','<span class="hm">10x</span>','<span class="hm">50x</span>','<span class="hm">100x</span>'];
+    const sM=[0.5, 1, 1.5, 2]; // Safe actual multipliers
+
+    const P = { 2: 2, 3: 10, 4: 50 }; // Base payout for matching 2, 3, or 4 numbers
+    const sL=40, sH=78, oF=(sL-3)*sH;
+
+    function toggleMusic(){mE=!mE;let b=document.getElementById('stb'),a=document.getElementById('aB');if(!mE){a.pause();b.innerText="MUSIC: OFF"}else{a.play().catch(()=>{});b.innerText="MUSIC: ON"}}
+    function pA(i){if(!mE)return;try{let s=document.getElementById(i);s.currentTime=0;s.play().catch(()=>{})}catch(e){}}
+    
+    function sC(a){
+        let m=document.getElementById('app'),w=document.getElementById('wb').getBoundingClientRect(),r=m.getBoundingClientRect();
+        for(let i=0;i<15;i++){
+            let c=document.createElement('div');c.className='fc';c.innerHTML='🪙';
+            c.style.left=(r.width/2-15)+'px';c.style.top='300px';m.appendChild(c);
+            setTimeout(()=>{c.style.left=(w.left-r.left+30)+'px';c.style.top=(w.top-r.top+15)+'px';c.style.opacity='0';c.style.transform='scale(0.5)'},i*40);
+            setTimeout(()=>c.remove(),1e3)
+        }
+        setTimeout(()=>{let x=document.getElementById('pb');x.style.transform='scale(1.2)';setTimeout(()=>x.style.transform='scale(1)',300)},800)
+    }
+    
+    function gN(){return NUMS[Math.floor(Math.random()*NUMS.length)]}
+    
+    function iB(){
+        let mr=document.getElementById('mr');mr.innerHTML='';
+        for(let i=0;i<4;i++){
+            let rw=document.createElement('div');rw.className='rw';
+            let rs=document.createElement('div');rs.className='rs';rs.id=`s-${i}`;
+            for(let j=0;j<sL;j++){
+                let d=document.createElement('div');d.className='sy';
+                let col = ['#ff3333','#33ccff','#00ff88','#ff99ff','#ffd700'][Math.floor(Math.random()*5)];
+                d.innerHTML = `<span style="color:${col}">${gN()}</span>`; rs.appendChild(d);
+            }
+            rs.style.transform='translateY(0px)';rw.appendChild(rs);mr.appendChild(rw)
+        }
+
+        let ml=document.getElementById('ml');ml.innerHTML='';
+        let mw=document.createElement('div');mw.className='mw';
+        let ms=document.createElement('div');ms.className='rs';ms.id='ms';
+        for(let j=0;j<sL;j++){
+            let d=document.createElement('div');d.className='msy';
+            d.innerHTML=`<span class="mt">${vM[Math.floor(Math.random()*vM.length)]}</span>`;ms.appendChild(d)
+        }
+        ms.style.transform='translateY(0px)';mw.appendChild(ms);ml.appendChild(mw)
+    }
+    document.addEventListener("DOMContentLoaded",iB);
+    
+    function changeBet(d){
+        if(sp)return; cB=Math.max(0,Math.min(bL.length-1,cB+d));bA=bL[cB];
+        document.getElementById('bd').innerText="₹"+bA;
+        document.getElementById('pw').innerText="Up to ₹"+(bA*50);
+        document.getElementById('pc').innerText="Up to ₹"+(bA*10);
+        document.getElementById('p7').innerText="Up to ₹"+(bA*2);
+    }
+    
+    // 🔥 SEQUENTIAL SPIN ENGINE 🔥
+    function startRolling(){
+        if(sp)return;
+        if(!phone || phone === "Guest" || phone === "null"){alert("Wallet Not Connected! Please login.");return;}
+        if(totalBal<bA){alert("Insufficient Balance!");return;}
+        if(mE)document.getElementById('aB').play().catch(()=>{});
+        sp=1;
+        
+        let rem=bA,nDep=depBal,nWin=winBal;
+        if(nDep>=rem){nDep-=rem}else{rem-=nDep;nDep=0;nWin-=rem}
+        db.ref('users/'+phone).update({balance:Math.max(0,nDep),winning_balance:Math.max(0,nWin)});
+        
+        document.getElementById('wdp').innerText="₹ 0.00";document.querySelectorAll('.wg').forEach(e=>e.classList.remove('wg'));pA('aS');
+        
+        // PROFIT LOGIC: 80% Loss, 20% Win
+        let iW = Math.random() < 0.20, mN = null, mC = 0, bW = 0, fM = 1;
+        
+        if(iW){
+            mN = gN(); 
+            let c=Math.random();
+            if(c>0.98) mC=4; else if(c>0.8) mC=3; else mC=2; 
+            bW = bA * P[mC];
+            fM = sM[Math.floor(Math.random() * sM.length)];
+        }
+        let finalWin = bW * fM;
+        let targetRow = 1; 
+
+        // 1. REEL 1 TO 4 (NUMBERS) - SEQUENTIAL STOP
+        for(let i=0;i<4;i++){
+            let s=document.getElementById(`s-${i}`);
+            s.style.transition='none';s.style.transform=`translateY(-${oF}px)`;
+            let ch=s.children;
+            
+            for(let j=0;j<ch.length;j++) {
+                let n = gN(); let col = ['#ff3333','#33ccff','#00ff88','#ff99ff','#ffd700'][Math.floor(Math.random()*5)];
+                ch[j].innerHTML=`<span style="color:${col}">${n}</span>`;
+            }
+            
+            if(iW){
+                if(i<mC) { ch[targetRow].innerHTML=`<span style="color:#ffd700">${mN}</span>`; } 
+                else { let bn=gN();while(bn===mN)bn=gN(); ch[targetRow].innerHTML=`<span style="color:#fff">${bn}</span>`; }
+            } else {
+                if(i===0) { ch[targetRow].innerHTML=`<span style="color:#fff">7</span>`; }
+                if(i===1) { ch[targetRow].innerHTML=`<span style="color:#fff">2</span>`; }
+                if(i===2) { ch[targetRow].innerHTML=`<span style="color:#fff">9</span>`; }
+            }
+            
+            void s.offsetWidth;
+            // DELAY: 300ms, 600ms, 900ms, 1200ms
+            let stopDelay = i * 300; 
+            setTimeout(()=>{
+                s.style.transition='transform 2s cubic-bezier(0.15,0.85,0.2,1.15)';
+                s.style.transform='translateY(0px)';
+                setTimeout(()=>pA('aE'), 2000); // Thud sound exactly when it stops
+            }, stopDelay);
+        }
+        
+        // 2. REEL 5 (MULTIPLIER) - STOPS LAST
+        let m=document.getElementById('ms');m.style.transition='none';m.style.transform=`translateY(-${oF}px)`;
+        let mC_=m.children;
+        for(let j=0;j<mC_.length;j++) mC_[j].innerHTML=`<span class="mt">${vM[Math.floor(Math.random()*vM.length)]}</span>`;
+        
+        mC_[targetRow].innerHTML=`<span class="mt" style="color:#0f0">${fM}x</span>`;
+        let tz='<span class="hm">'+(Math.random()>.5?'50x':'100x')+'</span>';
+        if(Math.random()>.5) mC_[0].innerHTML=`<span class="mt">${tz}</span>`; else mC_[2].innerHTML=`<span class="mt">${tz}</span>`;
+        
+        void m.offsetWidth;
+        // MULTIPLIER DELAY: 1500ms
+        setTimeout(()=>{
+            m.style.transition='transform 2s cubic-bezier(0.15,0.85,0.2,1.15)';
+            m.style.transform='translateY(0px)';
+            setTimeout(()=>pA('aE'), 2000); // Final Thud Sound
+        }, 1500);
+
+        // 3. FINAL WIN CALCULATION
+        // Total animation time = max delay (1500) + transform (2000) = 3500ms
+        setTimeout(()=>{
+            if(iW && finalWin>0){
+                pA('aW');
+                db.ref('users/'+phone+'/winning_balance').set(winBal+finalWin);
+                sC(finalWin);
+                
+                // Highlight winning boxes
+                for(let i=0;i<mC;i++) document.getElementById(`s-${i}`).children[targetRow].classList.add('wg');
+                m.children[targetRow].classList.add('wg');
+
+                let w=document.getElementById('wdp');
+                w.innerHTML=`₹ ${finalWin.toFixed(2)} <br><span style="font-size:14px;color:#f9f">(${mC} Match + ${fM}x)</span>`;
+                w.style.color="#0f0";
+                setTimeout(()=>w.style.color="#b8860b",2500)
+            }
+            sp=0
+        }, 3600); // 3.6 seconds for the full suspense!
+    }
+</script>
+</body>
+</html>
