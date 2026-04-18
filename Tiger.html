@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger - Yadav VIP Edition</title>
+    <title>Dragon Tiger - Yadav Premium Edition</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
@@ -13,38 +13,48 @@
         .game-wrapper { width: 100%; height: 100%; max-width: 500px; margin: 0 auto; background: radial-gradient(circle at top, #3a0000 0%, #110000 100%); display: flex; flex-direction: column; position: relative; }
         .header { height: 45px; background: rgba(0,0,0,0.8); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 2px solid #ffd700; z-index: 100; }
         .live-status { color: #00ff88; font-weight: 900; font-size: 13px; text-shadow: 0 0 8px #00ff88; }
-        .arena { height: 35%; position: relative; display: flex; justify-content: center; align-items: center; border-bottom: 3px solid #ffd700; box-shadow: inset 0 -20px 50px rgba(0,0,0,0.9); }
-        .beast-img { position: absolute; bottom: 0; height: 150px; z-index: 10; filter: drop-shadow(0 0 15px rgba(255,255,255,0.2)); }
-        .arena-dragon { left: -20px; } .arena-tiger { right: -20px; transform: scaleX(-1); }
-        .cards-area { display: flex; align-items: center; gap: 20px; z-index: 20; }
-        .card-slot { width: 65px; height: 90px; border: 2px solid rgba(255,215,0,0.5); border-radius: 8px; background: rgba(0,0,0,0.6); position: relative; display: flex; justify-content: center; align-items: center; }
-        .card-label { position: absolute; top: -25px; font-size: 14px; font-weight: 900; font-family: 'Cinzel', serif; }
-        .playing-card { width: 100%; height: 100%; border-radius: 6px; background: #fff; display: flex; justify-content: center; align-items: center; font-size: 32px; font-weight: 900; position: absolute; z-index: 10; box-shadow: 0 0 15px #fff; }
-        .red-card { color: #d32f2f; } .black-card { color: #212121; }
-        .timer-badge { position: absolute; top: 10px; background: rgba(0,0,0,0.8); border: 2px solid #ffd700; color: #ffd700; padding: 4px 15px; border-radius: 20px; font-size: 14px; font-weight: 900; z-index: 25; }
         
+        /* 🎯 MODIFIED BATTLE ARENA FOR CLOSE DISPLACEMENT 🎯 */
+        .arena { height: 35%; position: relative; display: flex; justify-content: center; align-items: center; border-bottom: 3px solid #ffd700; box-shadow: inset 0 -20px 50px rgba(0,0,0,0.9); }
+        .arena-dragon, .arena-tiger { position: absolute; bottom: 0; height: 150px; z-index: 10; filter: drop-shadow(0 0 15px rgba(255,255,255,0.2)); transform: scale(1.1); }
+        .arena-dragon { left: 0px; } .arena-tiger { right: 0px; transform: scaleX(-1) scale(1.1); }
+        
+        /* 🎯 MODIFIED CARD AREA LOGIC: PERFECTLY OPPOSING AND CLOSE 🎯 */
+        .cards-area { display: flex; align-items: center; gap: 0px; z-index: 20; position: relative;}
+        .card-container { display: flex; align-items: center; gap: 5px;}
+        
+        .card-slot { width: 65px; height: 90px; border: 2px solid rgba(255,215,0,0.5); border-radius: 8px; background: rgba(0,0,0,0.6); position: relative; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 15px rgba(0,0,0,0.8);}
+        .card-label { position: absolute; top: -25px; font-size: 14px; font-weight: 900; font-family: 'Cinzel', serif; letter-spacing: 1px; text-shadow: 2px 2px 4px #000; }
+        
+        /* 🎯 MP4 VIDEO CONTAINER AT EXACT 100% HEIGHT 🎯 */
+        .card-vid-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; border-radius: 6px; z-index: 5;}
+        .arena-vid { position: absolute; width: 100%; height: 100%; object-fit: cover; border-radius: 6px;}
+
+        .playing-card { width: 100%; height: 100%; border-radius: 6px; background: #fff; display: flex; justify-content: center; align-items: center; font-size: 32px; font-weight: 900; position: absolute; z-index: 10; box-shadow: 0 0 20px #fff;}
+        .red-card { color: #d32f2f; } .black-card { color: #212121; }
+        
+        /* 🎯 MODIFIED VS SCALE LOGIC 🎯 */
+        .vs-text { font-size: 40px; font-weight: 900; font-family: 'Cinzel', serif; color: #ffd700; text-shadow: 0 0 20px #ff5500, 0 0 40px #ff0000; transform: scale(0.9); margin: 0 -5px; z-index: 15;}
+
+        .timer-badge { position: absolute; top: 10px; background: rgba(0,0,0,0.8); border: 2px solid #ffd700; color: #ffd700; padding: 4px 15px; border-radius: 20px; font-size: 14px; font-weight: 900; z-index: 25; }
+
         .bet-board { flex: 1; padding: 8px; display: flex; flex-direction: column; gap: 6px; background: #1a0000; overflow-y: auto; }
         .bet-box { flex: 1; border-radius: 12px; border: 2px solid #ffd700; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.5); overflow: hidden; }
         .box-dragon { background: linear-gradient(to bottom, #b71c1c, #5c0000); }
         .box-tie { background: linear-gradient(to bottom, #2e7d32, #003300); }
         .box-tiger { background: linear-gradient(to bottom, #f57f17, #822c00); }
-        .box-title { font-size: 26px; font-weight: 900; font-family: 'Cinzel', serif; text-shadow: 2px 2px 4px #000; color: #fff; position: relative; z-index: 20; }
-        .pool-text { font-size: 14px; color: #ffd700; background: rgba(0,0,0,0.7); padding: 3px 12px; border-radius: 20px; border: 1px solid #ffd700; margin-top: 5px; position: relative; z-index: 20; }
         
-        /* 🔥 RUNNING ANIMATION FOR BOX IMAGES 🔥 */
-        .box-wm { position: absolute; height: 150%; opacity: 0.5; pointer-events: none; z-index: 1; }
-        .wm-dragon { left: -30px; animation: runDragon 1s infinite alternate ease-in-out; }
-        .wm-tiger { right: -30px; transform: scaleX(-1); animation: runTiger 1s infinite alternate ease-in-out; }
+        /* 🎯 MODIFIED PREVIEW NESTED SELECTOR FOR Yadav Edition loops 🎯 */
+        .box-vid { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; z-index: 1; pointer-events: none; }
+        .wm-dragon { left: -30px; animation: runDragon 1s infinite alternate ease-in-out; opacity: 0.5;}
+        .wm-tiger { right: -30px; transform: scaleX(-1); animation: runTiger 1s infinite alternate ease-in-out; opacity: 0.5;}
+        
+        @keyframes runDragon { 0% { transform: translateX(0) scale(1); } 100% { transform: translateX(15px) scale(1.1); } }
+        @keyframes runTiger { 0% { transform: scaleX(-1) translateX(0) scale(1); } 100% { transform: scaleX(-1) translateX(-15px) scale(1.1); } }
 
-        @keyframes runDragon {
-            0% { transform: translateX(0) scale(1); }
-            100% { transform: translateX(15px) scale(1.1); }
-        }
-        @keyframes runTiger {
-            0% { transform: scaleX(-1) translateX(0) scale(1); }
-            100% { transform: scaleX(-1) translateX(-15px) scale(1.1); }
-        }
-
+        .box-title { font-size: 26px; font-weight: 900; font-family: 'Cinzel', serif; text-shadow: 2px 2px 4px #000; color: #fff; position: relative; z-index: 20; pointer-events: none;}
+        .pool-text { font-size: 14px; color: #ffd700; background: rgba(0,0,0,0.7); padding: 3px 12px; border-radius: 20px; border: 1px solid #ffd700; margin-top: 5px; position: relative; z-index: 20; pointer-events: none;}
+        
         .bottom-bar { height: 65px; background: #000; padding: 0 10px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #ffd700; }
         .bal-display { font-size: 15px; font-weight: 900; color: #00ff88; }
         .chip-btn { width: 42px; height: 42px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 11px; font-weight: 900; border: 2px dashed #fff; margin-left: 5px; flex-shrink: 0; }
@@ -64,32 +74,65 @@
             <div class="live-status">● LIVE VIP</div>
             <div class="header-title" style="color:#fff;">YADAV <span style="color:#ffd700;">PRO</span></div>
         </div>
+        
         <div class="arena">
             <div class="timer-badge" id="tmr">WAITING</div>
+            
             <img src="https://freepngimg.com/thumb/dragon/10-2-dragon-png-hd.png" class="beast-img arena-dragon">
             <img src="https://freepngimg.com/thumb/tiger/32-tiger-png-image.png" class="beast-img arena-tiger">
+            
             <div class="cards-area">
-                <div class="card-slot" id="slot-d"></div>
-                <div style="font-size: 30px; color: #ffd700; font-weight: 900;">VS</div>
-                <div class="card-slot" id="slot-t"></div>
+                <div class="card-container">
+                    <div style="position:relative">
+                        <div class="card-label" style="color:#ff3333; left: -5px;">DRAGON</div>
+                        <div class="card-slot" id="slot-d">
+                            <div class="card-vid-container" id="vid-d">
+                                <video class="arena-vid" autoplay loop muted playsinline style="display:none">
+                                    <source src="1000042993.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="vs-text">VS</div>
+                    
+                    <div style="position:relative">
+                        <div class="card-label" style="color:#ffd700; left: 5px;">TIGER</div>
+                        <div class="card-slot" id="slot-t">
+                            <div class="card-vid-container" id="vid-t">
+                                <video class="arena-vid" autoplay loop muted playsinline style="display:none; transform: scaleX(-1);">
+                                    <source src="1000042989.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+        
         <div class="bet-board">
             <div class="bet-box box-dragon" id="box-dragon" onclick="placeBet('dragon')">
-                <img src="—Pngtree—blue dragon statue in chinese_15585112.png" class="box-wm wm-dragon" onerror="this.src='https://freepngimg.com/thumb/dragon/10-2-dragon-png-hd.png'">
+                <video class="box-vid" autoplay loop muted playsinline>
+                    <source src="1000042993.mp4" type="video/mp4">
+                </video>
                 <div class="box-title">DRAGON</div>
                 <div class="pool-text">₹<span id="pd">0</span></div>
             </div>
+            
             <div class="bet-box box-tie" id="box-tie" onclick="placeBet('tie')">
                 <div class="box-title" style="font-size: 20px;">TIE (8x)</div>
                 <div class="pool-text">₹<span id="pti">0</span></div>
             </div>
+            
             <div class="bet-box box-tiger" id="box-tiger" onclick="placeBet('tiger')">
-                <img src="fcb2c4eb-3ec1-4826-adfe-6977bd3e219b.jpeg" class="box-wm wm-tiger" onerror="this.src='https://freepngimg.com/thumb/tiger/32-tiger-png-image.png'">
+                <video class="box-vid" autoplay loop muted playsinline>
+                    <source src="1000042989.mp4" type="video/mp4">
+                </video>
                 <div class="box-title">TIGER</div>
                 <div class="pool-text">₹<span id="pt">0</span></div>
             </div>
         </div>
+        
         <div class="bottom-bar">
             <div class="bal-display">₹<span id="balance">0.00</span></div>
             <div style="display: flex; overflow-x: auto;">
@@ -113,7 +156,7 @@
 
         let audioInit = false;
         function initAudio() { document.getElementById('start-overlay').style.display='none'; audioInit=true; }
-        function playS(id) { if(audioInit) { let s=document.getElementById(id).cloneNode(); s.play(); } }
+        function playS(id) { if(audioInit) { let s=document.getElementById(id).cloneNode(); s.play().catch(()=>{}); } }
 
         let curC = 500, myB = {dragon:0, tie:0, tiger:0}, isB = false, bal=0, winB=0;
         
@@ -143,7 +186,12 @@
             if(st.state === 'betting') {
                 isB = true; tmr.innerText = st.timer + "s";
                 document.querySelectorAll('.win-glow').forEach(e=>e.classList.remove('win-glow'));
+                
+                // 🎯 Modified Round Start Sequence: Hide cards, hide Opposing MP4s loop nested 🎯
                 document.getElementById('slot-d').innerHTML=''; document.getElementById('slot-t').innerHTML='';
+                document.querySelector('#vid-d video').style.display = 'none';
+                document.querySelector('#vid-t video').style.display = 'none';
+                
                 myB = {dragon:0, tie:0, tiger:0};
             } else if(st.state === 'dealing' && isB) {
                 isB = false; tmr.innerText = "STOP";
@@ -151,16 +199,27 @@
             }
         });
 
+        // 🎯 Modified Reveal Cards logic: perfettamente Opposing high-height MP4 animation sequences setup nestedtriggers 🎯
         async function revealCards(w, cd, ct) {
             const syms = {S:'♠', H:'♥', D:'♦', C:'♣'};
             const getC = (c) => `<div class="playing-card" style="color:${(c.suit=='H'||c.suit=='D')?'red':'black'}">${c.val=='0'?'10':c.val}<br>${syms[c.suit]}</div>`;
             
             await new Promise(r=>setTimeout(r,500));
-            document.getElementById('slot-d').innerHTML = getC(cd); playS('sndCard');
+            
+            // 🎯 Modified First nested reveal trigger: opposer MP4 play logic nestedtrigger 🎯
+            let vD = document.querySelector('#vid-d video');
+            vD.style.display = 'block'; vD.play(); // Play opposing Dragon loop flash nestedtrigger
+            pSnd('sndCard', 1.0);
+            
+            // Modified Second nested reveal trigger: opposer MP4 play logic nestedtrigger 🎯
             await new Promise(r=>setTimeout(r,800));
-            document.getElementById('slot-t').innerHTML = getC(ct); playS('sndCard');
+            let vT = document.querySelector('#vid-t video');
+            vT.style.display = 'block'; vT.play(); // Play opposing Tiger loop clash nestedtrigger
+            pSnd('sndCard', 1.0);
+            
             await new Promise(r=>setTimeout(r,1000));
             
+            // Finalise nested trigger: WINNER Setup logic nestedtrigger 🎯
             document.getElementById('box-'+w).classList.add('win-glow'); playS('sndWin');
             
             if(phone) {
@@ -172,7 +231,7 @@
             }
         }
 
-        // --- MASTER PROFIT ENGINE ---
+        // --- MASTER PROFIT ENGINE: Least Amount Wins setup condition 🎯 ---
         let isMaster = false;
         setInterval(() => {
             db.ref('Game/DragonTiger/HB').once('value', s => {
@@ -195,6 +254,7 @@
                 let all = s.val()||{}, tD=0, tT=0, tTi=0;
                 for(let u in all) { tD+=(all[u].dragon||0); tT+=(all[u].tiger||0); tTi+=(all[u].tie||0); }
                 
+                // Least amount side trigger setup nestedcondition 🎯
                 let win = (tD < tT) ? 'dragon' : 'tiger';
                 if(tTi < tD && tTi < tT && Math.random() > 0.8) win = 'tie';
                 
