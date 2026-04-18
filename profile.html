@@ -17,8 +17,8 @@
         
         .back-btn { position: absolute; left: 20px; top: 20px; color: #ffd700; font-size: 20px; text-decoration: none; }
         
-        /* 📸 AVATAR & CAMERA UPLOAD */
-        .avatar-wrapper { position: relative; width: 90px; height: 90px; margin: 0 auto 15px; }
+        /* 📸 AVATAR DESIGN */
+        .avatar-wrapper { position: relative; width: 90px; height: 90px; margin: 0 auto 15px; cursor: pointer; }
         .avatar-wrapper img { 
             width: 100%; height: 100%; border-radius: 50%; border: 3px solid #ffd700; 
             object-fit: cover; box-shadow: 0 0 20px rgba(255,215,0,0.4); background: #222;
@@ -26,7 +26,7 @@
         .camera-icon { 
             position: absolute; bottom: 0; right: -5px; background: #ffd700; color: #000; 
             width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; 
-            justify-content: center; font-size: 15px; cursor: pointer; border: 2.5px solid #1a1a24; 
+            justify-content: center; font-size: 15px; border: 2.5px solid #1a1a24; 
         }
 
         /* 📝 NAME EDITING */
@@ -38,7 +38,7 @@
         .name-input::placeholder { color: #666; font-size: 16px; }
         .user-id { font-size: 14px; font-weight: bold; color: #aaa; margin-bottom: 15px; }
         
-        /* 💾 SAVE BUTTON (Hidden by default) */
+        /* 💾 SAVE BUTTON */
         #save-btn { 
             display: none; background: linear-gradient(90deg, #ffd700, #ffae00); color: #000; 
             padding: 8px 25px; border-radius: 20px; font-weight: 900; border: none; 
@@ -73,6 +73,33 @@
             color: #ff4d4d; padding: 15px; text-align: center; border-radius: 12px; 
             font-weight: 900; cursor: pointer; letter-spacing: 1px;
         }
+
+        /* 🖼️ AVATAR SELECTION MODAL (POPUP) */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); z-index: 999;
+            align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s;
+        }
+        .modal-content {
+            background: linear-gradient(180deg, #2a2a35, #111); width: 90%; max-width: 400px;
+            border-radius: 20px; border: 2px solid #ffd700; padding: 20px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9); transform: scale(0.8); transition: transform 0.3s;
+        }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal-overlay.show .modal-content { transform: scale(1); }
+        
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px;}
+        .modal-header h3 { margin: 0; color: #ffd700; font-weight: 900; text-transform: uppercase; }
+        .close-modal { color: #fff; font-size: 24px; cursor: pointer; font-weight: bold; }
+        
+        .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-height: 300px; overflow-y: auto; padding: 5px; }
+        .avatar-option { 
+            width: 100%; aspect-ratio: 1/1; border-radius: 50%; border: 2px solid transparent; 
+            cursor: pointer; transition: 0.2s; object-fit: cover;
+        }
+        .avatar-option:active { transform: scale(0.9); }
+        .avatar-option.selected { border-color: #00ff88; box-shadow: 0 0 15px #00ff88; transform: scale(1.1); }
+
     </style>
 </head>
 <body>
@@ -80,10 +107,9 @@
     <div class="profile-header">
         <a href="index.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
         
-        <div class="avatar-wrapper">
-            <img id="profile-img" src="https://via.placeholder.com/90?text=VIP" alt="Avatar">
-            <label for="imageUpload" class="camera-icon"><i class="fa-solid fa-camera"></i></label>
-            <input type='file' id="imageUpload" style="display:none;" accept=".png, .jpg, .jpeg" />
+        <div class="avatar-wrapper" onclick="openAvatarModal()">
+            <img id="profile-img" src="images/Avatar0.png" alt="Avatar">
+            <div class="camera-icon"><i class="fa-solid fa-pen"></i></div>
         </div>
 
         <input type="text" id="player-name" class="name-input" placeholder="APNA NAAM LIKHEIN" oninput="showSaveButton()">
@@ -136,6 +162,17 @@
 
     <div class="logout-btn" onclick="logoutUser()"><i class="fa-solid fa-power-off"></i> LOGOUT ACCOUNT</div>
 
+    <div id="avatarModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Choose Avatar</h3>
+                <span class="close-modal" onclick="closeAvatarModal()">&times;</span>
+            </div>
+            <div class="avatar-grid" id="avatarGrid">
+                </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
@@ -150,22 +187,18 @@
         const phone = localStorage.getItem('userPhone');
 
         if(!phone || phone === "Guest") {
-            window.location.href = "index.html"; // Agar login nahi hai toh wapas bhej do
+            window.location.href = "index.html"; 
         } else {
             document.getElementById('u-phone').innerText = "+91 " + phone;
             
-            // 🔥 REAL-TIME DATA LOAD
             db.ref('users/' + phone).on('value', (snap) => {
                 const data = snap.val();
                 if(data) {
-                    // Balance set karna
                     const total = (parseFloat(data.balance||0) + parseFloat(data.winning_balance||0) + parseFloat(data.bonus_balance||0));
                     document.getElementById('u-balance').innerText = "₹" + total.toFixed(2);
-                    
                     document.getElementById('u-ref-count').innerText = data.referral_count || 0;
                     document.getElementById('u-earn').innerText = "₹" + (parseFloat(data.referral_earnings || 0)).toFixed(2);
 
-                    // Name aur DP set karna (Agar input mein type nahi kar raha tabhi update karo)
                     if(document.activeElement !== document.getElementById('player-name')) {
                         if(data.name) document.getElementById('player-name').value = data.name;
                     }
@@ -176,23 +209,10 @@
             });
         }
 
-        // 📸 PHOTO PREVIEW LOGIC
-        document.getElementById('imageUpload').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onloadend = function() {
-                document.getElementById('profile-img').src = reader.result;
-                showSaveButton(); // Photo change hote hi save button dikhao
-            }
-            if (file) { reader.readAsDataURL(file); }
-        });
-
-        // 📝 SAVE BUTTON SHOW KARNE KA LOGIC
         function showSaveButton() {
             document.getElementById('save-btn').style.display = "block";
         }
 
-        // 💾 DATA FIREBASE MEIN SAVE KAREIN
         function saveProfile() {
             const newName = document.getElementById('player-name').value.trim();
             const newPic = document.getElementById('profile-img').src;
@@ -207,18 +227,56 @@
             }).then(() => {
                 document.getElementById('save-btn').style.display = "none";
                 document.getElementById('save-btn').innerHTML = 'UPDATE PROFILE <i class="fa-solid fa-check"></i>';
-                alert("Profile Update Ho Gayi! 🔥");
+                // Alert ki jagah aap chaho toh custom toast dikha sakte ho
             }).catch((err) => {
                 alert("Error: " + err.message);
             });
         }
 
-        // 🚪 LOGOUT LOGIC
         function logoutUser() {
             if(confirm("Bhai, kya aap waqai Logout karna chahte hain?")) {
                 localStorage.removeItem('userPhone');
-                window.location.href = "login.html"; // Login page par bhej dein
+                window.location.href = "login.html"; 
             }
+        }
+
+        /* 🎭 AVATAR POPUP LOGIC 🎭 */
+        const modal = document.getElementById('avatarModal');
+        const avatarGrid = document.getElementById('avatarGrid');
+
+        // Total 12 Avatars load karna (Avatar0.png se Avatar11.png)
+        for(let i = 0; i <= 11; i++) {
+            let img = document.createElement('img');
+            img.src = `images/Avatar${i}.png`; // Dhyan dein: Folder ka naam 'images' hona chahiye
+            img.className = 'avatar-option';
+            img.onclick = () => selectAvatar(img.src, img);
+            avatarGrid.appendChild(img);
+        }
+
+        function openAvatarModal() {
+            modal.classList.add('show');
+        }
+
+        function closeAvatarModal() {
+            modal.classList.remove('show');
+        }
+
+        function selectAvatar(imageSrc, imgElement) {
+            // Purani selection hatana
+            document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+            // Nayi photo par border lagana
+            imgElement.classList.add('selected');
+            
+            // Profile image update karna aur popup band karna
+            document.getElementById('profile-img').src = imageSrc;
+            setTimeout(closeAvatarModal, 200); // Thoda ruk kar band karna taaki animation dikhe
+            
+            showSaveButton(); // Save button dikhana
+        }
+
+        // Bahar click karne par modal band karein
+        window.onclick = function(event) {
+            if (event.target == modal) { closeAvatarModal(); }
         }
     </script>
 </body>
