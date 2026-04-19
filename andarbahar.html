@@ -249,11 +249,10 @@
     </div>
 
     <script>
-        // IMAGE PRELOADER (Fix face card names)
+        // PRELOADER - Sirf Numbers aur Ace pre-load honge, J,Q,K hata diye hain.
         function preloadAllCards() {
             let p_suits = ['spades', 'hearts', 'diamonds', 'clubs'];
-            // Yahan se '2' hata diya hai standard naamo ke liye
-            let p_vals = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king'];
+            let p_vals = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
             
             p_suits.forEach(suit => {
                 p_vals.forEach(val => {
@@ -438,22 +437,35 @@
             document.getElementById('p-bahar').innerText = (realPool.bahar + botPool.bahar).toLocaleString();
         }
 
+        // 🔥 HYBRID FUNCTION: J, Q, K ke liye purana style aur baaki ke liye PNG 🔥
         function createCard(val, suit) {
-            let suitMap = {'S': 'spades', 'H': 'hearts', 'D': 'diamonds', 'C': 'clubs'};
-            // Yahan se '2' hata diya, wapas normal kar diya hai
-            let valMap = {'A': 'ace', 'J': 'jack', 'Q': 'queen', 'K': 'king', '10': '10', '0': '10'};
-            
-            let suitName = suitMap[suit];
-            let valName = valMap[val] || val; 
-
-            let fileName = `${valName}_of_${suitName}.png`.toLowerCase();
-
             let div = document.createElement('div');
             div.className = 'playing-card';
-            div.style.background = 'transparent'; 
-            div.style.border = 'none'; 
 
-            div.innerHTML = `<img src="${fileName}" style="width: 100%; height: 100%; border-radius: 4px; box-shadow: inherit;">`;
+            // Agar patta Jack, Queen ya King hai
+            if (val === 'J' || val === 'Q' || val === 'K') {
+                let sym = suit == 'S' ? '♠' : suit == 'H' ? '♥' : suit == 'D' ? '♦' : '♣';
+                let col = (suit == 'H' || suit == 'D') ? 'red-suit' : 'black-suit';
+                
+                div.classList.add(col);
+                div.style.background = '#ffffff'; 
+                div.style.border = '1px solid #ccc';
+                div.innerHTML = `${val}<span style="font-size:14px; margin-left:1px;">${sym}</span>`;
+            } 
+            // Baaki sabhi patton (A, 2-10) ke liye PNG image
+            else {
+                let suitMap = {'S': 'spades', 'H': 'hearts', 'D': 'diamonds', 'C': 'clubs'};
+                let valMap = {'A': 'ace', '10': '10', '0': '10'};
+                
+                let suitName = suitMap[suit];
+                let valName = valMap[val] || val; 
+
+                let fileName = `${valName}_of_${suitName}.png`.toLowerCase();
+
+                div.style.background = 'transparent'; 
+                div.style.border = 'none'; 
+                div.innerHTML = `<img src="${fileName}" style="width: 100%; height: 100%; border-radius: 4px; box-shadow: inherit;">`;
+            }
 
             return div;
         }
@@ -573,8 +585,8 @@
                     return;
                 }
                 
-                // 🔥 NAYA UPDATE: SPEED CONTROL - Yahan speed 600 se badhakar 1200 (1.2 seconds) kar di hai 🔥
-                await new Promise(r => setTimeout(r, 1200)); 
+                // Speed is set back to normal 600ms for fast gameplay
+                await new Promise(r => setTimeout(r, 600)); 
             }
         }
 
