@@ -26,9 +26,14 @@
             height: 45px; background: rgba(0,0,0,0.85); border-bottom: 2px solid #d4af37;
             display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 200;
         }
-        .history-row { display: flex; gap: 4px; overflow: hidden; max-width: 60%; }
+        .back-btn { font-size: 22px; cursor: pointer; color: #d4af37; margin-right: 10px; }
+        .history-row { display: flex; gap: 4px; overflow: hidden; max-width: 50%; }
         .h-dot { width: 22px; height: 22px; border-radius: 50%; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 1.5px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.5); flex-shrink: 0;}
         .online-status { font-size: 11px; font-weight: 900; color: #00ff88; text-shadow: 0 0 5px #00ff88; }
+
+        /* 🔥 ALERTS OVERLAY 🔥 */
+        .game-alert { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; width: 80%; max-width: 300px; display: none; pointer-events: none; }
+        .game-alert img, .game-alert video { width: 100%; height: auto; filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); }
 
         /* Dealer Area */
         .dealer-area {
@@ -86,7 +91,6 @@
         .bet-btn.andar { border-color: #4db8ff; color: #4db8ff; }
         .bet-btn.bahar { border-color: #ff4d94; color: #ff4d94; }
         
-        /* GLOW CLASSES */
         .win-glow {
             box-shadow: 0 0 25px #00ff88, inset 0 0 15px rgba(0, 255, 136, 0.4) !important;
             border-color: #00ff88 !important;
@@ -158,8 +162,17 @@
     <div class="game-container">
         
         <div class="top-nav">
-            <div class="history-row" id="record-board"></div>
-            <div class="online-status" id="live-users">● 1250 LIVE</div>
+            <div style="display: flex; align-items: center;">
+                <div class="back-btn" onclick="window.history.back()">⬅️</div>
+                <div class="history-row" id="record-board"></div>
+            </div>
+            <div class="online-status" id="live-users">● 285 LIVE</div>
+        </div>
+
+        <div id="alert-start" class="game-alert"><img src="assets/start-logo-261-5745.png" alt="Start Betting"></div>
+        <div id="alert-stop" class="game-alert"><img src="assets/stop-2-5754.gif" alt="Stop Betting"></div>
+        <div id="alert-wait" class="game-alert">
+            <video id="vid-wait" autoplay muted loop playsinline><source src="assets/VID-20260420-WA0000.mp4" type="video/mp4"></video>
         </div>
 
         <div class="dealer-area">
@@ -249,11 +262,9 @@
     </div>
 
     <script>
-        // PRELOADER - Sirf Numbers aur Ace pre-load honge, J,Q,K hata diye hain.
         function preloadAllCards() {
             let p_suits = ['spades', 'hearts', 'diamonds', 'clubs'];
             let p_vals = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-            
             p_suits.forEach(suit => {
                 p_vals.forEach(val => {
                     let img = new window.Image();
@@ -289,7 +300,6 @@
             } catch(e){}
         }
 
-        // BOTS LOGIC
         let botsList = [];
         for(let i=0; i<5; i++) botsList.push({id: Math.floor(1000+Math.random()*9000), bal: Math.floor(20000+Math.random()*50000)});
         
@@ -313,10 +323,10 @@
             renderBotsUI();
         }, 3000); 
 
-        let baseCount = 1250;
+        let baseCount = 285;
         setInterval(() => {
-            baseCount += Math.floor(Math.random() * 15) - 7;
-            if(baseCount < 1100) baseCount = 1200;
+            baseCount += Math.floor(Math.random() * 8) - 4;
+            if(baseCount < 250) baseCount = 280;
             document.getElementById('live-users').innerText = `● ${baseCount} LIVE`;
         }, 3500);
 
@@ -353,7 +363,6 @@
             playSound('coinSnd', 1.0);
         };
 
-        // Yahan se bacha hua code start ho raha hai...
         window.placeSideBet = function(rangeKey, payout) {
             if(!isBettingOpen) return;
             if(totalBal < currentChip) return alert("Low Balance!");
@@ -401,24 +410,24 @@
             if(div.children.length > 40) div.firstChild.remove();
         }
 
+        // 🔥 SMOOTH BOT BETTING: Har bot alag samay par bet lagayega 🔥
         function botBetAction() {
             if(!isBettingOpen) return;
-            let sides = ['andar', 'bahar'];
-            let botBetted = false;
-
-            sides.forEach(s => {
-                let amt = [10, 50, 100, 500, 1000, 5000][Math.floor(Math.random()*6)];
-                let randomBot = botsList[Math.floor(Math.random() * botsList.length)];
-                
-                if(randomBot.bal >= amt) {
-                    randomBot.bal -= amt; 
-                    spawnChip(s, amt);
-                    botPool[s] += amt; 
-                    updatePoolUI();
-                    botBetted = true;
+            
+            botsList.forEach(bot => {
+                // 30% chance ki bot is pal bet lagaye (Continuous feeling)
+                if(Math.random() < 0.3) {
+                    let s = Math.random() < 0.5 ? 'andar' : 'bahar';
+                    let amt = [10, 50, 100, 500, 1000][Math.floor(Math.random()*5)];
+                    if(bot.bal >= amt) {
+                        bot.bal -= amt; 
+                        spawnChip(s, amt);
+                        botPool[s] += amt; 
+                        updatePoolUI();
+                        playSound('coinSnd', 0.05);
+                    }
                 }
             });
-            if(botBetted) { renderBotsUI(); playSound('coinSnd', 0.05); }
         }
 
         db.ref('Game/AndarBahar/Bets').on('value', snap => {
@@ -438,92 +447,67 @@
             document.getElementById('p-bahar').innerText = (realPool.bahar + botPool.bahar).toLocaleString();
         }
 
-        // 🔥 HYBRID FUNCTION: J, Q, K ke liye purana style aur baaki ke liye PNG 🔥
         function createCard(val, suit) {
             let div = document.createElement('div');
             div.className = 'playing-card';
-
-            // Agar patta Jack, Queen ya King hai
             if (val === 'J' || val === 'Q' || val === 'K') {
                 let sym = suit == 'S' ? '♠' : suit == 'H' ? '♥' : suit == 'D' ? '♦' : '♣';
                 let col = (suit == 'H' || suit == 'D') ? 'red-suit' : 'black-suit';
-                
-                div.classList.add(col);
-                div.style.background = '#ffffff'; 
-                div.style.border = '1px solid #ccc';
+                div.classList.add(col); div.style.background = '#ffffff'; div.style.border = '1px solid #ccc';
                 div.innerHTML = `${val}<span style="font-size:14px; margin-left:1px;">${sym}</span>`;
-            } 
-            // Baaki sabhi patton (A, 2-10) ke liye PNG image
-            else {
+            } else {
                 let suitMap = {'S': 'spades', 'H': 'hearts', 'D': 'diamonds', 'C': 'clubs'};
                 let valMap = {'A': 'ace', '10': '10', '0': '10'};
-                
-                let suitName = suitMap[suit];
-                let valName = valMap[val] || val; 
-
+                let suitName = suitMap[suit]; let valName = valMap[val] || val; 
                 let fileName = `${valName}_of_${suitName}.png`.toLowerCase();
-
-                div.style.background = 'transparent'; 
-                div.style.border = 'none'; 
+                div.style.background = 'transparent'; div.style.border = 'none'; 
                 div.innerHTML = `<img src="${fileName}" style="width: 100%; height: 100%; border-radius: 4px; box-shadow: inherit;">`;
             }
-
             return div;
         }
 
-        // LISTENING TO SERVER
         db.ref('Game/AndarBahar/Status').on('value', snap => {
             let st = snap.val(); if(!st) return;
             let msg = document.getElementById('status-msg');
 
             if(st.state === 'betting') {
                 if(!isBettingOpen) {
-                    isBettingOpen = true; 
-                    animationActive = false; 
-
+                    isBettingOpen = true; animationActive = false; 
+                    document.getElementById('alert-wait').style.display = 'none';
                     document.getElementById('btn-andar').classList.remove('win-glow');
                     document.getElementById('btn-bahar').classList.remove('win-glow');
-                    document.querySelectorAll('.side-bet-box').forEach(b => b.classList.remove('side-win-glow'));
-
                     document.getElementById('track-andar').innerHTML = '<span class="track-label">ANDAR</span>';
                     document.getElementById('track-bahar').innerHTML = '<span class="track-label">BAHAR</span>';
                     document.querySelectorAll('.placed-bet, .sb-placed').forEach(d => d.style.display = 'none');
                     document.querySelectorAll('.chips-container-overlay').forEach(c => c.innerHTML = '');
                     
-                    myBets = {andar:0, bahar:0}; mySideBets = {};
-                    botPool = {andar:0, bahar:0};
+                    // 🔥 Start Alert Fast 🔥
+                    let aStart = document.getElementById('alert-start');
+                    aStart.style.display = 'block'; setTimeout(() => aStart.style.display = 'none', 800);
+
+                    myBets = {andar:0, bahar:0}; mySideBets = {}; botPool = {andar:0, bahar:0};
                     updatePoolUI();
-                    
                     clearInterval(botInterval);
-                    botInterval = setInterval(botBetAction, 700);
+                    botInterval = setInterval(botBetAction, 250); // Fast check for smooth betting
                 }
-                
                 document.getElementById('joker-spot').innerHTML = '';
                 document.getElementById('joker-spot').appendChild(createCard(st.jokerVal, st.jokerSuit));
-                
                 msg.innerText = `PLACE BETS: ${st.timer}s`;
                 msg.style.color = st.timer <= 5 ? '#ff3333' : '#00ff88';
             } 
             else if(st.state === 'dealing' && isBettingOpen) {
-                isBettingOpen = false; 
-                clearInterval(botInterval);
-                msg.innerText = "DEALING CARDS...";
-                msg.style.color = '#d4af37';
-                
+                isBettingOpen = false; clearInterval(botInterval);
+                // 🔥 Stop Alert Fast 🔥
+                let aStop = document.getElementById('alert-stop');
+                aStop.style.display = 'block'; setTimeout(() => aStop.style.display = 'none', 800);
+
+                msg.innerText = "DEALING CARDS..."; msg.style.color = '#d4af37';
                 showAnimation(st.winner, st.jokerVal);
-            }
-            else if(st.state === 'waiting') {
-                isBettingOpen = false;
-                clearInterval(botInterval);
-                msg.innerText = "WAITING FOR NEXT ROUND...";
-                msg.style.color = '#fff';
             }
         });
 
-        // MAGIC ENGINE
         async function showAnimation(win, jVal) {
             animationActive = true; 
-            
             let seedStr = String(jVal) + String(win) + "KALYANVIPSYNC";
             let hash = 0;
             for (let i = 0; i < seedStr.length; i++) hash = Math.imul(31, hash) + seedStr.charCodeAt(i) | 0;
@@ -535,7 +519,6 @@
             };
 
             let safeCards = cardValues.filter(v => v != jVal);
-
             let steps = Math.floor(prng() * 12) + 5; 
             if(win === 'andar' && steps % 2 === 0) steps++; 
             if(win === 'bahar' && steps % 2 !== 0) steps++; 
@@ -543,19 +526,11 @@
             let step = 0;
             for (let i = 0; i < steps; i++) {
                 if(!animationActive) return; 
-                
                 step++;
                 let side = (step % 2 !== 0) ? 'andar' : 'bahar'; 
                 let isLast = (i === steps - 1);
-                
-                let resVal, resSuit;
-                if(isLast) { 
-                    resVal = jVal; 
-                    resSuit = cardSuits[Math.floor(prng()*4)]; 
-                } else { 
-                    resVal = safeCards[Math.floor(prng() * safeCards.length)]; 
-                    resSuit = cardSuits[Math.floor(prng()*4)]; 
-                }
+                let resVal = isLast ? jVal : safeCards[Math.floor(prng() * safeCards.length)];
+                let resSuit = cardSuits[Math.floor(prng()*4)]; 
 
                 let track = document.getElementById('track-'+side);
                 track.appendChild(createCard(resVal, resSuit));
@@ -564,29 +539,15 @@
 
                 if(isLast) {
                     document.getElementById('status-msg').innerText = `${win.toUpperCase()} WINS!`;
-                    
                     document.getElementById(win === 'andar' ? 'btn-andar' : 'btn-bahar').classList.add('win-glow');
-
-                    let totalCards = steps;
-                    let winningSideId = '';
-                    if(totalCards <= 5) winningSideId = 'box-s1_5';
-                    else if(totalCards <= 10) winningSideId = 'box-s6_10';
-                    else if(totalCards <= 15) winningSideId = 'box-s11_15';
-                    else if(totalCards <= 25) winningSideId = 'box-s16_25';
-                    else if(totalCards <= 30) winningSideId = 'box-s26_30';
-                    else if(totalCards <= 35) winningSideId = 'box-s31_35';
-                    else if(totalCards <= 40) winningSideId = 'box-s36_40';
-                    else winningSideId = 'box-s41_plus';
+                    calculatePayouts(win, steps);
                     
-                    if(winningSideId) {
-                        document.getElementById(winningSideId).classList.add('side-win-glow');
-                    }
-
-                    calculatePayouts(win, totalCards);
+                    // Show Please Wait after win
+                    setTimeout(() => {
+                        document.getElementById('alert-wait').style.display = 'block';
+                    }, 3000);
                     return;
                 }
-                
-                // Speed is set back to normal 600ms for fast gameplay
                 await new Promise(r => setTimeout(r, 600)); 
             }
         }
@@ -605,25 +566,9 @@
         function calculatePayouts(win, totalCards) {
             if(!phone) return;
             let winAmt = (win === 'andar') ? myBets.andar * 1.95 : myBets.bahar * 2.0;
-
-            if(mySideBets['s1_5'] && totalCards <= 5) winAmt += mySideBets['s1_5'] * 2;
-            if(mySideBets['s6_10'] && totalCards >= 6 && totalCards <= 10) winAmt += mySideBets['s6_10'] * 3;
-            if(mySideBets['s11_15'] && totalCards >= 11 && totalCards <= 15) winAmt += mySideBets['s11_15'] * 4;
-            if(mySideBets['s16_25'] && totalCards >= 16 && totalCards <= 25) winAmt += mySideBets['s16_25'] * 3.5;
-            if(mySideBets['s26_30'] && totalCards >= 26 && totalCards <= 30) winAmt += mySideBets['s26_30'] * 12;
-            if(mySideBets['s31_35'] && totalCards >= 31 && totalCards <= 35) winAmt += mySideBets['s31_35'] * 20;
-            if(mySideBets['s36_40'] && totalCards >= 36 && totalCards <= 40) winAmt += mySideBets['s36_40'] * 45;
-            if(mySideBets['s41_plus'] && totalCards >= 41) winAmt += mySideBets['s41_plus'] * 100;
-
             if(winAmt > 0) {
                 db.ref(`users/${phone}/winning_balance`).set(firebase.database.ServerValue.increment(Number(winAmt.toFixed(2))));
             }
-            
-            db.ref('Game/AndarBahar/History').once('value', snap => {
-                let h = snap.val() || [];
-                h.push(win); if(h.length > 20) h.shift();
-                db.ref('Game/AndarBahar/History').set(h);
-            });
         }
     </script>
 </body>
