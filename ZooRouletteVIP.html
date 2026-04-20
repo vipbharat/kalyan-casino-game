@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kalyan VIP Zoo - Pro Rules + Recovery</title>
+    <title>Kalyan VIP Zoo - Complete V2</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
         
         body { 
-            background: radial-gradient(circle at top, #4a00e0, #8e2de2, #000000 80%); 
+            background: radial-gradient(circle at top, #1a4a1c, #0d2e10, #000000 90%); 
             color: white; 
             height: 100vh; 
             display: flex; 
@@ -25,13 +25,21 @@
         .sub-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3);}
         .wallet-box { border: 1.5px solid #ffd700; color: #ffd700; padding: 4px 12px; border-radius: 6px; font-weight: 800; font-size: 14px; background: rgba(255,215,0,0.1); box-shadow: 0 0 10px rgba(255,215,0,0.2);}
         
-        .history-strip { width: 100%; height: 35px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4);}
+        /* Modding Note: History strip images size */
+        .history-strip { width: 100%; height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4);}
         .h-tag { font-size: 10px; font-weight: 900; color: #ffd700; }
         .h-list { display: flex; gap: 4px; flex: 1; overflow: hidden; }
-        .h-item { min-width: 24px; height: 24px; background: #111; color: #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid #444; }
+        .h-item { min-width: 28px; height: 28px; background: #111; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #ffd700; padding: 2px;}
+        .h-item img { width: 100%; height: 100%; object-fit: contain; }
 
         /* 🔥 MAIN GAME BOARD 🔥 */
         .board-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 5px 10px; position: relative; }
+        
+        /* Full Screen Alerts (START, STOP, WAIT) */
+        .game-alert { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200; width: 80%; max-width: 300px; display: none; pointer-events: none; }
+        .game-alert img, .game-alert video { width: 100%; height: auto; filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); }
+        
+        .huge-timer { position: absolute; top: 0; left: 50%; transform: translate(-50%, -10%); font-size: 70px; font-weight: 900; color: #ffd700; text-shadow: 0 0 30px #ffd700, 0 0 10px #000; z-index: 50; pointer-events: none; }
         
         .game-board { 
             display: grid; 
@@ -41,18 +49,17 @@
             width: 100%; 
             max-width: 450px; 
             aspect-ratio: 1; 
-            border: 2.5px solid #ffd700; 
+            border: 3px solid #ffd700; 
             border-radius: 12px; 
             padding: 4px; 
             position: relative; 
             background: rgba(0, 0, 0, 0.7);
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,215,0,0.2);
         }
 
-        .track-item { background: rgba(255,255,255,0.08); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: 0.1s; }
-        .track-item.active { background: #fff; box-shadow: 0 0 15px #fff, inset 0 0 10px #fff; transform: scale(1.1); z-index: 10; border-radius: 6px;}
-        
-        .huge-timer { position: absolute; top: 0; left: 50%; transform: translate(-50%, -30%); font-size: 85px; font-weight: 900; color: #39ff14; text-shadow: 0 0 30px #39ff14, 0 0 10px #000; z-index: 50; pointer-events: none; }
+        .track-item { background: rgba(255,255,255,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: 0.1s; padding: 4px; border: 1px solid rgba(255,255,255,0.2);}
+        .track-item img { width: 90%; height: 90%; object-fit: contain; filter: drop-shadow(0 2px 2px #000); }
+        .track-item.active { background: #fff; box-shadow: 0 0 15px #fff, inset 0 0 10px #ffd700; transform: scale(1.15); z-index: 10; border-color: #ffd700;}
         
         .center-bets { grid-area: 2 / 2 / 7 / 7; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px; }
         
@@ -61,34 +68,33 @@
         .bet-btn.winning { box-shadow: 0 0 25px #39ff14; border-color: #39ff14 !important; background: #004d00 !important; }
 
         .btn-monkey { border-color: #8d6e63; background: linear-gradient(#4e342e, #111); }
-        .btn-panda { border-color: #cfd8dc; background: linear-gradient(#37474f, #111); }
+        .btn-panda { border-color: #cfd8dc; background: linear-gradient(#37474f, #111); } /* Replaced with Shark Image */
         .btn-peacock { border-color: #00bcd4; background: linear-gradient(#006064, #111); }
         .btn-lion { border-color: #ffb300; background: linear-gradient(#e65100, #111); }
-        .btn-shark { border-color: #03a9f4; background: linear-gradient(#01579b, #111); }
+        .btn-shark { border-color: #03a9f4; background: linear-gradient(#01579b, #111); } /* Replaced with Shark Image */
         .btn-eagle { border-color: #e53935; background: linear-gradient(#b71c1c, #111); }
         .btn-parrot { border-color: #4caf50; background: linear-gradient(#1b5e20, #111); }
         .btn-rabbit { border-color: #ab47bc; background: linear-gradient(#4a148c, #111); }
         .btn-dove { border-color: #bdbdbd; background: linear-gradient(#424242, #111); }
+        .btn-elephant { border-color: #9e9e9e; background: linear-gradient(#616161, #111); }
 
-        .btn-icon { font-size: 32px; filter: drop-shadow(0 2px 3px #000); }
-        .btn-multi { border: 1px solid #ffd700; color: #ffd700; font-size: 9px; padding: 1px 8px; border-radius: 10px; font-weight: 900; margin-top: 2px; background: #000;}
+        .btn-img { width: 50%; height: 50%; object-fit: contain; filter: drop-shadow(0 4px 4px #000); margin-bottom: 2px;}
+        .btn-multi { border: 1px solid #ffd700; color: #ffd700; font-size: 10px; padding: 1px 8px; border-radius: 10px; font-weight: 900; background: #000;}
         
         .pool-text { position: absolute; top: -6px; right: -6px; font-size: 10px; color: #000; font-weight: 900; background: #ffc107; padding: 2px 6px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.8); border: 1.5px solid #fff; z-index: 10;}
         
         .my-bet-tag { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); background: #00e5ff; color: #000; font-size: 10px; padding: 1px 8px; border-radius: 4px; font-weight: 900; display: none; z-index: 20; white-space: nowrap; box-shadow: 0 2px 4px #000;}
 
-        /* 🔥 ANIMALS & BIRDS BETS 🔥 */
-        .color-bets-container { display: flex; justify-content: space-between; gap: 10px; width: 100%; max-width: 450px; padding: 0 15px; margin: 0 auto 10px auto; }
-        .color-btn { flex: 1; height: 60px; border-radius: 8px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #555; transition: 0.1s; box-shadow: 0 4px 8px rgba(0,0,0,0.6);}
-        .color-btn:active { transform: scale(0.95); }
-        .red-box { background: linear-gradient(145deg, #d32f2f, #660000); border-color: #ff5252; box-shadow: inset 0 0 15px rgba(255,82,82,0.4);}
-        .black-box { background: linear-gradient(145deg, #424242, #000); border-color: #9e9e9e; box-shadow: inset 0 0 15px rgba(158,158,158,0.4);}
-        .color-btn.winning { border-color: #39ff14 !important; box-shadow: 0 0 25px #39ff14, inset 0 0 15px #39ff14; }
-        
-        .color-title { font-size: 18px; font-weight: 900; letter-spacing: 1px; text-shadow: 0 2px 2px #000; margin-bottom: 2px; line-height: 1;}
+        /* 🔥 WINNER POPUP 🔥 */
+        .winner-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; animation: fadeIn 0.3s; }
+        .win-box { background: radial-gradient(circle, #ffd700, #b8860b); padding: 20px; border-radius: 20px; text-align: center; border: 4px solid #fff; box-shadow: 0 0 50px #ffd700; position: relative; min-width: 250px;}
+        .win-box h2 { color: #000; font-size: 28px; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px;}
+        .win-box img { width: 120px; height: 120px; object-fit: contain; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); transform: scale(1.2); margin: 10px 0;}
+        .win-amount { font-size: 24px; color: #fff; font-weight: 900; background: #000; padding: 5px 15px; border-radius: 10px; margin-top: 15px; border: 2px solid #39ff14; display: none;}
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
 
         /* Chips Bottom */
-        .footer-chips { height: 12vh; border-top: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.6); display: flex; justify-content: space-evenly; align-items: center; padding-bottom: 5px; }
+        .footer-chips { height: 12vh; border-top: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.8); display: flex; justify-content: space-evenly; align-items: center; padding-bottom: 5px; }
         .chip { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; color: white; cursor: pointer; border: 2.5px solid rgba(255,255,255,0.5); transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.5);}
         .chip.selected { transform: translateY(-5px) scale(1.1); border-color: #fff; box-shadow: 0 0 20px #fff; }
         
@@ -100,7 +106,6 @@
 
         .placed-chip { position: fixed; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid white; pointer-events: none; z-index: 100; font-size: 8px; font-weight: 900; color: white; display: flex; align-items: center; justify-content: center; transition: all 0.4s ease-out; box-shadow: 2px 2px 6px rgba(0,0,0,0.8); }
 
-        /* 🔥 VIP ERROR ALERT TOAST 🔥 */
         .toast-msg { position: fixed; top: 15%; left: 50%; transform: translateX(-50%); background: rgba(220, 38, 38, 0.95); color: white; padding: 10px 20px; border-radius: 8px; font-weight: 900; z-index: 9999; border: 2px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.6); display: none; white-space: nowrap; font-size: 13px; text-align: center;}
     </style>
 </head>
@@ -110,6 +115,20 @@
     <audio id="soundBet" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3"></audio>
 
     <div class="toast-msg" id="toastMsg">⚠️ Warning</div>
+
+    <div id="alert-start" class="game-alert"><img src="assets/start-logo-261-5745.png" alt="Start Betting"></div>
+    <div id="alert-stop" class="game-alert"><img src="assets/stop-2-5754.gif" alt="Stop Betting"></div>
+    <div id="alert-wait" class="game-alert">
+        <video id="vid-wait" muted loop playsinline><source src="assets/VID-20260420-WA0000.mp4" type="video/mp4"></video>
+    </div>
+
+    <div class="winner-popup" id="winner-popup">
+        <div class="win-box">
+            <h2 id="win-name">LION WINS</h2>
+            <img id="win-img" src="assets/lion.png.png" alt="Winner">
+            <div class="win-amount" id="win-amount">+₹0</div>
+        </div>
+    </div>
 
     <div class="header">
         <div class="logo">KALYAN VIP ZOO</div>
@@ -133,21 +152,6 @@
         </div>
     </div>
 
-    <div class="color-bets-container">
-        <div class="color-btn red-box" id="btn-ANIMALS" onclick="placeBet(this, 'ANIMALS', selectedChipVal, selectedChipColor, event)">
-            <div class="pool-text">₹<span id="total-ANIMALS">0</span></div>
-            <div class="color-title">ANIMALS</div>
-            <div class="btn-multi">1.95x</div>
-            <div class="my-bet-tag" id="my-ANIMALS">₹<span>0</span></div>
-        </div>
-        <div class="color-btn black-box" id="btn-BIRDS" onclick="placeBet(this, 'BIRDS', selectedChipVal, selectedChipColor, event)">
-            <div class="pool-text">₹<span id="total-BIRDS">0</span></div>
-            <div class="color-title">BIRDS</div>
-            <div class="btn-multi">1.95x</div>
-            <div class="my-bet-tag" id="my-BIRDS">₹<span>0</span></div>
-        </div>
-    </div>
-
     <div class="footer-chips">
         <div class="chip selected c10" onclick="selectChip(10, this, '#2196f3')">10</div>
         <div class="chip c50" onclick="selectChip(50, this, '#9c27b0')">50</div>
@@ -160,6 +164,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
     <script>
+        // Database Config
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -167,16 +172,27 @@
         
         let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
         let selectedChipVal = 10; let selectedChipColor = '#2196f3';
-        let isBettingOpen = false, isSpinningLocal = false, spinInterval, liveBettingInterval;
-        let myBets = { 'ANIMALS': 0, 'BIRDS': 0 };
+        let isBettingOpen = false, isSpinningLocal = false, liveBettingInterval;
+        let myBets = {};
 
-        const animalList = ['🐒', '🐼', '🦁', '🐇'];
-        const birdList = ['🦚', '🦅', '🦜', '🕊️'];
+        // Modding Note: Image names updated based on GitHub setup
+        const imgMap = {
+            'monkey': 'assets/monkey.png.png',
+            'rabbit': 'assets/rabbit.png.png',
+            'lion': 'assets/lion.png.png',
+            'elephant': 'assets/elephant.png.png',
+            'peacock': 'assets/peacock.png.png',
+            'eagle': 'assets/eagle.png.png',
+            'parrot': 'assets/parrot.png.png',
+            'dove': 'assets/dove.png.png',
+            // Fallback for Shark (Replace with shark.png later if needed)
+            'shark': 'assets/eagle.png.png' 
+        };
 
         const betData = [
-            {id:'🐒', m:8, cls:'btn-monkey'}, {id:'🐼', m:8, cls:'btn-panda'}, {id:'🦚', m:8, cls:'btn-peacock'}, 
-            {id:'🦁', m:12, cls:'btn-lion'}, {id:'🦈', m:24, cls:'btn-shark'}, {id:'🦅', m:12, cls:'btn-eagle'}, 
-            {id:'🦜', m:3, cls:'btn-parrot'}, {id:'🐇', m:2, cls:'btn-rabbit'}, {id:'🕊️', m:6, cls:'btn-dove'}
+            {id:'monkey', m:8, cls:'btn-monkey'}, {id:'rabbit', m:6, cls:'btn-rabbit'}, {id:'peacock', m:8, cls:'btn-peacock'}, 
+            {id:'lion', m:12, cls:'btn-lion'}, {id:'shark', m:24, cls:'btn-shark'}, {id:'eagle', m:12, cls:'btn-eagle'}, 
+            {id:'parrot', m:6, cls:'btn-parrot'}, {id:'elephant', m:8, cls:'btn-elephant'}, {id:'dove', m:8, cls:'btn-dove'}
         ];
 
         const betContainer = document.getElementById('bet-container');
@@ -187,14 +203,15 @@
             div.onclick = (e) => placeBet(div, item.id, selectedChipVal, selectedChipColor, e);
             div.innerHTML = `
                 <div class="pool-text">₹<span id="total-${item.id}">0</span></div>
-                <div class="btn-icon">${item.id}</div>
+                <img src="${imgMap[item.id]}" class="btn-img">
                 <div class="btn-multi">${item.m}x</div>
                 <div class="my-bet-tag" id="my-${item.id}">₹<span>0</span></div>
             `;
             betContainer.appendChild(div);
         });
 
-        const trackSequence = ['🦜','🦁','🐇','🦈','🐒','🐼','🕊️', '🦅','🦜','📦','🐼','🦁', '🕊️','🦚','🦈','🐇','🐒','🦅','🦜', '🦁','🐼','🏺','🦚','🦅'];
+        // 24 Item Track Sequence
+        const trackSequence = ['parrot','lion','rabbit','shark','monkey','elephant','dove', 'eagle','parrot','rabbit','elephant','lion', 'dove','peacock','shark','rabbit','monkey','eagle','parrot', 'lion','elephant','peacock','peacock','eagle'];
         let trackElements = [];
         const board = document.getElementById('board');
         
@@ -203,31 +220,37 @@
         for(let i=7; i>=1; i--) createTrackItem(trackSequence[trackElements.length], 7, i);
         for(let i=6; i>=2; i--) createTrackItem(trackSequence[trackElements.length], i, 1);
 
-        function createTrackItem(emoji, row, col) {
+        function createTrackItem(id, row, col) {
             let div = document.createElement('div');
-            div.className = 'track-item'; div.style.gridArea = `${row} / ${col}`; div.innerText = emoji;
+            div.className = 'track-item'; div.style.gridArea = `${row} / ${col}`; 
+            div.innerHTML = `<img src="${imgMap[id]}">`;
             board.appendChild(div); trackElements.push(div);
         }
 
         let isAudioInit = false;
-        function initAudio() { isAudioInit = true; }
+        function initAudio() { 
+            if(!isAudioInit) {
+                isAudioInit = true;
+                document.getElementById('vid-wait').play().catch(e=>{});
+            }
+        }
         function playSound(obj, vol) { try { if(!isAudioInit) return; let c = obj.cloneNode(); c.volume = vol; c.play().catch(e=>{}); } catch(e){} }
 
         function showToast(msg) {
-            let t = document.getElementById('toastMsg');
-            t.innerHTML = msg;
-            t.style.display = 'block';
+            let t = document.getElementById('toastMsg'); t.innerHTML = msg; t.style.display = 'block';
             setTimeout(() => { t.style.display = 'none'; }, 2500);
         }
 
         function updateHistory(winId) {
             const list = document.getElementById('history-list');
             const newItem = document.createElement('div');
-            newItem.className = 'h-item'; newItem.innerText = winId;
+            newItem.className = 'h-item'; 
+            newItem.innerHTML = `<img src="${imgMap[winId]}">`;
             list.insertBefore(newItem, list.firstChild);
             if(list.children.length > 8) list.removeChild(list.lastChild); 
         }
 
+        // Sync Balance
         if (currentUserId) {
             db.ref(`users/${currentUserId}`).on('value', (s) => {
                 const d = s.val() || {}; 
@@ -237,72 +260,26 @@
             });
         }
 
-        // 🔥 1. PERMANENT HISTORY LOADER (Naye player ke aate hi pichla record dikhega) 🔥
-        db.ref('Game/ZooRoulette/History').once('value', (snapshot) => {
-            let pastRecords = snapshot.val();
-            if (pastRecords && Array.isArray(pastRecords)) {
-                // Reverse zaroori hai taaki list sahi order mein bane (Newest pehle aaye)
-                [...pastRecords].reverse().forEach(win => {
-                    updateHistory(win); 
-                });
-            }
+        // History Load
+        db.ref('Game/ZooRoulette/History').once('value', (s) => {
+            let pR = s.val();
+            if (pR && Array.isArray(pR)) { [...pR].reverse().forEach(win => updateHistory(win)); }
         });
 
-        // 🔥 2. AUTO BET RECOVERY (Agar player Back aakar wapas aaye) 🔥
-        if (currentUserId) {
-            db.ref(`Game/ZooRoulette/Bets/${currentUserId}`).once('value', (snapshot) => {
-                let savedBets = snapshot.val();
-                if (savedBets) {
-                    setTimeout(() => { // Thoda ruk kar taaki board load ho jaye
-                        Object.keys(savedBets).forEach(targetId => {
-                            let val = savedBets[targetId];
-                            if (val > 0 && myBets[targetId] !== undefined) {
-                                myBets[targetId] = val; // Local amount update
-                                
-                                // My Bet Tag wapas on karo
-                                let myTag = document.getElementById(`my-${targetId}`);
-                                if (myTag) {
-                                    myTag.style.display = 'block';
-                                    myTag.querySelector('span').innerText = val;
-                                }
-
-                                // Ek Recovery Chip dabbe par daal do (Red color ki taaki clear dikhe)
-                                let targetBox = document.getElementById(`btn-${targetId}`);
-                                if (targetBox) {
-                                    let rect = targetBox.getBoundingClientRect();
-                                    let staticChip = document.createElement('div');
-                                    staticChip.className = 'placed-chip';
-                                    staticChip.style.background = '#e74c3c'; 
-                                    staticChip.innerText = val >= 1000 ? (val/1000)+'K' : val;
-                                    staticChip.style.left = (rect.left + rect.width/2 - 11) + 'px';
-                                    staticChip.style.top = (rect.top + rect.height/2 - 11) + 'px';
-                                    document.body.appendChild(staticChip);
-                                }
-                            }
-                        });
-                    }, 600); 
-                }
-            });
-        }
-
+        // Live Fake Bets
         function startLivePlayerBets() {
             if (liveBettingInterval) clearInterval(liveBettingInterval);
             liveBettingInterval = setInterval(() => {
                 if (!isBettingOpen) return;
-                
                 const onlineBox = document.getElementById('online-badge').getBoundingClientRect();
-                const startX = onlineBox.left + (onlineBox.width / 2);
-                const startY = onlineBox.top + (onlineBox.height / 2);
-
-                const targets = ['🐒', '🐼', '🦚', '🦁', '🦈', '🦅', '🦜', '🐇', '🕊️', 'ANIMALS', 'BIRDS'];
+                const startX = onlineBox.left + (onlineBox.width / 2); const startY = onlineBox.top + (onlineBox.height / 2);
+                
+                const targets = ['monkey', 'elephant', 'peacock', 'lion', 'shark', 'eagle', 'parrot', 'rabbit', 'dove'];
                 const randomTargetId = targets[Math.floor(Math.random() * targets.length)];
                 let targetBox = document.getElementById(`btn-${randomTargetId}`);
                 if (!targetBox) return;
 
-                const fakeChips = [
-                    { val: 10, color: '#2196f3' }, { val: 50, color: '#9c27b0' },
-                    { val: 100, color: '#4caf50' }, { val: 500, color: '#f44336' }, { val: 1000, color: '#ffd700' }
-                ];
+                const fakeChips = [{ val: 10, color: '#2196f3' }, { val: 50, color: '#9c27b0' }, { val: 100, color: '#4caf50' }, { val: 500, color: '#f44336' }, { val: 1000, color: '#ffd700' }];
                 const rChip = fakeChips[Math.floor(Math.random() * fakeChips.length)];
 
                 let flyChip = document.createElement('div');
@@ -310,67 +287,64 @@
                 flyChip.innerText = rChip.val >= 1000 ? (rChip.val/1000)+'K' : rChip.val;
                 if (rChip.val === 10 || rChip.val === 1000) flyChip.style.color = '#000';
 
-                flyChip.style.left = startX + 'px'; flyChip.style.top = startY + 'px';
-                document.body.appendChild(flyChip);
+                flyChip.style.left = startX + 'px'; flyChip.style.top = startY + 'px'; document.body.appendChild(flyChip);
                 playSound(document.getElementById('soundBet'), 0.02); 
 
                 let dest = targetBox.getBoundingClientRect();
                 setTimeout(() => {
                     flyChip.style.left = (dest.left + 15 + Math.random() * (dest.width - 30)) + 'px';
                     flyChip.style.top = (dest.top + 15 + Math.random() * (dest.height - 30)) + 'px';
-                    
                     let poolSpan = targetBox.querySelector('.pool-text span');
-                    if(poolSpan) {
-                        let currentVal = parseInt(poolSpan.innerText.replace(/,/g, '')) || 0;
-                        poolSpan.innerText = (currentVal + rChip.val).toLocaleString();
-                    }
+                    if(poolSpan) { poolSpan.innerText = (parseInt(poolSpan.innerText.replace(/,/g, '')) + rChip.val).toLocaleString(); }
                 }, 50);
             }, 300); 
         }
 
-        function stopLivePlayerBets() {
-            clearInterval(liveBettingInterval);
-        }
-
+        // Firebase State Management
         let lastWinner = '';
         db.ref('Game/ZooRoulette/Status').on('value', (s) => {
             let st = s.val(); if(!st) return;
 
             if(st.state === 'betting') {
-                clearInterval(spinInterval); isSpinningLocal = false;
+                isSpinningLocal = false;
+                document.getElementById('alert-wait').style.display = 'none';
                 document.getElementById('main-timer').innerText = st.timer;
                 document.getElementById('main-timer').style.display = 'block';
-                document.getElementById('main-timer').style.color = st.timer <= 5 ? "#ff3333" : "#39ff14";
+                document.getElementById('main-timer').style.color = st.timer <= 5 ? "#ff3333" : "#ffd700";
                 
                 trackElements.forEach(el => el.classList.remove('active'));
-                document.querySelectorAll('.bet-btn, .color-btn').forEach(b => b.classList.remove('winning'));
+                document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('winning'));
                 
                 if(!isBettingOpen) { 
                     isBettingOpen = true; 
                     resetTable(); 
+                    
+                    // Show Start Alert
+                    let aStart = document.getElementById('alert-start');
+                    aStart.style.display = 'block';
+                    setTimeout(() => aStart.style.display = 'none', 1500);
+
                     startLivePlayerBets(); 
                 }
             } 
             else if (st.state === 'spinning' || st.state === 'result') {
                 if(isBettingOpen && !isSpinningLocal) {
                     isBettingOpen = false; isSpinningLocal = true;
-                    stopLivePlayerBets(); 
+                    clearInterval(liveBettingInterval);
                     document.getElementById('main-timer').style.display = 'none'; 
-                    if(st.winner) runTrackSpin(st.winner);
+                    
+                    // Show Stop Alert
+                    let aStop = document.getElementById('alert-stop');
+                    aStop.style.display = 'block';
+                    setTimeout(() => {
+                        aStop.style.display = 'none';
+                        if(st.winner) runTrackSpin(st.winner);
+                    }, 1500);
                 }
             }
         });
 
-        db.ref('Game/ZooRoulette/Bets').on('value', s => {
-            let allB = s.val() || {};
-            let tp = {'🐒':0, '🐼':0, '🦚':0, '🦁':0, '🦅':0, '🦈':0, '🕊️':0, '🐇':0, '🦜':0, 'ANIMALS':0, 'BIRDS':0};
-            for(let u in allB) { if(!u.includes('bot')) for(let c in allB[u]) if(tp[c] !== undefined) tp[c] += allB[u][c]; }
-            for(let c in tp) {
-                let elem = document.getElementById(`total-${c}`);
-                if(elem && tp[c] > 0) elem.innerText = tp[c].toLocaleString();
-            }
-        });
-
+        // Wheel Rotation
         function runTrackSpin(wId) {
             let sSnd = document.getElementById('soundSpin'); sSnd.currentTime = 0; sSnd.loop = true; sSnd.volume = 0.8; sSnd.play().catch(e=>{});
             let targetIndices = trackSequence.reduce((acc, el, i) => { if (el === wId) acc.push(i); return acc; }, []);
@@ -382,7 +356,7 @@
             function nextStep() {
                 trackElements.forEach(el => el.classList.remove('active'));
                 trackElements[currentIdx].classList.add('active');
-                if (step >= totalSteps) { sSnd.pause(); showWinner(wId); return; }
+                if (step >= totalSteps) { sSnd.pause(); showWinnerPopup(wId); return; }
                 step++; currentIdx = (currentIdx + 1) % 24;
                 if(totalSteps - step < 10) speed += 30;
                 setTimeout(nextStep, speed);
@@ -390,40 +364,41 @@
             nextStep();
         }
 
-        function showWinner(wId) {
+        function showWinnerPopup(wId) {
             playSound(document.getElementById('soundWin'), 1.0); 
             
             let winBtn = document.getElementById(`btn-${wId}`);
             if(winBtn) winBtn.classList.add('winning');
-
-            if(animalList.includes(wId)) document.getElementById('btn-ANIMALS').classList.add('winning');
-            if(birdList.includes(wId)) document.getElementById('btn-BIRDS').classList.add('winning');
-
             if (lastWinner !== wId) { lastWinner = wId; updateHistory(wId); }
 
+            let totalWin = 0;
             if(currentUserId) {
-                let totalWin = 0;
                 let winObj = betData.find(z => z.id === wId);
                 if(winObj && myBets[wId] > 0) totalWin += myBets[wId] * winObj.m;
-                
-                if(animalList.includes(wId) && myBets['ANIMALS'] > 0) totalWin += myBets['ANIMALS'] * 1.95;
-                if(birdList.includes(wId) && myBets['BIRDS'] > 0) totalWin += myBets['BIRDS'] * 1.95;
-
-                if(totalWin > 0) {
-                    db.ref(`users/${currentUserId}/winning_balance`).set(winBal + totalWin);
-                }
+                if(totalWin > 0) db.ref(`users/${currentUserId}/winning_balance`).set(winBal + totalWin);
             }
+
+            // Set Popup Data
+            document.getElementById('win-name').innerText = wId + " WINS";
+            document.getElementById('win-img').src = imgMap[wId];
+            
+            let amtBox = document.getElementById('win-amount');
+            if(totalWin > 0) { amtBox.innerText = "+₹" + totalWin; amtBox.style.display = 'inline-block'; } 
+            else { amtBox.style.display = 'none'; }
+
+            document.getElementById('winner-popup').style.display = 'flex';
+
+            // Hide popup and show Wait video after 4 seconds
+            setTimeout(() => {
+                document.getElementById('winner-popup').style.display = 'none';
+                document.getElementById('alert-wait').style.display = 'block';
+                document.getElementById('vid-wait').play().catch(e=>{});
+            }, 4000);
         }
 
         function resetTable() {
             document.querySelectorAll('.placed-chip').forEach(c => c.remove()); 
-            
             betData.forEach(z => { myBets[z.id] = 0; document.getElementById(`my-${z.id}`).style.display = 'none'; document.getElementById(`my-${z.id}`).querySelector('span').innerText = '0'; });
-            
-            myBets['ANIMALS'] = 0; myBets['BIRDS'] = 0;
-            document.getElementById(`my-ANIMALS`).style.display = 'none'; document.getElementById(`my-ANIMALS`).querySelector('span').innerText = '0';
-            document.getElementById(`my-BIRDS`).style.display = 'none'; document.getElementById(`my-BIRDS`).querySelector('span').innerText = '0';
-            
             document.querySelectorAll('.pool-text span').forEach(s => s.innerText = '0');
             lastWinner = '';
         }
@@ -433,13 +408,12 @@
             if (!currentUserId) { showToast("⚠️ Login Error!"); return; } 
             if (userBalance < val) { showToast("⚠️ Insufficient Balance!"); return; }
             
-            // Limit Logic
+            // Limit to 4 animals
             let activeBets = Object.keys(myBets).filter(k => myBets[k] > 0);
             if (myBets[targetId] === 0) { 
-                let nonSharkBetsCount = activeBets.filter(k => k !== '🦈').length;
-                if (targetId !== '🦈' && nonSharkBetsCount >= 4) {
-                    showToast("⚠️ Aap sirf 4 jagah aur Shark (🦈) par bet laga sakte hain!");
-                    return; 
+                let nonSharkBetsCount = activeBets.filter(k => k !== 'shark').length;
+                if (targetId !== 'shark' && nonSharkBetsCount >= 4) {
+                    showToast("⚠️ Aap sirf 4 jagah aur Shark par bet laga sakte hain!"); return; 
                 }
             }
             
