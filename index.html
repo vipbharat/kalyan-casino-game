@@ -14,7 +14,8 @@
         .card { background: #111; padding: 25px; border-radius: 15px; width: 300px; margin: auto; border: 1.5px solid #ffd700; box-shadow: 0 0 20px rgba(255,215,0,0.2); }
         .tab-btn { padding: 10px; cursor: pointer; color: #888; display: inline-block; width: 45%; border-bottom: 2px solid #333; }
         .active-tab { color: #ffd700; border-bottom: 2px solid #ffd700; font-weight: bold; }
-        input { width: 90%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; outline: none; }
+        input { width: 90%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; outline: none; transition: 0.3s; }
+        input:focus { border-color: #ffd700; box-shadow: 0 0 10px rgba(255,215,0,0.3); }
         button { width: 90%; padding: 14px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #000; margin-top: 10px; font-size: 16px; transition: 0.3s;}
         button:disabled { background: #555; color: #888; cursor: not-allowed; }
         .hidden { display: none !important; }
@@ -34,6 +35,8 @@
             transition: top 0.5s ease-in-out; text-align: left;
         }
         .sms-icon-box { background: #00e676; min-width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; }
+        
+        #autofill-text { color: #00ff88; font-size: 11px; font-weight: bold; margin-bottom: -5px; display: none; }
     </style>
 </head>
 <body>
@@ -43,21 +46,16 @@
     <div>
         <div style="font-size:11px; color:#666; font-weight:bold;">Messages • Just now</div>
         <div style="font-size:14px; font-weight:900;">Kalyan VIP</div>
-        <div style="font-size:13px; color:#333; margin-top:2px;">Your login OTP is <span id="fake-otp-text" style="font-weight:900; font-size:15px; color:#000;"></span>. Do not share it.</div>
+        <div style="font-size:13px; color:#333; margin-top:2px;">Your login OTP is <span id="fake-otp-text" style="font-weight:900; font-size:15px; color:#000;"></span>.</div>
     </div>
 </div>
 
 <div class="card">
     <div id="quick-login-box" class="hidden">
         <h3><i class="fa-solid fa-circle-check"></i> WELCOME BACK!</h3>
-        <p style="color: #aaa; font-size: 12px;">Aapka account pehle se login hai</p>
         <div class="saved-phone" id="saved-phone-text"></div>
-        <button class="go-btn" onclick="window.location.href='dashboard.html'">
-            PLAY NOW <i class="fa-solid fa-arrow-right"></i>
-        </button>
-        <button class="logout-btn" onclick="logoutUser()">
-            <i class="fa-solid fa-right-from-bracket"></i> LOGOUT / CHANGE ID
-        </button>
+        <button class="go-btn" onclick="window.location.href='dashboard.html'">PLAY NOW</button>
+        <button class="logout-btn" onclick="logoutUser()">LOGOUT</button>
     </div>
 
     <div id="normal-auth-box">
@@ -73,10 +71,10 @@
         </div>
 
         <div id="reg-box" class="hidden">
-            <input type="number" id="r-phone" placeholder="Mobile Number (10 digits)">
+            <input type="number" id="r-phone" placeholder="Mobile Number">
             
             <div id="reg-step2" class="hidden">
-                <p id="sms-success-msg" style="color: #00ff88; font-size: 12px;" class="hidden">✅ SMS OTP bheja gaya hai!</p>
+                <div id="autofill-text"><i class="fa-solid fa-magic-wand-sparkles"></i> OTP AUTO-FILLED</div>
                 <input type="number" id="r-otp" placeholder="Enter OTP">
                 <input type="password" id="r-pass1" placeholder="Create Password">
                 <input type="password" id="r-pass2" placeholder="Confirm Password">
@@ -101,25 +99,19 @@
 
     window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
 
-    let deviceId = localStorage.getItem('kalyan_device_id');
-    if(!deviceId) {
-        deviceId = "DEV_" + Math.random().toString(36).substr(2, 9) + Date.now();
-        localStorage.setItem('kalyan_device_id', deviceId);
-    }
+    let deviceId = localStorage.getItem('kalyan_device_id') || ("DEV_" + Math.random().toString(36).substr(2, 9));
+    localStorage.setItem('kalyan_device_id', deviceId);
 
     window.onload = function() {
         var savedPhone = localStorage.getItem('userPhone');
-        if(savedPhone && savedPhone !== "") {
+        if(savedPhone) {
             document.getElementById('normal-auth-box').classList.add('hidden');
             document.getElementById('quick-login-box').classList.remove('hidden');
             document.getElementById('saved-phone-text').innerText = "📱 " + savedPhone;
         }
     };
 
-    function logoutUser() {
-        localStorage.removeItem('userPhone');
-        window.location.reload(); 
-    }
+    function logoutUser() { localStorage.removeItem('userPhone'); window.location.reload(); }
 
     function toggleView(mode) {
         document.getElementById('login-box').classList.toggle('hidden', mode === 'r');
@@ -130,125 +122,83 @@
 
     function checkDeviceAndRegister() {
         var ph = document.getElementById('r-phone').value;
-        if(ph.length !== 10) return alert("⚠️ Sahi 10-digit number daalein!");
-
+        if(ph.length !== 10) return alert("⚠️ Sahi number daalein!");
         var btn = document.getElementById('main-btn');
         btn.disabled = true;
-        btn.innerText = "CHECKING SECURITY...";
+        btn.innerText = "CHECKING...";
 
         database.ref('DeviceLocks/' + deviceId).once('value').then(function(snap) {
-            if(snap.exists()) {
-                let linkedPhone = snap.val().phone;
-                if(linkedPhone !== ph) {
-                    alert("🚨 SECURITY ALERT!\nEk mobile se sirf ek hi account ban sakta hai.");
-                    btn.innerText = "DEVICE LOCKED";
-                    return; 
-                }
+            if(snap.exists() && snap.val().phone !== ph) {
+                alert("🚨 DEVICE LOCKED!");
+                btn.innerText = "LOCKED";
+            } else {
+                sendHybridOTP(ph, btn);
             }
-            sendHybridOTP(ph, btn);
-        }).catch(function(error) {
-            alert("Network Error.");
-            btn.disabled = false;
-            btn.innerText = "SEND OTP";
         });
     }
 
     function sendHybridOTP(ph, btn) {
-        btn.innerText = "SENDING OTP...";
-        var phoneNumberWithCode = "+91" + ph; 
-
-        firebase.auth().signInWithPhoneNumber(phoneNumberWithCode, window.recaptchaVerifier)
+        btn.innerText = "SENDING...";
+        firebase.auth().signInWithPhoneNumber("+91" + ph, window.recaptchaVerifier)
             .then(function (confirmationResult) {
-                // SUCCESS: Asli SMS
                 isRealSMS = true;
                 window.confirmationResult = confirmationResult;
-                document.getElementById('sms-success-msg').classList.remove('hidden');
-                showStep2(btn);
+                document.getElementById('autofill-text').style.display = 'none';
+                showStep2(btn, false);
             }).catch(function (error) {
-                // FAILED: Jugaad Notification
+                // FALLBACK JUGAAD WITH AUTO-FILL
                 isRealSMS = false;
                 globalFakeOTP = Math.floor(100000 + Math.random() * 899999).toString();
                 
-                // Set OTP in notification and slide it down
+                // Show SMS Popup
                 document.getElementById('fake-otp-text').innerText = globalFakeOTP;
-                let smsPopup = document.getElementById('sms-popup');
-                smsPopup.style.top = '15px'; 
+                document.getElementById('sms-popup').style.top = '15px';
+                setTimeout(() => { document.getElementById('sms-popup').style.top = '-120px'; }, 6000);
                 
-                // Hide notification after 8 seconds
-                setTimeout(() => { smsPopup.style.top = '-120px'; }, 8000);
+                // 🔥 AUTO-FILL LOGIC 🔥
+                document.getElementById('r-otp').value = globalFakeOTP;
+                document.getElementById('autofill-text').style.display = 'block';
                 
-                window.recaptchaVerifier.render().then(function(widgetId) { grecaptcha.reset(widgetId); });
-                showStep2(btn);
+                window.recaptchaVerifier.render().then(function(id) { grecaptcha.reset(id); });
+                showStep2(btn, true);
             });
     }
 
-    function showStep2(btn) {
+    function showStep2(btn, isAuto) {
         document.getElementById('reg-step2').classList.remove('hidden');
         btn.disabled = false;
-        btn.innerText = "VERIFY & GET ₹51";
+        btn.innerText = isAuto ? "AUTO-FILL VERIFY" : "VERIFY & GET ₹51";
         btn.onclick = verifyHybridOTP; 
     }
 
     function verifyHybridOTP() {
-        var ph = document.getElementById('r-phone').value;
-        var otp = document.getElementById('r-otp').value;
-        var p1 = document.getElementById('r-pass1').value;
-        var p2 = document.getElementById('r-pass2').value;
+        var ph = document.getElementById('r-phone').value, otp = document.getElementById('r-otp').value;
+        var p1 = document.getElementById('r-pass1').value, p2 = document.getElementById('r-pass2').value;
 
-        if(otp.length !== 6) return alert("❌ Sahi OTP daalein!");
-        if(p1 === "" || p1 !== p2) return alert("❌ Password match nahi hua!");
-
+        if(otp.length !== 6 || p1 === "" || p1 !== p2) return alert("Check OTP/Password!");
+        
         var btn = document.getElementById('main-btn');
-        btn.disabled = true;
-        btn.innerText = "VERIFYING...";
+        btn.disabled = true; btn.innerText = "VERIFYING...";
 
         if(isRealSMS) {
-            window.confirmationResult.confirm(otp).then(function () {
-                saveNewUser(ph, p1);
-            }).catch(function () {
-                alert("❌ Galat OTP!");
-                btn.disabled = false;
-                btn.innerText = "VERIFY & GET ₹51";
-            });
+            window.confirmationResult.confirm(otp).then(() => saveNewUser(ph, p1)).catch(() => { alert("Wrong OTP!"); btn.disabled = false; });
         } else {
-            if(otp === globalFakeOTP) {
-                saveNewUser(ph, p1);
-            } else {
-                alert("❌ Galat OTP!");
-                btn.disabled = false;
-                btn.innerText = "VERIFY & GET ₹51";
-            }
+            if(otp === globalFakeOTP) saveNewUser(ph, p1);
+            else { alert("Wrong OTP!"); btn.disabled = false; }
         }
     }
 
     function saveNewUser(ph, password) {
-        var vid = "VIP" + Math.floor(100000 + Math.random() * 899999);
-        database.ref('users/' + ph).set({
-            phone: ph, 
-            password: password, 
-            balance: 51, 
-            uid: vid,
-            deviceId: deviceId 
-        }).then(function() {
-            database.ref('DeviceLocks/' + deviceId).set({ phone: ph });
-            localStorage.setItem('userPhone', ph);
-            window.location.href = "dashboard.html";
-        });
+        database.ref('users/' + ph).set({ phone: ph, password: password, balance: 51, uid: "VIP"+Math.floor(100000+Math.random()*899999), deviceId: deviceId })
+        .then(() => { database.ref('DeviceLocks/' + deviceId).set({ phone: ph }); localStorage.setItem('userPhone', ph); window.location.href = "dashboard.html"; });
     }
 
     function handleLogin() {
-        var ph = document.getElementById('l-phone').value;
-        var ps = document.getElementById('l-pass').value;
-        if(!ph || !ps) return alert("Number aur Password daalein!");
-
-        database.ref('users/' + ph).once('value').then(function(snap) {
-            if(snap.exists()) {
-                var u = snap.val();
-                if(u.password == ps || u.pass == ps) {
-                    localStorage.setItem('userPhone', ph);
-                    window.location.href = "dashboard.html";
-                } else { alert("❌ Galat Password!"); }
-            } else { alert("❌ Account nahi mila! Pehle Register karein."); }
+        var ph = document.getElementById('l-phone').value, ps = document.getElementById('l-pass').value;
+        database.ref('users/' + ph).once('value').then(snap => {
+            if(snap.exists() && (snap.val().password == ps || snap.val().pass == ps)) {
+                localStorage.setItem('userPhone', ph); window.location.href = "dashboard.html";
+            } else alert("Invalid Login!");
         });
     }
 </script>
