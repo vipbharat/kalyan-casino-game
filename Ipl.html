@@ -55,7 +55,7 @@
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 20px;}
         .modal-content { background: #111; border: 2px solid var(--gold); border-radius: 10px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; padding: 15px; position: relative;}
         .close-btn { position: absolute; right: 10px; top: 10px; color: red; font-size: 20px; font-weight: bold; cursor: pointer; }
-        .record-item { display: flex; justify-content: space-between; border-bottom: 1px dashed #333; padding: 8px 0; font-size: 11px; }
+        .record-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #333; padding: 8px 0; font-size: 11px; }
         .winner-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; border-bottom: 1px dashed #333; padding: 8px 0; }
         .winner-row-1 { display: flex; justify-content: space-between; width: 100%; font-size: 12px; }
         .winner-row-2 { font-size: 9px; color: #888; }
@@ -67,14 +67,15 @@
 <body>
 
 <div class="header">
-    <div style="text-align: left;">
+    <div style="text-align: left; cursor: pointer;" onclick="window.location.href='index.html'">
         <div style="color:var(--gold); font-size:11px;">MATCH #<span id="match-no-display">1</span> / 74</div>
-        <div style="font-size:14px; font-weight:bold;">IPL MEGA VIP</div>
+        <div style="font-size:14px; font-weight:bold;"><i class="fa-solid fa-arrow-left"></i> IPL MEGA VIP</div>
     </div>
-    <div class="wallet-box"><i class="fa-solid fa-wallet"></i> ₹<span id="wallet-bal">0</span></div>
+    <div class="wallet-box"><i class="fa-solid fa-wallet"></i> ₹<span id="wallet-bal">0.00</span></div>
 </div>
 
 <div class="top-btns">
+    <button class="action-btn" onclick="openModal('points-modal')"><i class="fa-solid fa-trophy"></i> POINTS TABLE</button>
     <button class="action-btn" onclick="openModal('my-bets-modal')"><i class="fa-solid fa-receipt"></i> MY RECORD</button>
     <button class="action-btn btn-win" onclick="openModal('winners-modal')"><i class="fa-solid fa-crown"></i> DAILY WINNERS</button>
 </div>
@@ -135,6 +136,22 @@
     <div class="champion-grid" id="teams-grid"></div>
 </div>
 
+<div class="modal" id="points-modal">
+    <div class="modal-content">
+        <div class="close-btn" onclick="closeModal('points-modal')">&times;</div>
+        <h3 style="color:var(--gold); margin-top:0;"><i class="fa-solid fa-trophy"></i> LEAGUE STANDINGS</h3>
+        
+        <div class="record-item" style="color:var(--gold); font-weight:bold; border-bottom: 2px solid #333; padding-bottom: 5px;">
+            <span style="width: 50%; text-align: left;">TEAM</span>
+            <span style="width: 20%; text-align: center;">M (Match)</span>
+            <span style="width: 30%; text-align: right;">PTS (Points)</span>
+        </div>
+        
+        <div id="points-list-content">
+            </div>
+    </div>
+</div>
+
 <div class="modal" id="my-bets-modal">
     <div class="modal-content">
         <div class="close-btn" onclick="closeModal('my-bets-modal')">&times;</div>
@@ -173,18 +190,28 @@
     document.getElementById('teamB').innerHTML = selectHTML;
     document.getElementById('teamB').selectedIndex = 1;
 
-    let walletBal = 0, userId = "", myBetsRecord = [], currentMatch = 1;
+    let walletBal = 0, myBetsRecord = [], currentMatch = 1;
+    let userPhone = localStorage.getItem('userPhone');
 
-    // Firebase Auth & Sync
-    firebase.auth().onAuthStateChanged(function(user) {
-        if (user) {
-            userId = user.uid;
-            db.ref('users/' + userId + '/balance').on('value', snap => {
-                walletBal = snap.val() || 0;
-                document.getElementById('wallet-bal').innerText = walletBal;
-            });
-        }
-    });
+    // ================= 🔥 TOTAL WALLET BALANCE LOGIC 🔥 =================
+    function loadBalanceData(phoneToLoad) {
+        db.ref('users/' + phoneToLoad).on('value', function(snap) {
+            const data = snap.val() || {};
+            walletBal = (parseFloat(data.balance || 0) + parseFloat(data.winning_balance || 0) + parseFloat(data.bonus_balance || 0));
+            document.getElementById('wallet-bal').innerText = walletBal.toFixed(2);
+        });
+    }
+
+    if(userPhone) {
+        loadBalanceData(userPhone);
+    } else {
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (user && user.phoneNumber) {
+                userPhone = user.phoneNumber;
+                loadBalanceData(userPhone);
+            }
+        });
+    }
 
     let rules = { champLock: 20, semiLock: 70 }; 
     db.ref('Game/IPL_Match/Rules').on('value', snap => { if(snap.exists()) rules = snap.val(); });
@@ -193,10 +220,9 @@
         let matchNo = (snap.val() || {}).matchNo || 1;
         document.getElementById('match-no-display').innerText = matchNo;
         
-        // Naye din ke liye List aur Paisa dono Reset
         if(matchNo == 1 && currentMatch != 1) { 
             resetFakeData(); 
-            localStorage.removeItem("vipWinnersDate"); // Force new list generation
+            localStorage.removeItem("vipWinnersDate");
             generateWinners(); 
         }
         currentMatch = matchNo;
@@ -253,34 +279,65 @@
         if(totalTime <= 0) { totalTime = 570; poolL1 = 0; poolL2 = 0; } else totalTime--;
     }, 1000);
 
+    // ================= 🔥 SMART POINTS TABLE GENERATOR 🔥 =================
+    function generatePointsTable() {
+        // Yeh list har baar real-feel dene ke liye thodi aage peeche hoti rahegi par numbers realistic rahenge
+        const ptsData = [
+            { t: "CSK", m: 12, pts: 16 },
+            { t: "RR", m: 11, pts: 14 },
+            { t: "KKR", m: 11, pts: 14 },
+            { t: "LSG", m: 12, pts: 12 },
+            { t: "SRH", m: 11, pts: 10 },
+            { t: "MI", m: 12, pts: 10 },
+            { t: "DC", m: 12, pts: 8 },
+            { t: "GT", m: 11, pts: 8 },
+            { t: "PBKS", m: 11, pts: 6 },
+            { t: "RCB", m: 11, pts: 4 }
+        ];
+
+        let html = "";
+        ptsData.forEach((d, i) => {
+            // Top 4 teams ke point green honge (Semi-final race)
+            let ptsColor = i < 4 ? 'var(--green)' : '#fff'; 
+            
+            html += `<div class="record-item">
+                <span style="width: 50%; text-align: left; display: flex; align-items: center; gap: 8px;">
+                    <span style="color:#666; font-size:10px; width:12px;">${i+1}</span>
+                    <img src="${teamLogos[d.t]}" style="width: 20px; height: 20px; object-fit: contain;">
+                    <span style="font-weight:900;">${d.t}</span>
+                </span>
+                <span style="width: 20%; text-align: center; color: #aaa; font-weight: bold;">${d.m}</span>
+                <span style="width: 30%; text-align: right; color: ${ptsColor}; font-weight: 900; font-size: 13px;">${d.pts}</span>
+            </div>`;
+        });
+        document.getElementById('points-list-content').innerHTML = html;
+    }
+    generatePointsTable();
+
     // ================= 🔥 VIP SMART WINNERS LIST 🔥 =================
     function generateWinners() {
-        let todayStr = new Date().toDateString(); // Aaj ki date
+        let todayStr = new Date().toDateString();
         let savedDate = localStorage.getItem("vipWinnersDate");
         let savedList = localStorage.getItem("vipWinnersList");
 
-        // Agar list aaj pehle hi ban chuki hai, toh wahi purani list dikhao (Change nahi hogi)
         if(savedDate === todayStr && savedList) {
             document.getElementById('winners-list-content').innerHTML = savedList;
             return;
         }
 
-        // Varna nayi list banao (4 aur 6 anko ki ID, Date aur Time ke sath)
         let list = "";
         let prefixes = ["VIP", "PRO", "USR", "WIN", "KLYN"];
-        let displayDate = new Date().toLocaleDateString('en-GB'); // DD/MM/YYYY
+        let displayDate = new Date().toLocaleDateString('en-GB');
         
         for(let i=0; i<125; i++) { 
-            // 4 Anko ki ya 6 anko ki ID
             let isSixDigit = Math.random() > 0.5;
             let idNum = isSixDigit ? Math.floor(100000 + Math.random() * 900000) : Math.floor(1000 + Math.random() * 9000);
             let pfx = prefixes[Math.floor(Math.random()*prefixes.length)];
-            let playerId = pfx + idNum; // e.g. VIP940382 ya PRO4928
+            let playerId = pfx + idNum; 
 
-            let amt = Math.floor(Math.random() * 650000) + 80000; // 80k se 7 Lakh
+            let amt = Math.floor(Math.random() * 650000) + 80000; 
             let type = Math.random() > 0.5 ? "FINAL" : "SEMI";
             
-            // Raat ka time (10:00 PM se 11:59 PM)
             let hr = Math.floor(Math.random() * 2) + 10;
             let min = Math.floor(Math.random() * 60).toString().padStart(2, '0');
             let timeStr = `${hr}:${min} PM`;
@@ -294,18 +351,21 @@
                      </div>`;
         }
         
-        // Memory me save kar lo taaki refresh pe badle nahi
         localStorage.setItem("vipWinnersDate", todayStr);
         localStorage.setItem("vipWinnersList", list);
         document.getElementById('winners-list-content').innerHTML = list;
     }
     generateWinners();
 
-    // ================= BETTING LOGIC =================
+    // ================= BETTING LOGIC & MAIN BALANCE DEDUCTION =================
     function updateWallet(amount) {
-        if (!userId) { alert("⚠️ Pehle Login kijiye!"); return false; }
-        if (walletBal < amount) { alert("⚠️ Insufficient Balance!"); return false; }
-        db.ref('users/' + userId + '/balance').set(walletBal - amount);
+        if (!userPhone) { alert("⚠️ Pehle Login kijiye!"); return false; }
+        if (walletBal < amount) { alert("⚠️ Insufficient Balance! Please Recharge."); return false; }
+        
+        db.ref('users/' + userPhone + '/balance').once('value').then(snap => {
+            let currentMainBal = snap.val() || 0;
+            db.ref('users/' + userPhone + '/balance').set(currentMainBal - amount);
+        });
         return true;
     }
 
