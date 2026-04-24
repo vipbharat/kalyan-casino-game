@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KALYAN PRO - SECURE ADMIN</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -77,10 +78,25 @@
 </head>
 <body>
 
-    <div id="main-content">
+    <div id="login-box" style="text-align:center; padding:50px 20px; background:var(--bg); height: 100vh; display: none;">
+        <i class="fa-solid fa-shield-halved" style="font-size: 50px; color: var(--gold); margin-bottom: 20px;"></i>
+        <h2 style="color: var(--gold); margin-top: 0;">ADMIN LOGIN</h2>
+        <p style="color: #888; font-size: 12px; margin-bottom: 30px;">Access restricted to authorized personnel only.</p>
+        
+        <div id="recaptcha-container" style="display:flex; justify-content:center; margin-bottom:10px;"></div>
+        
+        <input type="text" id="admin-phone" placeholder="Phone Number (with +91)" style="padding:15px; font-weight:bold; text-align: center;">
+        <button onclick="sendOTP()" class="btn btn-add" style="width: 100%; margin-bottom:20px;">VERIFY ID</button>
+        
+        <input type="text" id="admin-otp" placeholder="Enter OTP" style="padding:15px; font-weight:bold; text-align: center;">
+        <button onclick="verifyOTP()" class="btn btn-save" style="width: 100%;">UNLOCK PANEL</button>
+    </div>
+
+    <div id="main-content" style="display: none;">
         
         <div class="top-header">
             <h1><i class="fa-solid fa-crown"></i> VIP ADMIN DASHBOARD</h1>
+            <button onclick="logoutAdmin()" style="position:absolute; right:15px; top:15px; background:transparent; border:none; color:var(--red); font-size:18px; cursor:pointer;"><i class="fa-solid fa-power-off"></i></button>
         </div>
 
         <div id="page-home" class="page active">
@@ -191,10 +207,56 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Bina login ke direct data load karo
-    loadAdminData();
+    // ================= 🔒 LOGIN AUTHENTICATION =================
+    firebase.auth().onAuthStateChanged(user => {
+        if (user && user.phoneNumber === "+919993993499") {
+            // Agar Admin login hai
+            document.getElementById('login-box').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            loadAdminData(); // Data ab load hoga
+        } else {
+            // Agar normal player ya koi aur login hai
+            document.getElementById('login-box').style.display = 'block';
+            document.getElementById('main-content').style.display = 'none';
+        }
+    });
 
-    // --- NAVIGATION LOGIC ---
+    function sendOTP() {
+        let phone = document.getElementById('admin-phone').value;
+        if(!phone.startsWith("+91")) phone = "+91" + phone;
+
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {size: 'invisible'});
+        
+        firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier)
+            .then(confirmationResult => {
+                window.confirmationResult = confirmationResult;
+                alert("✅ ID Verified! Ab apna Secret OTP daaliye.");
+            }).catch(error => {
+                alert("❌ Error: " + error.message);
+                if(window.recaptchaVerifier) window.recaptchaVerifier.clear();
+            });
+    }
+
+    function verifyOTP() {
+        let otp = document.getElementById('admin-otp').value;
+        if(!window.confirmationResult) return alert("Pehle ID Verify karein!");
+        
+        window.confirmationResult.confirm(otp).then(result => {
+            alert("🔓 Welcome Boss! Panel Unlocked.");
+            // Page auto-refresh hoga aur panel dikh jayega
+        }).catch(error => alert("❌ Wrong OTP!"));
+    }
+
+    function logoutAdmin() {
+        if(confirm("Logout karna chahte hain?")) {
+            firebase.auth().signOut().then(() => {
+                location.reload();
+            });
+        }
+    }
+
+
+    // ================= ⚙️ APP LOGIC (ONLY RUNS AFTER LOGIN) =================
     function switchTab(pageId, element) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -202,9 +264,7 @@
         element.classList.add('active');
     }
 
-    // --- LOAD ALL DATA ---
     function loadAdminData() {
-        
         // 1. Payouts (Withdraw Requests) Listener
         db.ref('withdraw_requests').orderByChild('status').equalTo('Pending').on('value', snap => {
             const reqList = document.getElementById('new-req-list');
@@ -256,7 +316,7 @@
                 document.getElementById('upiId').value = d.payment.upi_id || ""; 
                 document.getElementById('qrStatus').checked = d.payment.show_qr || false;
                 if(d.payment.qr_url) { 
-                    base64Image = ""; // Reset base64
+                    base64Image = ""; 
                     document.getElementById('qrPreview').src = d.payment.qr_url; 
                     document.getElementById('qrPreview').style.display = "block"; 
                 }
@@ -282,10 +342,7 @@
         }
         
         db.ref(`users/${phone}`).once('value', snap => {
-            if(!snap.exists()){ 
-                alert("Player Not Found! Check Mobile Number."); 
-                return; 
-            }
+            if(!snap.exists()){ alert("Player Not Found! Check Mobile Number."); return; }
             
             let currentBal = parseFloat(snap.val().balance || 0);
 
@@ -301,7 +358,6 @@
                 document.getElementById('quick-phone').value = "";
                 document.getElementById('quick-amount').value = "";
 
-                // Quick add deposit history check
                 if(type === 'add') {
                     db.ref(`user_history/${phone}`).once('value', (histSnap) => {
                         if(histSnap.exists()) {
@@ -317,22 +373,16 @@
         });
     }
 
-    // --- WITHDRAW REQUEST HANDLING (History FIX) ---
+    // --- WITHDRAW REQUEST HANDLING ---
     window.handleWithdraw = function(reqKey, phone, action, amount) {
         if(confirm(`Are you sure you want to ${action} this payout request?`)) {
-            
             let newStatus = action === 'Approve' ? 'Success' : 'Rejected';
-
-            // 1. Withdraw Request list mein update karo
             db.ref(`withdraw_requests/${reqKey}/status`).set(newStatus).then(() => {
-                
-                // 2. User ki personal history mein bhi update karo taaki player ko dikhe
                 db.ref(`user_history/${phone}/${reqKey}/status`).set(newStatus);
 
                 if(action === 'Approve') {
                     alert("✅ Request Approved successfully!");
                 } else {
-                    // Reject karne par paise properly wallet mein add (increment) karo
                     if(amount) {
                         db.ref(`users/${phone}/balance`).set(firebase.database.ServerValue.increment(Number(amount)));
                     }
@@ -394,9 +444,8 @@
         }
     }
 
-    // --- SAVE GLOBAL SETTINGS (UPI FIX) ---
+    // --- SAVE GLOBAL SETTINGS ---
     window.saveAll = function() {
-        // Dot notation use kiya hai taaki purana data overwrite/delete na ho
         const data = {
             "payment/upi_id": document.getElementById('upiId').value,
             "payment/show_qr": document.getElementById('qrStatus').checked,
@@ -405,10 +454,7 @@
             "notification": document.getElementById('notif').value
         };
         
-        // Agar naya QR upload kiya hai tabhi save karega
-        if (base64Image !== "") {
-            data["payment/qr_url"] = base64Image;
-        }
+        if (base64Image !== "") data["payment/qr_url"] = base64Image;
 
         db.ref('admin_settings').update(data)
             .then(() => alert("✅ App Settings Saved Successfully!"))
