@@ -3,398 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPL Mega League - VIP</title>
+    <title>IPL Mega League - VIP Server Sync</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
-        :root { --gold: #ffd700; --green: #00ff88; --locked: rgba(30, 30, 30, 0.85); }
+        :root { --gold: #ffd700; --green: #00ff88; --locked: rgba(30, 30, 30, 0.9); }
         body { background: #05050a; color: #fff; font-family: 'Arial Black', sans-serif; margin: 0; text-align: center; overflow-x: hidden; padding-bottom: 50px;}
 
-        /* 💰 HEADER & WALLET */
-        .header { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(180deg, #1a1a2e, #000); padding: 10px 15px; border-bottom: 2px solid var(--gold); }
+        /* 💰 HEADER */
+        .header { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(180deg, #1a1a2e, #000); padding: 10px 15px; border-bottom: 2px solid var(--gold); position: sticky; top: 0; z-index: 1000; }
         .wallet-box { background: rgba(0,255,136,0.1); border: 1px solid var(--green); padding: 5px 10px; border-radius: 5px; color: var(--green); font-size: 14px; font-weight: bold; }
         
-        /* 🎯 ACTION BUTTONS */
-        .top-btns { display: flex; justify-content: center; flex-wrap: wrap; padding: 10px; gap: 8px; }
-        .action-btn { flex: 1; min-width: 30%; padding: 8px 2px; background: #222; border: 1px solid var(--gold); color: var(--gold); border-radius: 5px; font-weight: bold; font-size: 10px; cursor: pointer; }
-        .btn-win { background: linear-gradient(90deg, #4da6ff, #0055ff); color: #fff; border: none; }
+        /* ⏱️ SERVER TIMER DISPLAY */
+        .timer-container { margin: 15px 0; display: flex; justify-content: center; align-items: center; gap: 20px; }
+        .timer-wrap { width: 70px; height: 70px; border: 4px solid var(--green); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px var(--green); background: #000; position: relative; }
+        #timer { font-size: 20px; font-weight: 900; }
+        .match-badge { background: var(--gold); color: #000; padding: 2px 10px; border-radius: 10px; font-size: 10px; font-weight: bold; margin-bottom: 5px; }
 
-        /* 🃏 CARDS & TIMER */
-        .cards-container { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 10px 0; }
-        .card-box { width: 65px; height: 95px; border-radius: 8px; border: 1.5px solid var(--gold); overflow: hidden; }
-        .card-back { background: #111; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .card-back img { width: 40px; height: 40px; object-fit: contain; }
-        .timer-wrap { width: 55px; height: 55px; border: 3px solid var(--green); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px var(--green); background: #000;}
-        #timer { font-size: 14px; font-weight: 900; }
+        /* 🛡️ SECURITY OVERLAY (For Closed Hours) */
+        #game-closed-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 99999; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
 
-        /* 🔒 LOCK & SECTIONS */
-        .lock-overlay { position: absolute; inset: 0; background: var(--locked); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; border-radius: 10px; }
-        .lock-overlay i { font-size: 20px; color: #ff3333; }
-        .sec-title { font-size: 12px; color: var(--gold); border-bottom: 1px dashed #333; padding-bottom: 3px; margin: 10px 10px 5px; text-align: left; }
-        .bet-section { position: relative; padding: 0 5px; }
+        /* ⚔️ BETTING GRID */
+        .sec-title { font-size: 12px; color: var(--gold); border-bottom: 1px dashed #333; padding-bottom: 3px; margin: 15px 10px 5px; text-align: left; text-transform: uppercase; }
+        .bet-grid { display: flex; justify-content: space-around; gap: 10px; padding: 0 10px; }
+        .team-bet-card { flex: 1; padding: 15px 5px; border-radius: 10px; border: 2px solid #4da6ff; background: rgba(0,0,0,0.5); cursor: pointer; position: relative; transition: 0.2s; }
+        .team-bet-card:active { transform: scale(0.95); }
+        .pool-badge { font-size: 9px; color: #aaa; margin-bottom: 5px; }
         
-        /* ⚔️ GRIDS */
-        .bet-grid { display: flex; justify-content: space-around; gap: 8px; }
-        .team-bet-card { flex: 1; padding: 8px 5px; border-radius: 8px; border: 2px solid #4da6ff; background: rgba(0,0,0,0.3); cursor: pointer; position: relative;}
-        .champion-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
-        .champ-box { background: #111; border: 1px solid #333; border-radius: 6px; padding: 6px 2px; font-size: 9px; cursor: pointer; position: relative;}
-        .champ-box img { width: 25px; height: 25px; margin-bottom: 2px;}
+        .champion-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 0 10px; }
+        .champ-box { background: #111; border: 1px solid #333; border-radius: 6px; padding: 8px 2px; font-size: 9px; cursor: pointer; }
+        .champ-box img { width: 30px; height: 30px; margin-bottom: 3px; }
 
-        /* 🔥 POOL VOLUME BADGES */
-        .pool-badge { font-size: 8px; background: rgba(255,255,255,0.1); color: #ccc; padding: 2px; border-radius: 3px; margin-bottom: 3px; }
-
-        /* 🎯 COMBO */
-        .combo-box { background: linear-gradient(145deg, #111, #0a0a0a); border: 1px solid var(--gold); border-radius: 8px; padding: 8px; margin: 0 10px; }
-        .combo-selects { display: flex; justify-content: center; gap: 5px; margin-bottom: 5px; }
-        select { background: #222; color: #fff; border: 1px solid #555; padding: 4px; border-radius: 4px; font-size: 10px; }
-        .combo-btn { padding: 5px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: #000; font-size: 10px; }
-        
-        /* 📱 MODALS (POPUPS) */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 20px;}
-        .modal-content { background: #111; border: 2px solid var(--gold); border-radius: 10px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; padding: 15px; position: relative;}
-        .close-btn { position: absolute; right: 10px; top: 10px; color: red; font-size: 20px; font-weight: bold; cursor: pointer; }
-        .record-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #333; padding: 8px 0; font-size: 11px; }
-        .winner-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; border-bottom: 1px dashed #333; padding: 8px 0; }
-        .winner-row-1 { display: flex; justify-content: space-between; width: 100%; font-size: 12px; }
-        .winner-row-2 { font-size: 9px; color: #888; }
-        
-        /* SCROLLBAR HIDE */
-        ::-webkit-scrollbar { width: 0px; }
+        .modal-content { background: #111; border: 2px solid var(--gold); border-radius: 10px; width: 100%; max-height: 80vh; overflow-y: auto; padding: 15px; position: relative;}
     </style>
 </head>
 <body>
 
+<div id="game-closed-overlay">
+    <i class="fa-solid fa-server fa-spin" style="font-size:50px; color:var(--gold); margin-bottom:20px;"></i>
+    <h2 id="closed-msg" style="color:var(--gold);">CONNECTING TO SERVER...</h2>
+    <p style="color:#888; font-size:12px;">All players are synced to Firebase Central Time</p>
+</div>
+
 <div class="header">
-    <div style="text-align: left; cursor: pointer;" onclick="window.location.href='index.html'">
-        <div style="color:var(--gold); font-size:11px;">MATCH #<span id="match-no-display">1</span> / 74</div>
-        <div style="font-size:14px; font-weight:bold;"><i class="fa-solid fa-arrow-left"></i> IPL MEGA VIP</div>
+    <div style="text-align: left;" onclick="window.location.href='index.html'">
+        <span style="font-size:14px; font-weight:bold;"><i class="fa-solid fa-arrow-left"></i> IPL MEGA VIP</span>
     </div>
     <div class="wallet-box"><i class="fa-solid fa-wallet"></i> ₹<span id="wallet-bal">0.00</span></div>
 </div>
 
-<div class="top-btns">
-    <button class="action-btn" onclick="openModal('points-modal')"><i class="fa-solid fa-trophy"></i> POINTS TABLE</button>
-    <button class="action-btn" onclick="openModal('my-bets-modal')"><i class="fa-solid fa-receipt"></i> MY RECORD</button>
-    <button class="action-btn btn-win" onclick="openModal('winners-modal')"><i class="fa-solid fa-crown"></i> DAILY WINNERS</button>
+<div class="timer-container">
+    <div style="text-align: center;">
+        <div class="match-badge">MATCH #<span id="match-no-display">1</span> / 74</div>
+        <div class="timer-wrap"><div id="timer">00:00</div></div>
+    </div>
 </div>
 
-<div class="sec-title">⚔️ LIVE MATCH (1.95X)</div>
-<div class="cards-container">
-    <div class="card-box"><div class="card-back"><img id="logo-t1" src="assets/IPL_team_5001.png"><span id="name-t1" style="font-size:11px;">CSK</span></div></div>
-    <div class="timer-wrap"><div id="timer">09:30</div></div>
-    <div class="card-box"><div class="card-back"><img id="logo-t2" src="assets/IPL_team_5006.png"><span id="name-t2" style="font-size:11px;">MI</span></div></div>
-</div>
+<div class="sec-title">⚔️ LIVE BATTLE (1.95X)</div>
 <div class="bet-grid">
-    <div class="team-bet-card" onclick="placeBet('live-t1', 'Live Match', document.getElementById('name-t1').innerText)">
-        <div class="pool-badge">POOL: ₹<span id="pool-l1">0</span></div>
-        <div id="l-name-t1" style="font-weight:bold;">CSK</div>
-        <div style="font-size:11px; color:var(--gold)">MY BET: ₹<span id="bet-l1">0</span></div>
+    <div class="team-bet-card" onclick="placeBet('L1', 'Live Match', t1Name)">
+        <div class="pool-badge">SERVER POOL: ₹<span id="pool-l1">0</span></div>
+        <img id="logo-t1" src="" style="width:40px; margin-bottom:5px;">
+        <div id="name-t1" style="font-weight:bold;">T1</div>
+        <div style="font-size:11px; color:var(--gold)">MY BET: ₹<span id="mybet-l1">0</span></div>
     </div>
-    <div class="team-bet-card" style="border-color:#ff4d4d" onclick="placeBet('live-t2', 'Live Match', document.getElementById('name-t2').innerText)">
-        <div class="pool-badge">POOL: ₹<span id="pool-l2">0</span></div>
-        <div id="l-name-t2" style="font-weight:bold;">MI</div>
-        <div style="font-size:11px; color:var(--gold)">MY BET: ₹<span id="bet-l2">0</span></div>
-    </div>
-</div>
-
-<div class="bet-section" id="combo-sec" style="margin-top: 15px;">
-    <div class="lock-overlay" id="combo-lock"><i class="fa-solid fa-lock"></i></div>
-    <div class="sec-title">🎯 COMBO BET</div>
-    <div class="combo-box">
-        <div class="combo-selects">
-            <select id="teamA"></select> & <select id="teamB"></select>
-        </div>
-        <div style="display: flex; gap: 5px; justify-content: center;">
-            <button class="combo-btn" style="background: linear-gradient(90deg, #ff9900, #ffcc00);" onclick="placeCombo('Combo SEMI')">SEMI (30X)</button>
-            <button class="combo-btn" style="background: linear-gradient(90deg, #00ff88, #00cc66);" onclick="placeCombo('Combo FINAL')">FINAL (18X)</button>
-        </div>
+    <div class="team-bet-card" style="border-color:#ff4d4d" onclick="placeBet('L2', 'Live Match', t2Name)">
+        <div class="pool-badge">SERVER POOL: ₹<span id="pool-l2">0</span></div>
+        <img id="logo-t2" src="" style="width:40px; margin-bottom:5px;">
+        <div id="name-t2" style="font-weight:bold;">T2</div>
+        <div style="font-size:11px; color:var(--gold)">MY BET: ₹<span id="mybet-l2">0</span></div>
     </div>
 </div>
 
-<div class="bet-section" id="semi-final-sec">
-    <div class="lock-overlay" id="semi-lock"><i class="fa-solid fa-lock"></i></div>
-    <div class="sec-title">🎖️ SEMI-FINAL (9X)</div>
-    <div class="bet-grid">
-        <div class="team-bet-card" style="border-color:#ffcc00;" onclick="placeBet('semi-t1', 'Semi-Final', document.getElementById('name-t1').innerText)">
-            <div class="pool-badge">POOL: ₹<span id="pool-s1">0</span></div>
-            <div id="s-name-t1" style="font-weight:bold;">CSK</div>
-            <div style="font-size:11px; color:var(--gold)">MY BET: ₹<span id="bet-s1">0</span></div>
-        </div>
-        <div class="team-bet-card" style="border-color:#ff4d4d;" onclick="placeBet('semi-t2', 'Semi-Final', document.getElementById('name-t2').innerText)">
-            <div class="pool-badge">POOL: ₹<span id="pool-s2">0</span></div>
-            <div id="s-name-t2" style="font-weight:bold;">MI</div>
-            <div style="font-size:11px; color:var(--gold)">MY BET: ₹<span id="bet-s2">0</span></div>
-        </div>
-    </div>
-</div>
-
-<div class="bet-section" id="champion-sec">
-    <div class="lock-overlay" id="champ-lock"><i class="fa-solid fa-lock"></i></div>
-    <div class="sec-title">👑 CHAMPION (6X)</div>
-    <div class="champion-grid" id="teams-grid"></div>
-</div>
-
-<div class="modal" id="points-modal">
-    <div class="modal-content">
-        <div class="close-btn" onclick="closeModal('points-modal')">&times;</div>
-        <h3 style="color:var(--gold); margin-top:0;"><i class="fa-solid fa-trophy"></i> LEAGUE STANDINGS</h3>
-        
-        <div class="record-item" style="color:var(--gold); font-weight:bold; border-bottom: 2px solid #333; padding-bottom: 5px;">
-            <span style="width: 50%; text-align: left;">TEAM</span>
-            <span style="width: 20%; text-align: center;">M (Match)</span>
-            <span style="width: 30%; text-align: right;">PTS (Points)</span>
-        </div>
-        
-        <div id="points-list-content">
-            </div>
-    </div>
-</div>
-
-<div class="modal" id="my-bets-modal">
-    <div class="modal-content">
-        <div class="close-btn" onclick="closeModal('my-bets-modal')">&times;</div>
-        <h3 style="color:var(--gold); margin-top:0;">📜 MY RECORD</h3>
-        <div class="record-item" style="color:var(--gold); font-weight:bold;"><span>MATCH/TYPE</span> <span>TEAM</span> <span>AMT</span></div>
-        <div id="my-bets-list"><div style="font-size: 11px; color: #888; text-align:center; padding:10px;">Koi bet nahi lagayi.</div></div>
-    </div>
-</div>
-
-<div class="modal" id="winners-modal">
-    <div class="modal-content">
-        <div class="close-btn" onclick="closeModal('winners-modal')">&times;</div>
-        <h3 style="color:var(--gold); margin-top:0;">🏆 TODAY'S BIG WINNERS</h3>
-        <div style="font-size:10px; color:#aaa; margin-bottom:10px;">Semi-Final & Final Megapool Winners</div>
-        <div id="winners-list-content">
-            </div>
-    </div>
-</div>
+<div class="sec-title">👑 CHAMPION RACE (6X)</div>
+<div class="champion-grid" id="champ-grid"></div>
 
 <script>
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
-    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    const teams = ["CSK", "DC", "GT", "KKR", "LSG", "MI", "PBKS", "RR", "RCB", "SRH"];
-    const teamLogos = { "CSK": "assets/IPL_team_5001.png", "DC": "assets/IPL_team_5002.png", "GT": "assets/IPL_team_5003.png", "KKR": "assets/IPL_team_5004.png", "LSG": "assets/IPL_team_5005.png", "MI": "assets/IPL_team_5006.png", "PBKS": "assets/IPL_team_5007.png", "RR": "assets/IPL_team_5008.png", "RCB": "assets/IPL_team_5009.png", "SRH": "assets/IPL_team_5010.png" };
     
-    // Auto Generate Champion Grid
-    let gridHTML = "", selectHTML = "";
+    let t1Name = "T1", t2Name = "T2", walletBal = 0, serverOffset = 0;
+    const userPhone = localStorage.getItem('userPhone');
+    const teamLogos = { "CSK": "assets/IPL_team_5001.png", "DC": "assets/IPL_team_5002.png", "GT": "assets/IPL_team_5003.png", "KKR": "assets/IPL_team_5004.png", "LSG": "assets/IPL_team_5005.png", "MI": "assets/IPL_team_5006.png", "PBKS": "assets/IPL_team_5007.png", "RR": "assets/IPL_team_5008.png", "RCB": "assets/IPL_team_5009.png", "SRH": "assets/IPL_team_5010.png" };
+    const teams = ["CSK", "DC", "GT", "KKR", "LSG", "MI", "PBKS", "RR", "RCB", "SRH"];
+
+    // 1. CHAMPION GRID GENERATE
+    let gridHTML = "";
     teams.forEach(t => {
-        gridHTML += `<div class="champ-box" onclick="placeBet('champ-${t}', 'Champion', '${t}')"><div class="pool-badge" id="pool-c-${t}">0</div><img src="${teamLogos[t]}"><div style="font-weight:bold;">${t}</div><div style="color:var(--green);">₹<span id="bet-c-${t}">0</span></div></div>`;
-        selectHTML += `<option value="${t}">${t}</option>`;
+        gridHTML += `<div class="champ-box" onclick="placeBet('C-${t}', 'Champion', '${t}')"><img src="${teamLogos[t]}"><br>${t}<br><span id="mybet-c-${t}" style="color:var(--gold)">₹0</span></div>`;
     });
-    document.getElementById('teams-grid').innerHTML = gridHTML;
-    document.getElementById('teamA').innerHTML = selectHTML;
-    document.getElementById('teamB').innerHTML = selectHTML;
-    document.getElementById('teamB').selectedIndex = 1;
+    document.getElementById('champ-grid').innerHTML = gridHTML;
 
-    let walletBal = 0, myBetsRecord = [], currentMatch = 1;
-    let userPhone = localStorage.getItem('userPhone');
+    // 2. SERVER TIME SYNC
+    db.ref('.info/serverTimeOffset').on('value', snap => { serverOffset = snap.val() || 0; });
 
-    // ================= 🔥 TOTAL WALLET BALANCE LOGIC 🔥 =================
-    function loadBalanceData(phoneToLoad) {
-        db.ref('users/' + phoneToLoad).on('value', function(snap) {
-            const data = snap.val() || {};
-            walletBal = (parseFloat(data.balance || 0) + parseFloat(data.winning_balance || 0) + parseFloat(data.bonus_balance || 0));
+    function checkGameStatus() {
+        let serverTime = new Date().getTime() + serverOffset;
+        let now = new Date(serverTime);
+        
+        let start = new Date(serverTime); start.setHours(10, 0, 0, 0); 
+        let end = new Date(start.getTime() + 703 * 60000); // 10:00 AM + 11h 43m
+
+        if (serverTime < start.getTime()) {
+            showOverlay("GAME OPENS AT 10:00 AM 🕙");
+            window.isLocked = true;
+        } else if (serverTime > end.getTime()) {
+            showOverlay("MATCHES FINISHED! ✅<br>Starts tomorrow at 10:00 AM");
+            window.isLocked = true;
+        } else {
+            document.getElementById('game-closed-overlay').style.display = 'none';
+            window.isLocked = false;
+            
+            // Auto Match & Timer Calculation
+            let elapsedMs = serverTime - start.getTime();
+            let currentMatch = Math.floor(elapsedMs / (9.5 * 60000)) + 1;
+            document.getElementById('match-no-display').innerText = currentMatch;
+
+            let roundMs = elapsedMs % (9.5 * 60000);
+            let remainMs = (9.5 * 60000) - roundMs;
+            let m = Math.floor(remainMs / 60000).toString().padStart(2, '0');
+            let s = Math.floor((remainMs % 60000) / 1000).toString().padStart(2, '0');
+            document.getElementById('timer').innerText = m + ":" + s;
+        }
+    }
+    setInterval(checkGameStatus, 1000);
+
+    function showOverlay(msg) {
+        document.getElementById('closed-msg').innerHTML = msg;
+        document.getElementById('game-closed-overlay').style.display = 'flex';
+    }
+
+    // 3. FIREBASE DATA SYNC (Same for Everyone)
+    db.ref('Game/IPL_Match/Today').on('value', snap => {
+        let d = snap.val(); if(!d) return;
+        t1Name = d.Team1; t2Name = d.Team2;
+        document.getElementById('name-t1').innerText = t1Name;
+        document.getElementById('name-t2').innerText = t2Name;
+        document.getElementById('logo-t1').src = teamLogos[t1Name];
+        document.getElementById('logo-t2').src = teamLogos[t2Name];
+    });
+
+    // 4. WALLET SYNC
+    if(userPhone) {
+        db.ref('users/' + userPhone).on('value', snap => {
+            let d = snap.val() || {};
+            walletBal = (parseFloat(d.balance||0) + parseFloat(d.winning_balance||0) + parseFloat(d.bonus_balance||0));
             document.getElementById('wallet-bal').innerText = walletBal.toFixed(2);
         });
     }
 
-    if(userPhone) {
-        loadBalanceData(userPhone);
-    } else {
-        firebase.auth().onAuthStateChanged(function(user) {
-            if (user && user.phoneNumber) {
-                userPhone = user.phoneNumber;
-                loadBalanceData(userPhone);
-            }
+    // 5. BETTING LOGIC
+    function placeBet(id, type, team) {
+        if(window.isLocked) return alert("Game is Closed!");
+        if(walletBal < 100) return alert("Insufficient Balance!");
+
+        db.ref('users/' + userPhone + '/balance').transaction(current => {
+            return (current || 0) - 100;
+        }).then(() => {
+            let betId = id.toLowerCase();
+            let span = document.getElementById('mybet-' + betId);
+            if(span) span.innerText = "₹" + (parseInt(span.innerText.replace('₹','')) + 100);
+            alert(`✅ Bet Placed on ${team}!`);
         });
     }
-
-    let rules = { champLock: 20, semiLock: 70 }; 
-    db.ref('Game/IPL_Match/Rules').on('value', snap => { if(snap.exists()) rules = snap.val(); });
-
-    db.ref('Game/IPL_Match/Status').on('value', snap => {
-        let matchNo = (snap.val() || {}).matchNo || 1;
-        document.getElementById('match-no-display').innerText = matchNo;
-        
-        if(matchNo == 1 && currentMatch != 1) { 
-            resetFakeData(); 
-            localStorage.removeItem("vipWinnersDate");
-            generateWinners(); 
-        }
-        currentMatch = matchNo;
-
-        if(matchNo > rules.champLock) document.getElementById('champ-lock').style.display = 'flex'; else document.getElementById('champ-lock').style.display = 'none';
-        if(matchNo > rules.semiLock) { document.getElementById('semi-lock').style.display = 'flex'; document.getElementById('combo-lock').style.display = 'flex'; }
-        else { document.getElementById('semi-lock').style.display = 'none'; document.getElementById('combo-lock').style.display = 'none'; }
-    });
-
-    db.ref('Game/IPL_Match/Today').on('value', snap => {
-        let d = snap.val();
-        if(d) {
-            ['name-t1','l-name-t1','s-name-t1'].forEach(id => document.getElementById(id).innerText = d.Team1);
-            ['name-t2','l-name-t2','s-name-t2'].forEach(id => document.getElementById(id).innerText = d.Team2);
-            document.getElementById('logo-t1').src = teamLogos[d.Team1] || "";
-            document.getElementById('logo-t2').src = teamLogos[d.Team2] || "";
-        }
-    });
-
-    // ================= 🔥 AUTO FAKE POOL VOLUME & TIMER 🔥 =================
-    let totalTime = 570;
-    let poolL1 = 0, poolL2 = 0;
-    let poolSemi = {}, poolChamp = {};
-    teams.forEach(t => { poolSemi[t] = Math.floor(Math.random()*50000); poolChamp[t] = Math.floor(Math.random()*150000); }); 
-
-    function formatLakh(num) { return num >= 1000 ? (num/1000).toFixed(1) + 'K' : num; }
-    
-    function resetFakeData() {
-        teams.forEach(t => { poolSemi[t] = 0; poolChamp[t] = 0; });
-        myBetsRecord = []; 
-        document.getElementById('my-bets-list').innerHTML = `<div style="font-size: 11px; color: #888; text-align:center; padding:10px;">Koi bet nahi lagayi.</div>`;
-    }
-
-    setInterval(() => {
-        document.getElementById('timer').innerText = Math.floor(totalTime/60).toString().padStart(2,'0') + ":" + (totalTime%60).toString().padStart(2,'0');
-        
-        poolL1 += Math.floor(Math.random() * 1500) + 500;
-        poolL2 += Math.floor(Math.random() * 1500) + 500;
-        
-        let rtS = teams[Math.floor(Math.random()*10)], rtC = teams[Math.floor(Math.random()*10)];
-        poolSemi[rtS] += Math.floor(Math.random() * 4000);
-        poolChamp[rtC] += Math.floor(Math.random() * 8000);
-
-        document.getElementById('pool-l1').innerText = formatLakh(poolL1);
-        document.getElementById('pool-l2').innerText = formatLakh(poolL2);
-        
-        let t1Name = document.getElementById('s-name-t1').innerText;
-        let t2Name = document.getElementById('s-name-t2').innerText;
-        document.getElementById('pool-s1').innerText = formatLakh(poolSemi[t1Name] || 0);
-        document.getElementById('pool-s2').innerText = formatLakh(poolSemi[t2Name] || 0);
-        
-        teams.forEach(t => { document.getElementById('pool-c-'+t).innerText = formatLakh(poolChamp[t] || 0); });
-
-        if(totalTime <= 0) { totalTime = 570; poolL1 = 0; poolL2 = 0; } else totalTime--;
-    }, 1000);
-
-    // ================= 🔥 SMART POINTS TABLE GENERATOR 🔥 =================
-    function generatePointsTable() {
-        // Yeh list har baar real-feel dene ke liye thodi aage peeche hoti rahegi par numbers realistic rahenge
-        const ptsData = [
-            { t: "CSK", m: 12, pts: 16 },
-            { t: "RR", m: 11, pts: 14 },
-            { t: "KKR", m: 11, pts: 14 },
-            { t: "LSG", m: 12, pts: 12 },
-            { t: "SRH", m: 11, pts: 10 },
-            { t: "MI", m: 12, pts: 10 },
-            { t: "DC", m: 12, pts: 8 },
-            { t: "GT", m: 11, pts: 8 },
-            { t: "PBKS", m: 11, pts: 6 },
-            { t: "RCB", m: 11, pts: 4 }
-        ];
-
-        let html = "";
-        ptsData.forEach((d, i) => {
-            // Top 4 teams ke point green honge (Semi-final race)
-            let ptsColor = i < 4 ? 'var(--green)' : '#fff'; 
-            
-            html += `<div class="record-item">
-                <span style="width: 50%; text-align: left; display: flex; align-items: center; gap: 8px;">
-                    <span style="color:#666; font-size:10px; width:12px;">${i+1}</span>
-                    <img src="${teamLogos[d.t]}" style="width: 20px; height: 20px; object-fit: contain;">
-                    <span style="font-weight:900;">${d.t}</span>
-                </span>
-                <span style="width: 20%; text-align: center; color: #aaa; font-weight: bold;">${d.m}</span>
-                <span style="width: 30%; text-align: right; color: ${ptsColor}; font-weight: 900; font-size: 13px;">${d.pts}</span>
-            </div>`;
-        });
-        document.getElementById('points-list-content').innerHTML = html;
-    }
-    generatePointsTable();
-
-    // ================= 🔥 VIP SMART WINNERS LIST 🔥 =================
-    function generateWinners() {
-        let todayStr = new Date().toDateString();
-        let savedDate = localStorage.getItem("vipWinnersDate");
-        let savedList = localStorage.getItem("vipWinnersList");
-
-        if(savedDate === todayStr && savedList) {
-            document.getElementById('winners-list-content').innerHTML = savedList;
-            return;
-        }
-
-        let list = "";
-        let prefixes = ["VIP", "PRO", "USR", "WIN", "KLYN"];
-        let displayDate = new Date().toLocaleDateString('en-GB');
-        
-        for(let i=0; i<125; i++) { 
-            let isSixDigit = Math.random() > 0.5;
-            let idNum = isSixDigit ? Math.floor(100000 + Math.random() * 900000) : Math.floor(1000 + Math.random() * 9000);
-            let pfx = prefixes[Math.floor(Math.random()*prefixes.length)];
-            let playerId = pfx + idNum; 
-
-            let amt = Math.floor(Math.random() * 650000) + 80000; 
-            let type = Math.random() > 0.5 ? "FINAL" : "SEMI";
-            
-            let hr = Math.floor(Math.random() * 2) + 10;
-            let min = Math.floor(Math.random() * 60).toString().padStart(2, '0');
-            let timeStr = `${hr}:${min} PM`;
-
-            list += `<div class="winner-item">
-                        <div class="winner-row-1">
-                            <span style="font-weight:bold; color:#fff;">🥇 ID: ${playerId}</span>
-                            <span style="color:var(--green); font-weight:900;">₹${(amt/100000).toFixed(2)}L WON</span>
-                        </div>
-                        <div class="winner-row-2">Match: ${type} | Date: ${displayDate} | Time: ${timeStr}</div>
-                     </div>`;
-        }
-        
-        localStorage.setItem("vipWinnersDate", todayStr);
-        localStorage.setItem("vipWinnersList", list);
-        document.getElementById('winners-list-content').innerHTML = list;
-    }
-    generateWinners();
-
-    // ================= BETTING LOGIC & MAIN BALANCE DEDUCTION =================
-    function updateWallet(amount) {
-        if (!userPhone) { alert("⚠️ Pehle Login kijiye!"); return false; }
-        if (walletBal < amount) { alert("⚠️ Insufficient Balance! Please Recharge."); return false; }
-        
-        db.ref('users/' + userPhone + '/balance').once('value').then(snap => {
-            let currentMainBal = snap.val() || 0;
-            db.ref('users/' + userPhone + '/balance').set(currentMainBal - amount);
-        });
-        return true;
-    }
-
-    function addRecord(type, team, amount) {
-        myBetsRecord.unshift({ type: type, team: team, amt: amount });
-        let listHTML = "";
-        myBetsRecord.forEach(bet => {
-            listHTML += `<div class="record-item"><span style="color:#aaa">${bet.type}</span><span style="font-weight:bold">${bet.team}</span><span style="color:var(--green)">₹${bet.amt}</span></div>`;
-        });
-        document.getElementById('my-bets-list').innerHTML = listHTML;
-    }
-
-    function placeBet(id, betType, teamName) { 
-        if(!updateWallet(100)) return;
-        let span = document.getElementById(id.replace('live-', 'bet-l').replace('semi-', 'bet-s').replace('champ-', 'bet-c-'));
-        if(span) span.innerText = parseInt(span.innerText) + 100;
-        addRecord(betType, teamName, 100);
-    }
-
-    function placeCombo(type) {
-        let t1 = document.getElementById('teamA').value, t2 = document.getElementById('teamB').value;
-        if(t1 === t2) return alert("⚠️ Dono teams alag-alag honi chahiye!");
-        if(!updateWallet(100)) return;
-        addRecord(type, t1 + " & " + t2, 100);
-        alert(`✅ ₹100 Bet placed on ${t1} & ${t2} for ${type}!`);
-    }
-
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 </script>
 </body>
 </html>
