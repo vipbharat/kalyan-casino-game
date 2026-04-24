@@ -15,13 +15,11 @@
         .timer-wrap { width: 70px; height: 70px; border: 3px solid var(--green); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 10px auto; }
         #timer { font-size: 20px; font-weight: 900; }
 
-        /* 🃏 CARDS AREA */
         .cards-container { display: flex; justify-content: center; gap: 20px; margin: 10px 0; }
         .card-box { width: 65px; height: 95px; border-radius: 8px; position: relative; border: 1.5px solid var(--gold); overflow: hidden; }
         .card-back { background: #111; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .card-back img { width: 40px; height: 40px; object-fit: contain; }
 
-        /* 🔒 LOCK OVERLAY */
         .lock-overlay { position: absolute; inset: 0; background: var(--locked); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; border-radius: 10px; backdrop-filter: blur(2px); }
         .lock-overlay i { font-size: 24px; color: #ff3333; }
         .lock-text { font-size: 10px; color: #fff; margin-top: 5px; }
@@ -31,7 +29,6 @@
         .tag-live { color: #00ff88; border: 1px solid #00ff88; background: rgba(0,255,136,0.1); }
         .tag-semi { color: #ff004c; border: 1px solid #ff004c; background: rgba(255,0,76,0.1); }
 
-        /* ⚔️ GRIDS */
         .bet-section { position: relative; padding: 0 5px; }
         .bet-grid { display: flex; justify-content: space-around; gap: 8px; }
         .team-bet-card { flex: 1; padding: 10px 5px; border-radius: 10px; border: 2px solid #4da6ff; background: rgba(0,0,0,0.3); cursor: pointer; }
@@ -39,7 +36,6 @@
         .champ-box { background: #111; border: 1px solid #333; border-radius: 6px; padding: 6px 2px; font-size: 9px; cursor: pointer; }
         .champ-box img { width: 25px; height: 25px; margin-bottom: 3px;}
 
-        /* 🎯 COMBO BOX VIP DESIGN */
         .combo-box { background: linear-gradient(145deg, #111, #0a0a0a); border: 1px solid var(--gold); border-radius: 10px; padding: 12px; margin: 0 10px; }
         .combo-selects { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 10px; }
         select { background: #222; color: #fff; border: 1px solid #555; padding: 6px; border-radius: 5px; font-weight: bold; outline: none; }
@@ -80,13 +76,11 @@
     <div class="sec-title">🎯 COMBO BET (PREDICT 2 TEAMS)</div>
     <div class="combo-box">
         <div class="combo-selects">
-            <select id="teamA"></select>
-            <span style="color:var(--gold); font-weight:900;">&</span>
-            <select id="teamB"></select>
+            <select id="teamA"></select><span style="color:var(--gold); font-weight:900;">&</span><select id="teamB"></select>
         </div>
         <div style="display: flex; gap: 8px;">
-            <button class="combo-btn btn-semi" onclick="placeCombo('SEMI', 30)">SEMI (30X)<br><span style="font-size:8px">100 ➔ 3000</span></button>
-            <button class="combo-btn btn-final" onclick="placeCombo('FINAL', 18)">FINAL (18X)<br><span style="font-size:8px">100 ➔ 1800</span></button>
+            <button class="combo-btn btn-semi" onclick="placeCombo('SEMI')">SEMI (30X)<br><span style="font-size:8px">100 ➔ 3000</span></button>
+            <button class="combo-btn btn-final" onclick="placeCombo('FINAL')">FINAL (18X)<br><span style="font-size:8px">100 ➔ 1800</span></button>
         </div>
         <div id="combo-msg" style="color:var(--green); font-size:10px; margin-top:6px; font-weight:bold;"></div>
     </div>
@@ -123,7 +117,7 @@
     const teams = ["CSK", "DC", "GT", "KKR", "LSG", "MI", "PBKS", "RR", "RCB", "SRH"];
     const teamLogos = { "CSK": "IPL_team_5001.png", "DC": "IPL_team_5002.png", "GT": "IPL_team_5003.png", "KKR": "IPL_team_5004.png", "LSG": "IPL_team_5005.png", "MI": "IPL_team_5006.png", "PBKS": "IPL_team_5007.png", "RR": "IPL_team_5008.png", "RCB": "IPL_team_5009.png", "SRH": "IPL_team_5010.png" };
     
-    // Auto Generate Champion Grid (6X)
+    // Auto Generate Grid & Selects
     let gridHTML = "", selectHTML = "";
     teams.forEach(t => {
         gridHTML += `<div class="champ-box" onclick="placeBet('champ-${t}')"><img src="${teamLogos[t]}"><div style="font-weight:bold;">${t}</div><div style="color:var(--green);">₹<span id="bet-c-${t}">0</span></div></div>`;
@@ -132,18 +126,24 @@
     document.getElementById('teams-grid').innerHTML = gridHTML;
     document.getElementById('teamA').innerHTML = selectHTML;
     document.getElementById('teamB').innerHTML = selectHTML;
-    document.getElementById('teamB').selectedIndex = 1; // Default alag rakho
+    document.getElementById('teamB').selectedIndex = 1;
 
-    // Dynamic Locks
+    // 🔥 Firebase Rules Setup
+    let rules = { champLock: 20, semiLock: 70 }; 
+    db.ref('Game/IPL_Match/Rules').on('value', snap => {
+        if(snap.exists()) rules = snap.val();
+    });
+
+    // Dynamic Locks using Firebase Rules
     db.ref('Game/IPL_Match/Status').on('value', snap => {
         let matchNo = (snap.val() || {}).matchNo || 1;
         document.getElementById('match-no-display').innerText = matchNo;
 
-        if(matchNo > 20) {
+        if(matchNo > rules.champLock) {
             document.getElementById('champ-lock').style.display = 'flex';
             document.getElementById('champion-sec').style.pointerEvents = 'none';
         }
-        if(matchNo > 70) {
+        if(matchNo > rules.semiLock) {
             document.getElementById('semi-lock').style.display = 'flex';
             document.getElementById('semi-final-sec').style.pointerEvents = 'none';
             document.getElementById('combo-lock').style.display = 'flex';
@@ -168,18 +168,15 @@
         if(totalTime <= 0) totalTime = 570; else totalTime--;
     }, 1000);
 
-    // Normal Bet
+    // Bets
     function placeBet(id) { 
         let span = document.getElementById(id.replace('live-', 'bet-l').replace('semi-', 'bet-s').replace('champ-', 'bet-c-'));
         if(span) span.innerText = parseInt(span.innerText) + 100;
     }
 
-    // Naya Combo Bet (2 Teams)
-    function placeCombo(type, multi) {
-        let t1 = document.getElementById('teamA').value;
-        let t2 = document.getElementById('teamB').value;
-        if(t1 === t2) { alert("⚠️ Dono teams alag-alag honi chahiye!"); return; }
-        
+    function placeCombo(type) {
+        let t1 = document.getElementById('teamA').value, t2 = document.getElementById('teamB').value;
+        if(t1 === t2) return alert("⚠️ Dono teams alag-alag honi chahiye!");
         let msgBox = document.getElementById('combo-msg');
         msgBox.innerText = `✅ ₹100 Bet placed on ${t1} & ${t2} for ${type}!`;
         setTimeout(() => msgBox.innerText = "", 2000);
