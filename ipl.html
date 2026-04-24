@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPL T20 - Mega League</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <style>
+        body { background: #05050a; color: #fff; font-family: 'Arial Black', sans-serif; margin: 0; text-align: center; overflow-x: hidden; }
+        .header { background: linear-gradient(180deg, #1a1a2e, #000); padding: 15px; border-bottom: 2px solid #ffd700; box-shadow: 0 5px 15px rgba(255,215,0,0.2); }
+        .match-no { color: #ffd700; font-size: 14px; letter-spacing: 1px; }
+        
+        /* 🕒 BIG TIMER */
+        .timer-container { margin: 15px 0; }
+        .timer-circle { width: 100px; height: 100px; border: 5px solid #00ff88; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: auto; box-shadow: 0 0 20px #00ff88; }
+        #timer { font-size: 28px; font-weight: 900; color: #fff; }
+
+        /* 🏆 IPL BATTLE AREA (DABBE) */
+        .battle-grid { display: flex; justify-content: space-around; align-items: center; padding: 10px; }
+        .team-card { width: 40%; padding: 10px; border: 3px solid; border-radius: 15px; background: rgba(255,255,255,0.05); cursor: pointer; }
+        .dragon-team { border-color: #4da6ff; box-shadow: inset 0 0 15px rgba(77,166,255,0.3); }
+        .tiger-team { border-color: #ff4d4d; box-shadow: inset 0 0 15px rgba(255,77,77,0.3); }
+        .team-name { font-size: 20px; margin-bottom: 5px; }
+        .dragon-team .team-name { color: #4da6ff; }
+        .tiger-team .team-name { color: #ff4d4d; }
+
+        /* 🃏 CARDS CSS */
+        .cards-area { display: flex; justify-content: center; gap: 40px; margin-top: 10px; }
+        .crd { width: 70px; height: 100px; border-radius: 6px; border: 2px dashed rgba(255,255,255,0.4); background: rgba(0,0,0,0.5); position: relative; }
+        
+        /* 🔥 CUSTOM CARD BACK DESIGN 🔥 */
+        .cbk { position: absolute; inset: 0; z-index: 10; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #ffd700; }
+        .cbk img { width: 45px; height: 45px; object-fit: contain; margin-bottom: 5px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.9)); }
+        .cbk span { font-size: 13px; font-weight: 900; color: #fff; text-shadow: 0 2px 4px #000; }
+        
+        /* Box 1 (Dragon Side) Card Back */
+        #b-d { background: linear-gradient(135deg, #001f3f, #003366); box-shadow: inset 0 0 15px #4da6ff; } 
+        /* Box 2 (Tiger Side) Card Back */
+        #b-t { background: linear-gradient(135deg, #3f0000, #660000); box-shadow: inset 0 0 15px #ff4d4d; }
+
+        .points-table { width: 90%; margin: 20px auto; background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; }
+        .table-row { display: flex; justify-content: space-between; font-size: 12px; padding: 5px 10px; border-bottom: 1px solid #222; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="match-no">IPL MATCH #<span id="match-count">1</span> / 74</div>
+    <div style="font-size: 18px; font-weight: 900;">MEGA CHAMPIONS LEAGUE</div>
+</div>
+
+<div class="timer-container">
+    <div class="timer-circle"><div id="timer">09:30</div></div>
+    <p style="font-size: 11px; color: #888; margin-top: 5px;">BETTING CLOSES IN</p>
+</div>
+
+<div class="cards-area">
+    <div id="c-d" class="crd">
+        <div class="cbk" id="b-d">
+            <img id="logo-t1" src="assets/IPL_team_5001.png" alt="T1">
+            <span id="back-name-t1">CSK</span>
+        </div>
+    </div>
+    <div style="font-size: 24px; font-style: italic; color: #ffd700; margin-top: 30px;">VS</div>
+    <div id="c-t" class="crd">
+        <div class="cbk" id="b-t">
+            <img id="logo-t2" src="assets/IPL_team_5006.png" alt="T2">
+            <span id="back-name-t2">MI</span>
+        </div>
+    </div>
+</div>
+
+<div class="battle-grid">
+    <div class="team-card dragon-team" onclick="bet('dragon')">
+        <div id="team1-name" class="team-name">CSK</div>
+        <div style="font-size: 12px; color: #ffd700; margin-top: 5px;">BET: ₹<span id="my-bet-d">0</span></div>
+    </div>
+
+    <div class="team-card tiger-team" onclick="bet('tiger')">
+        <div id="team2-name" class="team-name">MI</div>
+        <div style="font-size: 12px; color: #ffd700; margin-top: 5px;">BET: ₹<span id="my-bet-t">0</span></div>
+    </div>
+</div>
+
+<div class="points-table">
+    <div style="font-size: 14px; color: #ffd700; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 10px;">LIVE POINTS TABLE</div>
+    <div class="table-row" style="color: #ffd700; font-weight: bold;">
+        <span>TEAM</span> <span>P</span> <span>W</span> <span>PTS</span>
+    </div>
+    <div class="table-row"><span>1. CSK</span> <span>0</span> <span>0</span> <span style="color:#00ff88">0</span></div>
+    <div class="table-row"><span>2. MI</span> <span>0</span> <span>0</span> <span style="color:#00ff88">0</span></div>
+</div>
+
+<script>
+    // Database Setup
+    const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
+    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 🔥 AUTO LOGO SYSTEM (Aapki bheji hui PNGs) 🔥
+    const teamLogos = {
+        "CSK": "assets/IPL_team_5001.png",
+        "DC": "assets/IPL_team_5002.png",
+        "GT": "assets/IPL_team_5003.png",
+        "KKR": "assets/IPL_team_5004.png",
+        "LSG": "assets/IPL_team_5005.png",
+        "MI": "assets/IPL_team_5006.png",
+        "PBKS": "assets/IPL_team_5007.png",
+        "RR": "assets/IPL_team_5008.png",
+        "RCB": "assets/IPL_team_5009.png",
+        "SRH": "assets/IPL_team_5010.png"
+    };
+
+    // Firebase se Data laana
+    db.ref('Game/IPL_Match/Today').on('value', snap => {
+        let data = snap.val();
+        if(data) {
+            let t1 = data.Team1 || "CSK";
+            let t2 = data.Team2 || "MI";
+
+            // Box ke naam change karo
+            document.getElementById('team1-name').innerText = t1;
+            document.getElementById('team2-name').innerText = t2;
+            
+            // Patton (Cards) ke peeche ka naam change karo
+            document.getElementById('back-name-t1').innerText = t1;
+            document.getElementById('back-name-t2').innerText = t2;
+
+            // Patton ke peeche ka LOGO change karo (Auto-Logo System se)
+            document.getElementById('logo-t1').src = teamLogos[t1] || "assets/IPL_team_5001.png";
+            document.getElementById('logo-t2').src = teamLogos[t2] || "assets/IPL_team_5006.png";
+        }
+    });
+
+    // Timer Logic: 570 Seconds
+    let totalTime = 570; 
+    setInterval(() => {
+        let mins = Math.floor(totalTime / 60); let secs = totalTime % 60;
+        document.getElementById('timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        if (totalTime <= 0) totalTime = 570; else totalTime--;
+    }, 1000);
+
+    function bet(side) {
+        let span = document.getElementById('my-bet-' + (side === 'dragon' ? 'd' : 't'));
+        span.innerText = parseInt(span.innerText) + 100;
+    }
+</script>
+</body>
+</html>
