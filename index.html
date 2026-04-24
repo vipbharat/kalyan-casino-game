@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding-top: 50px; }
@@ -17,9 +18,9 @@
         button { width: 90%; padding: 14px; background: #ffd700; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #000; margin-top: 10px; font-size: 16px; transition: 0.3s;}
         button:disabled { background: #555; color: #888; cursor: not-allowed; }
         .hidden { display: none !important; }
+        
         #otp-display { background: rgba(255,215,0,0.1); border: 2px dashed #ffd700; padding: 15px; margin: 15px 0; color: #ffd700; font-size: 24px; font-weight: bold; }
         
-        /* Quick Login Box Styles */
         #quick-login-box { padding: 10px 0; }
         #quick-login-box h3 { color: #00ff88; margin-top: 0; }
         .saved-phone { font-size: 20px; font-weight: 900; color: #fff; background: #222; padding: 10px; border-radius: 8px; border: 1px dashed #555; margin-bottom: 15px; letter-spacing: 2px;}
@@ -55,51 +56,58 @@
         </div>
 
         <div id="reg-box" class="hidden">
-            <input type="number" id="r-phone" placeholder="Mobile Number">
+            <input type="number" id="r-phone" placeholder="Mobile Number (10 digits)">
+            
             <div id="reg-step2" class="hidden">
-                <div id="otp-display">OTP: <span id="otp-num">000000</span></div>
+                <div id="otp-display" class="hidden">OTP: <span id="otp-num">000000</span></div>
+                
+                <p id="sms-success-msg" style="color: #00ff88; font-size: 12px;" class="hidden">✅ Asli SMS OTP bheja gaya hai!</p>
+                
                 <input type="number" id="r-otp" placeholder="Enter OTP">
                 <input type="password" id="r-pass1" placeholder="Create Password">
                 <input type="password" id="r-pass2" placeholder="Confirm Password">
             </div>
-            <div id="timer-text" style="color: #0f0; margin: 10px 0; font-weight:bold;"></div>
+            
+            <div id="recaptcha-container"></div>
             <button id="main-btn" onclick="checkDeviceAndRegister()">SEND OTP</button>
         </div>
     </div>
 </div>
 
 <script>
-    // 1. Connection (Direct)
     var firebaseConfig = { 
         apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
         databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" 
     };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     var database = firebase.database();
-    var globalOTP = "";
 
-    // 🚀 KHUFIYA DEVICE ID GENERATOR 🚀
+    // Hybrid OTP System Variables
+    var isRealSMS = false; 
+    var globalFakeOTP = "";
+
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        'size': 'invisible'
+    });
+
     let deviceId = localStorage.getItem('kalyan_device_id');
     if(!deviceId) {
         deviceId = "DEV_" + Math.random().toString(36).substr(2, 9) + Date.now();
         localStorage.setItem('kalyan_device_id', deviceId);
     }
 
-    // 🚀 QUICK LOGIN CHECKER (Page load hote hi check karega) 🚀
     window.onload = function() {
         var savedPhone = localStorage.getItem('userPhone');
         if(savedPhone && savedPhone !== "") {
-            // User already logged in hai, purana box chupao, Quick Login dikhao
             document.getElementById('normal-auth-box').classList.add('hidden');
             document.getElementById('quick-login-box').classList.remove('hidden');
             document.getElementById('saved-phone-text').innerText = "📱 " + savedPhone;
         }
     };
 
-    // Logout Function
     function logoutUser() {
-        localStorage.removeItem('userPhone'); // Memory se number delete
-        window.location.reload(); // Page refresh
+        localStorage.removeItem('userPhone');
+        window.location.reload(); 
     }
 
     function toggleView(mode) {
@@ -109,7 +117,6 @@
         document.getElementById('tab2').className = (mode === 'r' ? 'tab-btn active-tab' : 'tab-btn');
     }
 
-    // 2. 🛑 ANTI-FRAUD LOCK CHECK 🛑
     function checkDeviceAndRegister() {
         var ph = document.getElementById('r-phone').value;
         if(ph.length !== 10) return alert("⚠️ Sahi 10-digit number daalein!");
@@ -122,79 +129,119 @@
             if(snap.exists()) {
                 let linkedPhone = snap.val().phone;
                 if(linkedPhone !== ph) {
-                    alert("🚨 SECURITY ALERT!\nEk mobile se sirf ek hi account ban sakta hai.\nYe device pehle se kisi aur account ke sath link hai.");
+                    alert("🚨 SECURITY ALERT!\nEk mobile se sirf ek hi account ban sakta hai.");
                     btn.innerText = "DEVICE LOCKED";
                     return; 
                 }
             }
-            handleRegister(ph, btn);
+            sendHybridOTP(ph, btn);
         }).catch(function(error) {
-            alert("Network Error. Try again.");
+            alert("Network Error.");
             btn.disabled = false;
             btn.innerText = "SEND OTP";
         });
     }
 
-    // 3. Register logic with 10s Timer
-    function handleRegister(ph, btn) {
-        var txt = document.getElementById('timer-text');
-        var countdown = 10;
+    // 🚀 JUGAAD SYSTEM: Pehle asli try karega, fail hua toh nakli dikhayega
+    function sendHybridOTP(ph, btn) {
+        btn.innerText = "SENDING OTP...";
+        var phoneNumberWithCode = "+91" + ph; 
 
-        var t = setInterval(function() {
-            txt.innerText = "⏳ Verification in: " + countdown + "s";
-            countdown--;
-            if(countdown < 0) {
-                clearInterval(t);
-                txt.innerText = "✅ OTP Generated!";
-                globalOTP = Math.floor(100000 + Math.random() * 899999).toString();
-                document.getElementById('otp-num').innerText = globalOTP;
-                document.getElementById('reg-step2').classList.remove('hidden');
-                btn.disabled = false;
-                btn.innerText = "VERIFY & GET ₹51 BONUS";
-                btn.onclick = saveToDatabase;
-            }
-        }, 1000);
+        firebase.auth().signInWithPhoneNumber(phoneNumberWithCode, window.recaptchaVerifier)
+            .then(function (confirmationResult) {
+                // SUCCESS: Asli SMS chala gaya!
+                isRealSMS = true;
+                window.confirmationResult = confirmationResult;
+                
+                document.getElementById('otp-display').classList.add('hidden');
+                document.getElementById('sms-success-msg').classList.remove('hidden');
+                
+                showStep2(btn);
+            }).catch(function (error) {
+                // FAILED: Quota khatam ya limit poori ho gayi. Ab Jugaad chalega!
+                console.log("Firebase SMS failed. Starting Jugaad OTP.", error);
+                isRealSMS = false;
+                globalFakeOTP = Math.floor(100000 + Math.random() * 899999).toString();
+                
+                document.getElementById('sms-success-msg').classList.add('hidden');
+                document.getElementById('otp-num').innerText = globalFakeOTP;
+                document.getElementById('otp-display').classList.remove('hidden');
+                
+                // Recaptcha reset (zaroori hai warna agli baar kaam nahi karega)
+                window.recaptchaVerifier.render().then(function(widgetId) { grecaptcha.reset(widgetId); });
+                
+                showStep2(btn);
+            });
     }
 
-    // 4. Save User
-    function saveToDatabase() {
+    function showStep2(btn) {
+        document.getElementById('reg-step2').classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerText = "VERIFY & GET ₹51";
+        btn.onclick = verifyHybridOTP; 
+    }
+
+    // 🚀 HYBRID VERIFICATION
+    function verifyHybridOTP() {
         var ph = document.getElementById('r-phone').value;
         var otp = document.getElementById('r-otp').value;
         var p1 = document.getElementById('r-pass1').value;
         var p2 = document.getElementById('r-pass2').value;
 
-        if(otp !== globalOTP) return alert("❌ Galat OTP!");
+        if(otp.length !== 6) return alert("❌ Sahi OTP daalein!");
         if(p1 === "" || p1 !== p2) return alert("❌ Password match nahi hua!");
 
-        var vid = "VIP" + Math.floor(100000 + Math.random() * 899999);
+        var btn = document.getElementById('main-btn');
+        btn.disabled = true;
+        btn.innerText = "VERIFYING...";
 
+        if(isRealSMS) {
+            // Asli SMS verification
+            window.confirmationResult.confirm(otp).then(function (result) {
+                saveNewUser(ph, p1);
+            }).catch(function (error) {
+                alert("❌ Galat OTP!");
+                btn.disabled = false;
+                btn.innerText = "VERIFY & GET ₹51";
+            });
+        } else {
+            // Jugaad OTP verification
+            if(otp === globalFakeOTP) {
+                saveNewUser(ph, p1);
+            } else {
+                alert("❌ Galat OTP!");
+                btn.disabled = false;
+                btn.innerText = "VERIFY & GET ₹51";
+            }
+        }
+    }
+
+    function saveNewUser(ph, password) {
+        var vid = "VIP" + Math.floor(100000 + Math.random() * 899999);
         database.ref('users/' + ph).set({
             phone: ph, 
-            password: p1, 
+            password: password, 
             balance: 51, 
             uid: vid,
             deviceId: deviceId 
         }).then(function() {
             database.ref('DeviceLocks/' + deviceId).set({ phone: ph });
-            
             localStorage.setItem('userPhone', ph);
             window.location.href = "dashboard.html";
-        }).catch(function(e) { alert("Error: Rules check karein!"); });
+        });
     }
 
-    // 5. Login
     function handleLogin() {
         var ph = document.getElementById('l-phone').value;
         var ps = document.getElementById('l-pass').value;
-        
         if(!ph || !ps) return alert("Number aur Password daalein!");
 
         database.ref('users/' + ph).once('value').then(function(snap) {
             if(snap.exists()) {
                 var u = snap.val();
                 if(u.password == ps || u.pass == ps) {
-                    localStorage.setItem('userPhone', ph); // Number memory mein save
-                    window.location.href = "dashboard.html"; // Seedha andar!
+                    localStorage.setItem('userPhone', ph);
+                    window.location.href = "dashboard.html";
                 } else { alert("❌ Galat Password!"); }
             } else { alert("❌ Account nahi mila! Pehle Register karein."); }
         });
