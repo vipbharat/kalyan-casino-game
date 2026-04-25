@@ -10,7 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         :root { --gold: #ffd700; --green: #00ff88; --locked: rgba(30, 30, 30, 0.85); }
-        body { background: #05050a; color: #fff; font-family: 'Arial Black', sans-serif; margin: 0; text-align: center; overflow-x: hidden; padding-bottom: 50px;}
+        body { background: #05050a; color: #fff; font-family: 'Arial Black', sans-serif; margin: 0; text-align: center; overflow-x: hidden; padding-bottom: 80px;} /* padding badhaya chip bar ke liye */
 
         /* 💰 HEADER & WALLET */
         .header { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(180deg, #1a1a2e, #000); padding: 10px 15px; border-bottom: 2px solid var(--gold); }
@@ -74,6 +74,16 @@
         .dt-cards-container { display: flex; gap: 30px; margin: 20px 0; }
         .dt-card { width: 75px; height: 110px; background: repeating-linear-gradient(45deg, #111, #111 10px, #222 10px, #222 20px); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 40px; border: 3px solid var(--gold); color: #fff; font-weight: 900; }
         .dt-card.opened { background: #fff; }
+
+        /* 💰 CHIP SELECTOR (BOTTOM BAR) */
+        .chip-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.95); padding: 10px 5px; display: flex; justify-content: center; gap: 10px; border-top: 2px solid var(--gold); z-index: 9999; }
+        .chip { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; cursor: pointer; transition: 0.2s; box-shadow: 0 3px 8px rgba(0,0,0,0.8); }
+        .chip.active { transform: scale(1.15) translateY(-5px); border-color: var(--gold); box-shadow: 0 0 15px var(--gold); }
+        .chip-50 { background: radial-gradient(#fff, #ccc); color: #000; }
+        .chip-100 { background: radial-gradient(#4da6ff, #0055ff); color: #fff; }
+        .chip-500 { background: radial-gradient(#ff4d4d, #cc0000); color: #fff; }
+        .chip-1k { background: radial-gradient(#ffd700, #b8860b); color: #000; }
+        .chip-5k { background: radial-gradient(#8e44ad, #4a235a); color: #fff; }
 
         ::-webkit-scrollbar { width: 0px; }
     </style>
@@ -162,13 +172,21 @@
     <div class="champion-grid" id="teams-grid"></div>
 </div>
 
+<div class="chip-bar">
+    <div class="chip chip-50 active" onclick="setChip(50, this)">50</div>
+    <div class="chip chip-100" onclick="setChip(100, this)">100</div>
+    <div class="chip chip-500" onclick="setChip(500, this)">500</div>
+    <div class="chip chip-1k" onclick="setChip(1000, this)">1K</div>
+    <div class="chip chip-5k" onclick="setChip(5000, this)">5K</div>
+</div>
+
 <div class="modal" id="guide-modal">
     <div class="modal-content" style="text-align: left;">
         <div class="close-btn" onclick="closeModal('guide-modal')">&times;</div>
         <h3 style="color:var(--gold); margin-top:0; text-align:center;"><i class="fa-solid fa-book-open"></i> HOW TO PLAY</h3>
         <div style="border-bottom: 1px dashed #333; padding-bottom: 10px; margin-bottom: 10px;">
             <h4 style="color: #4da6ff; margin: 0 0 5px 0;">⚔️ LIVE MATCH (1.95X)</h4>
-            <p style="font-size: 11px; color: #ccc; margin: 0;"><b>HIN:</b> T1 ya T2 par bet lagayein. Aap 24 ghante bet laga sakte hain! Raat mein lagayi bet kal subah ke Match #1 ke liye save ho jayegi.</p>
+            <p style="font-size: 11px; color: #ccc; margin: 0;"><b>HIN:</b> Niche se apne Chip ka amount select karein (₹50 se start) aur T1 ya T2 par bet lagayein. Aap 24 ghante bet laga sakte hain!</p>
         </div>
         <div style="border-bottom: 1px dashed #333; padding-bottom: 10px; margin-bottom: 10px;">
             <h4 style="color: var(--gold); margin: 0 0 5px 0;">👑 CHAMPION RACE (6X)</h4>
@@ -240,6 +258,15 @@
 
     let walletBal = 0, myBetsRecord = [], userPhone = localStorage.getItem('userPhone');
     let serverOffset = 0, currentMatchNoGlobal = 1;
+    
+    // 🔥 NEW: Bet Amount Selection 🔥
+    let currentBetAmount = 50; 
+
+    function setChip(amount, element) {
+        currentBetAmount = amount;
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        element.classList.add('active');
+    }
 
     // 🔥 BET MEMORY RESTORE 🔥
     document.getElementById('mybet-l1').innerText = "₹" + (parseInt(localStorage.getItem('bet_live-t1')) || 0);
@@ -258,7 +285,6 @@
     let rules = { champLock: 20, semiLock: 70 }; 
     db.ref('Game/IPL_Match/Rules').on('value', snap => { if(snap.exists()) rules = snap.val(); });
 
-    // ---------------- CONSTANT FAKE POOL ENGINE (Never drops) ----------------
     let fakePools = JSON.parse(localStorage.getItem('vip_fake_pools')) || {};
     function initFakePools() {
         if(!fakePools['live-t1']) fakePools['live-t1'] = 15000 + Math.floor(Math.random()*5000);
@@ -298,19 +324,17 @@
         localStorage.setItem('vip_fake_pools', JSON.stringify(fakePools));
     }
 
-    // ---------------- 24/7 AUTO-PILOT & PRE-BETTING (UNLOCK AT 12 AM) ----------------
     db.ref('.info/serverTimeOffset').on('value', snap => { serverOffset = snap.val() || 0; });
     window.resultShown = false; 
 
     function checkGameStatus() {
         let serverTimeMs = new Date().getTime() + serverOffset; 
         let startTime = new Date(serverTimeMs); startTime.setHours(10, 0, 0, 0); 
-        let endTime = new Date(startTime.getTime() + 703 * 60000); // 9:43 PM
+        let endTime = new Date(startTime.getTime() + 703 * 60000); 
         
         let elapsedMs = serverTimeMs - startTime.getTime();
         let newMatchNo = Math.floor(elapsedMs / (9.5 * 60000)) + 1;
 
-        // Daily Reset Logic
         let lastKnownMatch = parseInt(localStorage.getItem('lastMatchNo')) || 1;
         if (newMatchNo === 1 && lastKnownMatch > 50) {
             localStorage.removeItem("vipWinnersDate");
@@ -321,26 +345,22 @@
         localStorage.setItem('lastMatchNo', newMatchNo);
 
         if (serverTimeMs < startTime.getTime() || serverTimeMs > endTime.getTime()) {
-            // 🔥 OFF-HOURS (NIGHT TIME) - PRE-BETTING OPEN 🔥
-            window.isGameLocked = false; // Player can place bets!
+            window.isGameLocked = false; 
             document.getElementById('match-no-display').innerText = "1";
             document.getElementById('timer').innerText = "10:00 AM";
             currentMatchNoGlobal = 1; 
             
-            // All Locks Removed so player can bet at 2 AM
             document.getElementById('champ-lock').style.display = 'none';
             document.getElementById('semi-lock').style.display = 'none';
             document.getElementById('combo-lock').style.display = 'none';
 
-            growFakePools(); // Pools keep growing to attract players
-            generatePointsTable(0); // 0 matches played
+            growFakePools(); 
+            generatePointsTable(0); 
         } else {
-            // 🔥 ACTIVE HOURS (10 AM to 9:43 PM) 🔥
             window.isGameLocked = false;
             currentMatchNoGlobal = newMatchNo;
             document.getElementById('match-no-display').innerText = currentMatchNoGlobal;
 
-            // Proper Section Locks
             if(currentMatchNoGlobal > rules.champLock) document.getElementById('champ-lock').style.display = 'flex'; else document.getElementById('champ-lock').style.display = 'none';
             if(currentMatchNoGlobal > rules.semiLock) { document.getElementById('semi-lock').style.display = 'flex'; document.getElementById('combo-lock').style.display = 'flex'; }
             else { document.getElementById('semi-lock').style.display = 'none'; document.getElementById('combo-lock').style.display = 'none'; }
@@ -354,7 +374,6 @@
 
             growFakePools();
 
-            // Reset Live Pool quietly at the start of new round
             if (roundRemainingMs > 560000 && window.resultShown) {
                 window.resultShown = false;
                 resetFakePools('live');
@@ -362,13 +381,11 @@
 
             if (roundRemainingMs % 30000 < 1000) generatePointsTable(currentMatchNoGlobal); 
 
-            // Result Trigger (7 Sec)
             if (roundRemainingMs <= 7000 && !window.resultShown) { window.resultShown = true; showCardReveal(); }
         }
     }
     setInterval(checkGameStatus, 1000);
 
-    // ---------------- DATA & TEAMS ----------------
     db.ref('Game/IPL_Match/Today').on('value', snap => {
         let d = snap.val(); if(!d) return;
         ['name-t1','l-name-t1', 's-name-t1'].forEach(id => { let e = document.getElementById(id); if(e) e.innerText = d.Team1; });
@@ -392,7 +409,6 @@
         document.getElementById('schedule-list').innerHTML = listHTML;
     }
 
-    // ---------------- RESULT REVEAL (BOT IGNORED) ----------------
     function showCardReveal() {
         let t1Name = document.getElementById('name-t1').innerText;
         let t2Name = document.getElementById('name-t2').innerText;
@@ -425,7 +441,7 @@
         setTimeout(() => {
             let winAmt = t1Wins && myBetT1 > 0 ? myBetT1 * 1.95 : (!t1Wins && myBetT2 > 0 ? myBetT2 * 1.95 : 0);
             if(winAmt > 0) {
-                db.ref('users/' + userPhone + '/balance').once('value').then(s => db.ref('users/' + userPhone + '/balance').set((s.val()||0) + winAmt));
+                db.ref('users/' + userPhone + '/winning_balance').once('value').then(s => db.ref('users/' + userPhone + '/winning_balance').set((s.val()||0) + winAmt));
                 document.getElementById('win-loss-msg').innerHTML = `🎉 WON ₹${winAmt.toFixed(2)}`;
                 document.getElementById('win-loss-msg').style.color = "var(--green)";
             } else if(myBetT1+myBetT2 > 0) { 
@@ -444,7 +460,6 @@
         }, 6500);
     }
 
-    // ---------------- DYNAMIC POINTS TABLE ----------------
     function generatePointsTable(playedTotal) {
         let ptsData = [];
         teams.forEach((t, i) => {
@@ -468,7 +483,6 @@
         document.getElementById('points-list-content').innerHTML = html;
     } 
 
-    // ---------------- SMART WINNERS GENERATOR ----------------
     function generateWinners(forceReset = false) {
         let todayStr = new Date().toDateString(); 
         if(forceReset) { localStorage.removeItem("vipWinnersDate"); localStorage.removeItem("vipWinnersList"); }
@@ -492,34 +506,56 @@
     } 
     generateWinners(false);
 
-    // ---------------- BETTING SYSTEM ----------------
+    // ---------------- SMART WALLET SYSTEM (Fixes Firebase Rollback) ----------------
+    function smartDeduct(amount, callback) {
+        db.ref('users/' + userPhone).once('value').then(snap => {
+            let d = snap.val() || {};
+            let b = parseFloat(d.balance || 0);
+            let w = parseFloat(d.winning_balance || 0);
+            let bo = parseFloat(d.bonus_balance || 0);
+
+            if (b >= amount) {
+                db.ref('users/' + userPhone + '/balance').set(b - amount).then(callback);
+            } else if (b + w >= amount) {
+                db.ref('users/' + userPhone + '/balance').set(0);
+                db.ref('users/' + userPhone + '/winning_balance').set(w - (amount - b)).then(callback);
+            } else {
+                db.ref('users/' + userPhone + '/balance').set(0);
+                db.ref('users/' + userPhone + '/winning_balance').set(0);
+                db.ref('users/' + userPhone + '/bonus_balance').set(bo - (amount - b - w)).then(callback);
+            }
+        });
+    }
+
+    // 🔥 DYNAMIC AMOUNT PLACEMENT 🔥
     function placeBet(id, type, team) {
         if(window.isGameLocked) return alert("System is generating match schedule. Wait 1 min!");
-        if(walletBal < 100) return alert("Low Balance! Please recharge.");
+        if(walletBal < currentBetAmount) return alert("Low Balance! Please recharge.");
         
-        db.ref('users/' + userPhone + '/balance').once('value').then(s => db.ref('users/' + userPhone + '/balance').set((s.val()||0) - 100));
-        
-        if(id.startsWith('live-')) {
-            let betKey = 'bet_' + id;
-            let currBet = parseInt(localStorage.getItem(betKey)) || 0;
-            localStorage.setItem(betKey, currBet + 100);
-            document.getElementById(id.replace('live-', 'mybet-l')).innerText = "₹" + (currBet + 100);
-        } else {
-            let span = document.getElementById(id.replace('semi-', 'bet-s').replace('champ-', 'bet-c-'));
-            if(span) span.innerText = (parseInt(span.innerText) || 0) + 100;
-        }
-        addRecord(type, team, 100);
+        smartDeduct(currentBetAmount, () => {
+            if(id.startsWith('live-')) {
+                let betKey = 'bet_' + id;
+                let currBet = parseInt(localStorage.getItem(betKey)) || 0;
+                localStorage.setItem(betKey, currBet + currentBetAmount);
+                document.getElementById(id.replace('live-', 'mybet-l')).innerText = "₹" + (currBet + currentBetAmount);
+            } else {
+                let span = document.getElementById(id.replace('semi-', 'bet-s').replace('champ-', 'bet-c-'));
+                if(span) span.innerText = (parseInt(span.innerText) || 0) + currentBetAmount;
+            }
+            addRecord(type, team, currentBetAmount);
+        });
     }
 
     function placeCombo(type) {
         if(window.isGameLocked) return alert("⚠️ Combo is locked right now.");
         let t1 = document.getElementById('teamA').value, t2 = document.getElementById('teamB').value;
         if(t1 === t2) return alert("⚠️ Dono teams alag-alag honi chahiye!");
-        if(walletBal < 100) return alert("Low Balance!");
+        if(walletBal < currentBetAmount) return alert("Low Balance!");
         
-        db.ref('users/' + userPhone + '/balance').once('value').then(s => db.ref('users/' + userPhone + '/balance').set((s.val()||0) - 100));
-        addRecord(type, t1 + " & " + t2, 100);
-        alert(`✅ ₹100 Bet placed on ${t1} & ${t2}!`);
+        smartDeduct(currentBetAmount, () => {
+            addRecord(type, t1 + " & " + t2, currentBetAmount);
+            alert(`✅ ₹${currentBetAmount} Bet placed on ${t1} & ${t2}!`);
+        });
     }
 
     function addRecord(type, team, amount) {
