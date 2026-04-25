@@ -79,6 +79,8 @@
 </head>
 <body>
 
+<audio id="coinSnd" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+
 <div id="match-result-popup">
     <h2 style="color:var(--gold); font-size: 22px;">🔥 MATCH RESULT 🔥</h2>
     <div class="dt-cards-container">
@@ -250,25 +252,34 @@
     document.getElementById('teamB').innerHTML = selectHTML;
     document.getElementById('teamB').selectedIndex = 1;
 
-    let totalBal = 0;
+    // 🔥 GLOBAL WALLET VARIABLES 🔥
+    let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0;
     let myBetsRecord = [];
     let serverOffset = 0, currentMatchNoGlobal = 1;
 
     document.getElementById('mybet-l1').innerText = "₹" + (parseInt(localStorage.getItem('bet_live-t1')) || 0);
     document.getElementById('mybet-l2').innerText = "₹" + (parseInt(localStorage.getItem('bet_live-t2')) || 0);
 
+    // Coin Sound function
+    function playSound(audioId, vol) {
+        try {
+            let snd = document.getElementById(audioId).cloneNode();
+            snd.volume = vol;
+            snd.play().catch(e=>{});
+        } catch(e){}
+    }
+
     // ---------------- FAST BALANCE & ID SYNC (From Dashboard Script) ----------------
     db.ref('users/' + userPhone).on('value', (snapshot) => {
         const data = snapshot.val() || {};
         
-        // Exact Dashboard Player ID Logic
         document.getElementById('player-id-display').innerText = "ID: " + (data.playerId || "KP" + String(userPhone).slice(-4));
         
-        let dep = parseFloat(data.balance || 0);
-        let win = parseFloat(data.winning_balance || 0);
-        let bon = parseFloat(data.bonus_balance || 0);
+        depBal = parseFloat(data.balance || 0);
+        winBal = parseFloat(data.winning_balance || 0);
+        bonBal = parseFloat(data.bonus_balance || 0);
         
-        totalBal = Math.max(0, dep + win + bon);
+        totalBal = Math.max(0, depBal + winBal + bonBal);
         document.getElementById('wallet-bal').innerText = totalBal.toFixed(2);
     });
 
@@ -425,7 +436,6 @@
         setTimeout(() => {
             let winAmt = t1Wins && myBetT1 > 0 ? myBetT1 * 1.95 : (!t1Wins && myBetT2 > 0 ? myBetT2 * 1.95 : 0);
             if(winAmt > 0) {
-                // Fetch fresh wallet state before adding winnings to avoid overwrite
                 db.ref('users/' + userPhone).once('value', snap => {
                     let d = snap.val() || {};
                     let nWin = parseFloat(d.winning_balance || 0);
@@ -513,57 +523,62 @@
         element.classList.add('selected');
     }
 
-    // ---------------- 🔥 SAFE & DIRECT DEDUCTION LOGIC 🔥 ----------------
+    // ---------------- 🔥 EXACT ANDAR BAHAR SYNCHRONOUS DEDUCTION 🔥 ----------------
     function confirmBet() {
         let amount = pendingBet.amount;
         if(totalBal < amount) return alert("Low Balance! Please recharge.");
         
         closeModal('bet-amount-modal');
         
-        // Read fresh DB state right before cutting money to avoid async overwrites
-        db.ref('users/' + userPhone).once('value', snap => {
-            let d = snap.val() || {};
-            let nDep = parseFloat(d.balance || 0);
-            let nWin = parseFloat(d.winning_balance || 0);
-            let nBon = parseFloat(d.bonus_balance || 0);
-            let rem = amount;
+        // Using global variables just like Andar Bahar for fast update
+        let nDep = depBal, nWin = winBal, nBon = bonBal, rem = amount;
 
-            if ((nDep + nWin + nBon) < amount) {
-                alert("Insufficient Balance!");
-                return;
-            }
-
-            if (nDep >= rem) { 
-                nDep -= rem; rem = 0; 
+        if (nDep >= rem) { 
+            nDep -= rem; rem = 0; 
+        } else { 
+            rem -= nDep; nDep = 0; 
+            if (nWin >= rem) { 
+                nWin -= rem; rem = 0; 
             } else { 
-                rem -= nDep; nDep = 0; 
-                if (nWin >= rem) { 
-                    nWin -= rem; rem = 0; 
-                } else { 
-                    rem -= nWin; nWin = 0; nBon -= rem; rem = 0; 
-                } 
-            }
+                rem -= nWin; nWin = 0; nBon -= rem; rem = 0; 
+            } 
+        }
 
-            // Direct update
-            db.ref('users/' + userPhone).update({ 
-                balance: Math.max(0, nDep), 
-                winning_balance: Math.max(0, nWin), 
-                bonus_balance: Math.max(0, nBon) 
-            }).then(() => {
-                // Bet placed successfully, now update UI
-                let id = pendingBet.id;
-                if(id.startsWith('live-')) {
-                    let betKey = 'bet_' + id;
-                    let currBet = parseInt(localStorage.getItem(betKey)) || 0;
-                    localStorage.setItem(betKey, currBet + amount);
-                    document.getElementById(id.replace('live-', 'mybet-l')).innerText = "₹" + (currBet + amount);
-                } else {
-                    let span = document.getElementById(id.replace('semi-', 'bet-s').replace('champ-', 'bet-c-'));
-                    if(span) span.innerText = (parseInt(span.innerText) || 0) + amount;
-                }
-                addRecord(pendingBet.type, pendingBet.team, amount);
-            });
+        // Fire and forget logic, directly triggers Firebase update
+        db.ref('users/'+userPhone).update({ 
+            balance: Math.max(0, nDep), 
+            winning_balance: Math.max(0, nWin), 
+            bonus_balance: Math.max(0, nBon) 
         });
+
+        // 🔥 CRITICAL BUG FIX: String replacement crash preventing UI update 🔥
+        try {
+            let id = pendingBet.id;
+            if(id.startsWith('live-')) {
+                let betKey = 'bet_' + id;
+                let currBet = parseInt(localStorage.getItem(betKey)) || 0;
+                localStorage.setItem(betKey, currBet + amount);
+                
+                let targetId = id.replace('live-t', 'mybet-l');
+                let el = document.getElementById(targetId);
+                if(el) el.innerText = "₹" + (currBet + amount);
+                
+            } else if(id.startsWith('semi-')) {
+                let targetId = id.replace('semi-t', 'bet-s');
+                let el = document.getElementById(targetId);
+                if(el) el.innerText = "₹" + ((parseInt(el.innerText.replace('₹','')) || 0) + amount);
+                
+            } else if(id.startsWith('champ-')) {
+                let targetId = id.replace('champ-', 'bet-c-');
+                let el = document.getElementById(targetId);
+                if(el) el.innerText = (parseInt(el.innerText.replace('₹','')) || 0) + amount;
+            }
+        } catch (error) {
+            console.error("UI Update Error Ignored: ", error);
+        }
+
+        addRecord(pendingBet.type, pendingBet.team, amount);
+        playSound('coinSnd', 1.0); // KACHING! 🪙
     }
 
     function placeCombo(type) {
