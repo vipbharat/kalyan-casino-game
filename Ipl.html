@@ -6,7 +6,6 @@
     <title>IPL Mega League - VIP 24/7</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         :root { --gold: #ffd700; --green: #00ff88; --locked: rgba(30, 30, 30, 0.85); }
@@ -96,7 +95,7 @@
         <div style="font-size:14px; font-weight:bold;"><i class="fa-solid fa-arrow-left"></i> IPL MEGA VIP</div>
     </div>
     <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
-        <div style="font-size: 10px; color: #fff; margin-bottom: 3px; font-weight: bold; letter-spacing: 1px;">ID: <span id="user-id-show" style="color: var(--gold);">Loading...</span></div>
+        <div id="player-id-display" style="font-size: 10px; color: #fff; margin-bottom: 3px; font-weight: bold; letter-spacing: 1px;">ID: Loading...</div>
         <div class="wallet-box"><i class="fa-solid fa-wallet"></i> ₹<span id="wallet-bal">0.00</span></div>
     </div>
 </div>
@@ -188,9 +187,7 @@
     <div class="modal-content" style="text-align: left;">
         <div class="close-btn" onclick="closeModal('guide-modal')">&times;</div>
         <h3 style="color:var(--gold); margin-top:0; text-align:center;"><i class="fa-solid fa-book-open"></i> HOW TO PLAY</h3>
-        <div style="border-bottom: 1px dashed #333; padding-bottom: 10px; margin-bottom: 10px;">
-            <p style="font-size: 12px; color: #ccc; margin: 0;"><b>HIN:</b> T1 ya T2 par click karein, aur naya popup khulne par apna paisa select karke Confirm dabayein. Aap 24 ghante bet laga sakte hain!</p>
-        </div>
+        <p style="font-size: 12px; color: #ccc;"><b>HIN:</b> T1 ya T2 par click karein, aur naya popup khulne par apna paisa select karke Confirm dabayein. Aap 24 ghante bet laga sakte hain!</p>
     </div>
 </div>
 
@@ -237,6 +234,9 @@
     if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // 🔥 PERFECT DASHBOARD USER SYNC 🔥
+    const userPhone = localStorage.getItem('userPhone') || "Guest";
+
     const teams = ["CSK", "DC", "GT", "KKR", "LSG", "MI", "PBKS", "RR", "RCB", "SRH"];
     const teamLogos = { "CSK": "assets/IPL_team_5001.png", "DC": "assets/IPL_team_5002.png", "GT": "assets/IPL_team_5003.png", "KKR": "assets/IPL_team_5004.png", "LSG": "assets/IPL_team_5005.png", "MI": "assets/IPL_team_5006.png", "PBKS": "assets/IPL_team_5007.png", "RR": "assets/IPL_team_5008.png", "RCB": "assets/IPL_team_5009.png", "SRH": "assets/IPL_team_5010.png" };
     
@@ -250,44 +250,27 @@
     document.getElementById('teamB').innerHTML = selectHTML;
     document.getElementById('teamB').selectedIndex = 1;
 
-    // 🔥 ANDAR BAHAR WALE GLOBAL WALLET VARIABLES 🔥
-    let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0;
-    let myBetsRecord = [], userPhone = localStorage.getItem('userPhone');
+    let totalBal = 0;
+    let myBetsRecord = [];
     let serverOffset = 0, currentMatchNoGlobal = 1;
 
     document.getElementById('mybet-l1').innerText = "₹" + (parseInt(localStorage.getItem('bet_live-t1')) || 0);
     document.getElementById('mybet-l2').innerText = "₹" + (parseInt(localStorage.getItem('bet_live-t2')) || 0);
 
-    // ---------------- DISPLAY USER ID ----------------
-    function setUserIdDisplay(phone) {
-        if(phone) document.getElementById('user-id-show').innerText = phone;
-    }
-
-    // ---------------- WALLET SYNC (FAST MODE) ----------------
-    function loadBalanceData(p) {
-        db.ref('users/' + p).on('value', snap => {
-            const d = snap.val() || {};
-            depBal = parseFloat(d.balance || 0);
-            winBal = parseFloat(d.winning_balance || 0);
-            bonBal = parseFloat(d.bonus_balance || 0);
-            totalBal = Math.max(0, depBal + winBal + bonBal);
-            document.getElementById('wallet-bal').innerText = totalBal.toFixed(2);
-        });
-    }
-    
-    if(userPhone) { 
-        loadBalanceData(userPhone); 
-        setUserIdDisplay(userPhone);
-    } else { 
-        firebase.auth().onAuthStateChanged(u => { 
-            if(u && u.phoneNumber){ 
-                userPhone = u.phoneNumber; 
-                localStorage.setItem('userPhone', userPhone);
-                loadBalanceData(userPhone); 
-                setUserIdDisplay(userPhone);
-            } 
-        }); 
-    }
+    // ---------------- FAST BALANCE & ID SYNC (From Dashboard Script) ----------------
+    db.ref('users/' + userPhone).on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        
+        // Exact Dashboard Player ID Logic
+        document.getElementById('player-id-display').innerText = "ID: " + (data.playerId || "KP" + String(userPhone).slice(-4));
+        
+        let dep = parseFloat(data.balance || 0);
+        let win = parseFloat(data.winning_balance || 0);
+        let bon = parseFloat(data.bonus_balance || 0);
+        
+        totalBal = Math.max(0, dep + win + bon);
+        document.getElementById('wallet-bal').innerText = totalBal.toFixed(2);
+    });
 
     let rules = { champLock: 20, semiLock: 70 }; 
     db.ref('Game/IPL_Match/Rules').on('value', snap => { if(snap.exists()) rules = snap.val(); });
@@ -345,10 +328,8 @@
 
         let lastKnownMatch = parseInt(localStorage.getItem('lastMatchNo')) || 1;
         if (newMatchNo === 1 && lastKnownMatch > 50) {
-            localStorage.removeItem("vipWinnersDate");
-            localStorage.removeItem("vipWinnersList");
-            resetFakePools('all');
-            generateWinners(true); 
+            localStorage.removeItem("vipWinnersDate"); localStorage.removeItem("vipWinnersList");
+            resetFakePools('all'); generateWinners(true); 
         }
         localStorage.setItem('lastMatchNo', newMatchNo);
 
@@ -362,8 +343,7 @@
             document.getElementById('semi-lock').style.display = 'none';
             document.getElementById('combo-lock').style.display = 'none';
 
-            growFakePools(); 
-            generatePointsTable(0); 
+            growFakePools(); generatePointsTable(0); 
         } else {
             window.isGameLocked = false;
             currentMatchNoGlobal = newMatchNo;
@@ -382,13 +362,8 @@
 
             growFakePools();
 
-            if (roundRemainingMs > 560000 && window.resultShown) {
-                window.resultShown = false;
-                resetFakePools('live');
-            }
-
+            if (roundRemainingMs > 560000 && window.resultShown) { window.resultShown = false; resetFakePools('live'); }
             if (roundRemainingMs % 30000 < 1000) generatePointsTable(currentMatchNoGlobal); 
-
             if (roundRemainingMs <= 7000 && !window.resultShown) { window.resultShown = true; showCardReveal(); }
         }
     }
@@ -450,8 +425,13 @@
         setTimeout(() => {
             let winAmt = t1Wins && myBetT1 > 0 ? myBetT1 * 1.95 : (!t1Wins && myBetT2 > 0 ? myBetT2 * 1.95 : 0);
             if(winAmt > 0) {
-                // 🔥 OLD SCRIPT STYLE PAYOUT 🔥
-                db.ref('users/'+userPhone+'/winning_balance').set(winBal + winAmt);
+                // Fetch fresh wallet state before adding winnings to avoid overwrite
+                db.ref('users/' + userPhone).once('value', snap => {
+                    let d = snap.val() || {};
+                    let nWin = parseFloat(d.winning_balance || 0);
+                    db.ref('users/' + userPhone).update({ winning_balance: nWin + winAmt });
+                });
+                
                 document.getElementById('win-loss-msg').innerHTML = `🎉 WON ₹${winAmt.toFixed(2)}`;
                 document.getElementById('win-loss-msg').style.color = "var(--green)";
             } else if(myBetT1+myBetT2 > 0) { 
@@ -512,7 +492,7 @@
 
     function openBetModal(id, type, team) {
         if(window.isGameLocked && !id.startsWith('live-')) return alert("System is setting up matches. Please wait!");
-        if(!userPhone) return alert("Pehle login karein!");
+        if(!userPhone || userPhone === "Guest") return alert("Pehle login karein!");
 
         pendingBet.id = id;
         pendingBet.type = type;
@@ -533,44 +513,57 @@
         element.classList.add('selected');
     }
 
-    // ---------------- 🔥 EXACT ANDAR BAHAR FAST DEDUCTION 🔥 ----------------
+    // ---------------- 🔥 SAFE & DIRECT DEDUCTION LOGIC 🔥 ----------------
     function confirmBet() {
         let amount = pendingBet.amount;
         if(totalBal < amount) return alert("Low Balance! Please recharge.");
         
         closeModal('bet-amount-modal');
         
-        let nDep = depBal, nWin = winBal, nBon = bonBal, rem = amount;
+        // Read fresh DB state right before cutting money to avoid async overwrites
+        db.ref('users/' + userPhone).once('value', snap => {
+            let d = snap.val() || {};
+            let nDep = parseFloat(d.balance || 0);
+            let nWin = parseFloat(d.winning_balance || 0);
+            let nBon = parseFloat(d.bonus_balance || 0);
+            let rem = amount;
 
-        if (nDep >= rem) { 
-            nDep -= rem; rem = 0; 
-        } else { 
-            rem -= nDep; nDep = 0; 
-            if (nWin >= rem) { 
-                nWin -= rem; rem = 0; 
+            if ((nDep + nWin + nBon) < amount) {
+                alert("Insufficient Balance!");
+                return;
+            }
+
+            if (nDep >= rem) { 
+                nDep -= rem; rem = 0; 
             } else { 
-                rem -= nWin; nWin = 0; nBon -= rem; rem = 0; 
-            } 
-        }
+                rem -= nDep; nDep = 0; 
+                if (nWin >= rem) { 
+                    nWin -= rem; rem = 0; 
+                } else { 
+                    rem -= nWin; nWin = 0; nBon -= rem; rem = 0; 
+                } 
+            }
 
-        db.ref('users/'+userPhone).update({ 
-            balance: Math.max(0, nDep), 
-            winning_balance: Math.max(0, nWin), 
-            bonus_balance: Math.max(0, nBon) 
+            // Direct update
+            db.ref('users/' + userPhone).update({ 
+                balance: Math.max(0, nDep), 
+                winning_balance: Math.max(0, nWin), 
+                bonus_balance: Math.max(0, nBon) 
+            }).then(() => {
+                // Bet placed successfully, now update UI
+                let id = pendingBet.id;
+                if(id.startsWith('live-')) {
+                    let betKey = 'bet_' + id;
+                    let currBet = parseInt(localStorage.getItem(betKey)) || 0;
+                    localStorage.setItem(betKey, currBet + amount);
+                    document.getElementById(id.replace('live-', 'mybet-l')).innerText = "₹" + (currBet + amount);
+                } else {
+                    let span = document.getElementById(id.replace('semi-', 'bet-s').replace('champ-', 'bet-c-'));
+                    if(span) span.innerText = (parseInt(span.innerText) || 0) + amount;
+                }
+                addRecord(pendingBet.type, pendingBet.team, amount);
+            });
         });
-
-        // Update Screen Immediately
-        let id = pendingBet.id;
-        if(id.startsWith('live-')) {
-            let betKey = 'bet_' + id;
-            let currBet = parseInt(localStorage.getItem(betKey)) || 0;
-            localStorage.setItem(betKey, currBet + amount);
-            document.getElementById(id.replace('live-', 'mybet-l')).innerText = "₹" + (currBet + amount);
-        } else {
-            let span = document.getElementById(id.replace('semi-', 'bet-s').replace('champ-', 'bet-c-'));
-            if(span) span.innerText = (parseInt(span.innerText) || 0) + amount;
-        }
-        addRecord(pendingBet.type, pendingBet.team, amount);
     }
 
     function placeCombo(type) {
