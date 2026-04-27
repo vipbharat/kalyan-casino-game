@@ -108,7 +108,6 @@
         .banner-overlay { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); width: 80vw; max-width: 900px; z-index: 1000; opacity: 0; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; filter: drop-shadow(0 10px 20px #000);}
         .banner-overlay.show { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
 
-        /* 🔥 NEW: BOT PLAYERS SIDE PANELS (Images Only) 🔥 */
         .side-panel { width: 75px; display: flex; flex-direction: column; justify-content: space-evenly; padding: 5px; background: rgba(0,0,0,0.5); z-index: 20; border-left: 2px solid #ffd700; border-right: 2px solid #ffd700;}
         .bot-user { display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .player-icon { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ffd700; box-shadow: 0 2px 5px #000; object-fit: cover; display: block; background: #222; transition: 0.3s;}
@@ -137,6 +136,10 @@
         <audio id="snd-dragon" src="https://assets.mixkit.co/active_storage/sfx/2458/2458-preview.mp3"></audio> 
         <audio id="snd-tiger" src="https://assets.mixkit.co/active_storage/sfx/25/25-preview.mp3"></audio> 
         <audio id="snd-coins" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3"></audio>
+        <audio id="snd-drop" src="assets/C9c7036e-1502-4e98-9b70-b8fec24836e4.mp3" preload="auto"></audio>
+        <audio id="snd-fly" src="assets/7ba0aedc-0356-404d-9c4a-c34acec66469.mp3" preload="auto"></audio>
+        
+        <audio id="snd-card-flip" src="assets/6f1124e7-aec9-44c9-b898-4ca3c32bbe46.mp3" preload="auto"></audio>
 
         <div class="back-btn" onclick="window.history.back()">&#8592;</div>
 
@@ -231,14 +234,30 @@
             $('click-catcher').style.display = 'none'; 
             if(!iAI) {
                 try {
-                    ['bgM','bS','cS','snd-dragon','snd-tiger','snd-coins'].forEach(i => { let e=$(i); if(e){ e.play().catch(e=>{}); } });
+                    // Update kiye gaye sabhi naye audio initialize ho jayenge
+                    ['bgM','bS','cS','snd-dragon','snd-tiger','snd-coins','snd-drop','snd-fly','snd-card-flip'].forEach(i => { let e=$(i); if(e){ e.play().catch(e=>{}); } });
                     let m=$('bgM'); if(m) m.volume=.2; iAI=1;
                 } catch(e) {}
             }
         }
-        function pS(i,v) { try{ let s=$(i); if(s){ s.currentTime=0; s.volume=v; s.play().catch(e=>{}); } }catch(e){} }
+        
+        function pS(i,v) { 
+            try { 
+                let s=$(i); 
+                if(s) { 
+                    if(i === 'snd-drop' || i === 'snd-fly' || i === 'snd-card-flip') {
+                        let clone = s.cloneNode();
+                        clone.volume = v;
+                        clone.play().catch(e=>{});
+                    } else {
+                        s.currentTime=0; 
+                        s.volume=v; 
+                        s.play().catch(e=>{}); 
+                    }
+                } 
+            } catch(e){} 
+        }
 
-        // 🔥 DYNAMIC AVATAR LOGIC (4 Left, 4 Right) 🔥
         const avatars = ['Avatar0.png', 'Avatar2.png', 'Avatar3.png', 'Avatar4.png', 'Avatar5.png', 'Avatar6.png', 'Avatar7.png', 'Avatar9.png', 'Avatar10.png', 'Avatar11.png'];
         function genPlayers() {
             let leftH = '', rightH = '';
@@ -298,7 +317,6 @@
                     let bElem = $('bal'); if(bElem) bElem.innerText = tB.toFixed(2);
                     let bBotElem = $('bal-bot'); if(bBotElem) bBotElem.innerText = tB.toFixed(2);
 
-                    // 🔥 DYNAMIC ID LOGIC 🔥
                     let pIdStr = d.playerId || (ph !== "TEST_USER" ? "KP" + ph.slice(-4) : "GUEST");
                     let pIdTop = $('player-id-top'); if(pIdTop) pIdTop.innerText = pIdStr;
                     let pIdBot = $('player-id-bottom'); if(pIdBot) pIdBot.innerText = pIdStr;
@@ -384,6 +402,8 @@
             };
 
             function spC(s, imgSrc) {
+                pS('snd-drop', 0.4); 
+
                 let sid = (s=='tie'?'ti':s.charAt(0));
                 let b = $('ch-'+sid); if(!b) return;
                 
@@ -413,7 +433,7 @@
                     let ta = [100, 500][Math.floor(Math.random()*2)];
                     spC('tie', chipImgMap[ta]); bPl.tie += ta; bb = 1;
                 }
-                if(bb) { uP(); pS('bS', 0.05); }
+                if(bb) { uP(); }
             }
 
             db.ref('Game/DragonTiger/Status').on('value', s => {
@@ -464,9 +484,9 @@
                     return `<div class="text-card ${c}"><div style="font-size:12px;font-weight:900;line-height:1">${v}<br><span style="font-size:10px">${y}</span></div><div style="font-size:24px;text-align:center;margin-top:-2px">${y}</div><div style="font-size:12px;font-weight:900;line-height:1;text-align:left;transform:rotate(180deg);margin-top:-2px">${v}<br><span style="font-size:10px">${y}</span></div></div>`;
                 } else {
                     let suitMap = {'S': 'spades', 'H': 'hearts', 'D': 'diamonds', 'C': 'clubs'};
-                    let valMap = {'A': 'ace'};
+                    let valMap = {'A': 'ace', '10': '10', '0': '10'};
                     let suitName = suitMap[s]; let valName = valMap[v] || v; 
-                    return `<img src="https://deckofcardsapi.com/static/img/${valName}_of_${suitName}.png" style="width: 100%; height: 100%; border-radius: 2px;">`;
+                    return `<img src="assets/${valName}_of_${suitName}.png" style="width: 100%; height: 100%; border-radius: 2px; object-fit: contain; background: #fff;">`;
                 }
             }
 
@@ -474,7 +494,8 @@
                 let gameMount = document.getElementById('game-mount');
                 let winBoxId = wId === 'dragon' ? 'bx-d' : (wId === 'tiger' ? 'bx-t' : 'bx-ti');
                 
-                pS('snd-coins', 0.8); 
+                pS('snd-fly', 1.0); 
+                
                 for(let i=0; i<15; i++) {
                     setTimeout(() => {
                         let chip = document.createElement('div');
@@ -497,7 +518,9 @@
             }
 
             function sR(w) {
-                pS('cS', 1);
+                // 🔥 NAYA: PATTE KHULNE (CARD FLIP) KI AAWAZ 🔥
+                pS('snd-card-flip', 1.0);
+                
                 let bd=$('b-d'), bt=$('b-t');
                 if(bd) bd.style.opacity = '0'; if(bt) bt.style.opacity = '0';
                 let cd = $('c-d'), ct = $('c-t'); 
