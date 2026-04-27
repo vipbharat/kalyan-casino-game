@@ -11,7 +11,6 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial Black', sans-serif; }
         
-        /* 📱 AUTO-ROTATION MAGIC HACK 📱 */
         body { background: #000; overflow: hidden; width: 100vw; height: 100vh; position: relative; user-select: none; }
         
         #game-mount {
@@ -20,7 +19,7 @@
             display: flex; justify-content: center; align-items: center; overflow: hidden;
         }
 
-        /* Agar phone khada hai (Portrait), toh game ko 90 degree ghuma do! */
+        /* Auto-Rotation for Portrait */
         @media screen and (orientation: portrait) {
             #game-mount {
                 width: 100vh; height: 100vw;
@@ -29,25 +28,24 @@
             }
         }
 
-        /* 👑 MAIN CASINO BOARD (Zoomed out look) 👑 */
+        /* 👑 MAIN CASINO BOARD 👑 */
         .casino-board {
-            width: 88%; height: 82%; 
+            width: 90%; height: 80%; 
             background: rgba(30, 20, 60, 0.9);
             border: 3px solid #5a419c; border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(90, 65, 156, 0.6);
             display: flex; flex-direction: column; position: relative;
+            margin-bottom: 8%; /* Leave space for bottom area */
         }
 
-        /* 🐉 TOP ACTION AREA (Cards & Floating Beasts) 🐅 */
+        /* 🐉 TOP ACTION AREA 🐅 */
         .action-area { flex: 0.8; position: relative; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 25px; z-index: 10;}
         
-        /* The beasts are absolutely positioned at the top left/right outside the box constraints */
         .flying-beast { position: absolute; top: -15%; height: 130%; width: 40%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 15px 15px rgba(0,0,0,0.8)); z-index: 15;}
         #beast-left { left: -8%; animation: float 3s ease-in-out infinite; }
         #beast-right { right: -8%; }
         @keyframes float { 0% { transform: translateY(0); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0); } }
 
-        /* Cards & VS */
         .cards-stage { display: flex; align-items: center; gap: 30px; position: relative; z-index: 20;}
         .crd { width: 50px; height: 70px; border-radius: 4px; border: 2px solid #ffd700; background: #fff; position: relative; box-shadow: 0 5px 15px #000; transition: transform 0.3s;}
         .cbk { position: absolute; inset: 0; background: url('https://deckofcardsapi.com/static/img/back.png') center/cover; border-radius: 2px; z-index: 10; transition: 0.3s;}
@@ -64,7 +62,7 @@
         .h-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 11px; font-weight: bold; color: #fff; border: 1.5px solid rgba(255,255,255,0.5); box-shadow: 0 2px 4px #000; flex-shrink: 0;}
         .h-d { background: #5c4cdb; } .h-t { background: #e68900; } .h-tie { background: #43a047; font-size: 8px;}
 
-        /* 💰 BETTING BOXES (Vibrant Original Colors) */
+        /* 💰 BETTING BOXES */
         .betting-area { flex: 1.3; display: flex; padding: 8px; gap: 8px; position: relative;}
         .bet-box { flex: 1; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; cursor: pointer; box-shadow: inset 0 0 25px rgba(0,0,0,0.5); overflow: hidden; transition: 0.2s;}
         .bet-box:active { transform: scale(0.97); }
@@ -73,7 +71,6 @@
         .tibx { background: linear-gradient(180deg, #6bcf6b, #43a047); border: 2px solid #8be08b; }
         .tbx { background: linear-gradient(180deg, #f0a33c, #e68900); border: 2px solid #ffd085; }
         
-        /* Faint Watermarks inside boxes */
         .watermark { position: absolute; bottom: -10%; width: 90%; opacity: 0.15; pointer-events: none; z-index: 1;}
 
         .box-title { font-size: 26px; font-weight: 900; color: #fff; text-shadow: 0 2px 5px #000; z-index: 5;}
@@ -84,31 +81,61 @@
         
         .gw { box-shadow: inset 0 0 30px #fff, 0 0 20px #39ff14 !important; border-color: #39ff14 !important; z-index: 10; transform: scale(1.02);}
 
-        /* 🪙 CHIPS OVERLAY & TRAY */
         .chips-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 20;}
         .placed-chip { position: absolute; width: 28px; filter: drop-shadow(0 2px 3px #000); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .win-anim-chip { transition: all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 9999 !important; border: 1.5px solid #fff; border-radius: 50%; box-shadow: 2px 2px 6px rgba(0,0,0,0.8); }
 
-        .bottom-area { position: absolute; bottom: 0; width: 100%; height: 12%; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 5px; z-index: 50;}
-        .chip-tray { width: 85%; height: 100%; background: rgba(0,0,0,0.6); border-radius: 20px; display: flex; justify-content: space-evenly; align-items: center; padding: 5px; border: 2px solid #5a419c; box-shadow: 0 5px 15px #000; }
-        .chip { height: 90%; cursor: pointer; filter: drop-shadow(0 4px 5px #000); transition: 0.2s;}
+        /* 🟣 HALF VIOLET WALLET & 🪙 HALF CHIPS TRAY */
+        .bottom-area { 
+            position: absolute; bottom: 5px; width: 90%; height: 12%; 
+            display: flex; justify-content: space-between; align-items: stretch; gap: 10px; z-index: 50;
+        }
+        
+        .wallet-panel {
+            width: 49%; background: linear-gradient(135deg, #4a00e0, #8e2de2); /* Violet Box */
+            border-radius: 12px; border: 2px solid #ffd700;
+            display: flex; flex-direction: column; justify-content: center; padding: 0 15px;
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.2), 0 5px 15px rgba(0,0,0,0.8);
+        }
+        .w-info { display: flex; justify-content: space-between; align-items: center; }
+        .w-id { font-size: 11px; color: #fff; font-weight: bold;}
+        .w-live { color: #00ff88; font-size: 11px; font-weight: bold; text-shadow: 0 1px 2px #000; }
+        .w-bal { font-size: 20px; color: #ffd700; text-shadow: 0 2px 4px #000; margin-top: 2px;}
+
+        .chip-tray { 
+            width: 49%; background: rgba(0,0,0,0.8); border-radius: 12px; 
+            display: flex; justify-content: space-evenly; align-items: center; padding: 5px; 
+            border: 2px solid #5a419c; box-shadow: 0 5px 15px #000; 
+        }
+        .chip { height: 85%; max-width: 40px; cursor: pointer; filter: drop-shadow(0 4px 5px #000); transition: 0.2s;}
         .chip.sel { transform: scale(1.15) translateY(-5px); filter: drop-shadow(0 0 15px #ffd700); }
 
-        /* Banners & Top Info */
-        .top-info { position: absolute; top: 10px; left: 10px; z-index: 50; display: flex; gap: 15px; color: #fff; font-size: 12px; font-weight: bold; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid #ffd700;}
-        .top-bal { position: absolute; top: 10px; right: 10px; z-index: 50; background: rgba(0,0,0,0.8); color: #00ff88; font-size: 16px; font-weight: bold; padding: 5px 20px; border-radius: 20px; border: 1.5px solid #ffd700;}
-        
-        .banner-overlay { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); width: 320px; z-index: 1000; opacity: 0; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; filter: drop-shadow(0 10px 20px #000);}
+        /* 🚩 BANNERS (BADE SIZE MEIN) */
+        .banner-overlay { 
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); 
+            width: 480px; max-width: 80vw; /* Height and Width Increased significantly */
+            z-index: 1000; opacity: 0; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            pointer-events: none; filter: drop-shadow(0 10px 20px #000);
+        }
         .banner-overlay.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+
+        /* CLICK CATCHER FOR AUDIO */
+        #click-catcher { position: absolute; inset: 0; z-index: 999999; }
+        #start-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0a0515; z-index: 9999999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; cursor: pointer;
+        }
 
         .tst { position:fixed; top:-60px; left:50%; transform:translateX(-50%); background:linear-gradient(45deg,#d32f2f,#c62828); color:#fff; padding:10px 20px; border-radius:8px; z-index:9999; border:2px solid #fff; box-shadow:0 0 20px #f00; transition:top .4s; font-size:14px; font-weight: 900;}
         .tst.sh { top:15px; }
-
-        /* CLICK CATCHER FOR AUDIO INITIALIZATION */
-        #click-catcher { position: absolute; inset: 0; z-index: 999999; }
     </style>
 </head>
 <body>
+
+    <div id="start-screen" onclick="enterCasino()">
+        <h1>TAP TO PLAY</h1>
+        <p style="font-family: sans-serif; font-size: 14px;">Fullscreen Mode</p>
+    </div>
 
     <div id="game-mount">
 
@@ -120,12 +147,6 @@
         <audio id="snd-dragon" src="https://assets.mixkit.co/active_storage/sfx/2458/2458-preview.mp3"></audio> 
         <audio id="snd-tiger" src="https://assets.mixkit.co/active_storage/sfx/25/25-preview.mp3"></audio> 
         <audio id="snd-coins" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3"></audio>
-
-        <div class="top-info">
-            <div style="color: #00ff88;">🟢 <span id="oc">1,248</span> LIVE</div>
-            <div>ID: 5388910154</div>
-        </div>
-        <div class="top-bal">₹ <span id="bal">0.00</span></div>
 
         <div class="casino-board">
             
@@ -169,6 +190,14 @@
         </div>
 
         <div class="bottom-area">
+            <div class="wallet-panel">
+                <div class="w-info">
+                    <div class="w-id">ID: 5388910154</div>
+                    <div class="w-live">🟢 <span id="oc">1,248</span> LIVE</div>
+                </div>
+                <div class="w-bal">₹ <span id="bal">0.00</span></div>
+            </div>
+
             <div class="chip-tray">
                 <img src="assets/10_0.png" class="chip sel" data-value="10" onclick="sC(this)" onerror="this.style.display='none'">
                 <img src="assets/50_0.png" class="chip" data-value="50" onclick="sC(this)" onerror="this.style.display='none'">
@@ -176,7 +205,6 @@
                 <img src="assets/500_0.png" class="chip" data-value="500" onclick="sC(this)" onerror="this.style.display='none'">
                 <img src="assets/1000_0.png" class="chip" data-value="1000" onclick="sC(this)" onerror="this.style.display='none'">
                 <img src="assets/5000_1.png" class="chip" data-value="5000" onclick="sC(this)" onerror="this.style.display='none'">
-                <img src="assets/10000_0.png" class="chip" data-value="10000" onclick="sC(this)" onerror="this.style.display='none'">
             </div>
         </div>
 
@@ -187,9 +215,22 @@
     <script>
         const $ = i => document.getElementById(i);
         
+        function enterCasino() {
+            let elem = document.documentElement;
+            if (elem.requestFullscreen) { elem.requestFullscreen(); }
+            else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
+            else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); }
+            
+            if(screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock("landscape").catch(e=>{});
+            }
+            $('start-screen').style.display='none';
+            uA();
+        }
+
         let iAI = 0;
         function initAudio() {
-            $('click-catcher').style.display = 'none'; // Hide catcher after first click
+            $('click-catcher').style.display = 'none'; 
             if(!iAI) {
                 try {
                     ['bgM','bS','cS','snd-dragon','snd-tiger','snd-coins'].forEach(i => { let e=$(i); if(e){ e.play().catch(e=>{}); } });
@@ -215,7 +256,7 @@
 
             const chipImgMap = {
                 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 
-                500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png"
+                500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png"
             };
 
             function sT(m) {
@@ -268,7 +309,6 @@
                 if(mti) mti.innerText = "₹" + (sPl.tie+bPl.tie).toLocaleString();
             }
 
-            // --- ADMIN 20% PROFIT EDGE LOGIC ---
             function getProfitableWinner() {
                 let dBet = sPl.dragon || 0; let tBet = sPl.tiger || 0; let tieBet = sPl.tie || 0;
                 let totalBets = dBet + tBet + tieBet;
@@ -335,7 +375,7 @@
                 if(!iBO) return;
                 let bb = 0;
                 ['dragon','tiger'].forEach(s => {
-                    let a = [100, 500, 1000, 5000, 10000][Math.floor(Math.random()*5)];
+                    let a = [100, 500, 1000, 5000][Math.floor(Math.random()*4)];
                     let rb = bL[Math.floor(Math.random()*bL.length)];
                     if(rb.b >= a) { rb.b -= a; spC(s, chipImgMap[a]); bPl[s] += a; bb = 1; }
                 });
@@ -403,8 +443,6 @@
             function animateWinningChips(wId) {
                 let gameMount = document.getElementById('game-mount');
                 let winBoxId = wId === 'dragon' ? 'bx-d' : (wId === 'tiger' ? 'bx-t' : 'bx-ti');
-                
-                // Get elements relative to game-mount to avoid CSS rotation bugs
                 let winBox = document.getElementById(winBoxId);
                 let boardRect = document.querySelector('.betting-area');
                 
@@ -414,15 +452,10 @@
                         let chip = document.createElement('div');
                         chip.className = 'placed-chip win-anim-chip';
                         chip.style.background = '#ffd700'; 
-                        
-                        // Start exactly center of betting area
-                        chip.style.left = '50%';
-                        chip.style.top = '60%';
-                        
+                        chip.style.left = '50%'; chip.style.top = '60%';
                         gameMount.appendChild(chip);
                         
                         setTimeout(() => {
-                            // Move dynamically based on winner
                             if(wId === 'dragon') { chip.style.left = '20%'; chip.style.top = '60%'; }
                             else if(wId === 'tiger') { chip.style.left = '80%'; chip.style.top = '60%'; }
                             else { chip.style.left = '50%'; chip.style.top = '60%'; }
