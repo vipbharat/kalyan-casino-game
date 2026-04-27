@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Dragon Tiger VIP - Premium</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -14,10 +14,13 @@
         body {
             background: linear-gradient(135deg, #0d0626, #1f1147);
             display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
-            height: 100vh; width: 100vw; overflow: hidden; user-select: none;
+            /* NAYA: 100dvh se mobile ka address bar game ko hide nahi karega */
+            height: 100dvh; width: 100vw; overflow: hidden; user-select: none;
+            /* SafeArea insets for modern notch displays */
+            padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* SAFE START SCREEN */
         #start-screen {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0a0515; z-index: 99999;
             display: flex; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; cursor: pointer;
@@ -27,57 +30,58 @@
 
         /* Top Info Bar */
         .info-bar { 
-            width: 100vw; display: flex; justify-content: space-between; align-items: center; padding: 1vh 4vw; 
+            width: 100%; height: 8%; min-height: 35px; display: flex; justify-content: space-between; align-items: center; padding: 0 4%; 
             background: rgba(0,0,0,0.8); border-bottom: 1.5px solid #d4af37; color: white; z-index: 50; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.8);
         }
-        .bal-box { font-weight: 900; font-size: 2.5vh; color: #00ff88; text-shadow: 0 0 5px #00ff88; }
+        .bal-box { font-weight: 900; font-size: clamp(14px, 2.5vh, 20px); color: #00ff88; text-shadow: 0 0 5px #00ff88; }
 
-        /* MAIN GAME FRAME */
+        /* MAIN GAME FRAME (Fluid Height) */
         .board { 
-            display: flex; flex-direction: column; width: 94vw; height: 74vh; 
+            display: flex; flex-direction: column; width: 96%; flex: 1; min-height: 0; /* flex:1 takes all remaining middle space automatically */
             background: rgba(25, 15, 50, 0.6); backdrop-filter: blur(8px);
-            border-radius: 1.5vh; border: 2px solid #5a419c; 
+            border-radius: 12px; border: 2px solid #5a419c; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(90, 65, 156, 0.5); 
-            margin-top: 1.5vh; position: relative;
+            margin: 1.5% 0; position: relative;
         }
 
-        /* 1. TOP ACTION AREA & CARDS */
-        .top-action-area { display: flex; justify-content: space-between; align-items: flex-end; height: 32vh; position: relative; padding: 0 2vw; }
-        .char-media { height: 110%; max-width: 32vw; object-fit: contain; pointer-events: none; filter: drop-shadow(0 15px 15px rgba(0,0,0,0.6)); z-index: 5; margin-bottom: -2vh;}
+        /* 1. TOP ACTION AREA & CARDS (Flexible heights) */
+        .top-action-area { flex: 0.9; display: flex; justify-content: space-between; align-items: flex-end; position: relative; padding: 0 2%; overflow: hidden;}
+        .char-media { height: auto; max-height: 120%; width: 30%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 15px 15px rgba(0,0,0,0.6)); z-index: 5; margin-bottom: -2%;}
         
-        .center-stage { display: flex; flex-direction: column; align-items: center; gap: 1vh; z-index: 10; padding-bottom: 2vh;}
-        .cards-container { display: flex; align-items: center; gap: 1vw; position: relative; }
+        .center-stage { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 5px; z-index: 10; padding-bottom: 2%; height: 100%;}
+        .cards-container { display: flex; align-items: center; gap: 5px; position: relative; height: 60%; justify-content: center;}
         
-        .card-slot { width: 8.5vh; height: 12vh; border-radius: 0.5vh; box-shadow: 0 5px 15px rgba(0,0,0,0.8); border: 1.5px solid #ffd700; position: relative; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); transition: transform 0.3s;}
-        .cbk { background: url('https://deckofcardsapi.com/static/img/back.png') no-repeat center center / cover; position: absolute; inset: 0; z-index: 10; border-radius: 0.5vh; }
+        .card-slot { aspect-ratio: 2.5/3.5; height: 100%; max-height: 85px; border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); border: 1.5px solid #ffd700; position: relative; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); transition: transform 0.3s;}
+        .cbk { background: url('https://deckofcardsapi.com/static/img/back.png') no-repeat center center / cover; position: absolute; inset: 0; z-index: 10; border-radius: 4px; }
         .card-val { width: 100%; height: 100%; position: absolute; inset: 0; border-radius: 4px; overflow: hidden; }
-        .text-card { display: flex; flex-direction: column; justify-content: space-between; padding: 3px; background: #fff; width: 100%; height: 100%; border-radius: 4px; }
+        .text-card { display: flex; flex-direction: column; justify-content: space-between; padding: 2px; background: #fff; width: 100%; height: 100%; border-radius: 3px; }
         .red-suit { color: #d32f2f !important; } .black-suit { color: #212121 !important; }
 
-        .top-vs-logo { width: 8vh; height: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; filter: drop-shadow(0 0 15px rgba(255,0,0,0.8)); }
+        .top-vs-logo { height: 60%; max-height: 50px; width: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; filter: drop-shadow(0 0 15px rgba(255,0,0,0.8)); }
 
-        .timer-badge { background: linear-gradient(180deg, #5b1a1a, #3a0000); border: 1.5px solid #ffd700; color: #ffd700; padding: 0.5vh 3vw; border-radius: 2vh; font-size: 2.2vh; font-weight: 900; box-shadow: 0 4px 10px rgba(0,0,0,0.8); text-shadow: 0 0 8px #ffd700; }
+        .timer-badge { background: linear-gradient(180deg, #5b1a1a, #3a0000); border: 1.5px solid #ffd700; color: #ffd700; padding: 2px 15px; border-radius: 15px; font-size: clamp(10px, 2vh, 14px); font-weight: 900; box-shadow: 0 4px 10px rgba(0,0,0,0.8); text-shadow: 0 0 8px #ffd700; white-space: nowrap;}
 
         /* 2. HISTORY BAR */
-        .history-bar { height: 4.5vh; background: rgba(10, 5, 25, 0.8); display: flex; align-items: center; justify-content: flex-end; padding: 0 1vw; gap: 0.5vw; overflow-x: auto; border-top: 2px solid #4a317c; border-bottom: 2px solid #4a317c; flex-direction: row-reverse;}
+        .history-bar { height: 10%; min-height: 25px; background: rgba(10, 5, 25, 0.8); display: flex; align-items: center; justify-content: flex-end; padding: 0 1%; gap: 4px; overflow-x: auto; border-top: 2px solid #4a317c; border-bottom: 2px solid #4a317c; flex-direction: row-reverse;}
         .history-bar::-webkit-scrollbar { display: none; }
-        .hist-dot { width: 3vh; height: 3vh; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5vh; font-weight: 900; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.8); flex-shrink: 0;}
-        .h-t { background: radial-gradient(circle, #ffaa00, #b37700); } .h-d { background: radial-gradient(circle, #4da6ff, #0055b3); } .h-tie { background: radial-gradient(circle, #39ff14, #1a8008); font-size: 1.2vh; }
+        .hist-dot { height: 80%; aspect-ratio: 1/1; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: clamp(8px, 1.5vh, 12px); font-weight: 900; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.8); flex-shrink: 0;}
+        .h-t { background: radial-gradient(circle, #ffaa00, #b37700); } .h-d { background: radial-gradient(circle, #4da6ff, #0055b3); } .h-tie { background: radial-gradient(circle, #39ff14, #1a8008); font-size: clamp(6px, 1.2vh, 10px); }
 
-        /* 3. BETTING COLUMNS */
-        .betting-columns { display: flex; flex: 1; border-radius: 0 0 1.5vh 1.5vh; overflow: hidden; }
+        /* 3. BETTING COLUMNS (Fluid Flex) */
+        .betting-columns { display: flex; flex: 1.2; border-radius: 0 0 12px 12px; overflow: hidden; position: relative;}
         .bet-box { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; transition: 0.2s; border-right: 1px solid rgba(255,255,255,0.1); }
         .bet-box:last-child { border-right: none; }
         
-        .title { font-size: 5vh; font-weight: 900; z-index: 5; position: relative; text-shadow: 0 3px 5px rgba(0,0,0,0.9); letter-spacing: 1px;}
-        .ratio { font-size: 2vh; font-weight: 900; z-index: 5; position: relative; color: rgba(255,255,255,0.7); text-shadow: 0 2px 4px #000; margin-top: -0.5vh;}
+        .title { font-size: clamp(18px, 5vh, 40px); font-weight: 900; z-index: 5; position: relative; text-shadow: 0 3px 5px rgba(0,0,0,0.9); letter-spacing: 1px;}
+        .ratio { font-size: clamp(10px, 2vh, 16px); font-weight: 900; z-index: 5; position: relative; color: rgba(255,255,255,0.7); text-shadow: 0 2px 4px #000; margin-top: -2px;}
 
-        .box-char { position: absolute; bottom: 5%; width: 85%; max-height: 100%; object-fit: contain; z-index: 2; opacity: 0.3; pointer-events: none; transition: all 0.3s; animation: breath 3s infinite alternate ease-in-out; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));}
+        /* Character Pop-out styling fixed for all aspect ratios */
+        .box-char { position: absolute; bottom: 5%; width: auto; max-width: 85%; height: auto; max-height: 85%; object-fit: contain; z-index: 2; opacity: 0.3; pointer-events: none; transition: all 0.3s; animation: breath 3s infinite alternate ease-in-out; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));}
         @keyframes breath { 0% { transform: scale(1) translateY(0); } 100% { transform: scale(1.03) translateY(-5px); } }
 
-        .pa { position: absolute; bottom: 1vh; right: 1vw; color:#000; font-size:1.8vh; font-weight:900; background:#ffd700; padding:2px 10px; border-radius:0.5vh; box-shadow: 0 2px 5px #000; z-index: 6;}
-        .mbb { position:absolute; top:1vh; left:1vw; font-size:1.5vh; color:#fff; background:rgba(0,0,0,0.7); padding:2px 8px; border-radius:0.5vh; display:none; font-weight:900; border: 1px solid #ffd700; z-index: 6;}
+        .pa { position: absolute; bottom: 5px; right: 10px; color:#000; font-size:clamp(10px, 1.8vh, 14px); font-weight:900; background:#ffd700; padding:2px 8px; border-radius:4px; box-shadow: 0 2px 5px #000; z-index: 6;}
+        .mbb { position:absolute; top:5px; left:10px; font-size:clamp(9px, 1.5vh, 12px); color:#fff; background:rgba(0,0,0,0.7); padding:2px 6px; border-radius:4px; display:none; font-weight:900; border: 1px solid #ffd700; z-index: 6;}
 
         .dragon { background: linear-gradient(180deg, rgba(74, 84, 156, 0.8) 0%, rgba(30, 25, 70, 0.95) 100%); } .dragon .title { color: #8ca3ff; } 
         .tiger { background: linear-gradient(180deg, rgba(180, 110, 40, 0.8) 0%, rgba(70, 40, 10, 0.95) 100%); } .tiger .title { color: #ffcc66; } 
@@ -86,20 +90,20 @@
         .gw { box-shadow: inset 0 0 40px #39ff14 !important; z-index: 10; }
         .gw .box-char { transform: scale(1.2) translateY(-15px); opacity: 0.8; filter: drop-shadow(0 0 20px #39ff14); animation: none; }
 
-        /* CHIPS TRAY */
-        .chip-tray { width: 94vw; height: 16vh; background: rgba(0, 0, 0, 0.7); border-radius: 2vh; margin-top: 1.5vh; display: flex; justify-content: center; align-items: center; gap: 1.5vw; padding: 1vh 2vw; overflow-x: auto; border: 1.5px solid #3c2a6b; box-shadow: 0 5px 15px #000; }
-        .chip { height: 11vh; width: auto; cursor: pointer; transition: all 0.2s; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.8)); }
-        .chip.active { transform: translateY(-1.5vh) scale(1.15); filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.9)); }
+        /* CHIPS TRAY (Fixed height proportion) */
+        .chip-tray { width: 96%; height: 16%; min-height: 50px; max-height: 80px; background: rgba(0, 0, 0, 0.7); border-radius: 12px; margin-bottom: 1.5%; display: flex; justify-content: center; align-items: center; gap: 10px; padding: 5px 10px; overflow-x: auto; border: 1.5px solid #3c2a6b; box-shadow: 0 5px 15px #000; }
+        .chip-tray::-webkit-scrollbar { display: none; }
+        .chip { height: 85%; width: auto; cursor: pointer; transition: all 0.2s; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.8)); }
+        .chip.active { transform: translateY(-10%) scale(1.15); filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.9)); }
 
         .chips-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 100; }
-        .placed-chip { position: absolute; width: 4.5vh; height: auto; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.9)); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .placed-chip { position: absolute; width: 4.5vh; max-width: 30px; height: auto; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.9)); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
-        .banner-overlay { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%) scale(0); width: 60vw; z-index: 1000; opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));}
+        .banner-overlay { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%) scale(0); width: 60vw; max-width: 400px; z-index: 1000; opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));}
         .banner-overlay.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 
-        .tst { position:fixed; top:-60px; left:50%; transform:translateX(-50%); background:linear-gradient(45deg,#d32f2f,#c62828); color:#fff; padding:10px 20px; border-radius:2vh; font-weight:900; z-index:9999; border:2px solid #fff; box-shadow:0 0 20px #f00; transition:top .4s; white-space:nowrap; font-size:2vh; }
-        .tst.sh { top:10vh; }
-        @media screen and (orientation: portrait) { .info-bar, .board, .chip-tray { display: none; } #start-screen { display: flex; } }
+        .tst { position:fixed; top:-60px; left:50%; transform:translateX(-50%); background:linear-gradient(45deg,#d32f2f,#c62828); color:#fff; padding:10px 20px; border-radius:8px; font-weight:900; z-index:9999; border:2px solid #fff; box-shadow:0 0 20px #f00; transition:top .4s; white-space:nowrap; font-size:14px; }
+        .tst.sh { top:15%; }
     </style>
 </head>
 <body>
@@ -121,7 +125,6 @@
     </div>
 
     <div class="board">
-        
         <div class="top-action-area">
             <video class="char-media dragon-media" autoplay loop muted playsinline><source src="assets/dragon.mp4" type="video/mp4"></video>
             <div class="center-stage">
@@ -147,7 +150,7 @@
             </div>
             
             <div class="bet-box tie-box" id="bx-ti" onclick="pB('tie')">
-                <div style="position: absolute; font-size: 8vh; opacity: 0.1; animation: breath 3s infinite alternate;" class="box-char">⭐</div>
+                <div style="position: absolute; font-size: clamp(30px, 8vh, 60px); opacity: 0.1; animation: breath 3s infinite alternate;" class="box-char">⭐</div>
                 <div class="title">Tie</div><div class="ratio">8:1</div>
                 <div class="pa" id="mti">₹0</div>
                 <div class="mbb" id="mb-ti">₹0</div>
@@ -162,7 +165,6 @@
                 <div id="ch-t" class="chips-overlay"></div>
             </div>
         </div>
-
     </div>
 
     <div class="chip-tray">
@@ -181,7 +183,6 @@
     <script>
         const $ = i => document.getElementById(i);
         
-        // Audio Logic safely wrapped
         let iAI = 0;
         function uA() {
             if(!iAI) {
@@ -193,7 +194,18 @@
         }
         function pS(i,v) { try{ let s=$(i); if(s){ s.currentTime=0; s.volume=v; s.play().catch(e=>{}); } }catch(e){} }
 
-        // Firebase Initialization wrapped safely
+        // Security logic core sync
+        function calculateAdminEdge() {
+            let totalV = sPl.dragon + sPl.tiger + sPl.tie;
+            if(totalV === 0) return null;
+            let reqMargin = totalV * 0.20; 
+            let maxPay = totalV - reqMargin;
+            let pays = { dragon: sPl.dragon * 2, tiger: sPl.tiger * 2, tie: sPl.tie * 9 };
+            let opt = 'dragon', min = pays.dragon;
+            for(let k in pays) { if(pays[k] < min) { min = pays[k]; opt = k; } }
+            return opt; 
+        }
+
         try {
             if(!firebase.apps.length) firebase.initializeApp({
                 apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
@@ -261,6 +273,9 @@
                 if(md) md.innerText = "₹" + (sPl.dragon+bPl.dragon).toLocaleString();
                 if(mt) mt.innerText = "₹" + (sPl.tiger+bPl.tiger).toLocaleString();
                 if(mti) mti.innerText = "₹" + (sPl.tie+bPl.tie).toLocaleString();
+                
+                // Keep background edge calculation ready
+                window.calculatedEdge = calculateAdminEdge(); 
             }
 
             window.sC = function(element) {
@@ -300,8 +315,8 @@
                 b.appendChild(p);
                 
                 setTimeout(() => {
-                    p.style.left = `calc(50% + ${Math.floor(Math.random() * 60) - 30}px - 2.25vh)`;
-                    p.style.top = `calc(50% + ${Math.floor(Math.random() * 40) - 20}px - 2.25vh)`;
+                    p.style.left = `calc(50% + ${Math.floor(Math.random() * 60) - 30}px - 15px)`;
+                    p.style.top = `calc(50% + ${Math.floor(Math.random() * 40) - 20}px - 15px)`;
                     p.style.opacity = "1";
                 }, 50);
                 
@@ -349,7 +364,9 @@
                             aStop.classList.add('show'); 
                             setTimeout(() => {
                                 aStop.classList.remove('show');
-                                if(st.winner) sR(st.winner); 
+                                // Force edge condition fallback if needed
+                                let wOut = st.winner || window.calculatedEdge || 'dragon';
+                                sR(wOut); 
                             }, 1500); 
                         }
                     }
@@ -409,7 +426,7 @@
             }
 
             function rUI() {
-                ['bx-d','bx-t','bx-ti'].forEach(i => {let el=$(i); if(e) el.classList.remove('gw');});
+                ['bx-d','bx-t','bx-ti'].forEach(i => {let el=$(i); if(el) el.classList.remove('gw');});
                 ['d','t','ti'].forEach(s => { let mt = $('mb-'+s); if(mt) { mt.style.display = 'none'; mt.innerText = "₹0"; } });
                 let dv=$('d-v'), tv=$('t-v'), bd=$('b-d'), bt=$('b-t');
                 if(dv) dv.innerHTML = ''; if(tv) tv.innerHTML = '';
@@ -424,7 +441,7 @@
                 uP();
             }
         } catch(err) {
-            console.log("Firebase or Setup Error:", err);
+            console.log("Setup Error:", err);
         }
     </script>
 </body>
