@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dragon Tiger VIP - Live</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #1a0b3a; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
+            height: 100vh; width: 100vw; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-image: radial-gradient(circle at center, #2b1c55 0%, #1a0b3a 100%); user-select: none;
+        }
+
+        #rotate-message { display: none; color: white; font-size: 24px; font-weight: bold; text-align: center; flex-direction: column; align-items: center; justify-content: center; height: 100vh; z-index: 10000; }
+
+        /* Top Info Bar (Balance & Live) */
+        .info-bar { width: 96vw; display: flex; justify-content: space-between; align-items: center; padding: 1vh 2vw; background: rgba(0,0,0,0.6); border-radius: 0 0 2vh 2vh; border-bottom: 2px solid #ffd700; color: white; z-index: 50; }
+        .bal-box { font-weight: 900; font-size: 2.5vh; color: #0f0; background: #111; padding: 0.5vh 1.5vw; border-radius: 1vh; border: 1px solid #ffd700; box-shadow: 0 0 10px rgba(0,255,0,0.3); }
+
+        .board { display: flex; flex-direction: column; gap: 1vh; width: 96vw; height: 72vh; background: rgba(43, 28, 85, 0.8); padding: 1vw; border-radius: 2vh; box-shadow: 0 8px 20px rgba(0,0,0,0.7); border: 2px solid #5a419c; margin-top: 1vh; }
+
+        /* 1. TOP ACTION AREA & CARDS */
+        .top-action-area { display: flex; justify-content: space-between; align-items: flex-end; height: 23vh; position: relative; padding: 0 2vw; }
+        .char-media { height: 120%; max-width: 30vw; object-fit: contain; pointer-events: none; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); z-index: 5; }
+        .center-stage { display: flex; flex-direction: column; align-items: center; gap: 1vh; z-index: 10; }
+        .cards-container { display: flex; align-items: center; gap: 2vw; position: relative; }
+        
+        .card-slot { width: 8vh; height: 11.5vh; border-radius: 0.5vh; box-shadow: 0 4px 8px rgba(0,0,0,0.6); border: 2px dashed rgba(255,215,0,0.5); position: relative; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); transition: transform 0.3s;}
+        .cbk { background: url('https://deckofcardsapi.com/static/img/back.png') no-repeat center center / cover; position: absolute; inset: 0; z-index: 10; border-radius: 0.5vh; }
+        .card-val { width: 100%; height: 100%; position: absolute; inset: 0; border-radius: 4px; overflow: hidden; }
+        
+        /* Inside Card Styling */
+        .text-card { display: flex; flex-direction: column; justify-content: space-between; padding: 3px; background: #fff; width: 100%; height: 100%; border-radius: 4px; }
+        .red-suit { color: #d32f2f !important; } .black-suit { color: #212121 !important; }
+
+        .top-vs-logo { width: 7vh; height: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; filter: drop-shadow(0 0 10px red); }
+
+        .timer-badge { background: linear-gradient(90deg, #5b1a1a, #8b2a2a); border: 1px solid #ffd700; color: #ffd700; padding: 0.5vh 2vw; border-radius: 2vh; font-size: 2vh; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5); text-shadow: 0 0 5px #ffd700; }
+
+        /* 2. HISTORY BAR */
+        .history-bar { height: 4vh; background: rgba(0, 0, 0, 0.3); border-radius: 1vh; display: flex; align-items: center; justify-content: flex-end; padding: 0 1vw; gap: 0.5vw; overflow-x: auto; border: 1px solid #4a317c; flex-direction: row-reverse;}
+        .history-bar::-webkit-scrollbar { display: none; }
+        .hist-dot { width: 2.5vh; height: 2.5vh; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5vh; font-weight: bold; color: white; box-shadow: inset 0 -2px 5px rgba(0,0,0,0.4), 0 0 2px #000; flex-shrink: 0;}
+        .h-t { background: #e68900; } .h-d { background: #2a52be; } .h-tie { background: #43a047; font-size: 1vh; }
+
+        /* 3. BETTING COLUMNS */
+        .betting-columns { display: flex; gap: 1vw; flex: 1; }
+        .bet-box { flex: 1; border-radius: 1.5vh; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; cursor: pointer; box-shadow: inset 0 0 15px rgba(255,255,255,0.1); border: 2px solid transparent; transition: 0.2s; }
+        .bet-box:active { transform: scale(0.98); }
+        
+        .title { font-size: 4.5vh; font-weight: 900; z-index: 3; position: relative; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
+        .ratio { font-size: 2vh; font-weight: bold; z-index: 3; position: relative; background: rgba(0,0,0,0.6); padding: 2px 10px; border-radius: 1vh; border: 1px solid #ffd700; margin-top: 5px; color: #ffd700;}
+
+        /* Texts overlay */
+        .pa { position: absolute; bottom: 8px; right: 10px; color:#000; font-size:2vh; font-weight:900; background:#ffd700; padding:2px 8px; border-radius:1vh; border: 1px solid #fff; z-index: 5;}
+        .mbb { position:absolute; top:8px; left:10px; font-size:1.5vh; color:#000; background:#00e5ff; padding:2px 8px; border-radius:1vh; display:none; font-weight:900; border: 1px solid #fff; z-index: 5;}
+
+        .dragon { background: linear-gradient(180deg, #3c2a6b 0%, #1a103c 100%); border-color: #5c4cdb; } .dragon .title { color: #dbe2ff; } 
+        .tiger { background: linear-gradient(180deg, #81501c 0%, #4a2a0a 100%); border-color: #e68900;} .tiger .title { color: #ffecb3; } 
+        .tie-box { background: linear-gradient(180deg, #2f5a34 0%, #153a18 100%); flex: 1; border-radius: 1.5vh; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border-color: #43a047;} .tie-box .title { color: #c8e6c9; } 
+        .tie-col { flex: 1; display: flex; flex-direction: column; gap: 1vh; }
+
+        /* WINNING GLOW ANIMATION */
+        .gw { box-shadow: 0 0 35px #39ff14, inset 0 0 20px #39ff14 !important; border-color: #39ff14 !important; transform: scale(1.02); z-index: 10; }
+
+        /* CHIPS OVERLAY INSIDE BOXES */
+        .chips-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 4; }
+        .placed-chip { position: absolute; width: 4.5vh; height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); transition: all 0.5s ease-out; }
+
+        /* CHIP TRAY */
+        .chip-tray { width: 96vw; height: 16vh; background: rgba(0, 0, 0, 0.5); border-radius: 2vh; margin-top: 1vh; display: flex; justify-content: center; align-items: center; gap: 1.5vw; padding: 1vh 2vw; overflow-x: auto; box-shadow: inset 0 5px 10px rgba(0,0,0,0.6); border: 1px solid #3c2a6b; }
+        .chip { height: 11vh; width: auto; cursor: pointer; transition: all 0.2s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
+        .chip.active { transform: translateY(-1.5vh) scale(1.15); filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)); }
+
+        /* BANNERS */
+        .banner-overlay { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%) scale(0); width: 60vw; z-index: 1000; opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
+        .banner-overlay.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+
+        /* TOAST NOTIFICATION */
+        .tst { position:fixed; top:-60px; left:50%; transform:translateX(-50%); background:linear-gradient(45deg,#d32f2f,#c62828); color:#fff; padding:10px 20px; border-radius:2vh; font-weight:900; z-index:9999; border:2px solid #fff; box-shadow:0 0 20px #f00; transition:top .4s; white-space:nowrap; font-size:2vh; }
+        .tst.sh { top:10vh; }
+
+        @media screen and (orientation: portrait) { .info-bar, .board, .chip-tray { display: none; } #rotate-message { display: flex; } }
+    </style>
+</head>
+<body onclick="uA()">
+
+    <audio id="bgM" src="https://freesound.org/data/previews/127/127411_2236471-lq.mp3" loop preload="auto"></audio>
+    <audio id="bS" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+    <audio id="cS" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
+    <audio id="snd-dragon" src="https://assets.mixkit.co/active_storage/sfx/2458/2458-preview.mp3"></audio> 
+    <audio id="snd-tiger" src="https://assets.mixkit.co/active_storage/sfx/25/25-preview.mp3"></audio> 
+
+    <div id="rotate-message">Please Rotate Your Device <br><span style="font-size: 16px; font-weight: normal;">Landscape Mode Required</span></div>
+
+    <div class="info-bar">
+        <div><span style="color:#0f0;">🟢 <span id="oc">1,248</span> LIVE</span> | ID: 5388910154</div>
+        <div class="bal-box">₹ <span id="bal">0.00</span></div>
+    </div>
+
+    <div class="board">
+        
+        <div class="top-action-area">
+            <img src="image.png" class="char-media dragon-media" alt="Dragon">
+            <div class="center-stage">
+                <div class="cards-container">
+                    <div id="c-d" class="card-slot"><div class="cbk" id="b-d"></div><div id="d-v" class="card-val"></div></div>
+                    <img src="VS.png" class="top-vs-logo" alt="VS">
+                    <div id="c-t" class="card-slot"><div class="cbk" id="b-t"></div><div id="t-v" class="card-val"></div></div>
+                </div>
+                <div class="timer-badge" id="tmr">WAITING...</div>
+            </div>
+            <video class="char-media" autoplay loop muted playsinline><source src="1000053910.mp4" type="video/mp4"></video>
+        </div>
+
+        <div class="history-bar" id="hr"></div>
+
+        <div class="betting-columns">
+            <div class="bet-box dragon" id="bx-d" onclick="pB('dragon')">
+                <div class="title">Dragon</div><div class="ratio">2X</div>
+                <div class="pa" id="md">₹0</div>
+                <div class="mbb" id="mb-d">MY BET: ₹0</div>
+                <div id="ch-d" class="chips-overlay"></div>
+            </div>
+            
+            <div class="tie-col">
+                <div class="tie-box" id="bx-ti" onclick="pB('tie')">
+                    <div class="title">Tie</div><div class="ratio">9X</div>
+                    <div class="pa" id="mti">₹0</div>
+                    <div class="mbb" id="mb-ti">MY BET: ₹0</div>
+                    <div id="ch-ti" class="chips-overlay"></div>
+                </div>
+            </div>
+
+            <div class="bet-box tiger" id="bx-t" onclick="pB('tiger')">
+                <div class="title">Tiger</div><div class="ratio">2X</div>
+                <div class="pa" id="mt">₹0</div>
+                <div class="mbb" id="mb-t">MY BET: ₹0</div>
+                <div id="ch-t" class="chips-overlay"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="chip-tray">
+        <img src="10_0.png" class="chip active" data-value="10" onclick="sC(this)">
+        <img src="50_0.png" class="chip" data-value="50" onclick="sC(this)">
+        <img src="100_0.png" class="chip" data-value="100" onclick="sC(this)">
+        <img src="500_0.png" class="chip" data-value="500" onclick="sC(this)">
+        <img src="1000_0.png" class="chip" data-value="1000" onclick="sC(this)">
+        <img src="5000_1.png" class="chip" data-value="5000" onclick="sC(this)">
+        <img src="10000_0.png" class="chip" data-value="10000" onclick="sC(this)">
+    </div>
+
+    <img src="image_1.png" id="alert-start" class="banner-overlay">
+    <img src="image_2.png" id="alert-stop" class="banner-overlay">
+
+    <script>
+        const $ = i => document.getElementById(i);
+        
+        // --- FIREBASE INIT ---
+        if(!firebase.apps.length) firebase.initializeApp({
+            apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
+            databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
+            projectId: "kalyan-casino"
+        });
+        const db = firebase.database();
+        const ph = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "TEST_USER"; // Added test fallback
+
+        let iBO = 0, cC = 10, tB = 0, dB = 0, wB = 0, bB = 0, mB = {dragon:0, tiger:0, tie:0};
+        let sPl = {dragon:0, tiger:0, tie:0}, bPl = {dragon:0, tiger:0, tie:0};
+        let bI, iAI = 0, iD = 0, bL = [];
+        let activeChipSrc = "10_0.png";
+
+        // Image Map for bot bets
+        const chipImgMap = {10: "10_0.png", 50: "50_0.png", 100: "100_0.png", 500: "500_0.png", 1000: "1000_0.png", 5000: "5000_1.png", 10000: "10000_0.png"};
+
+        function sT(m) {
+            let t = $('tst');
+            if(!t) { t = document.createElement('div'); t.id = 'tst'; t.className = 'tst'; document.body.appendChild(t); }
+            t.innerText = m; t.classList.add('sh'); pS('bS',0.5);
+            setTimeout(() => t.classList.remove('sh'), 2500);
+        }
+
+        function uA() {
+            if(!iAI) {
+                ['bgM','bS','cS','snd-dragon','snd-tiger'].forEach(i => { let e=$(i); if(e){ e.play().then(()=>{ if(i!=='bgM'){e.pause(); e.currentTime=0;} }).catch(e=>{}); } });
+                let m=$('bgM'); if(m) m.volume=.2; iAI=1;
+            }
+        }
+        function pS(i,v) { try{ let s=$(i); if(s){ s.currentTime=0; s.volume=v; s.play().catch(e=>{}); } }catch(e){} }
+
+        setInterval(() => { $('oc').innerText = Math.floor(Math.random()*50) + 1200; }, 4000);
+
+        // Fetch User Balance
+        if(ph) {
+            db.ref('users/'+ph).on('value', s => {
+                let d = s.val() || {}; dB = parseFloat(d.balance||0); wB = parseFloat(d.winning_balance||0); bB = parseFloat(d.bonus_balance||0);
+                tB = Math.max(0, dB+wB+bB); $('bal').innerText = tB.toFixed(2);
+            });
+            // Fetch my bets if reconnecting
+            db.ref(`Game/DragonTiger/Bets/${ph}`).once('value', s => {
+                let v = s.val();
+                if(v) setTimeout(() => {
+                    ['dragon','tiger','tie'].forEach(sd => {
+                        let val = v[sd]; if(val > 0) {
+                            mB[sd] = val;
+                            let mt = $('mb-'+(sd=='tie'?'ti':sd.charAt(0)));
+                            if(mt) { mt.innerText="MY BET: ₹"+val.toLocaleString(); mt.style.display='block'; }
+                        }
+                    });
+                }, 500);
+            });
+        }
+
+        // Fetch History
+        db.ref('Game/DragonTiger/History').on('value', s => {
+            let h = s.val();
+            if(h && Array.isArray(h)) {
+                let m = '';
+                [...h].reverse().slice(0,15).forEach(w => {
+                    let c = w==='dragon' ? 'd' : (w==='tiger'?'t':'tie');
+                    let txt = w==='dragon' ? 'D' : (w==='tiger'?'T':'Tie');
+                    m += `<div class="hist-dot h-${c}">${txt}</div>`;
+                });
+                $('hr').innerHTML = m;
+            }
+        });
+
+        // Setup Dummy VIPs
+        function gB(){ bL=[]; for(let i=0;i<5;i++) bL.push({id:Math.floor(Math.random()*8999)+1000, b:Math.floor(Math.random()*100000)+50000}); }
+        gB();
+
+        function uP(){
+            $('md').innerText = "₹" + (sPl.dragon+bPl.dragon).toLocaleString();
+            $('mt').innerText = "₹" + (sPl.tiger+bPl.tiger).toLocaleString();
+            $('mti').innerText = "₹" + (sPl.tie+bPl.tie).toLocaleString();
+        }
+
+        // Chip Selection
+        window.sC = function(element) {
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            element.classList.add('active');
+            cC = parseInt(element.getAttribute('data-value'));
+            activeChipSrc = element.src;
+            pS('bS', 0.5);
+        }
+
+        // Place Bet Function (Player)
+        window.pB = function(s) {
+            if(!iBO) return;
+            if(!ph || ph === "TEST_USER") return sT("Login to Bet!"); // Prevent guest bets
+            if(tB < cC) return sT("INSUFFICIENT BALANCE!");
+            
+            let nD = dB, nW = wB, rm = cC;
+            if(nD >= rm) nD -= rm; else { rm -= nD; nD = 0; nW -= rm; }
+            
+            db.ref('users/'+ph).update({ balance: Math.max(0,nD), winning_balance: Math.max(0,nW) });
+            db.ref(`Game/DragonTiger/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
+            
+            mB[s] += cC;
+            let mt = $('mb-'+(s=='tie'?'ti':s.charAt(0)));
+            if(mt) { mt.innerText = "MY BET: ₹" + mB[s].toLocaleString(); mt.style.display = 'block'; }
+            
+            spC(s, activeChipSrc); // Drop visual chip
+            pS('bS', 1);
+        };
+
+        // Visual Chip Drop
+        function spC(s, imgSrc) {
+            let sid = (s=='tie'?'ti':s.charAt(0));
+            let b = $('ch-'+sid); if(!b) return;
+            
+            let p = document.createElement('img');
+            p.src = imgSrc;
+            p.className = 'placed-chip';
+            p.style.top = "150%"; p.style.left = s==='dragon' ? "-50px" : "150px"; p.style.opacity = "0";
+            
+            b.appendChild(p);
+            
+            setTimeout(() => {
+                p.style.left = `calc(50% + ${Math.floor(Math.random() * 60) - 30}px - 2.25vh)`;
+                p.style.top = `calc(50% + ${Math.floor(Math.random() * 40) - 20}px - 2.25vh)`;
+                p.style.opacity = "1";
+            }, 50);
+            
+            if(b.children.length > 40) b.firstChild.remove(); // Keep DOM clean
+        }
+
+        // Bot Betting Logic
+        function bBA() {
+            if(!iBO) return;
+            let bb = 0;
+            ['dragon','tiger'].forEach(s => {
+                let a = [10, 50, 100, 500, 1000][Math.floor(Math.random()*5)];
+                let rb = bL[Math.floor(Math.random()*bL.length)];
+                if(rb.b >= a) { rb.b -= a; spC(s, chipImgMap[a]); bPl[s] += a; bb = 1; }
+            });
+            if(Math.random() > 0.7) {
+                let ta = [10, 50][Math.floor(Math.random()*2)];
+                spC('tie', chipImgMap[ta]); bPl.tie += ta; bb = 1;
+            }
+            if(bb) { uP(); pS('bS', 0.05); }
+        }
+
+        // GAME STATUS LISTENER
+        db.ref('Game/DragonTiger/Status').on('value', s => {
+            let st = s.val(); if(!st) return;
+            let te = $('tmr');
+            
+            if(st.state === 'betting') {
+                if(iD === 1 || !iBO) { 
+                    iBO = 1; iD = 0; rUI(); 
+                    clearInterval(bI); bI = setInterval(bBA, 800);
+                    
+                    $('alert-stop').classList.remove('show'); 
+                    let aStart = $('alert-start');
+                    if(aStart) { aStart.classList.add('show'); setTimeout(() => aStart.classList.remove('show'), 1500); }
+                }
+                te.innerText = st.timer + "s";
+                if(st.timer <= 5) { te.style.color = "#f33"; te.style.textShadow = "0 0 10px #f33"; }
+                else { te.style.color = "#ffd700"; te.style.textShadow = "0 0 5px #ffd700"; }
+            }
+            else if(st.state === 'result') {
+                if(iBO || !iD) { 
+                    iBO = 0; iD = 1; clearInterval(bI); 
+                    te.innerText = "STOP!"; te.style.color = "#fff"; te.style.textShadow = "0 0 10px #fff";
+                    
+                    $('alert-start').classList.remove('show'); 
+                    let aStop = $('alert-stop');
+                    if(aStop) { 
+                        aStop.classList.add('show'); 
+                        setTimeout(() => {
+                            aStop.classList.remove('show');
+                            if(st.winner) sR(st.winner); 
+                        }, 1500); 
+                    }
+                }
+            }
+        });
+
+        // Listen to total pool bets
+        db.ref('Game/DragonTiger/Bets').on('value', s => {
+            let a = s.val() || {}; sPl = {dragon:0, tiger:0, tie:0};
+            for(let u in a) {
+                if(!u.includes('bot')) { sPl.dragon+=(a[u].dragon||0); sPl.tiger+=(a[u].tiger||0); sPl.tie+=(a[u].tie||0); }
+            }
+            uP();
+        });
+
+        // HTML Card Generation
+        function cCD(v, s) {
+            if(v === 'J' || v === 'Q' || v === 'K') {
+                let y = s==='S'?'♠':s==='H'?'♥':s==='D'?'♦':'♣', c = (s==='H'||s==='D')?'red-suit':'black-suit';
+                return `<div class="text-card ${c}"><div style="font-size:2vh;font-weight:900;line-height:1">${v}<br><span style="font-size:1.5vh">${y}</span></div><div style="font-size:4vh;text-align:center;margin-top:-1vh">${y}</div><div style="font-size:2vh;font-weight:900;line-height:1;text-align:left;transform:rotate(180deg);margin-top:-1vh">${v}<br><span style="font-size:1.5vh">${y}</span></div></div>`;
+            } else {
+                let suitMap = {'S': 'spades', 'H': 'hearts', 'D': 'diamonds', 'C': 'clubs'};
+                let valMap = {'A': 'ace'};
+                let suitName = suitMap[s]; let valName = valMap[v] || v; 
+                return `<img src="https://deckofcardsapi.com/static/img/${valName}_of_${suitName}.png" style="width: 100%; height: 100%; border-radius: 4px; box-shadow: inherit;">`;
+            }
+        }
+
+        // Show Result & Animate
+        function sR(w) {
+            pS('cS', 1);
+            $('b-d').style.opacity = '0'; $('b-t').style.opacity = '0';
+            let cd = $('c-d'), ct = $('c-t'); 
+            cd.style.transform = "scale(1.2)"; ct.style.transform = "scale(1.2)";
+            
+            const vs = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"], ss = ["S","D","C","H"];
+            let di, ti;
+            if(w === 'dragon') { di = Math.floor(Math.random()*12)+1; ti = Math.floor(Math.random()*di); }
+            else if(w === 'tiger') { ti = Math.floor(Math.random()*12)+1; di = Math.floor(Math.random()*ti); }
+            else { di = Math.floor(Math.random()*13); ti = di; }
+            
+            let ds = ss[Math.floor(Math.random()*4)], ts = ss[Math.floor(Math.random()*4)];
+            $('d-v').innerHTML = cCD(vs[di], ds); $('t-v').innerHTML = cCD(vs[ti], ts);
+            
+            setTimeout(() => {
+                cd.style.transform = "scale(1)"; ct.style.transform = "scale(1)";
+                if(w === 'dragon') { pS('snd-dragon', 1); $('bx-d').classList.add('gw'); }
+                else if(w === 'tiger') { pS('snd-tiger', 1); $('bx-t').classList.add('gw'); }
+                else { $('bx-ti').classList.add('gw'); }
+                
+                let wa = 0;
+                if(w === 'dragon') wa = mB.dragon * 2; else if(w === 'tiger') wa = mB.tiger * 2; else if(w === 'tie') wa = mB.tie * 9;
+                
+                if(wa > 0 && ph !== "TEST_USER") db.ref('users/'+ph+'/winning_balance').set(wB + wa);
+                if(wa > 0) sT("YOU WON ₹" + wa.toLocaleString());
+            }, 800);
+        }
+
+        // Reset UI for next round
+        function rUI() {
+            ['bx-d','bx-t','bx-ti'].forEach(i => $(i).classList.remove('gw'));
+            ['d','t','ti'].forEach(s => { let mt = $('mb-'+s); if(mt) { mt.style.display = 'none'; mt.innerText = "MY BET: ₹0"; } });
+            $('d-v').innerHTML = ''; $('t-v').innerHTML = '';
+            $('b-d').style.opacity = '1'; $('b-t').style.opacity = '1';
+            
+            document.querySelectorAll('.placed-chip').forEach(c => {
+                c.style.opacity = '0'; c.style.transform = 'scale(0) translateY(-50px)';
+                setTimeout(() => c.remove(), 500);
+            });
+            
+            sPl = {dragon:0, tiger:0, tie:0}; bPl = {dragon:0, tiger:0, tie:0}; mB = {dragon:0, tiger:0, tie:0};
+            uP();
+        }
+    </script>
+</body>
+</html>
