@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger VIP - Fullscreen Native</title>
+    <title>Dragon Tiger VIP - Real Original</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -11,140 +11,126 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial Black', sans-serif; }
         
-        body {
-            /* Niche Violet background original ki tarah */
-            background: linear-gradient(180deg, #11052c 0%, #3a1078 100%);
-            display: flex; justify-content: center; align-items: center;
-            height: 100vh; height: 100dvh; width: 100vw; overflow: hidden; user-select: none;
-        }
-
-        /* START SCREEN - FORCES FULLSCREEN */
-        #start-screen {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0a0515; z-index: 99999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; cursor: pointer;
-        }
-        #start-screen h1 { font-size: 30px; text-shadow: 0 0 20px #ffd700; animation: pulse 1.5s infinite alternate; }
-        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
-
-        /* 👑 MAIN LAYOUT 👑 */
-        .game-layout {
-            display: flex; width: 100vw; height: 100vh; justify-content: space-between;
-        }
-
-        /* SIDE PLAYERS MENU */
-        .side-panel { 
-            width: 75px; display: flex; flex-direction: column; gap: 10px; padding: 10px 5px; 
-            background: rgba(0,0,0,0.5); overflow-y: auto; border-left: 2px solid #ffd700; border-right: 2px solid #ffd700; z-index: 20;
-        }
-        .side-panel::-webkit-scrollbar { display: none; }
-        .player-icon { width: 45px; height: 45px; background: linear-gradient(135deg, #3498db, #2980b9); border-radius: 50%; border: 2px solid #fff; margin: 0 auto; box-shadow: 0 2px 5px #000; display: flex; justify-content: center; align-items: center; font-size: 20px;}
-        .player-bal { font-size: 10px; color: #00ff88; text-align: center; font-weight: bold; margin-top: -4px;}
-
-        /* CENTER GAME AREA */
-        .center-panel { flex: 1; display: flex; flex-direction: column; position: relative; background: rgba(15, 5, 35, 0.6); }
-
-        /* TOP INFO BAR (Inside Center Panel now, directly below notch) */
-        .top-bar { 
-            height: 35px; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; 
-            background: rgba(0,0,0,0.8); border-bottom: 2px solid #ffd700; color: #fff; font-size: 12px; font-weight: bold; z-index: 50;
-        }
-        .tb-bal { background: #111; color: #00ff88; padding: 2px 15px; border-radius: 12px; border: 1px solid #ffd700; font-size: 14px;}
-
-        /* 1. TOP ACTION AREA (Eye-level videos & cards) */
-        .action-area { 
-            flex: 1; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; position: relative; 
-        }
+        /* 📱 AUTO-ROTATION MAGIC HACK 📱 */
+        body { background: #000; overflow: hidden; width: 100vw; height: 100vh; position: relative; user-select: none; }
         
-        /* Hilti-Dulti Videos/Images */
-        .hero-vid { width: 35%; max-height: 140px; object-fit: contain; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8)); pointer-events: none;}
-        .float-anim { animation: float-up-down 3s ease-in-out infinite; }
-        @keyframes float-up-down {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0px); }
+        #game-mount {
+            position: absolute; width: 100vw; height: 100vh;
+            background: linear-gradient(180deg, #11052c 0%, #2a0b5c 100%);
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
         }
+
+        /* Agar phone khada hai (Portrait), toh game ko 90 degree ghuma do! */
+        @media screen and (orientation: portrait) {
+            #game-mount {
+                width: 100vh; height: 100vw;
+                transform: rotate(90deg); transform-origin: center;
+                top: calc((100vh - 100vw) / 2); left: calc((100vw - 100vh) / 2);
+            }
+        }
+
+        /* 👑 MAIN CASINO BOARD (Zoomed out look) 👑 */
+        .casino-board {
+            width: 88%; height: 82%; 
+            background: rgba(30, 20, 60, 0.9);
+            border: 3px solid #5a419c; border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(90, 65, 156, 0.6);
+            display: flex; flex-direction: column; position: relative;
+        }
+
+        /* 🐉 TOP ACTION AREA (Cards & Floating Beasts) 🐅 */
+        .action-area { flex: 0.8; position: relative; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 25px; z-index: 10;}
         
-        .cards-stage { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 20px; }
-        .crd { width: 55px; height: 80px; border-radius: 4px; border: 2px solid #ffd700; background: #fff; position: relative; box-shadow: 0 5px 15px #000;}
+        /* The beasts are absolutely positioned at the top left/right outside the box constraints */
+        .flying-beast { position: absolute; top: -15%; height: 130%; width: 40%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 15px 15px rgba(0,0,0,0.8)); z-index: 15;}
+        #beast-left { left: -8%; animation: float 3s ease-in-out infinite; }
+        #beast-right { right: -8%; }
+        @keyframes float { 0% { transform: translateY(0); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0); } }
+
+        /* Cards & VS */
+        .cards-stage { display: flex; align-items: center; gap: 30px; position: relative; z-index: 20;}
+        .crd { width: 50px; height: 70px; border-radius: 4px; border: 2px solid #ffd700; background: #fff; position: relative; box-shadow: 0 5px 15px #000; transition: transform 0.3s;}
         .cbk { position: absolute; inset: 0; background: url('https://deckofcardsapi.com/static/img/back.png') center/cover; border-radius: 2px; z-index: 10; transition: 0.3s;}
         .crd-val { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 2px; overflow: hidden;}
         
         .text-card { display: flex; flex-direction: column; justify-content: space-between; padding: 2px; background: #fff; width: 100%; height: 100%; font-family: 'Segoe UI', sans-serif;}
         .red-suit { color: #d32f2f !important; } .black-suit { color: #212121 !important; }
 
-        .vs-logo { width: 45px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5; filter: drop-shadow(0 0 10px red);}
-        .timer-badge { position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%); background: linear-gradient(180deg, #800, #400); color: #ffd700; padding: 2px 15px; border-radius: 12px; border: 1.5px solid #ffd700; font-size: 13px; font-weight: 900; box-shadow: 0 2px 5px #000; z-index: 15;}
+        .vs-logo { width: 50px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5; filter: drop-shadow(0 0 10px red);}
+        .timer-badge { position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); background: linear-gradient(180deg, #600, #300); color: #ffd700; padding: 2px 15px; border-radius: 12px; border: 1.5px solid #ffd700; font-size: 12px; font-weight: 900; white-space: nowrap; box-shadow: 0 2px 5px #000; z-index: 25;}
 
-        /* 2. HISTORY BAR */
-        .history-bar { 
-            height: 30px; display: flex; flex-direction: row-reverse; align-items: center; justify-content: flex-start; gap: 5px; padding: 0 10px; 
-            background: rgba(0,0,0,0.8); overflow-x: auto; border-top: 1px solid rgba(255,215,0,0.3); border-bottom: 1px solid rgba(255,215,0,0.3); z-index: 20;
-        }
-        .history-bar::-webkit-scrollbar { display: none; }
-        .h-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 10px; font-weight: bold; color: #fff; border: 1px solid #fff; box-shadow: 0 2px 4px #000; flex-shrink: 0;}
+        /* 📜 HISTORY BAR */
+        .history-bar { height: 30px; display: flex; align-items: center; gap: 4px; padding: 0 10px; background: rgba(0,0,0,0.6); overflow: hidden; border-top: 2px solid #4a317c; border-bottom: 2px solid #4a317c; z-index: 5; }
+        .h-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 11px; font-weight: bold; color: #fff; border: 1.5px solid rgba(255,255,255,0.5); box-shadow: 0 2px 4px #000; flex-shrink: 0;}
         .h-d { background: #5c4cdb; } .h-t { background: #e68900; } .h-tie { background: #43a047; font-size: 8px;}
 
-        /* 3. BETTING COLUMNS (Height Increased using flex: 1.6) */
-        .betting-area { flex: 1.6; display: flex; gap: 6px; padding: 6px; position: relative;}
-        .bet-box { flex: 1; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; cursor: pointer; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); overflow: hidden; transition: 0.2s;}
+        /* 💰 BETTING BOXES (Vibrant Original Colors) */
+        .betting-area { flex: 1.3; display: flex; padding: 8px; gap: 8px; position: relative;}
+        .bet-box { flex: 1; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; cursor: pointer; box-shadow: inset 0 0 25px rgba(0,0,0,0.5); overflow: hidden; transition: 0.2s;}
         .bet-box:active { transform: scale(0.97); }
 
-        .dbx { background: linear-gradient(180deg, #8ca3ff, #5c4cdb); border: 2px solid #a4b6ff; }
-        .tibx { background: linear-gradient(180deg, #81c784, #43a047); border: 2px solid #a5d6a7; }
-        .tbx { background: linear-gradient(180deg, #ffcc80, #e68900); border: 2px solid #ffe0b2; }
+        .dbx { background: linear-gradient(180deg, #7c6cf0, #5c4cdb); border: 2px solid #9c8fff; }
+        .tibx { background: linear-gradient(180deg, #6bcf6b, #43a047); border: 2px solid #8be08b; }
+        .tbx { background: linear-gradient(180deg, #f0a33c, #e68900); border: 2px solid #ffd085; }
         
-        .box-title { font-size: 30px; font-weight: 900; color: #fff; text-shadow: 0 2px 5px #000; z-index: 5;}
-        .box-ratio { font-size: 15px; font-weight: 900; color: rgba(255,255,255,0.9); text-shadow: 0 1px 3px #000; z-index: 5; margin-top: 2px;}
+        /* Faint Watermarks inside boxes */
+        .watermark { position: absolute; bottom: -10%; width: 90%; opacity: 0.15; pointer-events: none; z-index: 1;}
+
+        .box-title { font-size: 26px; font-weight: 900; color: #fff; text-shadow: 0 2px 5px #000; z-index: 5;}
+        .box-ratio { font-size: 14px; font-weight: 900; color: rgba(255,255,255,0.9); text-shadow: 0 1px 3px #000; z-index: 5; margin-top: 2px;}
         
-        .pa { position: absolute; bottom: 6px; right: 6px; background: #ffd700; color: #000; font-size: 13px; font-weight: 900; padding: 3px 8px; border-radius: 4px; box-shadow: 0 2px 5px #000; z-index: 10;}
-        .mbb { position: absolute; top: 6px; left: 6px; background: #00e5ff; color: #000; font-size: 12px; font-weight: 900; padding: 3px 8px; border-radius: 4px; border: 1px solid #fff; display: none; z-index: 10;}
+        .pa { position: absolute; bottom: 6px; right: 6px; background: #ffd700; color: #000; font-size: 12px; font-weight: 900; padding: 2px 8px; border-radius: 4px; box-shadow: 0 2px 5px #000; z-index: 10;}
+        .mbb { position: absolute; top: 6px; left: 6px; background: #00e5ff; color: #000; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 4px; border: 1px solid #fff; display: none; z-index: 10;}
         
         .gw { box-shadow: inset 0 0 30px #fff, 0 0 20px #39ff14 !important; border-color: #39ff14 !important; z-index: 10; transform: scale(1.02);}
 
+        /* 🪙 CHIPS OVERLAY & TRAY */
         .chips-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 20;}
-        .placed-chip { position: absolute; width: 28px; filter: drop-shadow(0 2px 3px #000); transition: 0.4s ease-out; }
+        .placed-chip { position: absolute; width: 28px; filter: drop-shadow(0 2px 3px #000); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .win-anim-chip { transition: all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 9999 !important; border: 1.5px solid #fff; border-radius: 50%; box-shadow: 2px 2px 6px rgba(0,0,0,0.8); }
 
-        /* 4. CHIP TRAY */
-        .chip-tray { height: 65px; display: flex; justify-content: space-evenly; align-items: center; background: rgba(0,0,0,0.8); padding: 5px; border-top: 2px solid #4a317c;}
+        .bottom-area { position: absolute; bottom: 0; width: 100%; height: 12%; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 5px; z-index: 50;}
+        .chip-tray { width: 85%; height: 100%; background: rgba(0,0,0,0.6); border-radius: 20px; display: flex; justify-content: space-evenly; align-items: center; padding: 5px; border: 2px solid #5a419c; box-shadow: 0 5px 15px #000; }
         .chip { height: 90%; cursor: pointer; filter: drop-shadow(0 4px 5px #000); transition: 0.2s;}
-        .chip.sel { transform: scale(1.15) translateY(-5px); filter: drop-shadow(0 0 15px #ffd700); border-bottom: 3px solid #ffd700; border-radius: 50%;}
+        .chip.sel { transform: scale(1.15) translateY(-5px); filter: drop-shadow(0 0 15px #ffd700); }
 
-        /* Banners */
+        /* Banners & Top Info */
+        .top-info { position: absolute; top: 10px; left: 10px; z-index: 50; display: flex; gap: 15px; color: #fff; font-size: 12px; font-weight: bold; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid #ffd700;}
+        .top-bal { position: absolute; top: 10px; right: 10px; z-index: 50; background: rgba(0,0,0,0.8); color: #00ff88; font-size: 16px; font-weight: bold; padding: 5px 20px; border-radius: 20px; border: 1.5px solid #ffd700;}
+        
         .banner-overlay { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); width: 320px; z-index: 1000; opacity: 0; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; filter: drop-shadow(0 10px 20px #000);}
         .banner-overlay.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 
         .tst { position:fixed; top:-60px; left:50%; transform:translateX(-50%); background:linear-gradient(45deg,#d32f2f,#c62828); color:#fff; padding:10px 20px; border-radius:8px; z-index:9999; border:2px solid #fff; box-shadow:0 0 20px #f00; transition:top .4s; font-size:14px; font-weight: 900;}
         .tst.sh { top:15px; }
+
+        /* CLICK CATCHER FOR AUDIO INITIALIZATION */
+        #click-catcher { position: absolute; inset: 0; z-index: 999999; }
     </style>
 </head>
 <body>
 
-    <div id="start-screen" onclick="enterCasino()">
-        <h1>TAP TO PLAY</h1>
-        <p style="font-family: sans-serif; font-size: 14px;">Fullscreen Mode</p>
-    </div>
+    <div id="game-mount">
 
-    <audio id="bgM" src="https://freesound.org/data/previews/127/127411_2236471-lq.mp3" loop preload="auto"></audio>
-    <audio id="bS" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
-    <audio id="cS" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
-    <audio id="snd-dragon" src="https://assets.mixkit.co/active_storage/sfx/2458/2458-preview.mp3"></audio> 
-    <audio id="snd-tiger" src="https://assets.mixkit.co/active_storage/sfx/25/25-preview.mp3"></audio> 
-    <audio id="snd-coins" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3"></audio>
+        <div id="click-catcher" onclick="initAudio()"></div>
 
-    <div class="game-layout">
-        
-        <div class="side-panel" id="left-players"></div>
+        <audio id="bgM" src="https://freesound.org/data/previews/127/127411_2236471-lq.mp3" loop preload="auto"></audio>
+        <audio id="bS" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+        <audio id="cS" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
+        <audio id="snd-dragon" src="https://assets.mixkit.co/active_storage/sfx/2458/2458-preview.mp3"></audio> 
+        <audio id="snd-tiger" src="https://assets.mixkit.co/active_storage/sfx/25/25-preview.mp3"></audio> 
+        <audio id="snd-coins" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3"></audio>
 
-        <div class="center-panel">
+        <div class="top-info">
+            <div style="color: #00ff88;">🟢 <span id="oc">1,248</span> LIVE</div>
+            <div>ID: 5388910154</div>
+        </div>
+        <div class="top-bal">₹ <span id="bal">0.00</span></div>
+
+        <div class="casino-board">
             
-            <div class="top-bar">
-                <div class="tb-info">ID: 5388910154 | <span style="color: #00ff88;">🟢 <span id="oc">1248</span> LIVE</span></div>
-                <div class="tb-bal">₹ <span id="bal">0.00</span></div>
-            </div>
-
             <div class="action-area">
-                <img class="hero-vid float-anim" id="vid-dragon" src="assets/image.png" alt="Dragon" onerror="this.style.display='none'">
+                <img class="flying-beast" id="beast-left" src="assets/image.png" alt="Dragon" onerror="this.style.display='none'">
                 
                 <div class="cards-stage">
                     <div class="crd" id="c-d"><div class="cbk" id="b-d"></div><div id="d-v" class="crd-val"></div></div>
@@ -153,31 +139,36 @@
                     <div class="timer-badge" id="tmr">WAITING...</div>
                 </div>
                 
-                <video class="hero-vid" id="vid-tiger" src="assets/VID_20260426_202810_2.mp4" autoplay loop muted playsinline></video>
+                <video class="flying-beast" id="beast-right" src="assets/VID_20260426_202810_2.mp4" autoplay loop muted playsinline></video>
             </div>
 
             <div class="history-bar" id="hr"></div>
 
             <div class="betting-area">
                 <div class="bet-box dbx" onclick="pB('dragon')" id="bx-d">
+                    <img src="assets/image.png" class="watermark" onerror="this.style.display='none'">
                     <div class="box-title">Dragon</div><div class="box-ratio">1:1</div>
                     <div class="mbb" id="mb-d">₹0</div><div class="pa" id="md">₹0</div>
                     <div class="chips-overlay" id="ch-d"></div>
                 </div>
                 
                 <div class="bet-box tibx" onclick="pB('tie')" id="bx-ti">
+                    <div style="position: absolute; font-size: 80px; opacity: 0.1; z-index: 1;">⭐</div>
                     <div class="box-title">Tie</div><div class="box-ratio">8:1</div>
                     <div class="mbb" id="mb-ti">₹0</div><div class="pa" id="mti">₹0</div>
                     <div class="chips-overlay" id="ch-ti"></div>
                 </div>
 
                 <div class="bet-box tbx" onclick="pB('tiger')" id="bx-t">
+                    <img src="assets/tiger_char.png" class="watermark" onerror="this.style.display='none'">
                     <div class="box-title">Tiger</div><div class="box-ratio">1:1</div>
                     <div class="mbb" id="mb-t">₹0</div><div class="pa" id="mt">₹0</div>
                     <div class="chips-overlay" id="ch-t"></div>
                 </div>
             </div>
+        </div>
 
+        <div class="bottom-area">
             <div class="chip-tray">
                 <img src="assets/10_0.png" class="chip sel" data-value="10" onclick="sC(this)" onerror="this.style.display='none'">
                 <img src="assets/50_0.png" class="chip" data-value="50" onclick="sC(this)" onerror="this.style.display='none'">
@@ -187,36 +178,18 @@
                 <img src="assets/5000_1.png" class="chip" data-value="5000" onclick="sC(this)" onerror="this.style.display='none'">
                 <img src="assets/10000_0.png" class="chip" data-value="10000" onclick="sC(this)" onerror="this.style.display='none'">
             </div>
-
         </div>
 
-        <div class="side-panel" id="right-players"></div>
-
+        <img src="assets/kaishitouzhub.png" id="alert-start" class="banner-overlay" onerror="this.style.display='none'">
+        <img src="assets/tingzhitouzhu.png" id="alert-stop" class="banner-overlay" onerror="this.style.display='none'">
     </div>
-
-    <img src="assets/kaishitouzhub.png" id="alert-start" class="banner-overlay" onerror="this.style.display='none'">
-    <img src="assets/tingzhitouzhu.png" id="alert-stop" class="banner-overlay" onerror="this.style.display='none'">
 
     <script>
         const $ = i => document.getElementById(i);
         
-        // FULLSCREEN API
-        function enterCasino() {
-            let elem = document.documentElement;
-            if (elem.requestFullscreen) { elem.requestFullscreen(); }
-            else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
-            else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); }
-            
-            if(screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock("landscape").catch(e=>{});
-            }
-            
-            $('start-screen').style.display='none';
-            uA();
-        }
-
         let iAI = 0;
-        function uA() {
+        function initAudio() {
+            $('click-catcher').style.display = 'none'; // Hide catcher after first click
             if(!iAI) {
                 try {
                     ['bgM','bS','cS','snd-dragon','snd-tiger','snd-coins'].forEach(i => { let e=$(i); if(e){ e.play().catch(e=>{}); } });
@@ -225,21 +198,6 @@
             }
         }
         function pS(i,v) { try{ let s=$(i); if(s){ s.currentTime=0; s.volume=v; s.play().catch(e=>{}); } }catch(e){} }
-
-        // MOCK SIDE PLAYERS (Matches Online Count Vibe)
-        function genPlayers() {
-            let leftH = '', rightH = '';
-            for(let i=0; i<7; i++) {
-                let bal = Math.floor(Math.random() * 90) + 10;
-                leftH += `<div class="player-icon">👤</div><div class="player-bal">${bal}K</div>`;
-                let bal2 = Math.floor(Math.random() * 90) + 10;
-                rightH += `<div class="player-icon">👤</div><div class="player-bal">${bal2}K</div>`;
-            }
-            if($('left-players')) $('left-players').innerHTML = leftH;
-            if($('right-players')) $('right-players').innerHTML = rightH;
-        }
-        genPlayers();
-        setInterval(genPlayers, 5000);
 
         try {
             if(!firebase.apps.length) firebase.initializeApp({
@@ -291,7 +249,7 @@
                 let h = s.val();
                 if(h && Array.isArray(h)) {
                     let m = '';
-                    [...h].reverse().slice(0,25).forEach(w => {
+                    [...h].reverse().slice(0,35).forEach(w => {
                         let c = w==='dragon' ? 'd' : (w==='tiger'?'t':'tie');
                         let txt = w==='dragon' ? 'D' : (w==='tiger'?'T':'Tie');
                         m += `<div class="h-dot h-${c}">${txt}</div>`;
@@ -365,20 +323,18 @@
                 b.appendChild(p);
                 
                 setTimeout(() => {
-                    p.style.left = `calc(50% + ${Math.floor(Math.random() * 40) - 20}px - 12px)`;
-                    p.style.top = `calc(50% + ${Math.floor(Math.random() * 30) - 15}px - 12px)`;
+                    p.style.left = `calc(50% + ${Math.floor(Math.random() * 50) - 25}px - 14px)`;
+                    p.style.top = `calc(50% + ${Math.floor(Math.random() * 40) - 20}px - 14px)`;
                     p.style.opacity = "1";
                 }, 50);
                 
                 if(b.children.length > 50) b.firstChild.remove();
             }
 
-            // High Volume Bot Betting (Matches Online Users)
             function bBA() {
                 if(!iBO) return;
                 let bb = 0;
                 ['dragon','tiger'].forEach(s => {
-                    // Larger chips because 1000+ players are online
                     let a = [100, 500, 1000, 5000, 10000][Math.floor(Math.random()*5)];
                     let rb = bL[Math.floor(Math.random()*bL.length)];
                     if(rb.b >= a) { rb.b -= a; spC(s, chipImgMap[a]); bPl[s] += a; bb = 1; }
@@ -397,7 +353,7 @@
                 if(st.state === 'betting') {
                     if(iD === 1 || !iBO) { 
                         iBO = 1; iD = 0; rUI(); 
-                        clearInterval(bI); bI = setInterval(bBA, 300); // Super fast bot betting
+                        clearInterval(bI); bI = setInterval(bBA, 300);
                         let aStop = $('alert-stop'); if(aStop) aStop.classList.remove('show'); 
                         let aStart = $('alert-start');
                         if(aStart) { aStart.classList.add('show'); setTimeout(() => aStart.classList.remove('show'), 1500); }
@@ -445,23 +401,34 @@
             }
 
             function animateWinningChips(wId) {
-                let boardRect = document.querySelector('.betting-area').getBoundingClientRect();
+                let gameMount = document.getElementById('game-mount');
                 let winBoxId = wId === 'dragon' ? 'bx-d' : (wId === 'tiger' ? 'bx-t' : 'bx-ti');
-                let winTarget = document.getElementById(winBoxId).getBoundingClientRect();
+                
+                // Get elements relative to game-mount to avoid CSS rotation bugs
+                let winBox = document.getElementById(winBoxId);
+                let boardRect = document.querySelector('.betting-area');
+                
                 pS('snd-coins', 0.8); 
                 for(let i=0; i<15; i++) {
                     setTimeout(() => {
                         let chip = document.createElement('div');
                         chip.className = 'placed-chip win-anim-chip';
                         chip.style.background = '#ffd700'; 
-                        chip.style.left = (boardRect.left + boardRect.width/2) + 'px';
-                        chip.style.top = (boardRect.top + boardRect.height/2) + 'px';
-                        document.body.appendChild(chip);
+                        
+                        // Start exactly center of betting area
+                        chip.style.left = '50%';
+                        chip.style.top = '60%';
+                        
+                        gameMount.appendChild(chip);
+                        
                         setTimeout(() => {
-                            chip.style.left = (winTarget.left + winTarget.width/2 + (Math.random()*40 - 20)) + 'px';
-                            chip.style.top = (winTarget.top + winTarget.height/2 + (Math.random()*40 - 20)) + 'px';
+                            // Move dynamically based on winner
+                            if(wId === 'dragon') { chip.style.left = '20%'; chip.style.top = '60%'; }
+                            else if(wId === 'tiger') { chip.style.left = '80%'; chip.style.top = '60%'; }
+                            else { chip.style.left = '50%'; chip.style.top = '60%'; }
+                            
                             chip.style.opacity = '0';
-                            chip.style.transform = 'scale(0.5)';
+                            chip.style.transform = 'scale(0.5) translate('+(Math.random()*40-20)+'px, '+(Math.random()*40-20)+'px)';
                         }, 50);
                         setTimeout(() => chip.remove(), 700);
                     }, i * 40); 
