@@ -3,134 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dragon Tiger VIP - Live</title>
+    <title>Dragon Tiger VIP - Premium</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
         body {
-            background-color: #1a0b3a; display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
-            height: 100vh; width: 100vw; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-image: radial-gradient(circle at center, #2b1c55 0%, #1a0b3a 100%); user-select: none;
+            /* Agar aapke paas game ka background (mahal/lalten wala) hai toh 'assets/bg.jpg' daal dijiye */
+            background: url('assets/bg.jpg') no-repeat center center / cover, linear-gradient(135deg, #0d0626, #1f1147);
+            display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
+            height: 100vh; width: 100vw; overflow: hidden; user-select: none;
         }
 
-        /* TAP TO START SCREEN (FOR AUTO LANDSCAPE) */
         #start-screen {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0a0515; z-index: 99999;
             display: flex; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; cursor: pointer;
-            box-shadow: inset 0 0 50px rgba(255,215,0,0.2);
         }
-        #start-screen h1 { font-size: 6vh; text-shadow: 0 0 20px #ffd700; animation: pulse 1.5s infinite alternate; margin-bottom: 2vh;}
-        #start-screen p { font-size: 2.5vh; color: #fff; }
+        #start-screen h1 { font-size: 6vh; text-shadow: 0 0 20px #ffd700; animation: pulse 1.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
 
-        /* Top Info Bar */
-        .info-bar { width: 96vw; display: flex; justify-content: space-between; align-items: center; padding: 1vh 2vw; background: rgba(0,0,0,0.6); border-radius: 0 0 2vh 2vh; border-bottom: 2px solid #ffd700; color: white; z-index: 50; }
-        .bal-box { font-weight: 900; font-size: 2.5vh; color: #0f0; background: #111; padding: 0.5vh 1.5vw; border-radius: 1vh; border: 1px solid #ffd700; box-shadow: 0 0 10px rgba(0,255,0,0.3); }
+        /* Top Info Bar - Sleek & Modern */
+        .info-bar { 
+            width: 100vw; display: flex; justify-content: space-between; align-items: center; padding: 1vh 4vw; 
+            background: rgba(0,0,0,0.8); border-bottom: 1.5px solid #d4af37; color: white; z-index: 50; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+        }
+        .bal-box { font-weight: 900; font-size: 2.5vh; color: #00ff88; text-shadow: 0 0 5px #00ff88; }
 
-        .board { display: flex; flex-direction: column; gap: 1vh; width: 96vw; height: 72vh; background: rgba(43, 28, 85, 0.8); padding: 1vw; border-radius: 2vh; box-shadow: 0 8px 20px rgba(0,0,0,0.7); border: 2px solid #5a419c; margin-top: 1vh; }
+        /* MAIN GAME FRAME (Like the wooden/golden board in original) */
+        .board { 
+            display: flex; flex-direction: column; width: 94vw; height: 74vh; 
+            background: rgba(25, 15, 50, 0.6); /* Semi-transparent base */
+            backdrop-filter: blur(8px); /* Glass effect */
+            border-radius: 1.5vh; border: 2px solid #5a419c; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(90, 65, 156, 0.5); 
+            margin-top: 1.5vh; position: relative;
+        }
 
         /* 1. TOP ACTION AREA & CARDS */
         .top-action-area { display: flex; justify-content: space-between; align-items: flex-end; height: 32vh; position: relative; padding: 0 2vw; }
-        .char-media { height: 100%; max-width: 30vw; object-fit: contain; pointer-events: none; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); z-index: 5; }
-        .center-stage { display: flex; flex-direction: column; align-items: center; gap: 1.5vh; z-index: 10; padding-bottom: 2vh;}
-        .cards-container { display: flex; align-items: center; gap: 2vw; position: relative; }
+        .char-media { height: 110%; max-width: 32vw; object-fit: contain; pointer-events: none; filter: drop-shadow(0 15px 15px rgba(0,0,0,0.6)); z-index: 5; margin-bottom: -2vh;}
         
-        .card-slot { width: 8vh; height: 11.5vh; border-radius: 0.5vh; box-shadow: 0 4px 8px rgba(0,0,0,0.6); border: 2px dashed rgba(255,215,0,0.5); position: relative; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); transition: transform 0.3s;}
+        .center-stage { display: flex; flex-direction: column; align-items: center; gap: 1vh; z-index: 10; padding-bottom: 2vh;}
+        .cards-container { display: flex; align-items: center; gap: 1vw; position: relative; }
+        
+        .card-slot { width: 8.5vh; height: 12vh; border-radius: 0.5vh; box-shadow: 0 5px 15px rgba(0,0,0,0.8); border: 1.5px solid #ffd700; position: relative; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); transition: transform 0.3s;}
         .cbk { background: url('https://deckofcardsapi.com/static/img/back.png') no-repeat center center / cover; position: absolute; inset: 0; z-index: 10; border-radius: 0.5vh; }
         .card-val { width: 100%; height: 100%; position: absolute; inset: 0; border-radius: 4px; overflow: hidden; }
-        
         .text-card { display: flex; flex-direction: column; justify-content: space-between; padding: 3px; background: #fff; width: 100%; height: 100%; border-radius: 4px; }
         .red-suit { color: #d32f2f !important; } .black-suit { color: #212121 !important; }
-        .top-vs-logo { width: 7vh; height: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; filter: drop-shadow(0 0 10px red); }
-        .timer-badge { background: linear-gradient(90deg, #5b1a1a, #8b2a2a); border: 1px solid #ffd700; color: #ffd700; padding: 0.5vh 2vw; border-radius: 2vh; font-size: 2vh; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5); text-shadow: 0 0 5px #ffd700; }
 
-        /* 2. HISTORY BAR */
-        .history-bar { height: 4vh; background: rgba(0, 0, 0, 0.3); border-radius: 1vh; display: flex; align-items: center; justify-content: flex-end; padding: 0 1vw; gap: 0.5vw; overflow-x: auto; border: 1px solid #4a317c; flex-direction: row-reverse;}
+        .top-vs-logo { width: 8vh; height: auto; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; filter: drop-shadow(0 0 15px rgba(255,0,0,0.8)); }
+
+        .timer-badge { background: linear-gradient(180deg, #5b1a1a, #3a0000); border: 1.5px solid #ffd700; color: #ffd700; padding: 0.5vh 3vw; border-radius: 2vh; font-size: 2.2vh; font-weight: 900; box-shadow: 0 4px 10px rgba(0,0,0,0.8); text-shadow: 0 0 8px #ffd700; }
+
+        /* 2. HISTORY BAR (Merged tightly with betting area) */
+        .history-bar { height: 4.5vh; background: rgba(10, 5, 25, 0.8); display: flex; align-items: center; justify-content: flex-end; padding: 0 1vw; gap: 0.5vw; overflow-x: auto; border-top: 2px solid #4a317c; border-bottom: 2px solid #4a317c; flex-direction: row-reverse;}
         .history-bar::-webkit-scrollbar { display: none; }
-        .hist-dot { width: 2.5vh; height: 2.5vh; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5vh; font-weight: bold; color: white; box-shadow: inset 0 -2px 5px rgba(0,0,0,0.4), 0 0 2px #000; flex-shrink: 0;}
-        .h-t { background: #e68900; } .h-d { background: #2a52be; } .h-tie { background: #43a047; font-size: 1vh; }
+        .hist-dot { width: 3vh; height: 3vh; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5vh; font-weight: 900; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.8); flex-shrink: 0;}
+        .h-t { background: radial-gradient(circle, #ffaa00, #b37700); } .h-d { background: radial-gradient(circle, #4da6ff, #0055b3); } .h-tie { background: radial-gradient(circle, #39ff14, #1a8008); font-size: 1.2vh; }
 
-        /* 3. BETTING COLUMNS & NEW POP-OUT ANIMATION */
-        .betting-columns { display: flex; gap: 1vw; flex: 1; position: relative; }
-        .bet-box { flex: 1; border-radius: 1.5vh; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; box-shadow: inset 0 0 15px rgba(255,255,255,0.1); border: 2px solid transparent; transition: 0.2s; }
+        /* 3. BETTING COLUMNS (Premium Soft Gradients) */
+        .betting-columns { display: flex; flex: 1; border-radius: 0 0 1.5vh 1.5vh; overflow: hidden; }
+        .bet-box { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; transition: 0.2s; border-right: 1px solid rgba(255,255,255,0.1); }
+        .bet-box:last-child { border-right: none; }
         
-        .title { font-size: 4.5vh; font-weight: 900; z-index: 5; position: relative; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
-        .ratio { font-size: 2vh; font-weight: bold; z-index: 5; position: relative; background: rgba(0,0,0,0.6); padding: 2px 10px; border-radius: 1vh; border: 1px solid #ffd700; margin-top: 5px; color: #ffd700;}
+        .title { font-size: 5vh; font-weight: 900; z-index: 5; position: relative; text-shadow: 0 3px 5px rgba(0,0,0,0.9); letter-spacing: 1px;}
+        .ratio { font-size: 2vh; font-weight: 900; z-index: 5; position: relative; color: rgba(255,255,255,0.7); text-shadow: 0 2px 4px #000; margin-top: -0.5vh;}
 
-        /* 🔥 NEW: Character Pop-Out Styling 🔥 */
-        .box-char {
-            position: absolute;
-            bottom: 10%; 
-            width: 85%;
-            height: auto;
-            max-height: 120%;
-            object-fit: contain;
-            z-index: 2; /* Below Text */
-            opacity: 0.4;
-            pointer-events: none;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            animation: breath 3s infinite alternate ease-in-out;
-        }
-        @keyframes breath {
-            0% { transform: scale(1) translateY(0); }
-            100% { transform: scale(1.02) translateY(-8px); }
-        }
-        
-        /* Tap effect - character pops out slightly */
-        .bet-box:active .box-char {
-            transform: scale(1.15) translateY(-15px);
-            opacity: 1;
-            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.8));
-            z-index: 10;
-        }
+        .box-char { position: absolute; bottom: 5%; width: 85%; max-height: 100%; object-fit: contain; z-index: 2; opacity: 0.3; pointer-events: none; transition: all 0.3s; animation: breath 3s infinite alternate ease-in-out; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));}
+        @keyframes breath { 0% { transform: scale(1) translateY(0); } 100% { transform: scale(1.03) translateY(-5px); } }
 
-        /* Texts overlay */
-        .pa { position: absolute; bottom: 8px; right: 10px; color:#000; font-size:2vh; font-weight:900; background:#ffd700; padding:2px 8px; border-radius:1vh; border: 1px solid #fff; z-index: 6;}
-        .mbb { position:absolute; top:8px; left:10px; font-size:1.5vh; color:#000; background:#00e5ff; padding:2px 8px; border-radius:1vh; display:none; font-weight:900; border: 1px solid #fff; z-index: 6;}
+        .pa { position: absolute; bottom: 1vh; right: 1vw; color:#000; font-size:1.8vh; font-weight:900; background:#ffd700; padding:2px 10px; border-radius:0.5vh; box-shadow: 0 2px 5px #000; z-index: 6;}
+        .mbb { position:absolute; top:1vh; left:1vw; font-size:1.5vh; color:#fff; background:rgba(0,0,0,0.7); padding:2px 8px; border-radius:0.5vh; display:none; font-weight:900; border: 1px solid #ffd700; z-index: 6;}
 
-        /* Box Backgrounds */
-        .dragon { background: linear-gradient(180deg, #3c2a6b 0%, #1a103c 100%); border-color: #5c4cdb; } .dragon .title { color: #dbe2ff; } 
-        .tiger { background: linear-gradient(180deg, #81501c 0%, #4a2a0a 100%); border-color: #e68900;} .tiger .title { color: #ffecb3; } 
-        .tie-box { background: linear-gradient(180deg, #2f5a34 0%, #153a18 100%); flex: 1; border-radius: 1.5vh; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border-color: #43a047; position: relative;} .tie-box .title { color: #c8e6c9; } 
-        .tie-col { flex: 1; display: flex; flex-direction: column; gap: 1vh; }
+        /* Beautiful Soft Backgrounds for Boxes */
+        .dragon { background: linear-gradient(180deg, rgba(74, 84, 156, 0.8) 0%, rgba(30, 25, 70, 0.95) 100%); } .dragon .title { color: #8ca3ff; } 
+        .tiger { background: linear-gradient(180deg, rgba(180, 110, 40, 0.8) 0%, rgba(70, 40, 10, 0.95) 100%); } .tiger .title { color: #ffcc66; } 
+        .tie-box { background: linear-gradient(180deg, rgba(80, 150, 90, 0.8) 0%, rgba(20, 50, 25, 0.95) 100%); } .tie-box .title { color: #a5d6a7; } 
 
-        /* WINNING GLOW ANIMATION */
-        .gw { box-shadow: 0 0 35px #39ff14, inset 0 0 20px #39ff14 !important; border-color: #39ff14 !important; z-index: 10; }
-        
-        /* Winner character pops out of the box massively */
-        .gw .box-char {
-            transform: scale(1.3) translateY(-25px);
-            opacity: 1;
-            filter: drop-shadow(0 0 20px #39ff14);
-            z-index: 20;
-            animation: none;
-        }
+        .gw { box-shadow: inset 0 0 40px #39ff14 !important; z-index: 10; }
+        .gw .box-char { transform: scale(1.2) translateY(-15px); opacity: 0.8; filter: drop-shadow(0 0 20px #39ff14); animation: none; }
 
-        /* CHIPS OVERLAY INSIDE BOXES */
+        /* CHIPS TRAY */
+        .chip-tray { width: 94vw; height: 16vh; background: rgba(0, 0, 0, 0.7); border-radius: 2vh; margin-top: 1.5vh; display: flex; justify-content: center; align-items: center; gap: 1.5vw; padding: 1vh 2vw; overflow-x: auto; border: 1.5px solid #3c2a6b; box-shadow: 0 5px 15px #000; }
+        .chip { height: 11vh; width: auto; cursor: pointer; transition: all 0.2s; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.8)); }
+        .chip.active { transform: translateY(-1.5vh) scale(1.15); filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.9)); }
+
         .chips-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 100; }
-        .placed-chip { position: absolute; width: 4.5vh; height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); transition: all 0.5s ease-out; }
+        .placed-chip { position: absolute; width: 4.5vh; height: auto; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.9)); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
-        /* CHIP TRAY */
-        .chip-tray { width: 96vw; height: 16vh; background: rgba(0, 0, 0, 0.5); border-radius: 2vh; margin-top: 1vh; display: flex; justify-content: center; align-items: center; gap: 1.5vw; padding: 1vh 2vw; overflow-x: auto; box-shadow: inset 0 5px 10px rgba(0,0,0,0.6); border: 1px solid #3c2a6b; }
-        .chip { height: 11vh; width: auto; cursor: pointer; transition: all 0.2s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
-        .chip.active { transform: translateY(-1.5vh) scale(1.15); filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)); }
-
-        /* BANNERS */
-        .banner-overlay { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%) scale(0); width: 60vw; z-index: 1000; opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
+        .banner-overlay { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%) scale(0); width: 60vw; z-index: 1000; opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8));}
         .banner-overlay.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 
         .tst { position:fixed; top:-60px; left:50%; transform:translateX(-50%); background:linear-gradient(45deg,#d32f2f,#c62828); color:#fff; padding:10px 20px; border-radius:2vh; font-weight:900; z-index:9999; border:2px solid #fff; box-shadow:0 0 20px #f00; transition:top .4s; white-space:nowrap; font-size:2vh; }
         .tst.sh { top:10vh; }
+        @media screen and (orientation: portrait) { .info-bar, .board, .chip-tray { display: none; } #start-screen { display: flex; } }
     </style>
 </head>
-<body>
+<body onclick="uA()">
 
     <div id="start-screen" onclick="enterCasino()">
-        <h1>TAP TO PLAY</h1>
-        <p>Entering Casino Mode...</p>
+        <h1>TAP TO ENTER</h1>
+        <p>Rotate Device to Landscape</p>
     </div>
 
     <audio id="bgM" src="https://freesound.org/data/previews/127/127411_2236471-lq.mp3" loop preload="auto"></audio>
@@ -140,7 +118,7 @@
     <audio id="snd-tiger" src="https://assets.mixkit.co/active_storage/sfx/25/25-preview.mp3"></audio> 
 
     <div class="info-bar">
-        <div><span style="color:#0f0;">🟢 <span id="oc">1,248</span> LIVE</span> | ID: 5388910154</div>
+        <div><span style="color:#00ff88;">🟢 <span id="oc">1,248</span> LIVE</span> | ID: 5388910154</div>
         <div class="bal-box">₹ <span id="bal">0.00</span></div>
     </div>
 
@@ -148,7 +126,6 @@
         
         <div class="top-action-area">
             <video class="char-media dragon-media" autoplay loop muted playsinline><source src="assets/dragon.mp4" type="video/mp4"></video>
-            
             <div class="center-stage">
                 <div class="cards-container">
                     <div id="c-d" class="card-slot"><div class="cbk" id="b-d"></div><div id="d-v" class="card-val"></div></div>
@@ -157,7 +134,6 @@
                 </div>
                 <div class="timer-badge" id="tmr">WAITING...</div>
             </div>
-            
             <video class="char-media" autoplay loop muted playsinline><source src="assets/VID_20260426_202810_2.mp4" type="video/mp4"></video>
         </div>
 
@@ -166,30 +142,25 @@
         <div class="betting-columns">
             <div class="bet-box dragon" id="bx-d" onclick="pB('dragon')">
                 <img src="assets/image.png" class="box-char">
-                
-                <div class="title">Dragon</div><div class="ratio">2X</div>
+                <div class="title">Dragon</div><div class="ratio">1:1</div>
                 <div class="pa" id="md">₹0</div>
-                <div class="mbb" id="mb-d">MY BET: ₹0</div>
+                <div class="mbb" id="mb-d">₹0</div>
                 <div id="ch-d" class="chips-overlay"></div>
             </div>
             
-            <div class="tie-col">
-                <div class="tie-box" id="bx-ti" onclick="pB('tie')">
-                    <div style="position: absolute; font-size: 8vh; opacity: 0.3; animation: breath 3s infinite alternate;" class="box-char">⭐</div>
-                    
-                    <div class="title">Tie</div><div class="ratio">9X</div>
-                    <div class="pa" id="mti">₹0</div>
-                    <div class="mbb" id="mb-ti">MY BET: ₹0</div>
-                    <div id="ch-ti" class="chips-overlay"></div>
-                </div>
+            <div class="bet-box tie-box" id="bx-ti" onclick="pB('tie')">
+                <div style="position: absolute; font-size: 8vh; opacity: 0.1; animation: breath 3s infinite alternate;" class="box-char">⭐</div>
+                <div class="title">Tie</div><div class="ratio">8:1</div>
+                <div class="pa" id="mti">₹0</div>
+                <div class="mbb" id="mb-ti">₹0</div>
+                <div id="ch-ti" class="chips-overlay"></div>
             </div>
 
             <div class="bet-box tiger" id="bx-t" onclick="pB('tiger')">
-                <img src="assets/tiger_char.png" class="box-char" alt="T" onerror="this.style.display='none'">
-                
-                <div class="title">Tiger</div><div class="ratio">2X</div>
+                <img src="assets/tiger_char.png" class="box-char" onerror="this.style.display='none'">
+                <div class="title">Tiger</div><div class="ratio">1:1</div>
                 <div class="pa" id="mt">₹0</div>
-                <div class="mbb" id="mb-t">MY BET: ₹0</div>
+                <div class="mbb" id="mb-t">₹0</div>
                 <div id="ch-t" class="chips-overlay"></div>
             </div>
         </div>
@@ -212,18 +183,17 @@
     <script>
         const $ = i => document.getElementById(i);
         
-        // --- NEW: JS FUNCTION TO AUTO LOCK LANDSCAPE ---
         function enterCasino() {
             let elem = document.documentElement;
             if (elem.requestFullscreen) {
                 elem.requestFullscreen().then(() => {
                     if(screen.orientation && screen.orientation.lock) {
-                        screen.orientation.lock("landscape").catch(err => console.log("Rotate lock error:", err));
+                        screen.orientation.lock("landscape").catch(e=>{});
                     }
-                }).catch(err => console.log(err));
+                }).catch(e=>{});
             }
             $('start-screen').style.display = 'none';
-            uA(); // Start Audio
+            uA();
         }
 
         if(!firebase.apps.length) firebase.initializeApp({
@@ -272,7 +242,7 @@
                     ['dragon','tiger','tie'].forEach(sd => {
                         let val = v[sd]; if(val > 0) {
                             mB[sd] = val; let mt = $('mb-'+(sd=='tie'?'ti':sd.charAt(0)));
-                            if(mt) { mt.innerText="MY BET: ₹"+val.toLocaleString(); mt.style.display='block'; }
+                            if(mt) { mt.innerText="₹"+val.toLocaleString(); mt.style.display='block'; }
                         }
                     });
                 }, 500);
@@ -283,7 +253,7 @@
             let h = s.val();
             if(h && Array.isArray(h)) {
                 let m = '';
-                [...h].reverse().slice(0,15).forEach(w => {
+                [...h].reverse().slice(0,18).forEach(w => {
                     let c = w==='dragon' ? 'd' : (w==='tiger'?'t':'tie');
                     let txt = w==='dragon' ? 'D' : (w==='tiger'?'T':'Tie');
                     m += `<div class="hist-dot h-${c}">${txt}</div>`;
@@ -322,7 +292,7 @@
             
             mB[s] += cC;
             let mt = $('mb-'+(s=='tie'?'ti':s.charAt(0)));
-            if(mt) { mt.innerText = "MY BET: ₹" + mB[s].toLocaleString(); mt.style.display = 'block'; }
+            if(mt) { mt.innerText = "₹" + mB[s].toLocaleString(); mt.style.display = 'block'; }
             
             spC(s, activeChipSrc);
             pS('bS', 1);
@@ -374,7 +344,7 @@
                     if(aStart) { aStart.classList.add('show'); setTimeout(() => aStart.classList.remove('show'), 1500); }
                 }
                 te.innerText = st.timer + "s";
-                if(st.timer <= 5) { te.style.color = "#f33"; te.style.textShadow = "0 0 10px #f33"; }
+                if(st.timer <= 5) { te.style.color = "#ff3333"; te.style.textShadow = "0 0 10px #ff3333"; }
                 else { te.style.color = "#ffd700"; te.style.textShadow = "0 0 5px #ffd700"; }
             }
             else if(st.state === 'result') {
@@ -432,7 +402,6 @@
             setTimeout(() => {
                 cd.style.transform = "scale(1)"; ct.style.transform = "scale(1)";
                 
-                // WINNING GLOW TRIGGERS POP-OUT ANIMATION
                 if(w === 'dragon') { pS('snd-dragon', 1); $('bx-d').classList.add('gw'); }
                 else if(w === 'tiger') { pS('snd-tiger', 1); $('bx-t').classList.add('gw'); }
                 else { $('bx-ti').classList.add('gw'); }
@@ -447,7 +416,7 @@
 
         function rUI() {
             ['bx-d','bx-t','bx-ti'].forEach(i => $(i).classList.remove('gw'));
-            ['d','t','ti'].forEach(s => { let mt = $('mb-'+s); if(mt) { mt.style.display = 'none'; mt.innerText = "MY BET: ₹0"; } });
+            ['d','t','ti'].forEach(s => { let mt = $('mb-'+s); if(mt) { mt.style.display = 'none'; mt.innerText = "₹0"; } });
             $('d-v').innerHTML = ''; $('t-v').innerHTML = '';
             $('b-d').style.opacity = '1'; $('b-t').style.opacity = '1';
             
