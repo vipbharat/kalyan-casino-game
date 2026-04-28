@@ -226,15 +226,14 @@
             }
         }
         
+        // 🔥 Naya Audio play function - taaki bot ki chip par aawaaz lagataar aur saaf aaye
         function pS(i,v) { 
             try { 
                 let s=$(i); 
                 if(s) { 
-                    if(i === 'snd-drop' || i === 'snd-fly' || i === 'snd-card-flip' || i === 'snd-tick') {
-                        let clone = s.cloneNode();
-                        clone.volume = v;
-                        clone.play().catch(e=>{});
-                    }
+                    let a = new Audio(s.src);
+                    a.volume = v;
+                    a.play().catch(e=>{});
                 } 
             } catch(e){} 
         }
@@ -291,6 +290,31 @@
                 let ocB = $('oc-bot'); if(ocB) ocB.innerText = liveC;
             }, 3000);
 
+            // 🔥 Balance ke hisaab se Badi chips disable/hide karna 🔥
+            function updateChipVisibility() {
+                let chips = document.querySelectorAll('.chip');
+                chips.forEach(c => {
+                    let val = parseInt(c.getAttribute('data-value'));
+                    if (val > tB) {
+                        c.style.opacity = '0.3';
+                        c.style.filter = 'grayscale(100%)';
+                        c.style.pointerEvents = 'none';
+                        c.classList.remove('sel'); 
+                    } else {
+                        c.style.opacity = '1';
+                        c.style.filter = 'none';
+                        c.style.pointerEvents = 'auto';
+                    }
+                });
+
+                if (cC > tB && tB >= 10) {
+                    let availableChips = Array.from(chips).filter(c => parseInt(c.getAttribute('data-value')) <= tB);
+                    if(availableChips.length > 0) {
+                        sC(availableChips[availableChips.length - 1]); 
+                    }
+                }
+            }
+
             if(ph) {
                 db.ref('users/'+ph).on('value', s => {
                     let d = s.val() || {}; dB = parseFloat(d.balance||0); wB = parseFloat(d.winning_balance||0); bB = parseFloat(d.bonus_balance||0);
@@ -302,6 +326,8 @@
                     let pIdStr = d.playerId || (ph !== "TEST_USER" ? "KP" + ph.slice(-4) : "GUEST");
                     let pIdTop = $('player-id-top'); if(pIdTop) pIdTop.innerText = pIdStr;
                     let pIdBot = $('player-id-bottom'); if(pIdBot) pIdBot.innerText = pIdStr;
+
+                    updateChipVisibility();
                 });
                 db.ref(`Game/DragonTiger/Bets/${ph}`).once('value', s => {
                     let v = s.val();
@@ -337,24 +363,6 @@
                 if(md) md.innerText = "₹" + (sPl.dragon+bPl.dragon).toLocaleString();
                 if(mt) mt.innerText = "₹" + (sPl.tiger+bPl.tiger).toLocaleString();
                 if(mti) mti.innerText = "₹" + (sPl.tie+bPl.tie).toLocaleString();
-            }
-
-            // Fallback profit logic (not fully needed anymore since we use backend logic now)
-            function getProfitableWinner() {
-                let dBet = sPl.dragon || 0; let tBet = sPl.tiger || 0; let tieBet = sPl.tie || 0;
-                let totalBets = dBet + tBet + tieBet;
-                if (totalBets === 0) return ['dragon', 'tiger', 'tie'][Math.floor(Math.random()*3)];
-                let maxPayout = totalBets - (totalBets * 0.20); 
-                let payouts = { dragon: dBet * 2, tiger: tBet * 2, tie: tieBet * 9 };
-                let valid = [];
-                for (let out in payouts) { if (payouts[out] <= maxPayout) valid.push(out); }
-                if (valid.length === 0) {
-                    let minO = 'dragon', minP = payouts.dragon;
-                    if (payouts.tiger < minP) { minP = payouts.tiger; minO = 'tiger'; }
-                    if (payouts.tie < minP) { minP = payouts.tie; minO = 'tie'; }
-                    return minO;
-                }
-                return valid[Math.floor(Math.random() * valid.length)];
             }
 
             window.sC = function(element) {
@@ -453,8 +461,7 @@
                             aStop.classList.add('show'); 
                             setTimeout(() => {
                                 aStop.classList.remove('show');
-                                // 🔥 YAHAN FRONTEND AB BACKEND WALA PROFIT RESULT (st.winner) PADEGA 🔥
-                                let wOut = st.winner || getProfitableWinner(); 
+                                let wOut = st.winner || 'dragon'; // Backend se data lenge
                                 sR(wOut); 
                             }, 1500); 
                         }
@@ -527,7 +534,6 @@
                 
                 let ds = ss[Math.floor(Math.random()*4)], ts = ss[Math.floor(Math.random()*4)];
                 
-                // 🔥 SAME CARD BUG FIX
                 if (di === ti && ds === ts) {
                     let suitsList = [...ss];
                     suitsList.splice(suitsList.indexOf(ds), 1); 
@@ -546,7 +552,6 @@
                     
                     animateWinningChips(w);
 
-                    // 🔥 PROFIT MARGIN PAYOUT: Dragon/Tiger = 95% profit, Tie = ₹90 return (on 10)
                     let wa = 0;
                     if(w === 'dragon') wa = mB.dragon * 1.95; 
                     else if(w === 'tiger') wa = mB.tiger * 1.95; 
