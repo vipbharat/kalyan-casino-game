@@ -37,6 +37,9 @@
         }
         .back-btn:active { transform: scale(0.9); }
 
+        .top-info { position: absolute; top: 10px; left: 55px; z-index: 50; display: flex; gap: 15px; color: #fff; font-size: 12px; font-weight: bold; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid #ffd700;}
+        .top-bal { position: absolute; top: 10px; right: 10px; z-index: 50; background: rgba(0,0,0,0.8); color: #00ff88; font-size: 16px; font-weight: bold; padding: 5px 20px; border-radius: 20px; border: 1.5px solid #ffd700;}
+
         .casino-board {
             width: 90%; height: 80%; 
             background: rgba(30, 20, 60, 0.9);
@@ -86,10 +89,15 @@
         
         .gw { box-shadow: inset 0 0 30px #fff, 0 0 20px #39ff14 !important; border-color: #39ff14 !important; z-index: 10; transform: scale(1.02);}
 
-        .chips-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 20;}
+        .chips-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 20;}
         
-        /* 🔥 CHIP ANIMATION CLASSES 🔥 */
-        .placed-chip { position: absolute; width: 28px; filter: drop-shadow(0 2px 3px #000); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        /* CHIP STYLING AND FLYING ANIMATION */
+        .placed-chip { position: absolute; width: 28px; filter: drop-shadow(0 2px 3px #000); }
+        .flying-chip { 
+            position: fixed; width: 28px; z-index: 99999; pointer-events: none;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
 
         .bottom-area { position: absolute; bottom: 5px; width: 90%; height: 12%; display: flex; justify-content: space-between; align-items: stretch; gap: 10px; z-index: 50;}
         
@@ -107,9 +115,14 @@
         .tie-alert.show { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
 
         .side-panel { width: 75px; display: flex; flex-direction: column; justify-content: space-evenly; padding: 5px; background: rgba(0,0,0,0.5); z-index: 20; border-left: 2px solid #ffd700; border-right: 2px solid #ffd700;}
-        .bot-user { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .bot-user { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .player-icon { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ffd700; box-shadow: 0 2px 5px #000; object-fit: cover; display: block; background: #222; transition: 0.3s;}
         .player-bal { font-size: 9px; color: #00ff88; text-align: center; font-weight: bold;}
+
+        /* Status Popups For Win/Loss */
+        .status-popup { position: absolute; top: -10px; font-size: 14px; font-weight: 900; z-index: 2000; opacity: 0; pointer-events: none; transition: 0.5s; }
+        .win-txt { color: #39ff14; text-shadow: 0 2px 5px #000; }
+        .loss-txt { color: #ff3333; text-shadow: 0 2px 5px #000; }
 
         .tst { position:fixed; top:-60px; left:50%; transform:translateX(-50%); background:linear-gradient(45deg,#d32f2f,#c62828); color:#fff; padding:10px 20px; border-radius:8px; z-index:9999; border:2px solid #fff; box-shadow:0 0 20px #f00; transition:top .4s; font-size:14px; font-weight: 900;}
         .tst.sh { top:15px; }
@@ -134,6 +147,12 @@
         <audio id="snd-tick" src="assets/22d0dc27-b727-42be-ac04-d9182459f976.mp3" preload="auto"></audio>
 
         <div class="back-btn" onclick="window.history.back()">&#8592;</div>
+
+        <div class="top-info">
+            <div style="color: #00ff88;">🟢 <span id="oc">1,248</span> LIVE</div>
+            <div>ID: <span id="player-id-top">Loading...</span></div>
+        </div>
+        <div class="top-bal">₹ <span id="bal">0.00</span></div>
 
         <div class="side-panel" id="left-players"></div>
 
@@ -233,37 +252,34 @@
             }
         }
         
-        // 🔥 AUDIO FIX: "Chhan Chhan" awaz, tick ko overlap se bachana
+        // 🔥 AUDIO OVERLAP FIX - "Chhan Chhan" aawaaz ke liye clone logic
         function pS(i, v) { 
             try { 
                 let s = $(i); 
                 if(s) { 
-                    if(i === 'snd-tick') {
-                        s.currentTime = 0; 
-                        s.volume = v;
-                        s.play().catch(e => {});
-                    } else {
-                        let clone = s.cloneNode();
-                        clone.volume = v;
-                        clone.play().catch(e => {});
-                        clone.onended = function() { clone.remove(); };
-                    }
+                    let clone = s.cloneNode();
+                    clone.volume = v;
+                    clone.play().catch(e => {});
+                    clone.onended = function() {
+                        clone.remove();
+                    };
                 } 
             } catch(e){} 
         }
 
+        // 🔥 Naye Player IDs aur Status Popups add kiye taaki animation unki taraf ja sake
         const avatars = ['Avatar0.png', 'Avatar2.png', 'Avatar3.png', 'Avatar4.png', 'Avatar5.png', 'Avatar6.png', 'Avatar7.png', 'Avatar9.png', 'Avatar10.png', 'Avatar11.png'];
         function genPlayers() {
             let leftH = '', rightH = '';
             for(let i=0; i<4; i++) {
                 let bal = Math.floor(Math.random() * 90) + 10;
                 let av = avatars[Math.floor(Math.random() * avatars.length)];
-                leftH += `<div class="bot-user"><img class="player-icon" src="assets/${av}" onerror="this.style.display='none'"><div class="player-bal">${bal}K</div></div>`;
+                leftH += `<div class="bot-user" id="p-l-${i}"><div class="status-popup" id="s-l-${i}"></div><img class="player-icon" src="assets/${av}" onerror="this.style.display='none'"><div class="player-bal">${bal}K</div></div>`;
             }
             for(let i=0; i<4; i++) {
                 let bal = Math.floor(Math.random() * 90) + 10;
                 let av = avatars[Math.floor(Math.random() * avatars.length)];
-                rightH += `<div class="bot-user"><img class="player-icon" src="assets/${av}" onerror="this.style.display='none'"><div class="player-bal">${bal}K</div></div>`;
+                rightH += `<div class="bot-user" id="p-r-${i}"><div class="status-popup" id="s-r-${i}"></div><img class="player-icon" src="assets/${av}" onerror="this.style.display='none'"><div class="player-bal">${bal}K</div></div>`;
             }
             if($('left-players')) $('left-players').innerHTML = leftH;
             if($('right-players')) $('right-players').innerHTML = rightH;
@@ -304,7 +320,7 @@
                 let ocB = $('oc-bot'); if(ocB) ocB.innerText = liveC;
             }, 3000);
 
-            // 🔥 Balance ke hisaab se badi chips disable karna 🔥
+            // Badi chips disable karne ka logic
             function updateChipVisibility() {
                 let chips = document.querySelectorAll('.chip');
                 chips.forEach(c => {
@@ -398,43 +414,69 @@
                 let mt = $('mb-'+(s=='tie'?'ti':s.charAt(0)));
                 if(mt) { mt.innerText = "MY BET: ₹" + mB[s].toLocaleString(); mt.style.display = 'block'; }
                 
-                // Real user chip animation (ud kar jayegi)
-                spC(s, activeChipSrc, true);
+                spC(s, activeChipSrc, true); // True = User click se
             };
 
-            // 🔥 ANIMATION: Chips Udne ka logic 🔥
-            function spC(s, imgSrc, isRealUser = false) {
+            // 🔥 FLYING CHIP ANIMATION LOGIC 🔥
+            function spC(s, imgSrc, isUser = false) {
                 pS('snd-drop', 0.6); 
+
                 let sid = (s=='tie'?'ti':s.charAt(0));
-                let b = $('ch-'+sid); if(!b) return;
-                
-                let p = document.createElement('img');
-                p.src = imgSrc; p.className = 'placed-chip';
-                
-                // Udne ka starting point tay karna
-                if(isRealUser) {
-                    p.style.top = "150%"; // Neeche se (User panel se)
-                    p.style.left = s==='dragon' ? "-20px" : "80px";
+                let box = $('ch-'+sid); if(!box) return;
+
+                // 1. Kahan se udayein?
+                let startX, startY;
+                if(isUser) {
+                    let tray = document.querySelector('.chip-tray').getBoundingClientRect();
+                    startX = tray.left + tray.width/2;
+                    startY = tray.top + tray.height/2;
                 } else {
-                    let isLeft = Math.random() > 0.5;
-                    p.style.top = (Math.floor(Math.random() * 80) - 40) + "px"; // Avatar height
-                    p.style.left = isLeft ? "-250px" : "250px"; // Left ya right panel se
+                    let side = Math.random() > 0.5 ? 'l' : 'r';
+                    let idx = Math.floor(Math.random() * 4);
+                    let botEl = $(`p-${side}-${idx}`);
+                    if(botEl) {
+                        let rect = botEl.getBoundingClientRect();
+                        startX = rect.left + rect.width/2;
+                        startY = rect.top + rect.height/2;
+                    } else {
+                        startX = window.innerWidth/2; startY = 0;
+                    }
                 }
-                
-                p.style.opacity = "0";
-                b.appendChild(p);
-                
-                // 50ms baad apni asli jagah (board ke andar) pahunchegi
+
+                // 2. Kahan le jana hai?
+                let boxRect = $('bx-'+sid).getBoundingClientRect();
+                let targetX = boxRect.left + (Math.random() * (boxRect.width - 40)) + 10;
+                let targetY = boxRect.top + (Math.random() * (boxRect.height - 40)) + 10;
+
+                // 3. Udne wali img element (Original Chip Image, Not white)
+                let flyImg = document.createElement('img');
+                flyImg.src = imgSrc;
+                flyImg.className = 'flying-chip';
+                flyImg.style.left = startX + 'px';
+                flyImg.style.top = startY + 'px';
+                document.body.appendChild(flyImg);
+
+                // 4. Animate to target
                 setTimeout(() => {
-                    p.style.left = `calc(50% + ${Math.floor(Math.random() * 60) - 30}px - 14px)`;
+                    flyImg.style.left = targetX + 'px';
+                    flyImg.style.top = targetY + 'px';
+                    flyImg.style.transform = 'scale(0.9)';
+                }, 20);
+
+                // 5. Transfer to actual box
+                setTimeout(() => {
+                    flyImg.remove();
+                    let p = document.createElement('img');
+                    p.src = imgSrc; 
+                    p.className = 'placed-chip';
+                    p.style.left = `calc(50% + ${Math.floor(Math.random() * 50) - 25}px - 14px)`;
                     p.style.top = `calc(50% + ${Math.floor(Math.random() * 40) - 20}px - 14px)`;
-                    p.style.opacity = "1";
-                }, 50);
-                
-                if(b.children.length > 50) b.firstChild.remove();
+                    box.appendChild(p);
+                    if(box.children.length > 50) box.firstChild.remove();
+                }, 400); 
             }
 
-            // 🔥 BOT BETTING FAST SPEED (Har 0.3s me) 🔥
+            // Purani Bot Fast Speed (300ms) wapas laga di gayi hai!
             function bBA() {
                 if(!iBO) return;
                 ['dragon','tiger'].forEach(s => {
@@ -456,19 +498,23 @@
                 if(st.state === 'betting') {
                     if(iD === 1 || !iBO) { 
                         iBO = 1; iD = 0; rUI(); 
-                        clearInterval(bI); bI = setInterval(bBA, 300); // 300ms bot speed wapas aa gayi
+                        clearInterval(bI); bI = setInterval(bBA, 300); // 90% Fast Speed Active
                         $('alert-stop').classList.remove('show'); 
                         $('alert-start').classList.add('show'); 
                         setTimeout(() => $('alert-start').classList.remove('show'), 1500);
                     }
                     te.innerText = st.timer + "s";
                     
+                    // Proper Timer Logic bina glitch ke
                     if(st.timer <= 5) { 
                         te.style.color = "#ff3333"; 
-                        // Tick sound strict fix
-                        if(st.timer > 0 && lastTick !== st.timer) { pS('snd-tick', 1.0); lastTick = st.timer; }
+                        if(st.timer > 0 && lastTick !== st.timer) {
+                            pS('snd-tick', 1.0);
+                            lastTick = st.timer;
+                        }
                     } else { 
-                        te.style.color = "#ffd700"; lastTick = -1; 
+                        te.style.color = "#ffd700"; 
+                        lastTick = -1; 
                     }
                 }
                 else if(st.state === 'result') {
@@ -493,7 +539,7 @@
                 uP();
             });
 
-            // 🔥 STABLE CARD DRAWING LOGIC 🔥
+            // 🔥 Proper Original Cards Logic Wapas Laga Di Hai 🔥
             function cCD(v, s) {
                 if(v === 'J' || v === 'Q' || v === 'K') {
                     let y = s==='S'?'♠':s==='H'?'♥':s==='D'?'♦':'♣', c = (s==='H'||s==='D')?'red-suit':'black-suit';
@@ -504,12 +550,10 @@
                     let suitName = suitMap[s]; 
                     let valName = valMap[v] || v; 
                     let imageName = `${valName}_of_${suitName}.png`; 
-                    
                     return `<img src="assets/${imageName}" style="width: 100%; height: 100%; border-radius: 2px; object-fit: contain; background: #fff;" onerror="this.style.display='none'">`;
                 }
             }
 
-            // 🔥 RESULT, ANIMATION & PAYOUT 🔥
             function sR(w) {
                 pS('snd-card-flip', 1.0);
                 $('b-d').style.opacity = '0'; $('b-t').style.opacity = '0';
@@ -523,7 +567,6 @@
                 
                 let ds = ss[Math.floor(Math.random()*4)], ts = ss[Math.floor(Math.random()*4)];
                 
-                // Same card bug fix
                 if (di === ti && ds === ts) {
                     let suitsList = [...ss]; suitsList.splice(suitsList.indexOf(ds), 1); 
                     ts = suitsList[Math.floor(Math.random()*3)]; 
@@ -537,32 +580,79 @@
                     else if(w === 'tiger') $('bx-t').classList.add('gw');
                     else $('bx-ti').classList.add('gw');
                     
-                    // WINNING ANIMATION: Gather to center, fly back out!
-                    let allChips = document.querySelectorAll('.placed-chip');
-                    allChips.forEach(c => {
-                        c.style.left = '50%'; c.style.top = '50%';
-                        c.style.transform = 'scale(1.2)';
+                    animateWinningChipsReturn();
+
+                    let wa = 0;
+                    if(w === 'dragon') wa = mB.dragon * 1.95; 
+                    else if(w === 'tiger') wa = mB.tiger * 1.95; 
+                    else if(w === 'tie') wa = mB.tie * 9;
+                    
+                    if(wa > 0 && ph !== "TEST_USER") db.ref('users/'+ph+'/winning_balance').set(wB + wa);
+                    if(wa > 0) sT("YOU WON ₹" + wa.toLocaleString());
+                }, 800);
+            }
+
+            // 🔥 WINNING CHIPS RETURN TO PLAYERS ANIMATION 🔥
+            function animateWinningChipsReturn() {
+                let allChips = document.querySelectorAll('.placed-chip');
+                if(allChips.length === 0) return;
+                
+                pS('snd-fly', 1.0);
+                let centerX = window.innerWidth / 2;
+                let centerY = window.innerHeight / 2;
+
+                // Step 1: Ikhatha hona (Gather in Center)
+                allChips.forEach(chip => {
+                    let rect = chip.getBoundingClientRect();
+                    chip.style.position = 'fixed';
+                    chip.style.left = rect.left + 'px';
+                    chip.style.top = rect.top + 'px';
+                    chip.style.zIndex = '9999';
+                    document.body.appendChild(chip); 
+                    
+                    setTimeout(() => {
+                        chip.style.transition = 'all 0.5s ease-in-out';
+                        chip.style.left = centerX + 'px';
+                        chip.style.top = centerY + 'px';
+                        chip.style.transform = 'scale(1.2)';
+                    }, 20);
+                });
+
+                // Step 2: Wapas udna aur Win/Loss popup dikhana
+                setTimeout(() => {
+                    pS('snd-drop', 0.8);
+                    allChips.forEach(chip => {
+                        let side = Math.random() > 0.5 ? 'l' : 'r';
+                        let idx = Math.floor(Math.random() * 4);
+                        let botEl = $(`p-${side}-${idx}`);
+                        if(botEl) {
+                            let rect = botEl.getBoundingClientRect();
+                            chip.style.left = (rect.left + rect.width/2) + 'px';
+                            chip.style.top = (rect.top + rect.height/2) + 'px';
+                            chip.style.transform = 'scale(0.3)';
+                            chip.style.opacity = '0';
+                        }
                     });
 
-                    setTimeout(() => {
-                        pS('snd-fly', 1.0);
-                        allChips.forEach(c => {
-                            let isLeft = Math.random() > 0.5;
-                            c.style.left = isLeft ? "-250px" : "250px"; // Wapas player icons ki taraf udna
-                            c.style.top = (Math.floor(Math.random() * 80) - 40) + "px"; 
-                            c.style.opacity = '0';
-                            c.style.transform = 'scale(0.5)';
-                        });
-                        
-                        // User payout update
-                        let wa = (w === 'tie') ? mB.tie * 9 : (mB[w] * 1.95);
-                        if(wa > 0 && ph !== "TEST_USER") {
-                            db.ref('users/'+ph+'/winning_balance').set(wB + wa);
-                        }
-                        if(wa > 0) sT("YOU WON ₹" + wa.toLocaleString());
-                    }, 600); // Gather hone ke 0.6s baad wapas ud jayengi
+                    // Win/Loss popups
+                    for(let i=0; i<4; i++) {
+                        showStatus(`s-l-${i}`, Math.random() > 0.4 ? 'WIN' : 'LOSS');
+                        showStatus(`s-r-${i}`, Math.random() > 0.4 ? 'WIN' : 'LOSS');
+                    }
                     
-                }, 800);
+                    setTimeout(() => {
+                        document.querySelectorAll('.flying-chip, .placed-chip').forEach(c => c.remove());
+                    }, 600);
+                }, 600);
+            }
+
+            function showStatus(id, type) {
+                let el = $(id);
+                if(!el) return;
+                el.innerText = (type === 'WIN' ? '+₹' : '-₹') + (Math.floor(Math.random()*5000)+100);
+                el.className = `status-popup ${type === 'WIN' ? 'win-txt' : 'loss-txt'}`;
+                el.style.opacity = '1'; el.style.top = '-30px';
+                setTimeout(() => { el.style.opacity = '0'; el.style.top = '-10px'; }, 2000);
             }
 
             function rUI() {
@@ -570,7 +660,10 @@
                 ['mb-d','mb-t','mb-ti'].forEach(i => { $(i).style.display = 'none'; $(i).innerText = "MY BET: ₹0"; });
                 $('d-v').innerHTML = ''; $('t-v').innerHTML = '';
                 $('b-d').style.opacity = '1'; $('b-t').style.opacity = '1';
-                document.querySelectorAll('.placed-chip').forEach(c => c.remove());
+                
+                // Saare udte hue aur gite hue chips reset
+                document.querySelectorAll('.flying-chip, .placed-chip').forEach(c => c.remove());
+                
                 sPl = {dragon:0, tiger:0, tie:0}; bPl = {dragon:0, tiger:0, tie:0}; mB = {dragon:0, tiger:0, tie:0};
                 uP();
             }
