@@ -48,10 +48,38 @@
 
         .action-area { flex: 0.8; position: relative; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 25px; z-index: 10;}
         
-        .flying-beast { position: absolute; top: -15%; height: 130%; width: 40%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 15px 15px rgba(0,0,0,0.8)); z-index: 15;}
-        #beast-left { left: -8%; animation: float 3s ease-in-out infinite; }
-        #beast-right { right: -8%; animation: float 3s ease-in-out infinite 0.5s; }
-        @keyframes float { 0% { transform: translateY(0); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0); } }
+        /* 🔥 SIZE AUR POSITION FIX: Upar ki khali jagah bharne ke liye 🔥 */
+        .flying-beast { 
+            position: absolute; 
+            top: -40%; 
+            height: 180%; 
+            width: 50%; 
+            object-fit: contain; 
+            pointer-events: none; 
+            filter: drop-shadow(0 15px 15px rgba(0,0,0,0.8)); 
+            z-index: 15;
+        }
+        #beast-left { 
+            left: -5%; 
+            animation: floatLeft 3s ease-in-out infinite; 
+            transform-origin: center left;
+        }
+        #beast-right { 
+            right: -5%; 
+            animation: floatRight 3s ease-in-out infinite 0.5s; 
+            transform-origin: center right;
+        }
+        /* Scale ab keyframes ke andar hai taaki animation zoom ko overwrite na kare */
+        @keyframes floatLeft { 
+            0% { transform: translateY(0) scale(1.4); } 
+            50% { transform: translateY(-15px) scale(1.4); } 
+            100% { transform: translateY(0) scale(1.4); } 
+        }
+        @keyframes floatRight { 
+            0% { transform: translateY(0) scale(1.8); } /* Tiger aur bada hoga */
+            50% { transform: translateY(-15px) scale(1.8); } 
+            100% { transform: translateY(0) scale(1.8); } 
+        }
 
         .cards-stage { display: flex; align-items: center; gap: 30px; position: relative; z-index: 20;}
         .crd { width: 50px; height: 70px; border-radius: 4px; border: 2px solid #ffd700; background: #fff; position: relative; box-shadow: 0 5px 15px #000; transition: transform 0.3s;}
@@ -116,7 +144,6 @@
         .tst { position:fixed; top:-60px; left:50%; transform:translateX(-50%); background:linear-gradient(45deg,#d32f2f,#c62828); color:#fff; padding:10px 20px; border-radius:8px; z-index:9999; border:2px solid #fff; box-shadow:0 0 20px #f00; transition:top .4s; font-size:14px; font-weight: 900;}
         .tst.sh { top:15px; }
 
-        /* 🔥 NAYA: VS CLASH ANIMATION CSS 🔥 */
         #vs-clash-screen {
             position: absolute; inset: 0; z-index: 2000; background: rgba(0,0,0,0.8);
             display: none; justify-content: center; align-items: center; overflow: hidden;
@@ -167,14 +194,12 @@
 
         <audio id="bgM" src="https://freesound.org/data/previews/127/127411_2236471-lq.mp3" loop preload="auto"></audio>
         <audio id="bS" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
-        <audio id="cS" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
-        <audio id="snd-dragon" src="https://assets.mixkit.co/active_storage/sfx/2458/2458-preview.mp3"></audio> 
-        <audio id="snd-tiger" src="https://assets.mixkit.co/active_storage/sfx/25/25-preview.mp3"></audio> 
-        <audio id="snd-coins" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3"></audio>
-        <audio id="snd-drop" src="assets/C9c7036e-1502-4e98-9b70-b8fec24836e4.mp3" preload="auto"></audio>
-        <audio id="snd-fly" src="assets/7ba0aedc-0356-404d-9c4a-c34acec66469.mp3" preload="auto"></audio>
-        <audio id="snd-card-flip" src="assets/6f1124e7-aec9-44c9-b898-4ca3c32bbe46.mp3" preload="auto"></audio>
-        <audio id="snd-clash" src="https://assets.mixkit.co/active_storage/sfx/2771/2771-preview.mp3" preload="auto"></audio>
+        
+        <audio id="snd-drop" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3" preload="auto"></audio>
+        <audio id="snd-fly" src="https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3" preload="auto"></audio>
+        <audio id="snd-card-flip" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3" preload="auto"></audio>
+        
+        <audio id="snd-clash" src="assets/1777f138-eabb-42d5-a004-a1431ae48e0b.mp3" preload="auto"></audio>
 
         <div class="back-btn" onclick="window.history.back()">&#8592;</div>
 
@@ -269,7 +294,6 @@
                 screen.orientation.lock("landscape").catch(e=>{});
             }
             $('start-screen').style.display='none';
-            uA();
         }
 
         let iAI = 0;
@@ -277,25 +301,20 @@
             $('click-catcher').style.display = 'none'; 
             if(!iAI) {
                 try {
-                    ['bgM','bS','cS','snd-dragon','snd-tiger','snd-coins','snd-drop','snd-fly','snd-card-flip','snd-clash'].forEach(i => { let e=$(i); if(e){ e.play().catch(e=>{}); } });
+                    ['bgM','bS','snd-drop','snd-fly','snd-card-flip','snd-clash'].forEach(i => { let e=$(i); if(e){ e.play().catch(e=>{}); } });
                     let m=$('bgM'); if(m) m.volume=.2; iAI=1;
                 } catch(e) {}
             }
         }
         
+        /* 🔥 AUDIO LOGIC FIX 🔥 Mobile me awaz proper aaye isliye simple play use kiya hai */
         function pS(i,v) { 
             try { 
                 let s=$(i); 
                 if(s) { 
-                    if(i === 'snd-drop' || i === 'snd-fly' || i === 'snd-card-flip' || i === 'snd-clash') {
-                        let clone = s.cloneNode();
-                        clone.volume = v;
-                        clone.play().catch(e=>{});
-                    } else {
-                        s.currentTime=0; 
-                        s.volume=v; 
-                        s.play().catch(e=>{}); 
-                    }
+                    s.currentTime = 0; 
+                    s.volume = v; 
+                    s.play().catch(e=>{}); 
                 } 
             } catch(e){} 
         }
@@ -440,11 +459,11 @@
                 if(mt) { mt.innerText = "MY BET: ₹" + mB[s].toLocaleString(); mt.style.display = 'block'; }
                 
                 spC(s, activeChipSrc);
-                pS('bS', 1);
             };
 
             function spC(s, imgSrc) {
-                pS('snd-drop', 0.4); 
+                // SIKKE GIRNE KI KHAHNAK YAHAN HAI
+                pS('snd-drop', 0.5); 
 
                 let sid = (s=='tie'?'ti':s.charAt(0));
                 let b = $('ch-'+sid); if(!b) return;
@@ -478,17 +497,16 @@
                 if(bb) { uP(); }
             }
 
-            /* 🔥 NAYA: CLASH ANIMATION LOGIC TRIGGER 🔥 */
             function triggerClashAnimation(wOut) {
                 let clashScreen = $('vs-clash-screen');
                 if(clashScreen) {
-                    pS('snd-clash', 1.0); // Takrane ki awaz
-                    clashScreen.style.display = 'flex'; // Animation show karega
+                    // 🔥 AAPKA TAKRANE WALA SOUND YAHAN BAJEGA 🔥
+                    pS('snd-clash', 1.0); 
+                    clashScreen.style.display = 'flex'; 
                     
-                    // 1.5 second tak animation chalega, fir hide hokar patte khulenge
                     setTimeout(() => {
                         clashScreen.style.display = 'none';
-                        sR(wOut); // Show Results (Cards Open)
+                        sR(wOut); 
                     }, 1500); 
                 } else {
                     sR(wOut);
@@ -519,12 +537,10 @@
                         let aStop = $('alert-stop');
                         if(aStop) { 
                             aStop.classList.add('show'); 
-                            
-                            // Stop Betting Banner dikhane ke baad Clash Animation chalu
                             setTimeout(() => {
                                 aStop.classList.remove('show');
                                 let wOut = getProfitableWinner();
-                                triggerClashAnimation(wOut); // 🔥 Yahan par naya animation function call hua
+                                triggerClashAnimation(wOut); 
                             }, 1000); 
                         }
                     }
@@ -555,6 +571,7 @@
                 let gameMount = document.getElementById('game-mount');
                 let winBoxId = wId === 'dragon' ? 'bx-d' : (wId === 'tiger' ? 'bx-t' : 'bx-ti');
                 
+                // CHIPS UTH KAR JAANE KI AAWAZ
                 pS('snd-fly', 1.0); 
                 
                 for(let i=0; i<15; i++) {
@@ -579,6 +596,7 @@
             }
 
             function sR(w) {
+                // PATTE KHULNE KI KHANAK YAHAN HAI
                 pS('snd-card-flip', 1.0);
                 
                 let bd=$('b-d'), bt=$('b-t');
@@ -599,8 +617,8 @@
                 setTimeout(() => {
                     if(cd) cd.style.transform = "scale(1)"; if(ct) ct.style.transform = "scale(1)";
                     
-                    if(w === 'dragon') { pS('snd-dragon', 1); let bxd=$('bx-d'); if(bxd) bxd.classList.add('gw'); }
-                    else if(w === 'tiger') { pS('snd-tiger', 1); let bxt=$('bx-t'); if(bxt) bxt.classList.add('gw'); }
+                    if(w === 'dragon') { let bxd=$('bx-d'); if(bxd) bxd.classList.add('gw'); }
+                    else if(w === 'tiger') { let bxt=$('bx-t'); if(bxt) bxt.classList.add('gw'); }
                     else { let bxti=$('bx-ti'); if(bxti) bxti.classList.add('gw'); }
                     
                     animateWinningChips(w);
