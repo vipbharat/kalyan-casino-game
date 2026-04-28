@@ -102,7 +102,6 @@
         .chip { height: 85%; max-width: 40px; cursor: pointer; filter: drop-shadow(0 4px 5px #000); transition: 0.2s;}
         .chip.sel { transform: scale(1.15) translateY(-5px); filter: drop-shadow(0 0 15px #ffd700); }
 
-        /* Banners exactly centered on Tie box logic */
         .tie-alert { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); width: 60%; max-width: 350px; z-index: 1000; opacity: 0; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; filter: drop-shadow(0 10px 20px #000);}
         .tie-alert.show { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
 
@@ -131,6 +130,7 @@
         <audio id="snd-drop" src="assets/C9c7036e-1502-4e98-9b70-b8fec24836e4.mp3" preload="auto"></audio>
         <audio id="snd-fly" src="assets/7ba0aedc-0356-404d-9c4a-c34acec66469.mp3" preload="auto"></audio>
         <audio id="snd-card-flip" src="assets/6f1124e7-aec9-44c9-b898-4ca3c32bbe46.mp3" preload="auto"></audio>
+        <audio id="snd-tick" src="assets/22d0dc27-b727-42be-ac04-d9182459f976.mp3" preload="auto"></audio>
 
         <div class="back-btn" onclick="window.history.back()">&#8592;</div>
 
@@ -213,7 +213,6 @@
                 screen.orientation.lock("landscape").catch(e=>{});
             }
             $('start-screen').style.display='none';
-            uA();
         }
 
         let iAI = 0;
@@ -221,7 +220,7 @@
             $('click-catcher').style.display = 'none'; 
             if(!iAI) {
                 try {
-                    ['snd-drop','snd-fly','snd-card-flip'].forEach(i => { let e=$(i); if(e){ e.play().catch(e=>{}); } });
+                    ['snd-drop','snd-fly','snd-card-flip','snd-tick'].forEach(i => { let e=$(i); if(e){ e.play().catch(e=>{}); } });
                     iAI=1;
                 } catch(e) {}
             }
@@ -231,7 +230,7 @@
             try { 
                 let s=$(i); 
                 if(s) { 
-                    if(i === 'snd-drop' || i === 'snd-fly' || i === 'snd-card-flip') {
+                    if(i === 'snd-drop' || i === 'snd-fly' || i === 'snd-card-flip' || i === 'snd-tick') {
                         let clone = s.cloneNode();
                         clone.volume = v;
                         clone.play().catch(e=>{});
@@ -272,6 +271,7 @@
             let sPl = {dragon:0, tiger:0, tie:0}, bPl = {dragon:0, tiger:0, tie:0};
             let bI, iD = 0, bL = [];
             let activeChipSrc = "assets/10_0.png";
+            let lastTick = -1; 
 
             const chipImgMap = {
                 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 
@@ -382,7 +382,7 @@
             };
 
             function spC(s, imgSrc) {
-                pS('snd-drop', 0.4); 
+                pS('snd-drop', 0.6); 
 
                 let sid = (s=='tie'?'ti':s.charAt(0));
                 let b = $('ch-'+sid); if(!b) return;
@@ -429,10 +429,20 @@
                         if(aStart) { aStart.classList.add('show'); setTimeout(() => aStart.classList.remove('show'), 1500); }
                     }
                     te.innerText = st.timer + "s";
-                    if(st.timer <= 5) { te.style.color = "#ff3333"; }
-                    else { te.style.color = "#ffd700"; }
+                    
+                    if(st.timer <= 5) { 
+                        te.style.color = "#ff3333"; 
+                        if(st.timer > 0 && lastTick !== st.timer) {
+                            pS('snd-tick', 1.0);
+                            lastTick = st.timer;
+                        }
+                    } else { 
+                        te.style.color = "#ffd700"; 
+                        lastTick = -1; 
+                    }
                 }
                 else if(st.state === 'result') {
+                    lastTick = -1;
                     if(iBO || !iD) { 
                         iBO = 0; iD = 1; clearInterval(bI); 
                         te.innerText = "STOP!"; te.style.color = "#fff";
@@ -458,21 +468,26 @@
                 uP();
             });
 
+            // Yahan Card Draw karne ka FINAL logic hai 
             function cCD(v, s) {
+                // Agar J, Q, K aata hai toh HTML+CSS wala render chalega (kyunki PNG nahi hai)
                 if(v === 'J' || v === 'Q' || v === 'K') {
                     let y = s==='S'?'♠':s==='H'?'♥':s==='D'?'♦':'♣', c = (s==='H'||s==='D')?'red-suit':'black-suit';
                     return `<div class="text-card ${c}"><div style="font-size:12px;font-weight:900;line-height:1">${v}<br><span style="font-size:10px">${y}</span></div><div style="font-size:24px;text-align:center;margin-top:-2px">${y}</div><div style="font-size:12px;font-weight:900;line-height:1;text-align:left;transform:rotate(180deg);margin-top:-2px">${v}<br><span style="font-size:10px">${y}</span></div></div>`;
                 } else {
+                    // Agar A se 10 tak aata hai, toh assets folder se PNG uthegi
                     let suitMap = {'S': 'spades', 'H': 'hearts', 'D': 'diamonds', 'C': 'clubs'};
                     let valMap = {'A': 'ace', '10': '10', '0': '10'};
-                    let suitName = suitMap[s]; let valName = valMap[v] || v; 
-                    return `<img src="assets/${valName}_of_${suitName}.png" style="width: 100%; height: 100%; border-radius: 2px; object-fit: contain; background: #fff;">`;
+                    let suitName = suitMap[s]; 
+                    let valName = valMap[v] || v; 
+                    let imageName = `${valName}_of_${suitName}.png`; 
+                    
+                    return `<img src="assets/${imageName}" style="width: 100%; height: 100%; border-radius: 2px; object-fit: contain; background: #fff;" onerror="this.style.display='none'">`;
                 }
             }
 
             function animateWinningChips(wId) {
                 let gameMount = document.getElementById('game-mount');
-                let winBoxId = wId === 'dragon' ? 'bx-d' : (wId === 'tiger' ? 'bx-t' : 'bx-ti');
                 
                 pS('snd-fly', 1.0); 
                 
