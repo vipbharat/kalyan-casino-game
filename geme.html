@@ -339,6 +339,7 @@
                 if(mti) mti.innerText = "₹" + (sPl.tie+bPl.tie).toLocaleString();
             }
 
+            // Fallback profit logic (not fully needed anymore since we use backend logic now)
             function getProfitableWinner() {
                 let dBet = sPl.dragon || 0; let tBet = sPl.tiger || 0; let tieBet = sPl.tie || 0;
                 let totalBets = dBet + tBet + tieBet;
@@ -452,7 +453,8 @@
                             aStop.classList.add('show'); 
                             setTimeout(() => {
                                 aStop.classList.remove('show');
-                                let wOut = getProfitableWinner();
+                                // 🔥 YAHAN FRONTEND AB BACKEND WALA PROFIT RESULT (st.winner) PADEGA 🔥
+                                let wOut = st.winner || getProfitableWinner(); 
                                 sR(wOut); 
                             }, 1500); 
                         }
@@ -468,14 +470,11 @@
                 uP();
             });
 
-            // Yahan Card Draw karne ka FINAL logic hai 
             function cCD(v, s) {
-                // Agar J, Q, K aata hai toh HTML+CSS wala render chalega (kyunki PNG nahi hai)
                 if(v === 'J' || v === 'Q' || v === 'K') {
                     let y = s==='S'?'♠':s==='H'?'♥':s==='D'?'♦':'♣', c = (s==='H'||s==='D')?'red-suit':'black-suit';
                     return `<div class="text-card ${c}"><div style="font-size:12px;font-weight:900;line-height:1">${v}<br><span style="font-size:10px">${y}</span></div><div style="font-size:24px;text-align:center;margin-top:-2px">${y}</div><div style="font-size:12px;font-weight:900;line-height:1;text-align:left;transform:rotate(180deg);margin-top:-2px">${v}<br><span style="font-size:10px">${y}</span></div></div>`;
                 } else {
-                    // Agar A se 10 tak aata hai, toh assets folder se PNG uthegi
                     let suitMap = {'S': 'spades', 'H': 'hearts', 'D': 'diamonds', 'C': 'clubs'};
                     let valMap = {'A': 'ace', '10': '10', '0': '10'};
                     let suitName = suitMap[s]; 
@@ -527,6 +526,14 @@
                 else { di = Math.floor(Math.random()*13); ti = di; }
                 
                 let ds = ss[Math.floor(Math.random()*4)], ts = ss[Math.floor(Math.random()*4)];
+                
+                // 🔥 SAME CARD BUG FIX
+                if (di === ti && ds === ts) {
+                    let suitsList = [...ss];
+                    suitsList.splice(suitsList.indexOf(ds), 1); 
+                    ts = suitsList[Math.floor(Math.random()*3)]; 
+                }
+                
                 let dv=$('d-v'), tv=$('t-v');
                 if(dv) dv.innerHTML = cCD(vs[di], ds); if(tv) tv.innerHTML = cCD(vs[ti], ts);
                 
@@ -539,8 +546,11 @@
                     
                     animateWinningChips(w);
 
+                    // 🔥 PROFIT MARGIN PAYOUT: Dragon/Tiger = 95% profit, Tie = ₹90 return (on 10)
                     let wa = 0;
-                    if(w === 'dragon') wa = mB.dragon * 2; else if(w === 'tiger') wa = mB.tiger * 2; else if(w === 'tie') wa = mB.tie * 9;
+                    if(w === 'dragon') wa = mB.dragon * 1.95; 
+                    else if(w === 'tiger') wa = mB.tiger * 1.95; 
+                    else if(w === 'tie') wa = mB.tie * 9;
                     
                     if(wa > 0 && ph !== "TEST_USER") db.ref('users/'+ph+'/winning_balance').set(wB + wa);
                     if(wa > 0) sT("YOU WON ₹" + wa.toLocaleString());
