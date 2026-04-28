@@ -48,37 +48,38 @@
 
         .action-area { flex: 0.8; position: relative; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 25px; z-index: 10;}
         
-        /* 🔥 SIZE AUR POSITION FIX: Upar ki khali jagah bharne ke liye 🔥 */
+        /* 🔥 SIZE FIX: Height limit ki, width badhayi (Lambai) 🔥 */
         .flying-beast { 
             position: absolute; 
-            top: -40%; 
-            height: 180%; 
-            width: 50%; 
+            top: -15%; /* Upar thoda gap */
+            height: auto; /* Height zyada nahi badhegi */
+            width: 48%; /* Lambai (Width) badhayi hai taaki faila hua lage */
             object-fit: contain; 
             pointer-events: none; 
             filter: drop-shadow(0 15px 15px rgba(0,0,0,0.8)); 
-            z-index: 15;
+            z-index: 5; /* Z-index kam kiya taaki cards ke peeche rahein */
         }
+        
         #beast-left { 
             left: -5%; 
             animation: floatLeft 3s ease-in-out infinite; 
-            transform-origin: center left;
         }
+        
         #beast-right { 
             right: -5%; 
             animation: floatRight 3s ease-in-out infinite 0.5s; 
-            transform-origin: center right;
         }
-        /* Scale ab keyframes ke andar hai taaki animation zoom ko overwrite na kare */
+
+        /* Sirf halke se float karenge bina size huge kiye */
         @keyframes floatLeft { 
-            0% { transform: translateY(0) scale(1.4); } 
-            50% { transform: translateY(-15px) scale(1.4); } 
-            100% { transform: translateY(0) scale(1.4); } 
+            0% { transform: translateY(0); } 
+            50% { transform: translateY(-10px); } 
+            100% { transform: translateY(0); } 
         }
         @keyframes floatRight { 
-            0% { transform: translateY(0) scale(1.8); } /* Tiger aur bada hoga */
-            50% { transform: translateY(-15px) scale(1.8); } 
-            100% { transform: translateY(0) scale(1.8); } 
+            0% { transform: translateY(0); } 
+            50% { transform: translateY(-10px); } 
+            100% { transform: translateY(0); } 
         }
 
         .cards-stage { display: flex; align-items: center; gap: 30px; position: relative; z-index: 20;}
@@ -192,13 +193,9 @@
     <div id="game-mount">
         <div id="click-catcher" onclick="initAudio()"></div>
 
-        <audio id="bgM" src="https://freesound.org/data/previews/127/127411_2236471-lq.mp3" loop preload="auto"></audio>
-        <audio id="bS" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
-        
-        <audio id="snd-drop" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3" preload="auto"></audio>
-        <audio id="snd-fly" src="https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3" preload="auto"></audio>
-        <audio id="snd-card-flip" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3" preload="auto"></audio>
-        
+        <audio id="snd-drop" src="assets/C9c7036e-1502-4e98-9b70-b8fec24836e4.mp3" preload="auto"></audio>
+        <audio id="snd-fly" src="assets/7ba0aedc-0356-404d-9c4a-c34acec66469.mp3" preload="auto"></audio>
+        <audio id="snd-card-flip" src="assets/6f1124e7-aec9-44c9-b898-4ca3c32bbe46.mp3" preload="auto"></audio>
         <audio id="snd-clash" src="assets/1777f138-eabb-42d5-a004-a1431ae48e0b.mp3" preload="auto"></audio>
 
         <div class="back-btn" onclick="window.history.back()">&#8592;</div>
@@ -301,13 +298,12 @@
             $('click-catcher').style.display = 'none'; 
             if(!iAI) {
                 try {
-                    ['bgM','bS','snd-drop','snd-fly','snd-card-flip','snd-clash'].forEach(i => { let e=$(i); if(e){ e.play().catch(e=>{}); } });
-                    let m=$('bgM'); if(m) m.volume=.2; iAI=1;
+                    ['snd-drop','snd-fly','snd-card-flip','snd-clash'].forEach(i => { let e=$(i); if(e){ e.play().catch(e=>{}); } });
+                    iAI=1;
                 } catch(e) {}
             }
         }
         
-        /* 🔥 AUDIO LOGIC FIX 🔥 Mobile me awaz proper aaye isliye simple play use kiya hai */
         function pS(i,v) { 
             try { 
                 let s=$(i); 
@@ -360,7 +356,7 @@
             function sT(m) {
                 let t = $('tst');
                 if(!t) { t = document.createElement('div'); t.id = 'tst'; t.className = 'tst'; document.body.appendChild(t); }
-                t.innerText = m; t.classList.add('sh'); pS('bS',0.5);
+                t.innerText = m; t.classList.add('sh');
                 setTimeout(() => t.classList.remove('sh'), 2500);
             }
 
@@ -440,7 +436,6 @@
                 element.classList.add('sel');
                 cC = parseInt(element.getAttribute('data-value'));
                 activeChipSrc = element.src;
-                pS('bS', 0.5);
             }
 
             window.pB = function(s) {
@@ -462,7 +457,6 @@
             };
 
             function spC(s, imgSrc) {
-                // SIKKE GIRNE KI KHAHNAK YAHAN HAI
                 pS('snd-drop', 0.5); 
 
                 let sid = (s=='tie'?'ti':s.charAt(0));
@@ -500,7 +494,6 @@
             function triggerClashAnimation(wOut) {
                 let clashScreen = $('vs-clash-screen');
                 if(clashScreen) {
-                    // 🔥 AAPKA TAKRANE WALA SOUND YAHAN BAJEGA 🔥
                     pS('snd-clash', 1.0); 
                     clashScreen.style.display = 'flex'; 
                     
@@ -571,7 +564,6 @@
                 let gameMount = document.getElementById('game-mount');
                 let winBoxId = wId === 'dragon' ? 'bx-d' : (wId === 'tiger' ? 'bx-t' : 'bx-ti');
                 
-                // CHIPS UTH KAR JAANE KI AAWAZ
                 pS('snd-fly', 1.0); 
                 
                 for(let i=0; i<15; i++) {
@@ -596,7 +588,6 @@
             }
 
             function sR(w) {
-                // PATTE KHULNE KI KHANAK YAHAN HAI
                 pS('snd-card-flip', 1.0);
                 
                 let bd=$('b-d'), bt=$('b-t');
