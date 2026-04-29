@@ -48,12 +48,10 @@
 
         .action-area { flex: 0.8; position: relative; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 25px; z-index: 10;}
         
-        /* 🔥 NEW CSS: Height Fix aur Lambai Stretch (ScaleX) 🔥 */
+        /* 🔥 SIZE FIX AUR JAGA HILANE WALA (BREATHING/WRIGGLING) ANIMATION 🔥 */
         .flying-beast { 
             position: absolute; 
-            bottom: 10px; /* Cards ke paas tika rahega */
-            height: 110%; /* Height ko lock kar diya taaki screen par na faile */
-            width: 38%; /* Width lock */
+            bottom: 10px; 
             object-fit: contain; 
             pointer-events: none; 
             filter: drop-shadow(0 15px 15px rgba(0,0,0,0.8)); 
@@ -61,27 +59,36 @@
         }
         
         #beast-left { 
-            left: 2%; 
-            animation: floatLeft 3s ease-in-out infinite; 
-            transform-origin: left center;
+            left: 0%; 
+            width: 45%; /* Dragon ki lambai aur chaudai badhayi */
+            height: 120%; 
+            animation: aliveDragon 4s infinite ease-in-out; 
+            transform-origin: bottom left;
         }
         
         #beast-right { 
-            right: 2%; 
-            animation: floatRight 3s ease-in-out infinite 0.5s; 
-            transform-origin: right center;
+            right: 0%; 
+            width: 38%; 
+            height: 110%; 
+            animation: aliveTiger 4s infinite ease-in-out 0.5s; 
+            transform-origin: bottom right;
         }
 
-        /* scaleX(1.3) se lambai stretch hogi bina height badhaye */
-        @keyframes floatLeft { 
-            0% { transform: scaleX(1.3) translateY(0); } 
-            50% { transform: scaleX(1.3) translateY(-10px); } 
-            100% { transform: scaleX(1.3) translateY(0); } 
+        /* 3-4 tarike ka movement (Upar-Niche + Aage-Peeche + Tircha (Rotate) + Saans Lena (Scale)) */
+        @keyframes aliveDragon {
+            0% { transform: scaleX(1.3) scaleY(1) translate(0, 0) rotate(0deg); }
+            25% { transform: scaleX(1.32) scaleY(0.98) translate(8px, -5px) rotate(-1deg); } 
+            50% { transform: scaleX(1.28) scaleY(1.02) translate(0px, -12px) rotate(1deg); } 
+            75% { transform: scaleX(1.31) scaleY(0.99) translate(-4px, -4px) rotate(-0.5deg); }
+            100% { transform: scaleX(1.3) scaleY(1) translate(0, 0) rotate(0deg); }
         }
-        @keyframes floatRight { 
-            0% { transform: scaleX(1.3) translateY(0); } 
-            50% { transform: scaleX(1.3) translateY(-10px); } 
-            100% { transform: scaleX(1.3) translateY(0); } 
+
+        @keyframes aliveTiger {
+            0% { transform: scaleX(1.3) scaleY(1) translate(0, 0) rotate(0deg); }
+            25% { transform: scaleX(1.28) scaleY(1.02) translate(-8px, -6px) rotate(1deg); } 
+            50% { transform: scaleX(1.32) scaleY(0.98) translate(0px, -12px) rotate(-1deg); } 
+            75% { transform: scaleX(1.29) scaleY(1.01) translate(4px, -5px) rotate(0.5deg); }
+            100% { transform: scaleX(1.3) scaleY(1) translate(0, 0) rotate(0deg); }
         }
 
         .cards-stage { display: flex; align-items: center; gap: 30px; position: relative; z-index: 20;}
@@ -132,9 +139,6 @@
         .chip-tray { width: 49%; background: rgba(0,0,0,0.8); border-radius: 12px; display: flex; justify-content: space-evenly; align-items: center; padding: 5px; border: 2px solid #5a419c; box-shadow: 0 5px 15px #000; }
         .chip { height: 85%; max-width: 40px; cursor: pointer; filter: drop-shadow(0 4px 5px #000); transition: 0.2s;}
         .chip.sel { transform: scale(1.15) translateY(-5px); filter: drop-shadow(0 0 15px #ffd700); }
-
-        .top-info { position: absolute; top: 10px; left: 55px; z-index: 50; display: flex; gap: 15px; color: #fff; font-size: 12px; font-weight: bold; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; border: 1px solid #ffd700;}
-        .top-bal { position: absolute; top: 10px; right: 10px; z-index: 50; background: rgba(0,0,0,0.8); color: #00ff88; font-size: 16px; font-weight: bold; padding: 5px 20px; border-radius: 20px; border: 1.5px solid #ffd700;}
         
         .banner-overlay { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); width: 80vw; max-width: 900px; z-index: 1000; opacity: 0; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; filter: drop-shadow(0 10px 20px #000);}
         .banner-overlay.show { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
@@ -201,12 +205,6 @@
         <audio id="snd-clash" src="assets/1777f138-eabb-42d5-a004-a1431ae48e0b.mp3" preload="auto"></audio>
 
         <div class="back-btn" onclick="window.history.back()">&#8592;</div>
-
-        <div class="top-info">
-            <div style="color: #00ff88;">🟢 <span id="oc">1,248</span> LIVE</div>
-            <div>ID: <span id="player-id-top">Loading...</span></div>
-        </div>
-        <div class="top-bal">₹ <span id="bal">0.00</span></div>
 
         <div class="side-panel" id="left-players"></div>
 
@@ -359,13 +357,11 @@
                 let t = $('tst');
                 if(!t) { t = document.createElement('div'); t.id = 'tst'; t.className = 'tst'; document.body.appendChild(t); }
                 t.innerText = m; t.classList.add('sh');
-                // Removed false sound triggers completely!
                 setTimeout(() => t.classList.remove('sh'), 2500);
             }
 
             setInterval(() => { 
                 let liveC = Math.floor(Math.random()*150) + 1400;
-                let oc = $('oc'); if(oc) oc.innerText = liveC; 
                 let ocB = $('oc-bot'); if(ocB) ocB.innerText = liveC;
             }, 3000);
 
@@ -374,11 +370,9 @@
                     let d = s.val() || {}; dB = parseFloat(d.balance||0); wB = parseFloat(d.winning_balance||0); bB = parseFloat(d.bonus_balance||0);
                     tB = Math.max(0, dB+wB+bB); 
                     
-                    let bElem = $('bal'); if(bElem) bElem.innerText = tB.toFixed(2);
                     let bBotElem = $('bal-bot'); if(bBotElem) bBotElem.innerText = tB.toFixed(2);
 
                     let pIdStr = d.playerId || (ph !== "TEST_USER" ? "KP" + ph.slice(-4) : "GUEST");
-                    let pIdTop = $('player-id-top'); if(pIdTop) pIdTop.innerText = pIdStr;
                     let pIdBot = $('player-id-bottom'); if(pIdBot) pIdBot.innerText = pIdStr;
                 });
                 db.ref(`Game/DragonTiger/Bets/${ph}`).once('value', s => {
