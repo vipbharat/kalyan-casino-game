@@ -26,7 +26,9 @@
         .cards-stage { display: flex; align-items: center; gap: 40px; position: relative; z-index: 20;}
         .crd { width: 55px; height: 80px; border-radius: 4px; border: 2px solid #ffd700; background: #fff; position: relative; box-shadow: 0 5px 15px #000; transition: transform 0.3s; transform-style: preserve-3d; }
         .cbk { position: absolute; inset: 0; background: #222 url('https://deckofcardsapi.com/static/img/back.png') center/cover; border-radius: 2px; z-index: 10; backface-visibility: hidden; }
-        .crd-val { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 2px; background: #fff; display: flex; align-items: center; justify-content: center; }
+        .crd-val { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 2px; background: #fff; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 20px; line-height: 1.2;}
+        .red-suit { color: red; }
+        .black-suit { color: black; }
         .timer-badge { position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%); background: #600; color: #ffd700; padding: 3px 20px; border-radius: 15px; border: 1.5px solid #ffd700; font-size: 14px; font-weight: 900; z-index: 100; }
         .history-bar { height: 35px; display: flex; align-items: center; gap: 5px; padding: 0 15px; background: rgba(0,0,0,0.5); overflow: hidden; border-top: 2px solid #4a317c; }
         .h-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); }
@@ -71,7 +73,7 @@
         <audio id="snd-card" src="assets/6f1124e7-aec9-44c9-b898-4ca3c32bbe46.mp3" preload="auto"></audio>
 
         <div class="back-btn" onclick="window.history.back()">HOME</div>
-        <div class="online-counter">🟢 <span id="oc-top">240</span> ONLINE</div>
+        <div class="online-counter" id="top-online">🟢 <span id="oc-top">240</span> ONLINE</div>
 
         <div class="side-panel" id="left-players"></div>
 
@@ -88,9 +90,9 @@
             </div>
             <div class="history-bar" id="hr"></div>
             <div class="betting-area">
-                <div class="bet-box dbx" onclick="pB('dragon')" id="bx-d"><div class="box-title">Dragon</div><div class="pa" id="md">₹0</div><div class="mbb" id="mb-d">₹0</div></div>
-                <div class="bet-box tibx" onclick="pB('tie')" id="bx-ti"><div class="box-title" style="font-size:18px;">Tie</div><div class="pa" id="mti">₹0</div><div class="mbb" id="mb-ti">₹0</div></div>
-                <div class="bet-box tbx" onclick="pB('tiger')" id="bx-t"><div class="box-title">Tiger</div><div class="pa" id="mt">₹0</div><div class="mbb" id="mb-t">₹0</div></div>
+                <div class="bet-box dbx" onclick="pB('dragon')" id="bx-d"><div class="box-title">Dragon</div><div class="pa" id="md">₹0</div></div>
+                <div class="bet-box tibx" onclick="pB('tie')" id="bx-ti"><div class="box-title" style="font-size:18px;">Tie</div><div class="pa" id="mti">₹0</div></div>
+                <div class="bet-box tbx" onclick="pB('tiger')" id="bx-t"><div class="box-title">Tiger</div><div class="pa" id="mt">₹0</div></div>
             </div>
         </div>
 
@@ -123,7 +125,7 @@
 
     <script>
         const $ = i => document.getElementById(i);
-        let iBO = 0, cC = 10, tB = 0, mB={dragon:0, tiger:0, tie:0}, lastBeep = -1;
+        let iBO = 0, cC = 10, tB = 0, mB = { dragon: 0, tiger: 0, tie: 0 }, lastBeep = -1;
         const chipImgs = { 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
 
         function enterCasino() { 
@@ -150,27 +152,46 @@
         }
         genPlayers();
 
+        // 🌟 EXACT OFFSET CALCULATOR (Fixes Rotation Bugs) 🌟
+        function getOffset(el) {
+            if(!el) return {x:0, y:0, w:0, h:0};
+            let x = 0, y = 0, w = el.offsetWidth, h = el.offsetHeight;
+            while (el && el.id !== 'game-mount' && el !== document.body) {
+                x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent;
+            }
+            return { x: x + w/2, y: y + h/2, w, h }; // returns center points
+        }
+
         // 🔥 IMPROVED CHIP FLYING LOGIC 🔥
-        function spC(side, imgSrc, srcId) {
+        function spC(side, imgSrc, srcEl, isSystemAnim = false) {
+            if(!srcEl) return;
             pS('snd-drop', 0.5);
             let layer = $('chips-layer'), box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
             let chip = document.createElement('img');
             chip.src = imgSrc; chip.className = 'placed-chip';
             
-            let sR = $(srcId).getBoundingClientRect(), mR = $('game-mount').getBoundingClientRect(), bR = box.getBoundingClientRect();
+            let sPos = getOffset(srcEl), bPos = getOffset(box);
             
-            chip.style.left = (sR.left - mR.left + sR.width/2 - 13) + "px";
-            chip.style.top = (sR.top - mR.top + sR.height/2 - 13) + "px";
-            chip.style.transform = "scale(0.4)";
+            chip.style.left = (sPos.x - 13) + "px";
+            chip.style.top = (sPos.y - 13) + "px";
+            chip.style.transform = "scale(0.3)";
             layer.appendChild(chip);
 
             setTimeout(() => {
-                let rx = 10 + Math.random() * (bR.width - 40), ry = 10 + Math.random() * (bR.height - 40);
-                chip.style.left = (bR.left - mR.left + rx) + "px";
-                chip.style.top = (bR.top - mR.top + ry) + "px";
+                let rx = (Math.random() - 0.5) * (bPos.w - 40), ry = (Math.random() - 0.5) * (bPos.h - 40);
+                chip.style.left = (bPos.x + rx - 13) + "px";
+                chip.style.top = (bPos.y + ry - 13) + "px";
                 chip.style.transform = "scale(1)";
             }, 50);
             chip.setAttribute('data-side', side);
+
+            if(!isSystemAnim) {
+                let valMatch = imgSrc.match(/\/(\d+)_/);
+                let val = valMatch ? parseInt(valMatch[1]) : 100;
+                mB[side] += val;
+                $('m' + (side === 'tie' ? 'ti' : side.charAt(0))).innerText = '₹' + mB[side];
+            }
+            return chip;
         }
 
         try {
@@ -202,42 +223,72 @@
         } catch(e){}
 
         window.sC = (el) => { if(el.classList.contains('locked')) return; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); cC=parseInt(el.dataset.value); };
-        window.pB = (s) => { if(!iBO || tB<cC) return; spC(s, chipImgs[cC], 'my-wallet'); };
+        
+        window.pB = (s) => { 
+            if(!iBO || tB < cC) return; 
+            tB -= cC; 
+            $('bal-bot').innerText = tB.toFixed(2);
+            spC(s, chipImgs[cC], $('my-wallet')); 
+        };
 
+        // Bot Betting logic
         setInterval(() => { 
             if(iBO) { 
                 let s = Math.random()>0.5 ? 'dragon' : 'tiger'; if(Math.random()>0.9) s='tie';
-                let id = Math.random()>0.5 ? 'bl'+Math.floor(Math.random()*5) : 'br'+Math.floor(Math.random()*5);
-                spC(s, chipImgs[100], id);
+                let r = Math.random(), srcEl;
+                if(r < 0.3) srcEl = $('bl'+Math.floor(Math.random()*5));
+                else if(r < 0.6) srcEl = $('br'+Math.floor(Math.random()*5));
+                else srcEl = $('top-online'); 
+                
+                let randomChipKey = Object.keys(chipImgs)[Math.floor(Math.random() * Object.keys(chipImgs).length)];
+                spC(s, chipImgs[randomChipKey], srcEl);
             } 
         }, 250);
 
         function sR_Sequence(w) {
             const vals = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+            let dIdx, tIdx;
+            
+            if(w === 'dragon') { dIdx = Math.floor(Math.random()*6)+7; tIdx = Math.floor(Math.random()*6); } 
+            else if(w === 'tiger') { tIdx = Math.floor(Math.random()*6)+7; dIdx = Math.floor(Math.random()*6); } 
+            else { dIdx = Math.floor(Math.random()*13); tIdx = dIdx; } 
+
             pS('snd-card', 1); $('b-d').style.opacity='0'; 
-            $('d-v').innerHTML = `<div class="text-card black-suit"><div>${vals[Math.floor(Math.random()*13)]}</div><div>♠</div></div>`;
+            $('d-v').innerHTML = `<div class="text-card black-suit"><div>${vals[dIdx]}</div><div>♠</div></div>`;
             setTimeout(() => {
                 pS('snd-card', 1); $('b-t').style.opacity='0';
-                $('t-v').innerHTML = `<div class="text-card red-suit"><div>${vals[Math.floor(Math.random()*13)]}</div><div>♥</div></div>`;
+                $('t-v').innerHTML = `<div class="text-card red-suit"><div>${vals[tIdx]}</div><div>♥</div></div>`;
                 setTimeout(() => {
-                    let winBox = $('bx-' + (w==='dragon'?'d':(w==='tiger'?'t':'ti'))), mR = $('game-mount').getBoundingClientRect(), wR = winBox.getBoundingClientRect();
+                    let winBox = $('bx-' + (w==='dragon'?'d':(w==='tiger'?'t':'ti')));
+                    let dealerPos = getOffset($('tmr')); 
                     winBox.classList.add('gw');
+                    
                     document.querySelectorAll('.placed-chip').forEach(c => {
                         if(c.getAttribute('data-side') !== w) {
-                            c.style.left = (wR.left - mR.left + wR.width/2) + "px";
-                            c.style.top = (wR.top - mR.top + wR.height/2) + "px";
+                            c.style.left = (dealerPos.x - 13) + "px";
+                            c.style.top = (dealerPos.y - 13) + "px";
                             c.style.opacity = '0';
                         }
                     });
+
                     setTimeout(() => {
                         pS('snd-fly', 1);
-                        for(let i=0; i<15; i++) {
-                            let c = document.createElement('img'); c.src = "assets/100_0.png"; c.className = 'placed-chip win-anim-chip';
-                            c.style.left = (wR.left - mR.left + wR.width/2) + "px"; c.style.top = (wR.top - mR.top + wR.height/2) + "px";
+                        let winBoxPos = getOffset(winBox);
+                        for(let i=0; i<20; i++) {
+                            let c = document.createElement('img'); c.src = "assets/100_0.png"; c.className = 'placed-chip';
+                            c.style.left = (winBoxPos.x - 13) + "px"; c.style.top = (winBoxPos.y - 13) + "px";
                             $('chips-layer').appendChild(c);
                             setTimeout(() => { 
-                                let target = $(Math.random()>0.5 ? 'bl'+Math.floor(Math.random()*5) : 'my-wallet').getBoundingClientRect();
-                                c.style.left = (target.left-mR.left)+"px"; c.style.top = (target.top-mR.top)+"px"; c.style.opacity='0';
+                                let r = Math.random(), target;
+                                if(r < 0.2) target = $('my-wallet');
+                                else if(r < 0.4) target = $('top-online');
+                                else if(r < 0.7) target = $('bl'+Math.floor(Math.random()*5));
+                                else target = $('br'+Math.floor(Math.random()*5));
+                                
+                                let tPos = getOffset(target);
+                                c.style.left = (tPos.x - 13) + "px"; 
+                                c.style.top = (tPos.y - 13) + "px"; 
+                                c.style.opacity='0';
                             }, 50);
                             setTimeout(()=>c.remove(), 1000);
                         }
@@ -248,6 +299,8 @@
 
         function rUI() {
             $('chips-layer').innerHTML = '';
+            mB = { dragon: 0, tiger: 0, tie: 0 }; 
+            ['d','t','ti'].forEach(s => $('m'+s).innerText = '₹0');
             ['bx-d','bx-t','bx-ti'].forEach(i => $(i).classList.remove('gw'));
             $('d-v').innerHTML = ''; $('t-v').innerHTML = ''; $('b-d').style.opacity='1'; $('b-t').style.opacity='1';
         }
