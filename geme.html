@@ -89,14 +89,8 @@
         .gw { box-shadow: inset 0 0 30px #fff, 0 0 20px #39ff14 !important; border-color: #39ff14 !important; z-index: 10; transform: scale(1.02);}
 
         .chips-overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 20;}
-        .placed-chip { 
-            position: absolute; width: 28px; filter: drop-shadow(0 4px 5px rgba(0,0,0,0.8)); 
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-        }
-        .win-anim-chip { 
-            transition: all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1); 
-            z-index: 9999 !important; border: 1.5px solid #fff; border-radius: 50%; box-shadow: 2px 2px 6px rgba(0,0,0,0.8); 
-        }
+        .placed-chip { position: absolute; width: 28px; filter: drop-shadow(0 4px 5px rgba(0,0,0,0.8)); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .win-anim-chip { transition: all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 9999 !important; border: 1.5px solid #fff; border-radius: 50%; box-shadow: 2px 2px 6px rgba(0,0,0,0.8); }
 
         .bottom-area { position: absolute; bottom: 5px; width: 90%; height: 12%; display: flex; justify-content: space-between; align-items: stretch; gap: 10px; z-index: 50;}
         
@@ -137,7 +131,6 @@
         #click-catcher { position: absolute; inset: 0; z-index: 999999; }
         #start-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0a0515; z-index: 9999999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; cursor: pointer; }
         
-        /* 🔥 DOWNLOADING POPUP (NEW) 🔥 */
         #loading-screen {
             position: fixed; inset: 0; background: rgba(10, 5, 21, 0.98); z-index: 9999998;
             display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700;
@@ -254,13 +247,12 @@
             let elem = document.documentElement;
             if (elem.requestFullscreen) { elem.requestFullscreen(); }
             
-            // Start Screen gayab hoga, aur 5 second tak Loading Popup aayega
             $('start-screen').style.display='none';
             $('loading-screen').style.display='flex';
             
             setTimeout(() => {
                 $('loading-screen').style.display='none';
-            }, 5000); // Exactly 5 seconds ke baad popup hatega
+            }, 5000); 
         }
 
         let iAI = 0;
@@ -295,12 +287,12 @@
         function genPlayers() {
             let leftH = '', rightH = '';
             for(let i=0; i<4; i++) {
-                let bal = Math.floor(Math.random() * 90) + 10;
+                let bal = Math.floor(Math.random() * 71) + 80; 
                 let av = avatars[Math.floor(Math.random() * avatars.length)];
                 leftH += `<div class="bot-user"><img class="player-icon" src="assets/${av}" onerror="this.style.display='none'"><div class="player-bal">${bal}K</div></div>`;
             }
             for(let i=0; i<4; i++) {
-                let bal = Math.floor(Math.random() * 90) + 10;
+                let bal = Math.floor(Math.random() * 71) + 80;
                 let av = avatars[Math.floor(Math.random() * avatars.length)];
                 rightH += `<div class="bot-user"><img class="player-icon" src="assets/${av}" onerror="this.style.display='none'"><div class="player-bal">${bal}K</div></div>`;
             }
@@ -323,7 +315,7 @@
             let sPl = {dragon:0, tiger:0, tie:0}, bPl = {dragon:0, tiger:0, tie:0};
             let bI, iD = 0, bL = [];
             let activeChipSrc = "assets/10_0.png";
-            let lastBeepSec = -1; // 🔥 Beep sound check karne ke liye 🔥
+            let lastBeepSec = -1;
 
             const chipImgMap = {
                 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 
@@ -384,23 +376,6 @@
                 if(md) md.innerText = "₹" + (sPl.dragon+bPl.dragon).toLocaleString();
                 if(mt) mt.innerText = "₹" + (sPl.tiger+bPl.tiger).toLocaleString();
                 if(mti) mti.innerText = "₹" + (sPl.tie+bPl.tie).toLocaleString();
-            }
-
-            function getProfitableWinner() {
-                let dBet = sPl.dragon || 0; let tBet = sPl.tiger || 0; let tieBet = sPl.tie || 0;
-                let totalBets = dBet + tBet + tieBet;
-                if (totalBets === 0) return ['dragon', 'tiger', 'tie'][Math.floor(Math.random()*3)];
-                let maxPayout = totalBets - (totalBets * 0.20); 
-                let payouts = { dragon: dBet * 2, tiger: tBet * 2, tie: tieBet * 9 };
-                let valid = [];
-                for (let out in payouts) { if (payouts[out] <= maxPayout) valid.push(out); }
-                if (valid.length === 0) {
-                    let minO = 'dragon', minP = payouts.dragon;
-                    if (payouts.tiger < minP) { minP = payouts.tiger; minO = 'tiger'; }
-                    if (payouts.tie < minP) { minP = payouts.tie; minO = 'tie'; }
-                    return minO;
-                }
-                return valid[Math.floor(Math.random() * valid.length)];
             }
 
             window.sC = function(element) {
@@ -473,6 +448,7 @@
                 if(bb) { uP(); }
             }
 
+            // 🔥 PERFECT TIMING SYNC 🔥
             db.ref('Game/DragonTiger/Status').on('value', s => {
                 let st = s.val(); if(!st) return;
                 let te = $('tmr'); if(!te) return;
@@ -489,7 +465,6 @@
                     }
                     te.innerText = st.timer + "s";
                     
-                    // 🔥 BEEP SOUND LOGIC (Aakhiri 5 Seconds) 🔥
                     if(st.timer <= 5 && st.timer > 0) { 
                         te.style.color = "#ff3333"; 
                         if(lastBeepSec !== st.timer) {
@@ -498,19 +473,23 @@
                         }
                     } else { 
                         te.style.color = "#ffd700"; 
-                        lastBeepSec = -1; // 5 se bada hone par reset
+                        lastBeepSec = -1; 
                     }
                 }
                 else if(st.state === 'result') {
+                    te.innerText = "STOP!"; 
+                    te.style.color = "#fff";
+                    
                     if(iBO || !iD) { 
                         iBO = 0; iD = 1; clearInterval(bI); lastBeepSec = -1;
                         
-                        let wOut = getProfitableWinner();
+                        let wOut = st.winner || 'tie'; // 🔥 Backend ka winner aayega 🔥
                         
                         let aStart = $('alert-start'); if(aStart) aStart.classList.remove('show'); 
                         let aStop = $('alert-stop');
                         if(aStop) { aStop.classList.add('show'); setTimeout(() => aStop.classList.remove('show'), 1200); }
 
+                        // Clash Animation
                         setTimeout(() => {
                             let clashScreen = $('vs-clash-screen');
                             if(clashScreen) {
@@ -520,12 +499,11 @@
                             }
                         }, 1200);
 
+                        // Result Sequence
                         setTimeout(() => {
                             sR_Sequence(wOut); 
                         }, 2500); 
                     }
-                    te.innerText = st.timer + "s"; 
-                    te.style.color = "#fff";
                 }
             });
 
@@ -560,6 +538,7 @@
                 let ds = ss[Math.floor(Math.random()*4)], ts = ss[Math.floor(Math.random()*4)];
                 let dv=$('d-v'), tv=$('t-v');
                 
+                // 1. Dragon Card Flips
                 setTimeout(() => {
                     pS('snd-card-flip', 1.0);
                     if(bd) bd.style.opacity = '0'; 
@@ -567,12 +546,14 @@
                     if(dv) dv.innerHTML = cCD(vs[di], ds); 
                 }, 0);
 
+                // 2. Tiger Card Flips
                 setTimeout(() => {
                     pS('snd-card-flip', 1.0);
                     if(bt) bt.style.opacity = '0'; 
                     if(ct) ct.style.transform = "scale(1)"; 
                     if(tv) tv.innerHTML = cCD(vs[ti], ts); 
                     
+                    // 3. Loss Animation
                     setTimeout(() => {
                         if(w === 'dragon') { let bxd=$('bx-d'); if(bxd) bxd.classList.add('gw'); }
                         else if(w === 'tiger') { let bxt=$('bx-t'); if(bxt) bxt.classList.add('gw'); }
@@ -589,6 +570,7 @@
                             }
                         });
 
+                        // 4. Win Animation & Payment
                         setTimeout(() => {
                             let gameMount = document.getElementById('game-mount');
                             pS('snd-fly', 1.0); 
