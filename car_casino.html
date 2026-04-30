@@ -166,8 +166,7 @@
         </div>
     </div>
 
-    <div class="history-bar" id="history-row">
-        </div>
+    <div class="history-bar" id="history-row"></div>
 
     <div class="live-players" id="player-row"></div>
 
@@ -248,7 +247,6 @@
             userBalance = depBal + winBal + bonBal; document.getElementById('balanceDisplay').innerText = "₹" + userBalance.toFixed(2);
         });
 
-        // 🔥 1. AUTO BET RECOVERY 🔥
         db.ref(`Game/CarRoulette/Bets/${currentUserId}`).once('value', snap => {
             let saved = snap.val();
             if(saved) {
@@ -274,7 +272,6 @@
         });
     }
 
-    // 🔥 2. PERMANENT HISTORY LOADER 🔥
     db.ref('Game/CarRoulette/History').once('value', snap => {
         let hist = snap.val();
         if(hist && Array.isArray(hist)) {
@@ -323,20 +320,40 @@
         if(bBet) playSound(document.getElementById('soundBet'), 0.05); 
     }
 
+    // 🔥 SMART LOCAL TIMER LOGIC 🔥
     db.ref('Game/CarRoulette/Status').on('value', (s) => {
         let st = s.val(); if(!st) return;
 
         if(st.state === 'betting') {
-            document.getElementById('timeText').innerText = st.timer;
-            document.getElementById('timeText').style.color = st.timer <= 5 ? "var(--neon-red)" : "var(--neon-green)";
-            document.getElementById('msgText').innerText = st.timer <= 5 ? "CLOSING..." : "PLACE YOUR BETS";
-            
             if(!isBettingOpen) {
                 isBettingOpen = true; isSpinning = false; resetTable();
                 clearInterval(botInterval); botInterval = setInterval(botBetAction, 800);
             }
+            
+            if (st.timer > 0 && st.timer <= 20) {
+                if (window.localTimerInterval) clearInterval(window.localTimerInterval);
+                
+                let currentT = st.timer;
+                document.getElementById('timeText').innerText = currentT;
+                document.getElementById('timeText').style.color = currentT <= 5 ? "var(--neon-red)" : "var(--neon-green)";
+                document.getElementById('msgText').innerText = currentT <= 5 ? "CLOSING..." : "PLACE YOUR BETS";
+                
+                window.localTimerInterval = setInterval(() => {
+                    currentT--;
+                    if (currentT >= 0) {
+                        document.getElementById('timeText').innerText = currentT;
+                        document.getElementById('timeText').style.color = currentT <= 5 ? "var(--neon-red)" : "var(--neon-green)";
+                        document.getElementById('msgText').innerText = currentT <= 5 ? "CLOSING..." : "PLACE YOUR BETS";
+                    } else {
+                        clearInterval(window.localTimerInterval);
+                    }
+                }, 1000);
+            }
         } 
         else if (st.state === 'spinning' || st.state === 'calculating') {
+            // Result aate hi local timer ko rok dena hai
+            if (window.localTimerInterval) clearInterval(window.localTimerInterval);
+            
             if(isBettingOpen && !isSpinning) {
                 isBettingOpen = false; isSpinning = true; clearInterval(botInterval);
                 document.getElementById('timeText').innerText = "0"; document.getElementById('msgText').innerText = "SPINNING...";
@@ -367,7 +384,6 @@
         document.getElementById('msgText').innerText = "WINNER!"; document.getElementById('timeText').innerText = wId.toUpperCase();
         document.getElementById(wId).classList.add('box-win'); document.getElementById('wheel-icon-'+iIdx).classList.add('icon-win');
 
-        // Update Live History
         let icon = wheelIcons[wId] || '🚗';
         let colClass = wheelClasses[wId] || '';
         let hHtml = document.getElementById('history-row').innerHTML;
