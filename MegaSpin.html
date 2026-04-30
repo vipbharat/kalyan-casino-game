@@ -2,54 +2,57 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan VIP - LIVE Server Wheel</title>
+    <title>Kalyan VIP Mega Spin - Socket Edition</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
     <style>
-        body{font-family:Arial,sans-serif;color:#fff;text-align:center;margin:0;user-select:none;overflow:hidden;background:#050510;}
-        .flex{display:flex;justify-content:center;align-items:center}
+        body { font-family: 'Arial Black', Arial, sans-serif; color: #fff; text-align: center; margin: 0; user-select: none; overflow: hidden; background: #050510; }
+        .flex { display: flex; justify-content: center; align-items: center; }
         
-        #bg-canvas {position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;}
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; }
 
-        /* Start Screen (Music ke liye zaroori) */
-        #startScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg, #111, #333);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer;}
-        .btn-start{background:#fd0;color:#000;padding:15px 40px;font-size:24px;font-weight:bold;border-radius:30px;box-shadow:0 0 30px #fd0;animation:pulse 1s infinite alternate;}
+        /* Start Screen */
+        #startScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #0a0a0a, #1a1a2e); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; }
+        .btn-start { background: #ffd700; color: #000; padding: 15px 40px; font-size: 24px; font-weight: 900; border-radius: 30px; box-shadow: 0 0 30px #ffd700; animation: pulse 1s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
 
-        .head{padding:10px 15px;background:rgba(0,0,0,0.8);border-bottom:2px solid #fd0;justify-content:space-between;box-shadow:0 4px 10px #000; display:flex;}
+        .head { padding: 10px 15px; background: rgba(0,0,0,0.8); border-bottom: 2px solid #ffd700; justify-content: space-between; box-shadow: 0 4px 10px #000; display: flex; align-items: center; position: relative; z-index: 100;}
+        .back-btn { font-size: 22px; cursor: pointer; color: #ffd700; margin-right: 10px; }
         
-        .wal{ position:relative;background:linear-gradient(90deg, #FFDF00, #FFF, #D4AF37, #FFDF00); background-size:300% 100%;color:#000;padding:8px 20px;border-radius:25px;font-weight:900; font-size:18px;box-shadow:0 0 20px #FFDF00, inset 0 0 10px #FFF;border:2px solid #FFF; animation:shine 2s infinite linear;text-shadow:1px 1px 0px rgba(255,255,255,0.8); }
+        .wal { position: relative; background: linear-gradient(90deg, #FFDF00, #FFF, #D4AF37, #FFDF00); background-size: 300% 100%; color: #000; padding: 8px 15px; border-radius: 20px; font-weight: 900; font-size: 16px; box-shadow: 0 0 20px #FFDF00, inset 0 0 10px #FFF; border: 2px solid #FFF; animation: shine 2s infinite linear; text-shadow: 1px 1px 0px rgba(255,255,255,0.8); }
         @keyframes shine { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
 
-        .whl-box{position:relative;width:320px;height:320px;background:#fd0;border-radius:50%;margin:10px auto;box-shadow:0 0 30px #fd08}
-        .ptr{position:absolute;top:-10px;border-left:15px solid transparent;border-right:15px solid transparent;border-top:35px solid #fff;z-index:10;filter:drop-shadow(0 3px 3px #000)}
-        canvas.whl{border-radius:50%;transition:transform 7s cubic-bezier(.1,.7,.1,1);border:4px solid #222;background:#111;}
-        .tmr{position:absolute;width:65px;height:65px;background:radial-gradient(circle,#222,#000);border:3px solid #fd0;border-radius:50%;font-size:28px;color:#0f0;font-weight:bold;z-index:5;box-shadow:0 0 15px #000, inset 0 0 10px #0f05}
+        .whl-box { position: relative; width: 310px; height: 310px; background: #ffd700; border-radius: 50%; margin: 15px auto 10px; box-shadow: 0 0 40px rgba(255,215,0,0.5); z-index: 10; }
+        .ptr { position: absolute; top: -15px; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 40px solid #fff; z-index: 10; filter: drop-shadow(0 5px 5px #000); }
+        canvas.whl { border-radius: 50%; border: 4px solid #222; background: #111; }
+        .tmr { position: absolute; width: 65px; height: 65px; background: radial-gradient(circle, #222, #000); border: 3px solid #ffd700; border-radius: 50%; font-size: 28px; color: #0f0; font-weight: 900; z-index: 5; box-shadow: 0 0 15px #000, inset 0 0 10px rgba(0,255,0,0.5); }
         
-        .bets{background:rgba(0,0,0,0.5);backdrop-filter:blur(5px);padding:10px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;border-top:2px solid #444}
+        .bets { background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); padding: 15px 10px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; border-top: 2px solid #444; border-bottom: 2px solid #444; z-index: 10; position: relative;}
         
-        .bx{position:relative;width:30%;min-width:95px;height:105px;border-radius:10px;font-weight:bold;font-size:18px;cursor:pointer;border:2px solid #fff;display:flex;flex-direction:column;justify-content:center;align-items:center;box-shadow:0 4px 8px #000; overflow:hidden;}
-        .bx:active{transform:scale(.95); box-shadow:0 0 15px #fff;}
-        .win-glow { transform:scale(1.05); background: rgba(255,255,255,0.4) !important; box-shadow: 0 0 30px #fff !important; border-color:#0f0; z-index:50; }
+        .bx { position: relative; width: 30%; min-width: 95px; height: 110px; border-radius: 12px; font-weight: 900; font-size: 18px; cursor: pointer; border: 2px solid #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.8); overflow: hidden; transition: 0.2s; }
+        .bx:active { transform: scale(0.95); box-shadow: 0 0 15px #fff; }
+        .win-glow { transform: scale(1.05); background: rgba(255,255,255,0.4) !important; box-shadow: 0 0 35px #39ff14 !important; border-color: #39ff14 !important; z-index: 50; }
         
-        .bx-text{position:relative; z-index:10; text-shadow:1px 1px 2px #000, 0 0 5px #000;}
-        .t-amt{background:rgba(255,255,255,0.2);padding:2px 5px;border-radius:3px;font-size:12px;margin-top:2px;color:#fff;}
-        .y-amt{background:#000c;padding:3px 6px;border-radius:5px;font-size:13px;margin-top:4px;color:#0f0; border:1px solid #0f0;}
-        
-        .chip-bx{background:rgba(34, 34, 34, 0.8);border-color:#fd0;cursor:default;}
-        .chip-bx:active{transform:none;}
-        .chips-grid{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:5px;}
-        .chip{width:35px;height:35px;border-radius:50%;border:2px dashed #fff;display:flex;justify-content:center;align-items:center;font-size:11px;font-weight:bold;cursor:pointer;box-shadow:0 2px 5px #000;}
-        .chip.active{transform:scale(1.15); border:2px solid #0f0; box-shadow:0 0 15px #0f0; z-index:5;}
-        
-        .flying-chip { position: fixed; width: 24px; height: 24px; border-radius: 50%; border: 1px dashed #fff; z-index: 999; box-shadow: 2px 2px 6px #000; display: flex; justify-content: center; align-items: center; font-size: 8px; font-weight: bold; color: #fff; text-shadow: 1px 1px 1px #000; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); pointer-events: none; }
-        .mini-chip{position:absolute;width:24px;height:24px;border-radius:50%;border:1px dashed #fff;z-index:2;box-shadow:1px 1px 4px #000; display:flex;justify-content:center;align-items:center;font-size:8px;font-weight:bold;color:#fff;text-shadow:1px 1px 1px #000;}
+        .bx-text { position: relative; z-index: 10; text-shadow: 1px 1px 2px #000, 0 0 5px #000; display: flex; flex-direction: column; align-items: center;}
+        .t-amt { background: rgba(255,255,255,0.2); padding: 3px 6px; border-radius: 4px; font-size: 11px; margin-top: 4px; color: #fff; width: 100%; border: 1px solid rgba(255,255,255,0.3);}
+        .y-amt { background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 6px; font-size: 12px; margin-top: 4px; color: #00ff88; border: 1px solid #00ff88; width: 100%;}
 
-        #msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:26px;font-weight:bold;background:#000f;padding:20px 40px;border:3px solid #fd0;border-radius:15px;display:none;z-index:999;white-space:nowrap;box-shadow:0 0 30px #fd0; text-align:center;}
-        .win-popup { pointer-events: none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: #00ff88; font-weight: 900; text-shadow: 0 0 20px #00ff88, 0 0 10px #000; z-index: 1000; opacity: 0; transition: 0.5s; }
-        .win-popup.show { opacity: 1; transform: translate(-50%, -100%); }
+        /* 🔥 ASSET CHIPS TRAY 🔥 */
+        .chip-rack { position: fixed; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, #000, #1a1a1a); display: flex; justify-content: space-evenly; align-items: center; padding: 10px 5px 15px 5px; border-top: 3px solid #ffd700; z-index: 1100; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); }
+        .chip-img { width: 44px; height: 44px; cursor: pointer; transition: 0.3s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); flex-shrink: 0; }
+        .chip-img.active { transform: translateY(-6px) scale(1.15); filter: drop-shadow(0 0 10px #ffd700); }
+        .chip-img.locked { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
+
+        /* 🔥 ASSET CHIPS LAYER 🔥 */
+        .chip-visual { position: absolute; width: 26px; height: 26px; z-index: 50; transition: all 0.4s ease-out; filter: drop-shadow(2px 2px 5px rgba(0,0,0,0.8)); pointer-events: none; }
+        .win-anim-chip { transition: all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 999 !important; filter: drop-shadow(0 0 10px #ffd700); }
+
+        #msg { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: 900; background: rgba(0,0,0,0.9); padding: 20px 40px; border: 3px solid #ffd700; border-radius: 15px; display: none; z-index: 999; white-space: nowrap; box-shadow: 0 0 30px rgba(255,215,0,0.8); text-align: center; }
+        .win-popup { pointer-events: none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 3.5rem; font-weight: 900; color: #00ff88; text-shadow: 0 0 20px #00ff88, 0 0 40px #000; z-index: 1000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: rgba(0,0,0,0.8); padding: 10px 30px; border-radius: 20px; border: 3px solid #00ff88; }
+        .win-popup.show { transform: translate(-50%, -50%) scale(1); }
     </style>
 </head>
 <body>
@@ -57,104 +60,118 @@
     <canvas id="bg-canvas"></canvas>
 
     <div id="startScreen" onclick="startGame()">
-        <h1 style="color:#fd0; font-size:40px; text-shadow:0 0 20px #fd0;">MEGA SPIN</h1>
-        <div class="btn-start">TAP TO ENTER</div>
+        <h1 style="color:#ffd700; font-size:45px; text-shadow:0 0 30px #ffd700; margin-bottom: 30px;">MEGA SPIN VIP</h1>
+        <div class="btn-start">TAP TO PLAY</div>
     </div>
 
     <div class="head">
-        <div style="text-align:left;">
-            <div style="color:#fd0;font-size:22px;font-weight:bold;text-shadow:2px 2px 4px #000;">Mega Spin</div>
-            <div style="color:#0f0;font-size:12px;margin-top:2px;font-weight:bold;">🟢 Online: <span id="onlineCount">450</span></div>
+        <div class="back-btn" onclick="window.history.back()">⬅️</div>
+        <div style="text-align:left; flex: 1;">
+            <div style="color:#ffd700; font-size:18px; font-weight:900; text-shadow:2px 2px 4px #000; text-transform: uppercase;">Mega Spin</div>
+            <div style="color:#00ff88; font-size:11px; margin-top:2px; font-weight:bold;">🟢 Online: <span id="onlineCount">450</span></div>
         </div>
-        <div class="wal">🪙 <span id="user-balance">₹0.00</span></div>
+        <div class="wal">💰 <span id="user-balance">₹0.00</span></div>
     </div>
     
     <div id="win-popup" class="win-popup">+₹0</div>
     
     <div class="whl-box flex">
         <div class="ptr"></div>
-        <canvas class="whl" id="c" width="310" height="310"></canvas>
-        <div class="tmr flex" id="t">25</div>
+        <canvas class="whl" id="c" width="300" height="300"></canvas>
+        <div class="tmr flex" id="t">...</div>
     </div>
     
     <div class="bets">
-        <div class="bx" id="box-r" style="background:rgba(192, 57, 43, 0.85)" onclick="bet('r')">
-            <div class="bx-text">Red<div class="t-amt">Board: <span id="t-r">0</span></div><div class="y-amt">You: <span id="y-r">0</span></div></div>
+        <div class="bx" id="box-r" style="background:rgba(192, 57, 43, 0.85)" onclick="bet('r', event)">
+            <div class="bx-text">Red (2x) <div class="t-amt">Pool: ₹<span id="t-r">0</span></div><div class="y-amt">Bet: ₹<span id="y-r">0</span></div></div>
         </div>
-        <div class="bx" id="box-b" style="background:rgba(41, 128, 185, 0.85)" onclick="bet('b')">
-            <div class="bx-text">Blue<div class="t-amt">Board: <span id="t-b">0</span></div><div class="y-amt">You: <span id="y-b">0</span></div></div>
+        <div class="bx" id="box-b" style="background:rgba(41, 128, 185, 0.85)" onclick="bet('b', event)">
+            <div class="bx-text">Blue (2x)<div class="t-amt">Pool: ₹<span id="t-b">0</span></div><div class="y-amt">Bet: ₹<span id="y-b">0</span></div></div>
         </div>
-        <div class="bx" id="box-g" style="background:rgba(39, 174, 96, 0.85)" onclick="bet('g')">
-            <div class="bx-text">Green<div class="t-amt">Board: <span id="t-g">0</span></div><div class="y-amt">You: <span id="y-g">0</span></div></div>
+        <div class="bx" id="box-g" style="background:rgba(39, 174, 96, 0.85)" onclick="bet('g', event)">
+            <div class="bx-text">Green (3x)<div class="t-amt">Pool: ₹<span id="t-g">0</span></div><div class="y-amt">Bet: ₹<span id="y-g">0</span></div></div>
         </div>
-        <div class="bx" id="box-p" style="background:rgba(142, 68, 173, 0.85)" onclick="bet('p')">
-            <div class="bx-text">Purple<div class="t-amt">Board: <span id="t-p">0</span></div><div class="y-amt">You: <span id="y-p">0</span></div></div>
+        <div class="bx" id="box-p" style="background:rgba(142, 68, 173, 0.85)" onclick="bet('p', event)">
+            <div class="bx-text">Purple (4x)<div class="t-amt">Pool: ₹<span id="t-p">0</span></div><div class="y-amt">Bet: ₹<span id="y-p">0</span></div></div>
         </div>
-        <div class="bx" id="box-o" style="background:rgba(211, 84, 0, 0.85)" onclick="bet('o')">
-            <div class="bx-text">Orange<div class="t-amt">Board: <span id="t-o">0</span></div><div class="y-amt">You: <span id="y-o">0</span></div></div>
-        </div>
-        
-        <div class="bx chip-bx">
-            <div style="font-size:12px;color:#fd0;margin-top:2px;">Select Chip</div>
-            <div class="chips-grid">
-                <div class="chip active" id="ch-100" style="background:#7f8c8d;color:#fff;" onclick="setChip(100)">100</div>
-                <div class="chip" id="ch-500" style="background:#2980b9;color:#fff;" onclick="setChip(500)">500</div>
-                <div class="chip" id="ch-1000" style="background:#8e44ad;color:#fff;" onclick="setChip(1000)">1K</div>
-                <div class="chip" id="ch-5000" style="background:#f1c40f;color:#000;" onclick="setChip(5000)">5K</div>
-            </div>
+        <div class="bx" id="box-o" style="background:rgba(211, 84, 0, 0.85)" onclick="bet('o', event)">
+            <div class="bx-text">Orange (5x)<div class="t-amt">Pool: ₹<span id="t-o">0</span></div><div class="y-amt">Bet: ₹<span id="y-o">0</span></div></div>
         </div>
     </div>
     
+    <div class="chip-rack" id="my-wallet">
+        <img src="assets/10_0.png" class="chip-img" data-val="10" onclick="setChip(10, this)">
+        <img src="assets/50_0.png" class="chip-img" data-val="50" onclick="setChip(50, this)">
+        <img src="assets/100_0.png" class="chip-img active" data-val="100" onclick="setChip(100, this)">
+        <img src="assets/500_0.png" class="chip-img" data-val="500" onclick="setChip(500, this)">
+        <img src="assets/1000_0.png" class="chip-img" data-val="1000" onclick="setChip(1000, this)">
+        <img src="assets/5000_1.png" class="chip-img" data-val="5000" onclick="setChip(5000, this)">
+        <img src="assets/10000_0.png" class="chip-img" data-val="10000" onclick="setChip(10000, this)">
+    </div>
+
     <div id="msg"></div>
 
     <script>
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
-        firebase.initializeApp(firebaseConfig); const db = firebase.database();
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); 
+        const db = firebase.database();
         
-        let userID = localStorage.getItem('userPhone') || "user_1"; 
+        // 🔥 RENDER SERVER SOCKET 🔥
+        const socket = io("https://kalyan-engine.onrender.com");
+
+        let userID = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST"; 
         let depBal = 0, winBal = 0, bonBal = 0, totalBal = 0;
 
-        // 🎵 AUDIO SETUP WAPAS AA GAYA 🎵
+        // 🔥 ASSET CHIPS CONFIG 🔥
+        const chipImgs = { 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
+        let currentChip = 100, currentChipSrc = chipImgs[100];
+
         const bg_music = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
-        bg_music.loop = true; bg_music.volume = 0.5; 
-        const s_bet = new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg');
-        const s_spin = new Audio('https://actions.google.com/sounds/v1/mechanics/ratchet_wrench.ogg'); 
-        const s_win = new Audio('https://actions.google.com/sounds/v1/cartoon/clown_horn.ogg');
+        bg_music.loop = true; bg_music.volume = 0.3; 
+        const s_bet = new Audio('https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3');
+        const s_spin = new Audio('https://assets.mixkit.co/active_storage/sfx/2042/2042-preview.mp3'); 
+        const s_win = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
+        const s_coins = new Audio('https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3');
         
         let gameStarted = false;
         function startGame() {
             if(gameStarted) return;
             gameStarted = true;
             document.getElementById('startScreen').style.display = 'none'; 
-            bg_music.play().catch(e => console.log(e)); // Play background music
+            bg_music.play().catch(e => console.log(e)); 
             syncWallet(); 
-            listenServer(); 
             startBots();
         }
 
         function syncWallet() {
-            db.ref(`users/${userID}`).on('value', (snap) => {
-                const data = snap.val() || {};
-                depBal = parseFloat(data.balance || 0); winBal = parseFloat(data.winning_balance || 0); bonBal = parseFloat(data.bonus_balance || 0);
-                totalBal = depBal + winBal + bonBal; document.getElementById('user-balance').innerText = "₹" + totalBal.toFixed(2);
-            });
+            if(userID && userID !== "GUEST") {
+                db.ref(`users/${userID}`).on('value', (snap) => {
+                    const data = snap.val() || {};
+                    depBal = parseFloat(data.balance || 0); winBal = parseFloat(data.winning_balance || 0); bonBal = parseFloat(data.bonus_balance || 0);
+                    totalBal = depBal + winBal + bonBal; 
+                    document.getElementById('user-balance').innerText = totalBal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    
+                    document.querySelectorAll('.chip-img').forEach(c => { 
+                        if(parseInt(c.dataset.val) > totalBal) c.classList.add('locked'); else c.classList.remove('locked'); 
+                    });
+                });
+            }
         }
 
-        setInterval(() => { document.getElementById('onlineCount').innerText = Math.floor(Math.random() * 201) + 400; }, 3000);
+        setInterval(() => { document.getElementById('onlineCount').innerText = Math.floor(Math.random() * 50) + 400; }, 3000);
 
         let canBet=false, rot=0, isSpinning = false; 
         let yBets = {r:0,b:0,g:0,p:0,o:0}; 
         let tBets = {r:0,b:0,g:0,p:0,o:0}; 
         
-        let currentChip = 100;
-        let chipColors = {100: '#7f8c8d', 500: '#2980b9', 1000: '#8e44ad', 5000: '#f1c40f'};
         let colorIdMap = { "#C0392B": "r", "#2980B9": "b", "#27AE60": "g", "#8E44AD": "p", "#D35400": "o" };
 
-        function setChip(amt) {
-            currentChip = amt;
-            s_bet.currentTime = 0; s_bet.play().catch(e=>{}); // Click sound
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            document.getElementById('ch-'+amt).classList.add('active');
+        function setChip(amt, el) {
+            if(el.classList.contains('locked')) return;
+            currentChip = amt; currentChipSrc = chipImgs[amt];
+            s_bet.currentTime = 0; s_bet.play().catch(e=>{}); 
+            document.querySelectorAll('.chip-img').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
         }
 
         // 🔥 32 SLICES WHEEL MATH 🔥
@@ -168,20 +185,13 @@
             else if(i===16){ pr.push("50% Minus"); bg.push("#FFD700"); tc.push("#000"); }
             else{ 
                 let colIdx = (i-1)%5;
-                bg.push(cols[colIdx]); 
-                tc.push("#FFF");
-                
-                if(i===3 || i===9 || i===15 || i===21 || i===27) {
-                    pr.push("100 Ka 250");
-                } else {
-                    pr.push("100 Ka " + m);
-                    m += 200; 
-                }
+                bg.push(cols[colIdx]); tc.push("#FFF");
+                if(i===3 || i===9 || i===15 || i===21 || i===27) { pr.push("100 Ka 250"); } else { pr.push("100 Ka " + m); m += 200; }
             }
         }
         
         function draw(){
-            let cx=155, a=Math.PI*2/32; 
+            let cx=150, a=Math.PI*2/32; 
             for(let i=0;i<32;i++){
                 ctx.beginPath(); ctx.fillStyle=bg[i]; ctx.moveTo(cx,cx); ctx.arc(cx,cx,cx,i*a,(i+1)*a); ctx.fill(); 
                 ctx.strokeStyle="#222"; ctx.stroke(); ctx.save(); ctx.translate(cx,cx); ctx.rotate(i*a+a/2);
@@ -189,60 +199,50 @@
             }
         } draw();
 
-        function throwChip(c_id, amt, isPlayer) {
+        // 🔥 PRECISE ASSET CHIP FLYING 🔥
+        function throwChip(c_id, amt, imgSrc, isPlayer, e) {
             let box = document.getElementById('box-'+c_id);
             let rect = box.getBoundingClientRect();
-            let chip = document.createElement('div');
-            chip.className = 'flying-chip';
-            chip.style.background = chipColors[amt] || '#fff';
+            let chip = document.createElement('img');
+            chip.className = 'chip-visual';
+            chip.src = imgSrc;
             
-            if(amt >= 1000) { chip.innerText = (amt/1000) + 'K'; if(amt === 5000) chip.style.color = '#000'; } 
-            else { chip.innerText = amt; }
-
-            if (isPlayer) { chip.style.left = '50vw'; chip.style.top = '95vh'; } 
-            else { chip.style.left = (Math.random() > 0.5) ? '-50px' : (window.innerWidth + 50) + 'px'; chip.style.top = (Math.random() * (window.innerHeight/2)) + 'px'; }
+            if (isPlayer && e) { 
+                chip.style.left = (e.clientX - 13) + 'px'; 
+                chip.style.top = (e.clientY - 13) + 'px'; 
+            } else { 
+                chip.style.left = (Math.random() > 0.5) ? '-50px' : (window.innerWidth + 50) + 'px'; 
+                chip.style.top = (Math.random() * (window.innerHeight/2)) + 'px'; 
+            }
             
             document.body.appendChild(chip);
             
             setTimeout(() => {
-                chip.style.left = (rect.left + Math.random() * (rect.width - 24)) + 'px';
-                chip.style.top = (rect.top + Math.random() * (rect.height - 30) + 20) + 'px';
-                chip.style.transform = `rotate(${Math.random()*360}deg)`; 
+                chip.style.left = (rect.left + 10 + Math.random() * (rect.width - 40)) + 'px';
+                chip.style.top = (rect.top + 10 + Math.random() * (rect.height - 40)) + 'px';
+                chip.style.transform = `scale(1) rotate(${Math.random()*360}deg)`; 
             }, 50);
-            
-            setTimeout(() => { 
-                chip.remove(); 
-                let mChip = document.createElement('div'); mChip.className = 'mini-chip'; 
-                mChip.style.background = chipColors[amt] || '#fff'; 
-                
-                if(amt >= 1000) { mChip.innerText = (amt/1000) + 'K'; if(amt === 5000) mChip.style.color = '#000'; } 
-                else { mChip.innerText = amt; }
-
-                mChip.style.left = Math.floor(Math.random() * 50 + 15) + '%'; mChip.style.top = Math.floor(Math.random() * 40 + 20) + '%';
-                box.appendChild(mChip);
-            }, 450);
         }
 
         function startBots() {
             setInterval(() => {
                 if(!canBet) return;
                 let clrs = ['r','b','g','p','o']; 
-                let bAmt = [100, 100, 500, 500, 1000, 5000]; 
+                let bAmt = [10, 50, 100, 500, 1000]; 
                 let ranColor = clrs[Math.floor(Math.random() * clrs.length)]; 
                 let ranAmt = bAmt[Math.floor(Math.random() * bAmt.length)];
                 tBets[ranColor] += ranAmt; 
-                document.getElementById('t-'+ranColor).innerText = tBets[ranColor];
-                throwChip(ranColor, ranAmt, false); 
-            }, 350); 
+                document.getElementById('t-'+ranColor).innerText = tBets[ranColor].toLocaleString();
+                throwChip(ranColor, ranAmt, chipImgs[ranAmt], false, null); 
+            }, 300); 
         }
 
-        function bet(c){
+        function bet(c, e){
             if(!canBet) return;
+            if(!userID || userID === "GUEST") { alert("Login Error!"); return; }
             
             let activeCount = 0;
-            for(let key in yBets) {
-                if(yBets[key] > 0) activeCount++;
-            }
+            for(let key in yBets) { if(yBets[key] > 0) activeCount++; }
             
             if(yBets[c] === 0 && activeCount >= 3) {
                 alert("🚫 Anti-Fraud Rule: Aap ek round mein maximum 3 colors par hi bet laga sakte hain!");
@@ -250,19 +250,20 @@
             }
 
             if(totalBal >= currentChip){ 
-                s_bet.currentTime = 0; s_bet.play().catch(e=>{}); // Click sound on bet
+                s_bet.currentTime = 0; s_bet.play().catch(err=>{}); 
                 
                 let remain = currentChip;
                 let newDep = depBal, newWin = winBal;
                 if(newDep >= remain) { newDep -= remain; } else { remain -= newDep; newDep = 0; newWin -= remain; }
                 
-                db.ref(`users/${userID}/balance`).set(newDep);
-                db.ref(`users/${userID}/winning_balance`).set(newWin);
+                db.ref(`users/${userID}`).update({ balance: Math.max(0, newDep), winning_balance: Math.max(0, newWin) });
                 db.ref(`Game/MegaSpin/Bets/${userID}`).child(c).set(firebase.database.ServerValue.increment(currentChip));
                 
-                yBets[c]+=currentChip; tBets[c]+=currentChip; 
-                document.getElementById('y-'+c).innerText=yBets[c]; document.getElementById('t-'+c).innerText=tBets[c]; 
-                throwChip(c, currentChip, true); 
+                yBets[c] += currentChip; tBets[c] += currentChip; 
+                document.getElementById('y-'+c).innerText = yBets[c].toLocaleString(); 
+                document.getElementById('t-'+c).innerText = tBets[c].toLocaleString(); 
+                
+                throwChip(c, currentChip, currentChipSrc, true, e); 
             } else alert("Balance kam hai!");
         }
 
@@ -271,9 +272,48 @@
             ['r','b','g','p','o'].forEach(c => {
                 document.getElementById('y-'+c).innerText = '0'; document.getElementById('t-'+c).innerText = '0';
                 document.getElementById('box-'+c).classList.remove('win-glow');
-                document.getElementById('box-'+c).querySelectorAll('.mini-chip').forEach(e => e.remove());
+            });
+            document.querySelectorAll('.chip-visual').forEach(c => {
+                c.style.transition = 'all 0.4s ease'; c.style.opacity = '0'; c.style.transform = 'scale(0)';
+                setTimeout(() => c.remove(), 400);
             });
             msg.style.display = "none";
+        }
+
+        function animateWinningChips(wId) {
+            let winBox = document.getElementById('box-'+wId);
+            if(!winBox) return;
+            
+            let wRect = winBox.getBoundingClientRect();
+            let walletRect = document.getElementById('my-wallet').getBoundingClientRect();
+
+            s_coins.currentTime = 0; s_coins.volume = 0.8; s_coins.play().catch(e=>{});
+
+            for(let i=0; i<15; i++) {
+                setTimeout(() => {
+                    let chip = document.createElement('img');
+                    chip.className = 'chip-visual win-anim-chip';
+                    chip.src = chipImgs[100]; 
+                    chip.style.left = (wRect.left + wRect.width/2 - 13) + 'px';
+                    chip.style.top = (wRect.top + wRect.height/2 - 13) + 'px';
+                    document.body.appendChild(chip);
+
+                    setTimeout(() => {
+                        let isMe = Math.random() > 0.4;
+                        if(isMe) {
+                            chip.style.left = (walletRect.left + walletRect.width/2 + (Math.random()*40-20)) + 'px';
+                            chip.style.top = (walletRect.top + 10 + Math.random()*20) + 'px';
+                        } else {
+                            chip.style.left = (Math.random() > 0.5) ? '-50px' : (window.innerWidth + 50) + 'px'; 
+                            chip.style.top = (Math.random() * (window.innerHeight/2)) + 'px'; 
+                        }
+                        chip.style.opacity = '0';
+                        chip.style.transform = 'scale(0.5)';
+                    }, 50);
+
+                    setTimeout(() => chip.remove(), 700);
+                }, i * 40); 
+            }
         }
 
         function checkPayout(prizeIndex, betsSnapshot) {
@@ -290,99 +330,78 @@
                 } else {
                     if (wonId && (betsSnapshot[wonId]||0) > 0) {
                         let multiplier = 0;
-                        if (wonPrize === "100 Ka 250") {
-                            multiplier = 2.5;
-                        } else {
-                            multiplier = parseInt(wonPrize.split("Ka ")[1]) / 100; 
-                        }
+                        if (wonPrize === "100 Ka 250") multiplier = 2.5;
+                        else multiplier = parseInt(wonPrize.split("Ka ")[1]) / 100; 
                         finalWinAmt = betsSnapshot[wonId] * multiplier;
                     }
                 }
 
-                if(finalWinAmt > 0) {
+                if(wonId) {
+                    document.getElementById('box-'+wonId).classList.add('win-glow'); 
+                    animateWinningChips(wonId);
+                }
+
+                if(finalWinAmt > 0 && userID !== "GUEST") {
                     db.ref(`users/${userID}/winning_balance`).set(firebase.database.ServerValue.increment(finalWinAmt));
                     let p = document.getElementById('win-popup'); 
                     p.innerText = "+₹" + finalWinAmt.toLocaleString(); 
-                    p.classList.add('show'); setTimeout(() => p.classList.remove('show'), 2000);
+                    p.classList.add('show'); setTimeout(() => p.classList.remove('show'), 3000);
                 }
-                if(wonId) document.getElementById('box-'+wonId).classList.add('win-glow'); 
             } catch (e) { console.error(e); }
         }
 
-        function listenServer() {
-            db.ref('Game/MegaSpin/Status').on('value', (snap) => {
-                let status = snap.val(); if (!status) return;
-                let t = status.timer; let state = status.state; 
+        // 🔥 SOCKET.IO ENGINE SYNC 🔥
+        socket.on('MegaSpin_timerUpdate', (data) => {
+            if (data.state === 'betting') {
+                if (isSpinning) { isSpinning = false; startNewRound(); }
+                canBet = true; msg.style.display = "none"; tmr.innerText = data.timer;
+                if (data.timer <= 5) { tmr.style.color = "#F33"; } else { tmr.style.color = "#0f0"; }
+            }
+        });
 
-                if (state === 'betting') {
-                    if (isSpinning) { isSpinning = false; startNewRound(); }
-                    canBet = true; msg.style.display = "none"; 
-                    
-                    // 🔥 SMART LOCAL TIMER LOGIC 🔥
-                    if (t > 0 && t <= 20) {
-                        if(window.localTimerInterval) clearInterval(window.localTimerInterval);
-                        
-                        let currentT = t;
-                        tmr.innerText = currentT;
-                        tmr.style.color = currentT <= 5 ? "#F33" : "#0f0";
-                        
-                        window.localTimerInterval = setInterval(() => {
-                            currentT--;
-                            if(currentT >= 0) {
-                                tmr.innerText = currentT;
-                                tmr.style.color = currentT <= 5 ? "#F33" : "#0f0";
-                            } else {
-                                clearInterval(window.localTimerInterval);
-                            }
-                        }, 1000);
-                    }
-                } 
-                else if (state === 'spinning' && !isSpinning) {
-                    // 🔥 RESULT AATE HI TIMER ROKNE KA CODE 🔥
-                    if(window.localTimerInterval) clearInterval(window.localTimerInterval);
+        socket.on('MegaSpin_result', (data) => {
+            if (canBet && !isSpinning) {
+                canBet = false; isSpinning = true; tmr.innerText = "00";
+                let snapshotBets = { ...yBets };
+                msg.innerHTML="Bets Closed!<br><span style='font-size:18px;color:#ccc'>Spinning...</span>"; msg.style.display="block";
+                
+                s_spin.currentTime = 0; s_spin.volume = 0.8; s_spin.play().catch(e=>{}); s_spin.loop = true; 
+                
+                // Get Prize Index from Server
+                let prizeIndex = data.winIndex;
+                if(prizeIndex === undefined) {
+                    let winColorMap = { 'r': '#C0392B', 'b': '#2980B9', 'g': '#27AE60', 'p': '#8E44AD', 'o': '#D35400', '00': '#111', 'minus': '#FFD700' };
+                    let targetHex = winColorMap[data.winner] || '#C0392B';
+                    let possibleIndices = [];
+                    for(let i=0; i<32; i++) { if(bg[i] === targetHex) possibleIndices.push(i); }
+                    prizeIndex = possibleIndices[Math.floor(Math.random() * possibleIndices.length)] || 1;
+                }
+                
+                const sliceAngle = 360 / 32; 
+                const targetAngle = 270 - ((prizeIndex + 0.5) * sliceAngle);
+                let currentMod = rot % 360; if (currentMod < 0) currentMod += 360;
+                let normalizedTarget = targetAngle % 360; if (normalizedTarget < 0) normalizedTarget += 360;
+                let diff = normalizedTarget - currentMod; if (diff <= 0) diff += 360;
+                let d = rot + (360 * 5) + diff; 
+                
+                document.getElementById('c').style.transition = "transform 7s cubic-bezier(0.1, 0.7, 0.1, 1)";
+                document.getElementById('c').style.transform = `rotate(${d}deg)`;
+                
+                setTimeout(()=>{
+                    s_spin.pause(); s_win.play().catch(e=>{}); 
+                    msg.innerHTML = `Result:<br><span style='color:#0f0;font-size:36px;'>${pr[prizeIndex]}</span>`;
+                    checkPayout(prizeIndex, snapshotBets); 
+                    rot = d; 
+                }, 7500); 
+            }
+        });
 
-                    canBet = false; isSpinning = true; tmr.innerText = "00";
-                    let snapshotBets = { ...yBets };
-                    msg.innerHTML="Bets Closed!<br><span style='font-size:18px;color:#ccc'>Spinning...</span>"; msg.style.display="block";
-                    
-                    // 🎵 Play Wheel Spin Sound 🎵
-                    s_spin.currentTime = 0; s_spin.play().catch(e=>{}); s_spin.loop = true; 
-                    
-                    let prizeIndex = status.winIndex || 0;
-                    
-                    const sliceAngle = 360 / 32; 
-                    const targetAngle = 270 - ((prizeIndex + 0.5) * sliceAngle);
-                    let currentMod = rot % 360; if (currentMod < 0) currentMod += 360;
-                    let normalizedTarget = targetAngle % 360; if (normalizedTarget < 0) normalizedTarget += 360;
-                    let diff = normalizedTarget - currentMod; if (diff <= 0) diff += 360;
-                    let d = rot + (360 * 5) + diff; 
-                    
-                    document.getElementById('c').style.transition = "transform 7s cubic-bezier(0.1, 0.7, 0.1, 1)";
-                    document.getElementById('c').style.transform = `rotate(${d}deg)`;
-                    
-                    setTimeout(()=>{
-                        // 🎵 Stop Spin Sound, Play Win Sound 🎵
-                        s_spin.pause(); s_win.play().catch(e=>{}); 
-                        checkPayout(prizeIndex, snapshotBets); 
-                        rot = d; 
-                    }, 7500); 
-                }
-                else if (state === 'waiting') {
-                    if(window.localTimerInterval) clearInterval(window.localTimerInterval);
-                    canBet = false; tmr.innerText = Math.abs(t); tmr.style.color = "#0f0";
-                    let prizeIndex = status.winIndex || 0;
-                    
-                    if (!isSpinning) {
-                        isSpinning = true; const sliceAngle = 360 / 32; const targetAngle = 270 - ((prizeIndex + 0.5) * sliceAngle); 
-                        let d = rot + (targetAngle - (rot % 360)); document.getElementById('c').style.transition = "none"; 
-                        document.getElementById('c').style.transform = `rotate(${d}deg)`; rot = d;
-                    }
-                    msg.innerHTML = "Result:<br><span style='color:#0f0;font-size:36px;'>" + pr[prizeIndex] + "</span><br><span style='font-size:16px;color:#ccc'>Next Round: " + Math.abs(t) + "s</span>";
-                    msg.style.display = "block";
-                }
-            });
-        }
+        socket.on('MegaSpin_newRound', () => {
+            if (isSpinning) { isSpinning = false; startNewRound(); }
+            canBet = true;
+        });
         
+        // 3D Background Canvas
         const canvasBg = document.getElementById('bg-canvas'); const ctxBg = canvasBg.getContext('2d');
         canvasBg.width = window.innerWidth; canvasBg.height = window.innerHeight;
         function animate3D() { ctxBg.fillStyle = 'rgba(5, 5, 15, 0.2)'; ctxBg.fillRect(0, 0, canvasBg.width, canvasBg.height); requestAnimationFrame(animate3D); }
