@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Andar Bahar 2 - Luxury Pro VIP</title>
+    <title>Andar Bahar - Luxury Pro VIP (Socket Edition)</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; user-select: none; }
 
@@ -27,30 +28,13 @@
             display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 200;
         }
         .back-btn { font-size: 22px; cursor: pointer; color: #d4af37; margin-right: 10px; }
-        .room-title { font-size: 14px; font-weight: 900; color: #d4af37; text-transform: uppercase; letter-spacing: 1px; margin-right: 10px; }
-        .history-row { display: flex; gap: 4px; overflow: hidden; max-width: 45%; }
+        .history-row { display: flex; gap: 4px; overflow: hidden; max-width: 50%; }
         .h-dot { width: 22px; height: 22px; border-radius: 50%; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 1.5px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.5); flex-shrink: 0;}
         .online-status { font-size: 11px; font-weight: 900; color: #00ff88; text-shadow: 0 0 5px #00ff88; }
 
-        /* 🔥 NAYE BANNERS (Sliding Animation) 🔥 */
-        .banner-overlay { position: fixed; top: 50%; left: 0; transform: translateY(-50%); width: 100%; height: 60px; z-index: 12000; display: none; pointer-events: none;}
-        .banner-image { height: 100%; width: auto; position: absolute; top: 0; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.8)); }
-        
-        .animation-ltr { animation: marquee_ltr 2.5s ease-in-out forwards; }
-        .animation-rtl { animation: marquee_rtl 2.5s ease-in-out forwards; }
-        
-        @keyframes marquee_ltr { 
-            0% { left: 100vw; transform: translateX(0); opacity: 0;} 
-            15% { left: 50vw; transform: translateX(-50%); opacity: 1;} 
-            85% { left: 50vw; transform: translateX(-50%); opacity: 1;} 
-            100% { left: -100vw; transform: translateX(-100%); opacity: 0;} 
-        }
-        @keyframes marquee_rtl { 
-            0% { left: -100vw; transform: translateX(-100%); opacity: 0;} 
-            15% { left: 50vw; transform: translateX(-50%); opacity: 1;} 
-            85% { left: 50vw; transform: translateX(-50%); opacity: 1;} 
-            100% { left: 100vw; transform: translateX(0); opacity: 0;} 
-        }
+        /* 🔥 ALERTS OVERLAY 🔥 */
+        .game-alert { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; width: 80%; max-width: 300px; display: none; pointer-events: none; }
+        .game-alert img, .game-alert video { width: 100%; height: auto; filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); }
 
         /* Dealer Area */
         .dealer-area {
@@ -71,7 +55,7 @@
             text-align: center; min-width: 200px; text-transform: uppercase; transition: 0.3s;
         }
 
-        .play-area { flex: 1; padding: 8px; display: flex; flex-direction: column; align-items: center; touch-action: none; }
+        .play-area { flex: 1; padding: 8px; display: flex; flex-direction: column; align-items: center; touch-action: none; position: relative;}
 
         .track-container { width: 98%; margin-bottom: 8px; }
         .card-track {
@@ -99,14 +83,14 @@
         .black-suit { color: #212121 !important; }
 
         /* Main Betting Boxes */
-        .main-bets { display: flex; gap: 15px; width: 95%; margin-bottom: 10px; }
+        .main-bets { display: flex; gap: 15px; width: 95%; margin-bottom: 10px; z-index: 20;}
         .bet-btn {
             flex: 1; padding: 15px 10px 5px 10px; border-radius: 15px; text-align: center; cursor: pointer;
             border: 2px solid #d4af37; background-color: rgba(0, 0, 0, 0.6); transition: 0.3s ease-out; position: relative;
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 110px;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 110px; overflow: visible;
         }
-        .bet-btn.andar { border-color: #4db8ff; color: #4db8ff; }
-        .bet-btn.bahar { border-color: #ff4d94; color: #ff4d94; }
+        .bet-btn.andar { border-color: #4db8ff; color: #4db8ff; box-shadow: inset 0 0 15px rgba(77, 184, 255, 0.3);}
+        .bet-btn.bahar { border-color: #ff4d94; color: #ff4d94; box-shadow: inset 0 0 15px rgba(255, 77, 148, 0.3);}
         
         .win-glow {
             box-shadow: 0 0 25px #00ff88, inset 0 0 15px rgba(0, 255, 136, 0.4) !important;
@@ -114,27 +98,21 @@
             transform: scale(1.05);
             z-index: 10;
         }
-        .side-win-glow {
-            box-shadow: 0 0 15px #00ff88 !important;
-            border-color: #00ff88 !important;
-            background: rgba(0, 255, 136, 0.3) !important;
-            transform: scale(1.05);
-            z-index: 10;
-        }
 
         .text-layer { position: relative; z-index: 25; width: 100%; pointer-events: none;}
         .bet-title { font-size: 22px; font-weight: 900; letter-spacing: 1px; margin-bottom: 2px;}
         .bet-payout { font-size: 11px; color: #ccc; margin-bottom: 6px;}
-        .pool-text { font-size: 13px; color: white; background: rgba(0,0,0,0.85); padding: 4px 10px; border-radius: 6px; display: inline-block;}
+        .pool-text { font-size: 13px; color: white; background: rgba(0,0,0,0.85); padding: 4px 10px; border-radius: 6px; display: inline-block; border: 1px solid rgba(255,255,255,0.2);}
         
         .placed-bet {
             position: absolute; top: -10px; right: -10px; background: #d4af37; color: black;
             border-radius: 50%; width: 28px; height: 28px; font-size: 10px; font-weight: 900;
-            display: none; align-items: center; justify-content: center; box-shadow: 0 2px 5px #000; z-index: 50;
+            display: none; align-items: center; justify-content: center; box-shadow: 0 2px 5px #000; z-index: 50; border: 1.5px solid #fff;
         }
 
-        .chips-container-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15;}
-        .small-chip { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #fff; position: absolute; font-size: 9px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 4px rgba(0,0,0,0.8); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);}
+        /* 🔥 ASSET CHIPS LAYER 🔥 */
+        #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 100; overflow: hidden;}
+        .chip-visual { pointer-events: none; position: absolute; width: 26px; height: 26px; z-index: 15; transition: 0.4s cubic-bezier(0.25, 0.1, 0.25, 1); filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.8));}
 
         /* Side Bets */
         .side-bets { width: 98%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; background: rgba(0,0,0,0.3); padding: 6px; border: 1.5px solid #d4af37; border-radius: 10px; margin-bottom: 8px;}
@@ -142,7 +120,7 @@
         .side-bet-box:active { transform: scale(0.95); background: rgba(212,175,55,0.2); }
         .sb-range { color: #d4af37; font-weight: 900; font-size: 11px; }
         .sb-payout { color: #ffcccc; font-size: 9px; font-weight: bold; }
-        .sb-placed { position: absolute; top: -5px; right: -5px; background: #00ff88; color: #000; width: 16px; height: 16px; border-radius: 50%; font-size: 8px; font-weight: 900; display: none; align-items: center; justify-content: center; }
+        .sb-placed { position: absolute; top: -5px; right: -5px; background: #00ff88; color: #000; width: 16px; height: 16px; border-radius: 50%; font-size: 8px; font-weight: 900; display: none; align-items: center; justify-content: center; border: 1px solid #fff;}
 
         /* Bots area */
         .live-players { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; background: rgba(0,0,0,0.4); padding: 6px; width: 100%; border-top: 1px solid #d4af37; }
@@ -151,32 +129,41 @@
         .p-id { font-size: 9px; color: #ccc; margin-top: 2px; font-weight: bold;}
         .p-bal { font-size: 10px; color: #00ff88; font-weight: bold;}
 
-        /* Bottom Bar (Real Image Chips & NO 10rs Chip) */
-        .bottom-bar { background-color: #1a0b1c; padding: 10px 5px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #d4af37; }
-        .chips-area { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; width: 100%; justify-content: flex-start; align-items: center;}
+        /* Bottom Bar */
+        .bottom-bar { background-color: #1a0b1c; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #d4af37; position: relative; z-index: 200;}
+        .chips-area { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; width: 80%; justify-content: space-around; align-items: center;}
         .chips-area::-webkit-scrollbar { display: none; }
-        .chip-img { width: 42px; height: 42px; cursor: pointer; transition: all 0.2s ease-out; border-radius: 50%; flex-shrink: 0; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); border: 2px solid transparent;}
-        .chip-img.active { transform: scale(1.15) translateY(-5px); filter: drop-shadow(0 0 15px #ffd700); border: 2px solid #ffd700;}
+        
+        .chip-img { width: 40px; height: 40px; cursor: pointer; transition: 0.2s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); flex-shrink: 0; }
+        .chip-img.active { transform: scale(1.2) translateY(-5px); filter: drop-shadow(0 0 10px #d4af37); }
+        .chip-img.locked { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
+        
+        .win-popup { pointer-events: none; position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; color: #00ff88; font-weight: 900; text-shadow: 0 0 20px #00ff88; z-index: 2000; opacity: 0; transition: 0.5s; }
+        .win-popup.show { opacity: 1; transform: translate(-50%, -80%); }
     </style>
 </head>
-<body>
+<body onclick="initAudio()">
 
     <audio id="coinSnd" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
     <audio id="cardSnd" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
+    <audio id="snd-beep" src="assets/22d0dc27-b727-42be-ac04-d9182459f976.mp3" preload="auto"></audio>
 
     <div class="game-container">
         
         <div class="top-nav">
             <div style="display: flex; align-items: center;">
                 <div class="back-btn" onclick="window.history.back()">⬅️</div>
-                <div class="room-title">AB 2</div>
                 <div class="history-row" id="record-board"></div>
             </div>
-            <div class="online-status" id="live-users">● 345 LIVE</div>
+            <div class="online-status" id="live-users">● 285 LIVE</div>
         </div>
 
-        <div class="banner-overlay" id="banner-ov">
-            <img class="banner-image" id="banner-img" src="">
+        <div id="win-popup" class="win-popup">+₹0</div>
+
+        <div id="alert-start" class="game-alert"><img src="assets/start-logo-261-5745.png" alt="Start Betting"></div>
+        <div id="alert-stop" class="game-alert"><img src="assets/stop-2-5754.gif" alt="Stop Betting"></div>
+        <div id="alert-wait" class="game-alert">
+            <video id="vid-wait" autoplay muted loop playsinline><source src="assets/VID-20260420-WA0000.mp4" type="video/mp4"></video>
         </div>
 
         <div class="dealer-area">
@@ -184,30 +171,30 @@
             <div class="dealer-message" id="status-msg">CONNECTING...</div>
         </div>
 
-        <div class="play-area">
+        <div class="play-area" id="game-mount">
+            <div id="chips-layer"></div>
+
             <div class="track-container">
                 <div class="card-track" id="track-andar"><span class="track-label">ANDAR</span></div>
                 <div class="card-track bahar" id="track-bahar"><span class="track-label">BAHAR</span></div>
             </div>
 
             <div class="main-bets">
-                <div class="bet-btn andar" id="btn-andar" onclick="placeBet('andar')">
+                <div class="bet-btn andar" id="bx-andar" onclick="placeBet('andar')">
                     <div class="text-layer">
                         <div class="bet-title">ANDAR</div>
                         <div class="bet-payout">1.9x Payout</div>
                         <div class="pool-text">Pool: ₹<span id="p-andar">0</span></div>
                     </div>
                     <div class="placed-bet" id="bet-amt-andar">0</div>
-                    <div class="chips-container-overlay" id="chips-andar"></div>
                 </div>
-                <div class="bet-btn bahar" id="btn-bahar" onclick="placeBet('bahar')">
+                <div class="bet-btn bahar" id="bx-bahar" onclick="placeBet('bahar')">
                     <div class="text-layer">
                         <div class="bet-title">BAHAR</div>
                         <div class="bet-payout">2.0x Payout</div>
                         <div class="pool-text">Pool: ₹<span id="p-bahar">0</span></div>
                     </div>
                     <div class="placed-bet" id="bet-amt-bahar">0</div>
-                    <div class="chips-container-overlay" id="chips-bahar"></div>
                 </div>
             </div>
 
@@ -252,57 +239,60 @@
         <div class="live-players" id="player-row"></div>
 
         <div class="bottom-bar">
-            <div style="font-size: 14px; font-weight: 900; color: #00ff88; margin-right: 5px; padding-left: 5px;">₹<span id="balance">0.00</span></div>
-            <div class="chips-area">
-                <img src="assets/50_0.png" class="chip-img active" onclick="selectChip(this, 50)">
-                <img src="assets/100_0.png" class="chip-img" onclick="selectChip(this, 100)">
-                <img src="assets/200_0.png" class="chip-img" onclick="selectChip(this, 200)">
-                <img src="assets/500_0.png" class="chip-img" onclick="selectChip(this, 500)">
-                <img src="assets/1000_0.png" class="chip-img" onclick="selectChip(this, 1000)">
-                <img src="assets/5000_1.png" class="chip-img" onclick="selectChip(this, 5000)">
-                <img src="assets/10000_0.png" class="chip-img" onclick="selectChip(this, 10000)">
+            <div style="font-size: 14px; font-weight: 900; color: #00ff88; margin-right: 5px; flex-shrink: 0;" id="my-wallet">₹<span id="balance">0.00</span></div>
+            <div class="chips-area" id="chips-tray">
+                <img src="assets/10_0.png" class="chip-img" data-val="10" onclick="selectChip(this, 10)">
+                <img src="assets/50_0.png" class="chip-img active" data-val="50" onclick="selectChip(this, 50)">
+                <img src="assets/100_0.png" class="chip-img" data-val="100" onclick="selectChip(this, 100)">
+                <img src="assets/500_0.png" class="chip-img" data-val="500" onclick="selectChip(this, 500)">
+                <img src="assets/1000_0.png" class="chip-img" data-val="1000" onclick="selectChip(this, 1000)">
+                <img src="assets/5000_1.png" class="chip-img" data-val="5000" onclick="selectChip(this, 5000)">
+                <img src="assets/10000_0.png" class="chip-img" data-val="10000" onclick="selectChip(this, 10000)">
             </div>
         </div>
     </div>
 
     <script>
+        const $ = i => document.getElementById(i);
+        
         function preloadAllCards() {
             let p_suits = ['spades', 'hearts', 'diamonds', 'clubs'];
             let p_vals = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-            p_suits.forEach(suit => {
-                p_vals.forEach(val => {
-                    let img = new window.Image();
-                    img.src = `${val}_of_${suit}.png`;
-                });
-            });
+            p_suits.forEach(suit => { p_vals.forEach(val => { let img = new window.Image(); img.src = `assets/${val}_of_${suit}.png`; }); });
         }
         preloadAllCards(); 
 
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+        const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST";
+
+        // 🔥 RENDER SOCKET ENGINE 🔥
+        const socket = io("https://kalyan-engine.onrender.com");
 
         const cardSuits = ["S", "H", "D", "C"];
         const cardValues = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+        const chipImgs = { 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
 
-        // Default chip is now 50
-        let currentChip = 50, isBettingOpen = false, animationActive = false;
+        let currentChip = 50, currentChipSrc = chipImgs[50];
+        let isBettingOpen = false, animationActive = false, lastBeep = -1;
         let depBal = 0, winBal = 0, bonBal = 0, totalBal = 0;
         let myBets = { andar: 0, bahar: 0 }, mySideBets = {};
         let realPool = { andar:0, bahar:0 }, botPool = { andar:0, bahar:0 };
         let botInterval;
+        let currentJoker = { val: 'A', suit: 'S' }; // Dynamic Joker
         
         let audioUnlocked = false;
-        document.body.addEventListener('touchstart', () => { audioUnlocked = true; }, { once: true });
-        document.body.addEventListener('click', () => { audioUnlocked = true; }, { once: true });
+        function initAudio() {
+            if(!audioUnlocked) {
+                ['coinSnd','cardSnd','snd-beep'].forEach(i => { try{ let s=$(i); s.play().then(()=>s.pause()).catch(()=>{}); }catch(e){} });
+                audioUnlocked = true;
+            }
+        }
 
         function playSound(id, vol=1.0) {
             if(!audioUnlocked) return;
-            try { 
-                let snd = document.getElementById(id);
-                if(snd) { snd.currentTime = 0; snd.volume = vol; let p = snd.play(); if(p !== undefined) p.catch(e=>{}); }
-            } catch(e){}
+            try { let snd = $(id); if(snd) { let cl=snd.cloneNode(); cl.volume=vol; cl.play().catch(()=>{}); } } catch(e){}
         }
 
         let botsList = [];
@@ -312,28 +302,24 @@
             let h = ""; let avatars = ['👨','👩','👱‍♂️','👲','🧔'];
             botsList.forEach((b, i) => {
                 let displayBal = b.bal >= 100000 ? "1.0L" : (b.bal/1000).toFixed(1) + "K";
-                h += `<div class="player"><div class="p-avatar">${avatars[i%5]}</div><div class="p-id">ID_${b.id}</div><div class="p-bal">₹${displayBal}</div></div>`;
+                h += `<div class="player" id="bot-${i}"><div class="p-avatar">${avatars[i%5]}</div><div class="p-id">ID_${b.id}</div><div class="p-bal">₹${displayBal}</div></div>`;
             });
-            document.getElementById('player-row').innerHTML = h;
+            $('player-row').innerHTML = h;
         }
         renderBotsUI();
-
         setInterval(() => {
             botsList.forEach(b => {
-                let change = Math.floor(Math.random() * 8000) - 3000; 
-                b.bal += change;
-                if(b.bal > 150000) b.bal = 90000; 
-                if(b.bal < 10000) b.bal = 30000;
+                b.bal += Math.floor(Math.random() * 8000) - 3000; 
+                if(b.bal > 150000) b.bal = 90000; if(b.bal < 10000) b.bal = 30000;
             });
             renderBotsUI();
         }, 3000); 
 
-        // AB2: Alag Online Player Count
-        let baseCount = 345;
+        let baseCount = 285;
         setInterval(() => {
             baseCount += Math.floor(Math.random() * 8) - 4;
-            if(baseCount < 300) baseCount = 330;
-            document.getElementById('live-users').innerText = `● ${baseCount} LIVE`;
+            if(baseCount < 250) baseCount = 280;
+            $('live-users').innerText = `● ${baseCount} LIVE`;
         }, 3500);
 
         if(phone) {
@@ -341,37 +327,83 @@
                 let d = s.val() || {};
                 depBal = parseFloat(d.balance || 0); winBal = parseFloat(d.winning_balance || 0); bonBal = parseFloat(d.bonus_balance || 0);
                 totalBal = depBal + winBal + bonBal;
-                document.getElementById('balance').innerText = totalBal.toFixed(2); 
+                $('balance').innerText = totalBal.toFixed(2); 
+                document.querySelectorAll('.chip-img').forEach(c => { if(parseInt(c.dataset.val) > totalBal) c.classList.add('locked'); else c.classList.remove('locked'); });
+            });
+            
+            // RECOVERY
+            db.ref(`Game/AndarBahar/Bets/${phone}`).once('value', snap => {
+                let saved = snap.val();
+                if(saved) {
+                    setTimeout(() => {
+                        ['andar','bahar'].forEach(side => {
+                            let val = saved[side];
+                            if(val > 0) {
+                                myBets[side] = val;
+                                let d = $(`bet-amt-${side}`); d.style.display='flex'; d.innerText=val;
+                            }
+                        });
+                    }, 500);
+                }
             });
         }
 
         window.selectChip = function(el, val) {
+            if(el.classList.contains('locked')) return;
             document.querySelectorAll('.chip-img').forEach(c => c.classList.remove('active'));
-            el.classList.add('active'); currentChip = val;
+            el.classList.add('active'); currentChip = val; currentChipSrc = chipImgs[val];
             playSound('coinSnd', 0.5);
         };
 
+        // 🔥 PRECISE ASSET CHIP FLYING 🔥
+        function spC(side, imgSrc, srcId) {
+            let layer = $('chips-layer'), box = $('bx-' + side);
+            if(!box || !layer) return;
+
+            let chip = document.createElement('img');
+            chip.className = 'chip-visual';
+            chip.src = imgSrc;
+            
+            let srcEl = $(srcId) || $('my-wallet');
+            let sR = srcEl.getBoundingClientRect(), mR = $('game-mount').getBoundingClientRect(), bR = box.getBoundingClientRect();
+            
+            chip.style.left = (sR.left - mR.left + sR.width/2 - 13) + "px";
+            chip.style.top = (sR.top - mR.top + sR.height/2 - 13) + "px";
+            chip.style.transform = "scale(0.3)";
+            layer.appendChild(chip);
+
+            setTimeout(() => {
+                let randX = 20 + Math.random() * (bR.width - 60);
+                let randY = 40 + Math.random() * (bR.height - 80);
+                chip.style.left = (bR.left - mR.left + randX) + "px";
+                chip.style.top = (bR.top - mR.top + randY) + "px";
+                chip.style.transform = "scale(1)";
+            }, 50);
+
+            if(layer.children.length > 80) layer.firstChild.remove();
+        }
+
         window.placeBet = function(side) {
             if(!isBettingOpen) return;
-            if(totalBal < currentChip) return alert("Low Balance!");
+            if(totalBal < currentChip) return;
 
             let rem = currentChip, nDep = depBal, nWin = winBal;
             if(nDep >= rem) nDep -= rem; else { rem -= nDep; nDep = 0; nWin -= rem; }
             db.ref('users/'+phone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
             
             myBets[side] += currentChip;
-            db.ref(`Game/AndarBahar2/Bets/${phone}/${side}`).set(firebase.database.ServerValue.increment(currentChip));
+            db.ref(`Game/AndarBahar/Bets/${phone}/${side}`).set(firebase.database.ServerValue.increment(currentChip));
             
-            let display = document.getElementById(`bet-amt-${side}`);
+            let display = $(`bet-amt-${side}`);
             display.style.display = 'flex'; display.innerText = myBets[side] >= 1000 ? (myBets[side]/1000)+'K' : myBets[side];
             
-            spawnChip(side, currentChip);
+            spC(side, currentChipSrc, 'my-wallet');
             playSound('coinSnd', 1.0);
         };
 
         window.placeSideBet = function(rangeKey, payout) {
             if(!isBettingOpen) return;
-            if(totalBal < currentChip) return alert("Low Balance!");
+            if(totalBal < currentChip) return;
 
             let rem = currentChip, nDep = depBal, nWin = winBal;
             if(nDep >= rem) nDep -= rem; else { rem -= nDep; nDep = 0; nWin -= rem; }
@@ -380,73 +412,34 @@
             if(!mySideBets[rangeKey]) mySideBets[rangeKey] = 0;
             mySideBets[rangeKey] += currentChip;
 
-            let display = document.getElementById(`sb-${rangeKey}`);
-            display.style.display = 'flex'; 
-            display.innerText = mySideBets[rangeKey] >= 1000 ? (mySideBets[rangeKey]/1000)+'K' : mySideBets[rangeKey];
+            let display = $(`sb-${rangeKey}`);
+            display.style.display = 'flex'; display.innerText = mySideBets[rangeKey] >= 1000 ? (mySideBets[rangeKey]/1000)+'K' : mySideBets[rangeKey];
             
-            db.ref(`Game/AndarBahar2/SideBets/${phone}/${rangeKey}`).set(firebase.database.ServerValue.increment(currentChip));
+            db.ref(`Game/AndarBahar/SideBets/${phone}/${rangeKey}`).set(firebase.database.ServerValue.increment(currentChip));
             playSound('coinSnd', 0.5);
         };
 
-        function getBotChipColor(amt) {
-            if(amt <= 50) return 'radial-gradient(circle, #4fc3f7, #0288d1)';
-            if(amt <= 100) return 'radial-gradient(circle, #81c784, #388e3c)';
-            if(amt <= 500) return 'radial-gradient(circle, #ba68c8, #7b1fa2)';
-            if(amt <= 1000) return 'radial-gradient(circle, #e57373, #d32f2f)';
-            if(amt <= 5000) return 'radial-gradient(circle, #f06292, #c2185b)';
-            return 'radial-gradient(circle, #ffd54f, #f57f17)'; 
-        }
-
-        function spawnChip(side, amt) {
-            const div = document.getElementById('chips-'+side);
-            const c = document.createElement('div');
-            c.className = 'small-chip'; 
-            c.style.background = getBotChipColor(amt); 
-            c.style.color = (amt >= 10000) ? "#000" : "#fff"; 
-            c.innerText = amt >= 1000 ? (amt/1000)+'K' : amt;
-            
-            c.style.left = (Math.random()*60 + 20)+"%"; 
-            c.style.top = (Math.random()*40 + 40)+"%"; 
-            c.style.transform = "scale(2) translateY(50px)";
-            c.style.opacity = "0";
-            
-            div.appendChild(c);
-            setTimeout(() => { c.style.transform = "scale(1) translateY(0)"; c.style.opacity = "1"; }, 50);
-            if(div.children.length > 40) div.firstChild.remove();
-        }
-
+        // Smooth Bot Betting
         function botBetAction() {
             if(!isBettingOpen) return;
-            botsList.forEach(bot => {
+            botsList.forEach((bot, i) => {
                 if(Math.random() < 0.3) {
                     let s = Math.random() < 0.5 ? 'andar' : 'bahar';
-                    let amt = [50, 100, 500, 1000][Math.floor(Math.random()*4)];
+                    let cKeys = Object.keys(chipImgs);
+                    let amt = parseInt(cKeys[Math.floor(Math.random() * 5)]); // Upto 1000 mostly
                     if(bot.bal >= amt) {
                         bot.bal -= amt; 
-                        spawnChip(s, amt);
-                        botPool[s] += amt; 
-                        updatePoolUI();
+                        spC(s, chipImgs[amt], 'bot-'+i);
+                        botPool[s] += amt; updatePoolUI();
                         playSound('coinSnd', 0.05);
                     }
                 }
             });
         }
 
-        db.ref('Game/AndarBahar2/Bets').on('value', snap => {
-            let allB = snap.val() || {};
-            realPool = {andar:0, bahar:0};
-            for(let u in allB) { 
-                if(!u.includes('bot')) {
-                    realPool.andar += (allB[u].andar || 0);
-                    realPool.bahar += (allB[u].bahar || 0);
-                }
-            }
-            updatePoolUI();
-        });
-
         function updatePoolUI() {
-            document.getElementById('p-andar').innerText = (realPool.andar + botPool.andar).toLocaleString();
-            document.getElementById('p-bahar').innerText = (realPool.bahar + botPool.bahar).toLocaleString();
+            $('p-andar').innerText = (realPool.andar + botPool.andar).toLocaleString();
+            $('p-bahar').innerText = (realPool.bahar + botPool.bahar).toLocaleString();
         }
 
         function createCard(val, suit) {
@@ -461,83 +454,65 @@
                 let suitMap = {'S': 'spades', 'H': 'hearts', 'D': 'diamonds', 'C': 'clubs'};
                 let valMap = {'A': 'ace', '10': '10', '0': '10'};
                 let suitName = suitMap[suit]; let valName = valMap[val] || val; 
-                let fileName = `${valName}_of_${suitName}.png`.toLowerCase();
+                let fileName = `assets/${valName}_of_${suitName}.png`.toLowerCase();
                 div.style.background = 'transparent'; div.style.border = 'none'; 
                 div.innerHTML = `<img src="${fileName}" style="width: 100%; height: 100%; border-radius: 4px; box-shadow: inherit;">`;
             }
             return div;
         }
 
-        // 🔥 BANNER ANIMATION FUNCTION 🔥
-        function showBanner(type) {
-            let ov = document.getElementById('banner-ov');
-            let img = document.getElementById('banner-img');
-            if(type === 'start') {
-                img.src = 'assets/kaishitouzhub.png';
-                img.className = 'banner-image animation-ltr';
-            } else {
-                img.src = 'assets/tingzhitouzhu.png';
-                img.className = 'banner-image animation-rtl';
-            }
-            ov.style.display = 'block';
-            setTimeout(() => { ov.style.display = 'none'; }, 2600);
-        }
-
-        // 🔥 SMART LOCAL TIMER LOGIC 🔥
-        db.ref('Game/AndarBahar2/Status').on('value', snap => {
-            let st = snap.val(); if(!st) return;
-            let msg = document.getElementById('status-msg');
-
-            if(st.state === 'betting') {
+        // 🔥 SOCKET LISTENERS 🔥
+        socket.on('AndarBahar_timerUpdate', (data) => {
+            let msg = $('status-msg');
+            if(data.state === 'betting') {
                 if(!isBettingOpen) {
                     isBettingOpen = true; animationActive = false; 
-                    
-                    document.getElementById('btn-andar').classList.remove('win-glow');
-                    document.getElementById('btn-bahar').classList.remove('win-glow');
-                    document.querySelectorAll('.side-bet-box').forEach(b => b.classList.remove('side-win-glow'));
-                    document.getElementById('track-andar').innerHTML = '<span class="track-label">ANDAR</span>';
-                    document.getElementById('track-bahar').innerHTML = '<span class="track-label">BAHAR</span>';
+                    $('alert-wait').style.display = 'none';
+                    $('bx-andar').classList.remove('win-glow'); $('bx-bahar').classList.remove('win-glow');
+                    $('track-andar').innerHTML = '<span class="track-label">ANDAR</span>';
+                    $('track-bahar').innerHTML = '<span class="track-label">BAHAR</span>';
                     document.querySelectorAll('.placed-bet, .sb-placed').forEach(d => d.style.display = 'none');
-                    document.querySelectorAll('.chips-container-overlay').forEach(c => c.innerHTML = '');
+                    $('chips-layer').innerHTML = '';
                     
-                    showBanner('start');
+                    let aStart = $('alert-start'); aStart.style.display = 'block'; setTimeout(() => aStart.style.display = 'none', 800);
 
-                    myBets = {andar:0, bahar:0}; mySideBets = {}; botPool = {andar:0, bahar:0};
-                    updatePoolUI();
-                    clearInterval(botInterval);
-                    botInterval = setInterval(botBetAction, 250);
+                    myBets = {andar:0, bahar:0}; mySideBets = {}; botPool = {andar:0, bahar:0}; updatePoolUI();
+                    clearInterval(botInterval); botInterval = setInterval(botBetAction, 250); 
+                    
+                    // Generate Random Joker for frontend
+                    currentJoker.val = cardValues[Math.floor(Math.random()*13)];
+                    currentJoker.suit = cardSuits[Math.floor(Math.random()*4)];
+                    $('joker-spot').innerHTML = '';
+                    $('joker-spot').appendChild(createCard(currentJoker.val, currentJoker.suit));
                 }
-                
-                document.getElementById('joker-spot').innerHTML = '';
-                document.getElementById('joker-spot').appendChild(createCard(st.jokerVal, st.jokerSuit));
-                
-                if(st.timer > 0 && st.timer <= 20) {
-                    if(window.localTimerInterval) clearInterval(window.localTimerInterval);
-                    
-                    let currentT = st.timer;
-                    msg.innerText = `PLACE BETS: ${currentT}s`;
-                    msg.style.color = currentT <= 5 ? '#ff3333' : '#00ff88';
-                    
-                    window.localTimerInterval = setInterval(() => {
-                        currentT--;
-                        if(currentT >= 0) {
-                            msg.innerText = `PLACE BETS: ${currentT}s`;
-                            msg.style.color = currentT <= 5 ? '#ff3333' : '#00ff88';
-                        } else {
-                            clearInterval(window.localTimerInterval);
-                        }
-                    }, 1000);
+                msg.innerText = `PLACE BETS: ${data.timer}s`;
+                if(data.timer <= 5) {
+                    msg.style.color = '#ff3333';
+                    if(data.timer > 0 && lastBeep !== data.timer) { playSound('snd-beep', 0.8); lastBeep = data.timer; }
+                } else {
+                    msg.style.color = '#00ff88'; lastBeep = -1;
                 }
             } 
-            else if(st.state === 'dealing' && isBettingOpen) {
-                if(window.localTimerInterval) clearInterval(window.localTimerInterval);
-                isBettingOpen = false; clearInterval(botInterval);
-                
-                showBanner('stop');
+        });
 
-                msg.innerText = "DEALING CARDS..."; msg.style.color = '#d4af37';
-                showAnimation(st.winner, st.jokerVal);
+        socket.on('AndarBahar_result', (data) => {
+            isBettingOpen = false; clearInterval(botInterval); lastBeep = -1;
+            let aStop = $('alert-stop'); aStop.style.display = 'block'; setTimeout(() => aStop.style.display = 'none', 800);
+
+            $('status-msg').innerText = "DEALING CARDS..."; $('status-msg').style.color = '#d4af37';
+            setTimeout(() => showAnimation(data.winner || 'andar', currentJoker.val), 800);
+        });
+
+        socket.on('AndarBahar_newRound', () => {
+            isBettingOpen = true; // Timer will handle reset UI
+        });
+
+        db.ref('Game/AndarBahar/Bets').on('value', snap => {
+            let allB = snap.val() || {}; realPool = {andar:0, bahar:0};
+            for(let u in allB) { 
+                if(!u.includes('bot')) { realPool.andar += (allB[u].andar || 0); realPool.bahar += (allB[u].bahar || 0); }
             }
+            updatePoolUI();
         });
 
         async function showAnimation(win, jVal) {
@@ -566,38 +541,24 @@
                 let resVal = isLast ? jVal : safeCards[Math.floor(prng() * safeCards.length)];
                 let resSuit = cardSuits[Math.floor(prng()*4)]; 
 
-                let track = document.getElementById('track-'+side);
+                let track = $('track-'+side);
                 track.appendChild(createCard(resVal, resSuit));
                 track.scrollLeft = track.scrollWidth; 
                 playSound('cardSnd', 1.0); 
 
                 if(isLast) {
-                    document.getElementById('status-msg').innerText = `${win.toUpperCase()} WINS!`;
-                    document.getElementById(win === 'andar' ? 'btn-andar' : 'btn-bahar').classList.add('win-glow');
-                    
-                    let totalCards = steps;
-                    let winningSideId = '';
-                    if(totalCards <= 5) winningSideId = 'box-s1_5';
-                    else if(totalCards <= 10) winningSideId = 'box-s6_10';
-                    else if(totalCards <= 15) winningSideId = 'box-s11_15';
-                    else if(totalCards <= 25) winningSideId = 'box-s16_25';
-                    else if(totalCards <= 30) winningSideId = 'box-s26_30';
-                    else if(totalCards <= 35) winningSideId = 'box-s31_35';
-                    else if(totalCards <= 40) winningSideId = 'box-s36_40';
-                    else winningSideId = 'box-s41_plus';
-                    
-                    if(winningSideId) {
-                        document.getElementById(winningSideId).classList.add('side-win-glow');
-                    }
-                    
+                    $('status-msg').innerText = `${win.toUpperCase()} WINS!`;
+                    $(win === 'andar' ? 'bx-andar' : 'bx-bahar').classList.add('win-glow');
                     calculatePayouts(win, steps);
+                    
+                    setTimeout(() => { $('alert-wait').style.display = 'block'; }, 3000);
                     return;
                 }
                 await new Promise(r => setTimeout(r, 600)); 
             }
         }
 
-        db.ref('Game/AndarBahar2/History').on('value', snap => {
+        db.ref('Game/AndarBahar/History').on('value', snap => {
             let hist = snap.val(); if(!hist) return;
             let hHtml = "";
             [...hist].reverse().slice(0,10).forEach(w => {
@@ -605,31 +566,36 @@
                 let char = w === 'andar' ? 'A' : 'B';
                 hHtml += `<div class="h-dot" style="background:${col}; border-color:${col}">${char}</div>`;
             });
-            document.getElementById('record-board').innerHTML = hHtml;
+            $('record-board').innerHTML = hHtml;
         });
 
         function calculatePayouts(win, totalCards) {
-            if(!phone) return;
-            let winAmt = (win === 'andar') ? myBets.andar * 1.95 : myBets.bahar * 2.0;
+            if(!phone || phone === "GUEST") return;
+            
+            let winAmt = 0;
+            // 1. Main Bet Payout
+            if(win === 'andar' && myBets.andar > 0) winAmt += myBets.andar * 1.95;
+            if(win === 'bahar' && myBets.bahar > 0) winAmt += myBets.bahar * 2.0;
 
-            if(mySideBets['s1_5'] && totalCards <= 5) winAmt += mySideBets['s1_5'] * 2;
-            if(mySideBets['s6_10'] && totalCards >= 6 && totalCards <= 10) winAmt += mySideBets['s6_10'] * 3;
-            if(mySideBets['s11_15'] && totalCards >= 11 && totalCards <= 15) winAmt += mySideBets['s11_15'] * 4;
-            if(mySideBets['s16_25'] && totalCards >= 16 && totalCards <= 25) winAmt += mySideBets['s16_25'] * 3.5;
-            if(mySideBets['s26_30'] && totalCards >= 26 && totalCards <= 30) winAmt += mySideBets['s26_30'] * 12;
-            if(mySideBets['s31_35'] && totalCards >= 31 && totalCards <= 35) winAmt += mySideBets['s31_35'] * 20;
-            if(mySideBets['s36_40'] && totalCards >= 36 && totalCards <= 40) winAmt += mySideBets['s36_40'] * 45;
-            if(mySideBets['s41_plus'] && totalCards >= 41) winAmt += mySideBets['s41_plus'] * 100;
+            // 2. Side Bets Payout Logic (Based on Total Cards Dealt)
+            let sideMult = 0;
+            if(totalCards >= 1 && totalCards <= 5 && mySideBets['s1_5']) sideMult = mySideBets['s1_5'] * 2;
+            else if(totalCards >= 6 && totalCards <= 10 && mySideBets['s6_10']) sideMult = mySideBets['s6_10'] * 3;
+            else if(totalCards >= 11 && totalCards <= 15 && mySideBets['s11_15']) sideMult = mySideBets['s11_15'] * 4;
+            else if(totalCards >= 16 && totalCards <= 25 && mySideBets['s16_25']) sideMult = mySideBets['s16_25'] * 3.5;
+            else if(totalCards >= 26 && totalCards <= 30 && mySideBets['s26_30']) sideMult = mySideBets['s26_30'] * 12;
+            else if(totalCards >= 31 && totalCards <= 35 && mySideBets['s31_35']) sideMult = mySideBets['s31_35'] * 20;
+            else if(totalCards >= 36 && totalCards <= 40 && mySideBets['s36_40']) sideMult = mySideBets['s36_40'] * 45;
+            else if(totalCards >= 41 && mySideBets['s41_plus']) sideMult = mySideBets['s41_plus'] * 100;
+            
+            winAmt += sideMult;
 
             if(winAmt > 0) {
-                db.ref(`users/${phone}/winning_balance`).set(firebase.database.ServerValue.increment(Number(winAmt.toFixed(2))));
+                db.ref(`users/${phone}/winning_balance`).set(winBal + winAmt);
+                let p = $('win-popup'); p.innerText = "+₹" + winAmt.toLocaleString(); p.classList.add('show');
+                playSound('coinSnd', 1.0);
+                setTimeout(() => p.classList.remove('show'), 3000);
             }
-            
-            db.ref('Game/AndarBahar2/History').once('value', snap => {
-                let h = snap.val() || [];
-                h.push(win); if(h.length > 20) h.shift();
-                db.ref('Game/AndarBahar2/History').set(h);
-            });
         }
     </script>
 </body>
