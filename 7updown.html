@@ -156,7 +156,6 @@
                 document.getElementById('user-balance').innerText = totalBal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             });
 
-            // 🔥 1. AUTO BET RECOVERY 🔥
             db.ref(`Game/7UpDown/Bets/${userID}`).once('value', snap => {
                 let saved = snap.val();
                 if(saved) {
@@ -172,7 +171,7 @@
                                 if(box) {
                                     let rect = box.getBoundingClientRect();
                                     let c = document.createElement('div'); c.className = 'chip-visual';
-                                    c.style.background = '#e74c3c'; // Recovery Chip Color
+                                    c.style.background = '#e74c3c'; 
                                     c.innerText = val >= 1000 ? (val/1000)+'K' : val;
                                     c.style.left = (rect.left + rect.width/2 - 11) + 'px';
                                     c.style.top = (rect.top + rect.height/2 - 11) + 'px';
@@ -185,7 +184,6 @@
             });
         }
 
-        // 🔥 2. PERMANENT HISTORY LOADER 🔥
         db.ref('Game/7UpDown/History').once('value', snap => {
             let hist = snap.val();
             if(hist && Array.isArray(hist)) {
@@ -193,22 +191,42 @@
             }
         });
 
-        // 🔥 3. SERVER SYNC (MASTER ENGINE CONNECTED) 🔥
+        // 🔥 SMART LOCAL TIMER LOGIC FIREBASE SYNC KE ANDAR 🔥
         db.ref('Game/7UpDown/Status').on('value', snap => {
             let data = snap.val(); if(!data) return;
 
             if(data.state === 'betting') {
-                document.getElementById('timer').innerText = data.timer + "s";
-                document.getElementById('timer').style.color = data.timer <= 5 ? '#ff007f' : '#fff';
-                
                 if(lastState !== 'betting') {
                     isRolling = false;
                     resetTable();
                     startBotAnimation();
                 }
                 lastState = 'betting';
+                
+                // Naya Local Timer Trigger
+                if (data.timer > 0 && data.timer <= 20) {
+                    if (window.localTimerInterval) clearInterval(window.localTimerInterval);
+                    
+                    let currentT = data.timer;
+                    let tElem = document.getElementById('timer');
+                    tElem.innerText = currentT + "s";
+                    tElem.style.color = currentT <= 5 ? '#ff007f' : '#fff';
+                    
+                    window.localTimerInterval = setInterval(() => {
+                        currentT--;
+                        if (currentT >= 0) {
+                            tElem.innerText = currentT + "s";
+                            tElem.style.color = currentT <= 5 ? '#ff007f' : '#fff';
+                        } else {
+                            clearInterval(window.localTimerInterval);
+                        }
+                    }, 1000);
+                }
             } 
             else if(data.state === 'rolling' || data.state === 'result') {
+                // Result aate hi Timer ruk jayega
+                if (window.localTimerInterval) clearInterval(window.localTimerInterval);
+                
                 if(lastState === 'betting') {
                     isRolling = true;
                     stopBotAnimation();
@@ -218,7 +236,6 @@
             }
         });
         
-        // Sync Real-Time Total Pool
         db.ref('Game/7UpDown/Bets').on('value', snap => {
             let allB = snap.val() || {};
             let tPool = {low:0, tie:0, high:0};
@@ -231,13 +248,14 @@
 
     function startRoll(v1, v2, winId) {
         document.getElementById('timer').innerText = "ROLL";
+        document.getElementById('timer').style.color = "#fff";
         const cup = document.getElementById('cup'), d1 = document.getElementById('d1'), d2 = document.getElementById('d2');
-        cup.style.transform = 'translateY(0)'; // Cup neeche aata hai
+        cup.style.transform = 'translateY(0)'; 
         
         setTimeout(() => {
             cup.classList.add('shake-cup'); d1.className = 'cube rolling-dice'; d2.className = 'cube rolling-dice';
             setTimeout(() => {
-                cup.classList.remove('shake-cup'); cup.style.transform = 'translateY(-160px)'; // Cup upar gaya
+                cup.classList.remove('shake-cup'); cup.style.transform = 'translateY(-160px)'; 
                 d1.className = 'cube show-' + v1; d2.className = 'cube show-' + v2;
                 
                 let winBox = document.getElementById(winId);
@@ -325,9 +343,9 @@
             const ch = vals[Math.floor(Math.random()*vals.length)];
             
             let startX = Math.random() * window.innerWidth;
-            let startY = window.innerHeight + 50; // Bots bottom se fekte hain
+            let startY = window.innerHeight + 50; 
             spawnChip(target, ch.v, ch.c, startX, startY);
-        }, 400); // Fast bot betting
+        }, 400); 
     }
     
     function stopBotAnimation() { clearInterval(botSimulationInterval); }
