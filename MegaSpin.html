@@ -316,10 +316,31 @@
 
                 if (state === 'betting') {
                     if (isSpinning) { isSpinning = false; startNewRound(); }
-                    canBet = true; msg.style.display = "none"; tmr.innerText = t;
-                    if (t <= 5) { tmr.style.color = "#F33"; } else { tmr.style.color = "#0f0"; }
+                    canBet = true; msg.style.display = "none"; 
+                    
+                    // 🔥 SMART LOCAL TIMER LOGIC 🔥
+                    if (t > 0 && t <= 20) {
+                        if(window.localTimerInterval) clearInterval(window.localTimerInterval);
+                        
+                        let currentT = t;
+                        tmr.innerText = currentT;
+                        tmr.style.color = currentT <= 5 ? "#F33" : "#0f0";
+                        
+                        window.localTimerInterval = setInterval(() => {
+                            currentT--;
+                            if(currentT >= 0) {
+                                tmr.innerText = currentT;
+                                tmr.style.color = currentT <= 5 ? "#F33" : "#0f0";
+                            } else {
+                                clearInterval(window.localTimerInterval);
+                            }
+                        }, 1000);
+                    }
                 } 
                 else if (state === 'spinning' && !isSpinning) {
+                    // 🔥 RESULT AATE HI TIMER ROKNE KA CODE 🔥
+                    if(window.localTimerInterval) clearInterval(window.localTimerInterval);
+
                     canBet = false; isSpinning = true; tmr.innerText = "00";
                     let snapshotBets = { ...yBets };
                     msg.innerHTML="Bets Closed!<br><span style='font-size:18px;color:#ccc'>Spinning...</span>"; msg.style.display="block";
@@ -347,6 +368,7 @@
                     }, 7500); 
                 }
                 else if (state === 'waiting') {
+                    if(window.localTimerInterval) clearInterval(window.localTimerInterval);
                     canBet = false; tmr.innerText = Math.abs(t); tmr.style.color = "#0f0";
                     let prizeIndex = status.winIndex || 0;
                     
