@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Casino VIP Pro - History & Recovery</title>
+    <title>Car Casino VIP Pro - Socket Edition</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
     <style>
         :root { --bg: #1a002b; --gold: #ffd700; --neon-green: #00ff88; --text: #ffffff; --neon-red: #ff3333; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #2b0040, #0a0014); color: var(--text); font-family: 'Arial Black', sans-serif; overflow: hidden; user-select: none; }
@@ -35,7 +40,7 @@
         .bet-table-wrapper { padding: 0 8px; margin-top: 8px; }
         .bet-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
         
-        .bet-box { border-radius: 10px; padding-top: 4px; text-align: center; position: relative; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; height: 85px; box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.5); overflow: hidden; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
+        .bet-box { border-radius: 10px; padding-top: 4px; text-align: center; position: relative; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; height: 85px; box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 4px 10px rgba(0,0,0,0.5); overflow: visible; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
         .bet-box:active { transform: scale(0.92); }
         
         #porsche { border: 2px solid #ff3333; box-shadow: inset 0 0 20px rgba(255,51,51,0.2); }
@@ -54,31 +59,27 @@
         .total-bet { color: #fff; font-size: 0.75rem; font-weight: bold; margin-top: auto; background: rgba(0,0,0,0.8); padding: 2px 6px; border-radius: 4px; border: 1px solid #444; width: 85%; }
         .my-bet-amt { color: #000; font-size: 0.65rem; font-weight: 900; background: var(--gold); width: 100%; padding: 2px 0; border-top: 1px solid #fff; margin-top: 2px; display: none; }
 
-        .box-win { box-shadow: 0 0 25px var(--neon-green), inset 0 0 20px var(--neon-green) !important; border-color: var(--neon-green) !important; transform: scale(1.05); }
+        .box-win { box-shadow: 0 0 35px var(--neon-green), inset 0 0 20px var(--neon-green) !important; border-color: var(--neon-green) !important; transform: scale(1.05); z-index: 10;}
         .icon-win { filter: drop-shadow(0 0 15px var(--neon-green)); transform: scale(1.8); z-index: 20; color: var(--neon-green) !important; }
 
-        /* 🔥 HISTORY RECORD BAR (NECT TO GRID) 🔥 */
+        /* 🔥 HISTORY RECORD BAR 🔥 */
         .history-bar { margin: 8px 10px 0; padding: 5px; display: flex; gap: 4px; overflow: hidden; justify-content: flex-end; border-bottom: 2px solid var(--gold); background: rgba(0,0,0,0.5); border-radius: 4px; }
         .h-item { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; box-shadow: 0 0 5px #000; border: 1.5px solid #fff; flex-shrink: 0; background: #000; }
         
-        .live-players { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 5px 0; background: rgba(0,0,0,0.95); position: fixed; bottom: 75px; width: 100%; border-top: 2px solid var(--gold); box-shadow: 0 -5px 15px rgba(0,0,0,0.5); z-index: 1050; }
+        .live-players { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 5px 0; background: rgba(0,0,0,0.95); position: fixed; bottom: 85px; width: 100%; border-top: 2px solid var(--gold); box-shadow: 0 -5px 15px rgba(0,0,0,0.5); z-index: 1050; }
         .player { text-align: center; transition: 0.5s; }
         .p-avatar { width: 24px; height: 24px; background: linear-gradient(45deg, #444, #222); border: 2px solid var(--gold); border-radius: 50%; margin: 0 auto; line-height: 22px; font-size: 10px; color: #fff; box-shadow: 0 0 8px var(--gold); }
 
-        .chip-rack { position: fixed; bottom: 0; width: 100%; background: linear-gradient(to top, #000, #1a1a1a); display: flex; justify-content: center; gap: 6px; padding: 10px 0 15px 0; border-top: 3px solid var(--gold); z-index: 1100; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); }
-        .chip { width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 0.8rem; border: 2.5px solid rgba(255,255,255,0.5); cursor: pointer; transition: 0.3s; color: white; text-shadow: 1px 1px 2px #000; box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 10px rgba(0,0,0,0.5); flex-shrink: 0; }
-        .chip.active { transform: translateY(-6px) scale(1.1); border-color: var(--gold); box-shadow: inset 0 5px 10px rgba(255,255,255,0.6), 0 10px 20px var(--gold); }
-        
-        .c10 { background: radial-gradient(circle, #ffffff, #cccccc); color: #000; text-shadow: none; }
-        .c100 { background: radial-gradient(circle, #4fc3f7, #0288d1); }
-        .c500 { background: radial-gradient(circle, #81c784, #388e3c); }
-        .c1k { background: radial-gradient(circle, #e57373, #d32f2f); }
-        .c5k { background: radial-gradient(circle, #ba68c8, #7b1fa2); }
-        .c10k { background: radial-gradient(circle, #ffd54f, #f57f17); color: #000; text-shadow: none; }
+        /* 🔥 ASSET CHIPS TRAY 🔥 */
+        .chip-rack { position: fixed; bottom: 0; width: 100%; background: linear-gradient(to top, #000, #1a1a1a); display: flex; justify-content: space-evenly; align-items: center; padding: 10px 5px 20px 5px; border-top: 3px solid var(--gold); z-index: 1100; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); }
+        .chip-img { width: 44px; height: 44px; cursor: pointer; transition: 0.3s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); flex-shrink: 0; }
+        .chip-img.active { transform: translateY(-6px) scale(1.15); filter: drop-shadow(0 0 10px var(--gold)); }
+        .chip-img.locked { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
 
-        .chip-fly { position: absolute; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #fff; z-index: 50; font-size: 8px; font-weight: 900; display: flex; justify-content: center; align-items: center; color: white; transition: all 0.4s ease-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.8); pointer-events: none; }
+        /* 🔥 ASSET CHIPS LAYER 🔥 */
+        .chip-visual { position: absolute; width: 24px; height: 24px; z-index: 50; transition: all 0.4s ease-out; filter: drop-shadow(2px 2px 5px rgba(0,0,0,0.8)); pointer-events: none; }
+        .win-anim-chip { transition: all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 999 !important; filter: drop-shadow(0 0 10px var(--gold)); }
         
-        /* 🔥 RECOVERY CHIP CSS 🔥 */
         .recovery-chip { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; border: 2px dashed #fff; background: #e74c3c; z-index: 25; font-size: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; box-shadow: 0 0 10px #e74c3c, 2px 2px 5px rgba(0,0,0,0.8); pointer-events: none; }
 
         .popup { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 3.5rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px var(--gold), 0 0 40px #000; z-index: 1000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: rgba(0,0,0,0.8); padding: 10px 30px; border-radius: 20px; border: 3px solid var(--gold); white-space: nowrap; }
@@ -91,6 +92,7 @@
     <audio id="soundSpin" src="https://assets.mixkit.co/active_storage/sfx/2042/2042-preview.mp3"></audio>
     <audio id="soundWin" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
     <audio id="soundBet" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3"></audio>
+    <audio id="soundCoins" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3"></audio>
 
     <div class="top-bar">
         <div class="date-time" id="topDate">Loading Date...</div>
@@ -101,11 +103,12 @@
     </div>
 
     <div class="header">
+        <div class="back-btn" onclick="window.history.back()" style="font-size:20px; cursor:pointer; margin-right: 10px;">⬅️</div>
         <div>
             <div class="balance-label">Total Wallet</div>
             <div class="balance-amount" id="balanceDisplay">₹0</div>
         </div>
-        <div style="font-weight:900; color:#fff; font-size:1.3rem; text-shadow: 0 0 10px #fff;">CAR <span style="color:var(--gold)">VIP</span></div>
+        <div style="font-weight:900; color:#fff; font-size:1.3rem; text-shadow: 0 0 10px #fff; flex:1; text-align:right;">CAR <span style="color:var(--gold)">VIP</span></div>
     </div>
 
     <div class="status-bar">
@@ -119,7 +122,7 @@
         </div>
     </div>
 
-    <div class="bet-table-wrapper">
+    <div class="bet-table-wrapper" id="game-mount">
         <div class="bet-grid" style="margin-bottom: 6px;">
             <div class="bet-box" id="porsche" onclick="placeBet('porsche', event)">
                 <div class="brand" style="color:#ff3333">PORSCHE</div><div class="logo">🔴</div><div class="multi">40X</div>
@@ -170,28 +173,34 @@
 
     <div class="live-players" id="player-row"></div>
 
-    <div class="chip-rack">
-        <div class="chip c10" onclick="chooseChip(10, this)">10</div>
-        <div class="chip c100 active" onclick="chooseChip(100, this)">100</div>
-        <div class="chip c500" onclick="chooseChip(500, this)">500</div>
-        <div class="chip c1k" onclick="chooseChip(1000, this)">1K</div>
-        <div class="chip c5k" onclick="chooseChip(5000, this)">5K</div>
-        <div class="chip c10k" onclick="chooseChip(10000, this)">10K</div>
+    <div class="chip-rack" id="my-wallet">
+        <img src="assets/10_0.png" class="chip-img" data-val="10" onclick="chooseChip(10, this)">
+        <img src="assets/50_0.png" class="chip-img" data-val="50" onclick="chooseChip(50, this)">
+        <img src="assets/100_0.png" class="chip-img active" data-val="100" onclick="chooseChip(100, this)">
+        <img src="assets/500_0.png" class="chip-img" data-val="500" onclick="chooseChip(500, this)">
+        <img src="assets/1000_0.png" class="chip-img" data-val="1000" onclick="chooseChip(1000, this)">
+        <img src="assets/5000_1.png" class="chip-img" data-val="5000" onclick="chooseChip(5000, this)">
+        <img src="assets/10000_0.png" class="chip-img" data-val="10000" onclick="chooseChip(10000, this)">
     </div>
 
     <div class="popup" id="winMsg">+₹0</div>
-
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
 <script>
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); 
     const db = firebase.database();
 
-    const currentUserId = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+    // 🔥 RENDER SERVER SOCKET 🔥
+    const socket = io("https://kalyan-engine.onrender.com");
+
+    const currentUserId = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST";
     let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
-    let selectedChip = 100, isBettingOpen = false, isSpinning = false;
+    
+    // 🔥 ASSET CHIPS CONFIG 🔥
+    const chipImgs = { 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
+    let selectedChip = 100, currentChipSrc = chipImgs[100];
+    
+    let isBettingOpen = false, isSpinning = false;
     let currentRotation = 0, isAudioInit = false, botInterval;
     
     const carData = { porsche:40, ferrari:30, lambo:20, maserati:10, bmw:5, mercedes:5, audi:5, jaguar:5 };
@@ -202,7 +211,7 @@
     const wheelClasses = { porsche:'icon-porsche', ferrari:'icon-ferrari', lambo:'icon-lambo', maserati:'icon-maserati', bmw:'icon-bmw', mercedes:'icon-mercedes', audi:'icon-audi', jaguar:'icon-jaguar' };
 
     function initAudio() { if(!isAudioInit) { document.getElementById('bgMusic').volume = 0.20; document.getElementById('bgMusic').play().catch(e=>{}); isAudioInit = true; } }
-    function playSound(obj, vol) { try { let c = obj.cloneNode(); c.volume = vol; c.play().catch(e=>{}); } catch(e){} }
+    function playSound(obj, vol) { try { if(!isAudioInit) return; let c = obj.cloneNode(); c.volume = vol; c.play().catch(e=>{}); } catch(e){} }
 
     function drawWheel() {
         var wrapper = document.getElementById('wheelWrapper');
@@ -229,9 +238,9 @@
 
     function renderBotsUI() {
         let h = "";
-        botsList.forEach(b => {
+        botsList.forEach((b, i) => {
             let dB = b.bal >= 100000 ? "1.0L" : (b.bal/1000).toFixed(1) + "K";
-            h += `<div class="player"><div class="p-avatar">👑</div><div style="font-size:9px;color:#fff;font-weight:bold;margin-top:2px;">VIP_${b.id}</div><div style="font-size:9px;color:var(--gold);font-weight:900;">₹${dB}</div></div>`;
+            h += `<div class="player" id="bot-${i}"><div class="p-avatar">👑</div><div style="font-size:9px;color:#fff;font-weight:bold;margin-top:2px;">VIP_${b.id}</div><div style="font-size:9px;color:var(--gold);font-weight:900;">₹${dB}</div></div>`;
         });
         document.getElementById('player-row').innerHTML = h;
     } generateBots();
@@ -245,8 +254,10 @@
         db.ref(`users/${currentUserId}`).on('value', (s) => {
             const d = s.val() || {}; depBal = parseFloat(d.balance||0); winBal = parseFloat(d.winning_balance||0); bonBal = parseFloat(d.bonus_balance||0);
             userBalance = depBal + winBal + bonBal; document.getElementById('balanceDisplay').innerText = "₹" + userBalance.toFixed(2);
+            document.querySelectorAll('.chip-img').forEach(c => { if(parseInt(c.dataset.val) > userBalance) c.classList.add('locked'); else c.classList.remove('locked'); });
         });
 
+        // 🔥 RECOVERY 🔥
         db.ref(`Game/CarRoulette/Bets/${currentUserId}`).once('value', snap => {
             let saved = snap.val();
             if(saved) {
@@ -285,81 +296,92 @@
         }
     });
 
-    window.chooseChip = function(amt, el) { selectedChip = parseInt(amt); document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); playSound(document.getElementById('soundBet'), 0.5); };
-    function getChipColor(amt) { if(amt===10) return 'radial-gradient(circle, #fff, #ccc)'; if(amt===100) return 'radial-gradient(circle, #4fc3f7, #0288d1)'; if(amt===500) return 'radial-gradient(circle, #81c784, #388e3c)'; if(amt===1000) return 'radial-gradient(circle, #e57373, #d32f2f)'; if(amt===5000) return 'radial-gradient(circle, #ba68c8, #7b1fa2)'; return 'radial-gradient(circle, #ffd54f, #f57f17)'; }
+    window.chooseChip = function(amt, el) { 
+        if(el.classList.contains('locked')) return;
+        selectedChip = parseInt(amt); currentChipSrc = chipImgs[amt];
+        document.querySelectorAll('.chip-img').forEach(c => c.classList.remove('active')); 
+        el.classList.add('active'); playSound(document.getElementById('soundBet'), 0.5); 
+    };
 
-    function spawnChip(carId, amt, isBot, cX, cY) {
-        var fly = document.createElement('div'); fly.className = 'chip-fly'; fly.style.background = getChipColor(amt); fly.innerText = amt >= 1000 ? (amt/1000)+'K' : amt;
-        if(amt === 10 || amt === 10000) fly.style.color = '#000';
-        if(isBot) { fly.style.left = (Math.random() * window.innerWidth) + 'px'; fly.style.top = (window.innerHeight + 50) + 'px'; } else { fly.style.left = cX + 'px'; fly.style.top = cY + 'px'; }
+    // 🔥 PRECISE ASSET CHIP SPAWN 🔥
+    function spawnChip(carId, amt, imgSrc, isBot, cX, cY, botId) {
+        var fly = document.createElement('img'); fly.className = 'chip-visual'; fly.src = imgSrc; 
+        
+        if(isBot) { 
+            let botEl = document.getElementById('bot-'+botId);
+            if(botEl) {
+                let br = botEl.getBoundingClientRect();
+                fly.style.left = (br.left + br.width/2 - 12) + 'px'; 
+                fly.style.top = (br.top + br.height/2 - 12) + 'px'; 
+            } else {
+                fly.style.left = (Math.random() * window.innerWidth) + 'px'; fly.style.top = (window.innerHeight) + 'px'; 
+            }
+        } else { 
+            fly.style.left = (cX - 12) + 'px'; fly.style.top = (cY - 12) + 'px'; 
+        }
+        
         document.body.appendChild(fly);
         var tB = document.getElementById(carId).getBoundingClientRect();
-        setTimeout(() => { fly.style.left = (tB.left + 15 + Math.random()*(tB.width-30))+'px'; fly.style.top = (tB.top + 15 + Math.random()*(tB.height-30))+'px'; }, 50);
+        setTimeout(() => { fly.style.left = (tB.left + 10 + Math.random()*(tB.width-30))+'px'; fly.style.top = (tB.top + 10 + Math.random()*(tB.height-30))+'px'; }, 50);
     }
 
     window.placeBet = function(carId, e) {
-        if(!isBettingOpen) return; if(!currentUserId) { alert("Login Error!"); return; } if(userBalance < selectedChip) { alert("Insufficient Balance!"); return; }
+        if(!isBettingOpen) return; if(!currentUserId || currentUserId === "GUEST") { alert("Login Error!"); return; } if(userBalance < selectedChip) { alert("Insufficient Balance!"); return; }
         if(myBets[carId] === 0 && Object.values(myBets).filter(v=>v>0).length >= 4) { alert("Max 4 cars allowed!"); return; }
+        
         playSound(document.getElementById('soundBet'), 1.0); 
         let nDep = depBal, nWin = winBal, rem = selectedChip;
         if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
         db.ref('users/'+currentUserId).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
         db.ref(`Game/CarRoulette/Bets/${currentUserId}/${carId}`).set(firebase.database.ServerValue.increment(selectedChip));
+        
         myBets[carId] += selectedChip;
         document.getElementById('my-'+carId).innerText = "MY BET: ₹" + myBets[carId].toLocaleString(); document.getElementById('my-'+carId).style.display = "block";
-        spawnChip(carId, selectedChip, false, e.clientX, e.clientY);
+        spawnChip(carId, selectedChip, currentChipSrc, false, e.clientX, e.clientY, 0);
     };
 
     function botBetAction() {
         if(!isBettingOpen) return;
         let cKeys = Object.keys(carData), bBet = false;
         for(let i=0; i<(Math.floor(Math.random()*3)+1); i++) {
-            let rC = cKeys[Math.floor(Math.random()*cKeys.length)], amt = [10,100,500,1000,5000][Math.floor(Math.random()*5)], rB = botsList[Math.floor(Math.random()*botsList.length)];
-            if(rB.bal >= amt) { rB.bal -= amt; spawnChip(rC, amt, true, 0, 0); bBet = true; }
+            let rC = cKeys[Math.floor(Math.random()*cKeys.length)];
+            let amtOptions = [10,50,100,500,1000];
+            let amt = amtOptions[Math.floor(Math.random()*5)];
+            let botIndex = Math.floor(Math.random()*5);
+            let rB = botsList[botIndex];
+            if(rB.bal >= amt) { 
+                rB.bal -= amt; 
+                spawnChip(rC, amt, chipImgs[amt], true, 0, 0, botIndex); 
+                bBet = true; 
+            }
         }
         if(bBet) playSound(document.getElementById('soundBet'), 0.05); 
     }
 
-    // 🔥 SMART LOCAL TIMER LOGIC 🔥
-    db.ref('Game/CarRoulette/Status').on('value', (s) => {
-        let st = s.val(); if(!st) return;
-
-        if(st.state === 'betting') {
+    // 🔥 SOCKET SYNC 🔥
+    socket.on('CarRoulette_timerUpdate', (data) => {
+        if(data.state === 'betting') {
+            document.getElementById('timeText').innerText = data.timer;
+            document.getElementById('timeText').style.color = data.timer <= 5 ? "var(--neon-red)" : "var(--neon-green)";
+            document.getElementById('msgText').innerText = data.timer <= 5 ? "CLOSING..." : "PLACE YOUR BETS";
+            
             if(!isBettingOpen) {
                 isBettingOpen = true; isSpinning = false; resetTable();
                 clearInterval(botInterval); botInterval = setInterval(botBetAction, 800);
             }
-            
-            if (st.timer > 0 && st.timer <= 20) {
-                if (window.localTimerInterval) clearInterval(window.localTimerInterval);
-                
-                let currentT = st.timer;
-                document.getElementById('timeText').innerText = currentT;
-                document.getElementById('timeText').style.color = currentT <= 5 ? "var(--neon-red)" : "var(--neon-green)";
-                document.getElementById('msgText').innerText = currentT <= 5 ? "CLOSING..." : "PLACE YOUR BETS";
-                
-                window.localTimerInterval = setInterval(() => {
-                    currentT--;
-                    if (currentT >= 0) {
-                        document.getElementById('timeText').innerText = currentT;
-                        document.getElementById('timeText').style.color = currentT <= 5 ? "var(--neon-red)" : "var(--neon-green)";
-                        document.getElementById('msgText').innerText = currentT <= 5 ? "CLOSING..." : "PLACE YOUR BETS";
-                    } else {
-                        clearInterval(window.localTimerInterval);
-                    }
-                }, 1000);
-            }
         } 
-        else if (st.state === 'spinning' || st.state === 'calculating') {
-            // Result aate hi local timer ko rok dena hai
-            if (window.localTimerInterval) clearInterval(window.localTimerInterval);
-            
-            if(isBettingOpen && !isSpinning) {
-                isBettingOpen = false; isSpinning = true; clearInterval(botInterval);
-                document.getElementById('timeText').innerText = "0"; document.getElementById('msgText').innerText = "SPINNING...";
-                if(st.winner) runWheelSpin(st.winner);
-            }
+    });
+
+    socket.on('CarRoulette_result', (data) => {
+        if(isBettingOpen && !isSpinning) {
+            isBettingOpen = false; isSpinning = true; clearInterval(botInterval);
+            document.getElementById('timeText').innerText = "0"; document.getElementById('msgText').innerText = "SPINNING...";
+            if(data.winner) runWheelSpin(data.winner);
         }
+    });
+
+    socket.on('CarRoulette_newRound', () => {
+        isBettingOpen = true;
     });
 
     db.ref('Game/CarRoulette/Bets').on('value', s => {
@@ -379,11 +401,52 @@
         setTimeout(() => { sSnd.pause(); showWinner(wCar, fIdx); }, 7600);
     }
 
+    function animateWinningChips(wId) {
+        let boardRect = document.getElementById('game-mount').getBoundingClientRect();
+        let winTarget = document.getElementById(wId).getBoundingClientRect();
+        let targets = [];
+        
+        for(let i=0; i<5; i++) targets.push(document.getElementById('bot-'+i).getBoundingClientRect());
+        targets.push(document.getElementById('balanceDisplay').getBoundingClientRect());
+
+        playSound(document.getElementById('soundCoins'), 0.8); 
+
+        for(let i=0; i<12; i++) {
+            let target = targets[Math.floor(Math.random() * targets.length)];
+            setTimeout(() => {
+                let chip = document.createElement('img');
+                chip.className = 'chip-visual win-anim-chip';
+                chip.src = chipImgs[100]; 
+                chip.style.left = (winTarget.left + winTarget.width/2 - 12) + 'px';
+                chip.style.top = (winTarget.top + winTarget.height/2 - 12) + 'px';
+                document.body.appendChild(chip);
+
+                setTimeout(() => {
+                    chip.style.left = (target.left + target.width/2 + (Math.random()*20 - 10) - 12) + 'px';
+                    chip.style.top = (target.top + target.height/2 + (Math.random()*20 - 10) - 12) + 'px';
+                    chip.style.opacity = '0';
+                    chip.style.transform = 'scale(0.5)';
+                }, 50);
+
+                setTimeout(() => chip.remove(), 700);
+            }, i * 40); 
+        }
+    }
+
     function showWinner(wId, iIdx) {
         playSound(document.getElementById('soundWin'), 1.0); 
         document.getElementById('msgText').innerText = "WINNER!"; document.getElementById('timeText').innerText = wId.toUpperCase();
         document.getElementById(wId).classList.add('box-win'); document.getElementById('wheel-icon-'+iIdx).classList.add('icon-win');
 
+        // Cleanup losing chips
+        document.querySelectorAll('.chip-visual:not(.win-anim-chip)').forEach(c => {
+            c.style.transition = 'all 0.5s ease';
+            c.style.opacity = '0';
+            c.style.transform = 'scale(0)';
+            setTimeout(() => c.remove(), 500); 
+        });
+
+        // Update Live History
         let icon = wheelIcons[wId] || '🚗';
         let colClass = wheelClasses[wId] || '';
         let hHtml = document.getElementById('history-row').innerHTML;
@@ -394,16 +457,26 @@
         if(tempDiv.children.length > 15) tempDiv.removeChild(tempDiv.lastChild);
         document.getElementById('history-row').innerHTML = tempDiv.innerHTML;
 
-        if(myBets[wId] > 0 && currentUserId) {
+        animateWinningChips(wId);
+
+        if(myBets[wId] > 0 && currentUserId && currentUserId !== "GUEST") {
             var wAmt = myBets[wId] * carData[wId];
             db.ref(`users/${currentUserId}/winning_balance`).set(winBal + wAmt);
             var p = document.getElementById('winMsg'); p.innerText = "+₹" + wAmt.toLocaleString(); p.classList.add('show');
         }
         setTimeout(() => { document.getElementById('msgText').innerText = "WAITING..."; document.getElementById('timeText').innerText = "WAIT"; }, 4000);
+        
+        // Log History Server-side (Frontend just writes for visual)
+        if(currentUserId) {
+            db.ref('Game/CarRoulette/History').once('value', snap => {
+                let h = snap.val() || []; h.push(wId); if(h.length>20) h.shift();
+                db.ref('Game/CarRoulette/History').set(h);
+            });
+        }
     }
 
     function resetTable() {
-        document.querySelectorAll('.chip-fly').forEach(c => c.remove()); 
+        document.querySelectorAll('.chip-visual').forEach(c => c.remove()); 
         document.querySelectorAll('.recovery-chip').forEach(c => c.remove());
         document.getElementById('winMsg').classList.remove('show');
         for(var k in carData) {
