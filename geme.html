@@ -201,26 +201,39 @@
             return chip;
         }
 
+        let lastState = '';
+
         try {
             firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
             const db = firebase.database(), ph = localStorage.getItem('userPhone') || "GUEST";
             
-            // 🔥 SMART LOCAL TIMER LOGIC 🔥
+            // 🔥 SMART LOCAL TIMER & RECOVERY LOGIC 🔥
             db.ref('Game/DragonTiger/Status').on('value', s => {
                 let st = s.val(); if(!st) return;
                 let tmr = $('tmr'); 
-                
+
                 if(st.state === 'betting') {
-                    if(iBO===0) { 
-                        iBO=1; rUI(); 
+                    if(lastState !== 'betting') {
+                        iBO = 1; 
+                        rUI(); 
+                        recoverMyBets();
                         $('alert-start').classList.add('show'); 
                         setTimeout(()=>$('alert-start').classList.remove('show'), 1200); 
                     }
+                    lastState = 'betting';
                     
-                    if(st.timer > 0 && st.timer <= 20) {
-                        if(window.localTimerInterval) clearInterval(window.localTimerInterval);
+                    let currentT = st.timer;
+                    let now = Date.now();
+                    let savedEndTime = localStorage.getItem('dt_endTime');
+                    if (savedEndTime && savedEndTime > now && (savedEndTime - now) <= (st.timer * 1000 + 2000)) {
+                        currentT = Math.floor((savedEndTime - now) / 1000);
+                    } else {
+                        localStorage.setItem('dt_endTime', now + (currentT * 1000));
+                    }
+
+                    if (currentT >= 0 && currentT <= 20) {
+                        if (window.localTimerInterval) clearInterval(window.localTimerInterval);
                         
-                        let currentT = st.timer;
                         tmr.innerText = currentT + "s"; 
                         tmr.style.color = currentT <= 5 ? "#f33" : "#ffd700";
                         if(currentT<=5 && currentT>0 && lastBeep!==currentT) { pS('snd-beep', 0.8); lastBeep=currentT; }
@@ -233,18 +246,61 @@
                                 if(currentT<=5 && currentT>0 && lastBeep!==currentT) { pS('snd-beep', 0.8); lastBeep=currentT; }
                             } else {
                                 clearInterval(window.localTimerInterval);
+                                tmr.innerText = "0s";
                             }
                         }, 1000);
                     }
-                } else if(st.state === 'result' && iBO===1) {
-                    if(window.localTimerInterval) clearInterval(window.localTimerInterval);
-                    iBO=0; lastBeep=-1; tmr.innerText = "STOP!"; tmr.style.color = "#fff";
-                    $('alert-stop').classList.add('show'); setTimeout(()=>$('alert-stop').classList.remove('show'), 1200);
-                    setTimeout(() => { $('vs-clash-screen').style.display='flex'; setTimeout(()=>$('vs-clash-screen').style.display='none', 1000); }, 1200);
-                    setTimeout(() => sR_Sequence(st.winner), 2400);
+                } else if(st.state === 'result' || st.state === 'rolling') {
+                    if (window.localTimerInterval) clearInterval(window.localTimerInterval);
+                    if(lastState === 'betting') {
+                        iBO = 0; lastBeep = -1; 
+                        tmr.innerText = "STOP!"; tmr.style.color = "#fff";
+                        $('alert-stop').classList.add('show'); 
+                        setTimeout(()=>$('alert-stop').classList.remove('show'), 1200);
+                        setTimeout(() => { $('vs-clash-screen').style.display='flex'; setTimeout(()=>$('vs-clash-screen').style.display='none', 1000); }, 1200);
+                        setTimeout(() => sR_Sequence(st.winner), 2400);
+                    }
+                    lastState = 'result';
                 }
             });
-            
+
+            // 🔥 CHIP RECOVERY FUNCTION 🔥
+            function recoverMyBets() {
+                if(!ph || ph === "GUEST") return;
+                db.ref(`Game/DragonTiger/Bets/${ph}`).once('value', snap => {
+                    let saved = snap.val();
+                    if(saved) {
+                        setTimeout(() => {
+                            Object.keys(saved).forEach(side => {
+                                let val = saved[side];
+                                if(val > 0 && myBets[side] === 0) {
+                                    myBets[side] = val;
+                                    mB[side] += val;
+                                    let mbID = 'mb-' + (side === 'tie' ? 'ti' : side.charAt(0));
+                                    let paID = 'm' + (side === 'tie' ? 'ti' : side.charAt(0));
+                                    
+                                    $(mbID).innerText = '₹' + val;
+                                    $(mbID).style.display = 'block';
+                                    $(paID).innerText = '₹' + mB[side];
+
+                                    let box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
+                                    if(box) {
+                                        let bPos = getOffset(box);
+                                        let c = document.createElement('img');
+                                        c.src = "assets/500_0.png"; // Recovery Visual Chip
+                                        c.className = 'placed-chip';
+                                        c.style.left = (bPos.x - 13 + (Math.random()*20-10)) + "px";
+                                        c.style.top = (bPos.y - 13 + (Math.random()*20-10)) + "px";
+                                        c.setAttribute('data-side', side);
+                                        $('chips-layer').appendChild(c);
+                                    }
+                                }
+                            });
+                        }, 300);
+                    }
+                });
+            }
+
             db.ref('users/'+ph).on('value', s => {
                 let d=s.val()||{}; tB = (Number(d.balance)||0)+(Number(d.winning_balance)||0);
                 $('bal-bot').innerText = tB.toFixed(2); $('p-id').innerText = ph.slice(-4);
