@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>Kalyan VIP Matka - Pro Recovery Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -114,7 +115,7 @@
     <div class="game-status-area">
         <div id="main-timer">15</div>
         <div id="result-container">
-            <div id="wait-timer">Next Round in: 6</div>
+            <div id="wait-timer">Next Round in: 7s</div>
             <div id="result-card">
                 <div id="res-val" style="font-size: 38px; font-weight: 900; color: #000; line-height: 1;">A</div>
                 <div id="res-suit" style="font-size: 24px; line-height: 1;">♠️</div>
@@ -258,7 +259,6 @@
             let hist = snap.val();
             if(hist && Array.isArray(hist)) {
                 [...hist].reverse().forEach(winVal => {
-                    // Server bhejta hai 'A', '2', etc. Humein card data se milana hai
                     let winCard = cardsData.find(c => c.v == winVal) || cardsData[0];
                     updateHistory(winCard);
                 });
@@ -288,14 +288,13 @@
             clearInterval(botBetsInterval);
         }
 
-        // GAME SERVER SYNC 
+        // 🔥 SMART LOCAL TIMER LOGIC 🔥
         db.ref('Game/KalyanMatka/Status').on('value', (s) => {
             let data = s.val(); if(!data) return;
             
             if(data.state === 'betting') {
                 document.getElementById('main-timer').style.display = 'block';
                 document.getElementById('result-container').style.display = 'none'; 
-                document.getElementById('main-timer').innerText = data.timer;
                 canBet = true;
                 
                 if(lastState !== 'betting') {
@@ -304,13 +303,33 @@
                 }
                 lastState = 'betting';
                 
+                if(data.timer > 0 && data.timer <= 20) {
+                    if (window.localTimerInterval) clearInterval(window.localTimerInterval);
+                    
+                    let currentT = data.timer;
+                    let tElem = document.getElementById('main-timer');
+                    tElem.innerText = currentT;
+                    tElem.style.color = currentT <= 5 ? '#ff3333' : '#fff';
+                    
+                    window.localTimerInterval = setInterval(() => {
+                        currentT--;
+                        if(currentT >= 0) {
+                            tElem.innerText = currentT;
+                            tElem.style.color = currentT <= 5 ? '#ff3333' : '#fff';
+                        } else {
+                            clearInterval(window.localTimerInterval);
+                        }
+                    }, 1000);
+                }
             } 
             else if(data.state === 'result') {
+                if (window.localTimerInterval) clearInterval(window.localTimerInterval);
+                
                 canBet = false;
                 stopBotChipsAnimation(); 
                 document.getElementById('main-timer').style.display = 'none';
                 document.getElementById('result-container').style.display = 'flex';
-                document.getElementById('wait-timer').innerText = "Next Round in: " + (data.waitCount || 0);
+                document.getElementById('wait-timer').innerText = "Next Round in: 7s"; 
 
                 let winCard = cardsData.find(c => c.v == data.winner) || cardsData[0];
                 document.getElementById('res-val').innerText = winCard.v;
