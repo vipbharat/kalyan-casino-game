@@ -53,7 +53,7 @@
         .box b { position:absolute; bottom:5px; font-size:1.1rem; background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); pointer-events: none; }
         .win-glow { transform:scale(1.08); background: rgba(255,255,255,0.2) !important; box-shadow: 0 0 40px currentColor !important; z-index: 20;}
         
-        .my-bet-text { font-size: 0.85rem; color: #fff; background: rgba(0,0,0,0.7); padding: 6px; border-radius: 8px; text-align: center; border: 1px dashed var(--green); font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .my-bet-text { font-size: 0.85rem; color: #fff; background: rgba(0,0,0,0.7); padding: 6px; border-radius: 8px; text-align: center; border: 1px dashed var(--green); font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5); display: none;}
         
         .chip-visual { pointer-events: none; position: absolute; width: 22px; height: 22px; border-radius: 50%; border: 2.5px dashed rgba(255,255,255,0.8); z-index: 15; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; color: white; transition: 0.4s ease-out; box-shadow: 2px 2px 5px rgba(0,0,0,0.8);}
         
@@ -155,33 +155,6 @@
                 totalBal = depBal + winBal + bonBal; 
                 document.getElementById('user-balance').innerText = totalBal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             });
-
-            db.ref(`Game/7UpDown/Bets/${userID}`).once('value', snap => {
-                let saved = snap.val();
-                if(saved) {
-                    setTimeout(() => {
-                        Object.keys(saved).forEach(side => {
-                            let val = saved[side];
-                            if(val > 0 && myBets[side] !== undefined) {
-                                myBets[side] = val;
-                                document.getElementById('my-'+side).innerText = "My Bet: ₹" + val;
-                                document.getElementById('a-'+side).innerText = "₹" + val;
-                                
-                                let box = document.getElementById(side);
-                                if(box) {
-                                    let rect = box.getBoundingClientRect();
-                                    let c = document.createElement('div'); c.className = 'chip-visual';
-                                    c.style.background = '#e74c3c'; 
-                                    c.innerText = val >= 1000 ? (val/1000)+'K' : val;
-                                    c.style.left = (rect.left + rect.width/2 - 11) + 'px';
-                                    c.style.top = (rect.top + rect.height/2 - 11) + 'px';
-                                    document.body.appendChild(c);
-                                }
-                            }
-                        });
-                    }, 500);
-                }
-            });
         }
 
         db.ref('Game/7UpDown/History').once('value', snap => {
@@ -191,7 +164,7 @@
             }
         });
 
-        // 🔥 SMART LOCAL TIMER LOGIC FIREBASE SYNC KE ANDAR 🔥
+        // 🔥 COMPLETE SERVER SYNC & SMART TIMER 🔥
         db.ref('Game/7UpDown/Status').on('value', snap => {
             let data = snap.val(); if(!data) return;
 
@@ -199,15 +172,24 @@
                 if(lastState !== 'betting') {
                     isRolling = false;
                     resetTable();
+                    recoverMyBets(); // 🔥 Recovery Call immediately after Reset 🔥
                     startBotAnimation();
                 }
                 lastState = 'betting';
                 
-                // Naya Local Timer Trigger
-                if (data.timer > 0 && data.timer <= 20) {
+                // 🔥 NAYA RESUME LOGIC (Background Fix) 🔥
+                let currentT = data.timer;
+                let now = Date.now();
+                let savedEndTime = localStorage.getItem('7up_endTime');
+                
+                if (savedEndTime && savedEndTime > now && (savedEndTime - now) <= (data.timer * 1000 + 2000)) {
+                    currentT = Math.floor((savedEndTime - now) / 1000); 
+                } else {
+                    localStorage.setItem('7up_endTime', now + (currentT * 1000));
+                }
+
+                if (currentT > 0 && currentT <= 20) {
                     if (window.localTimerInterval) clearInterval(window.localTimerInterval);
-                    
-                    let currentT = data.timer;
                     let tElem = document.getElementById('timer');
                     tElem.innerText = currentT + "s";
                     tElem.style.color = currentT <= 5 ? '#ff007f' : '#fff';
@@ -224,7 +206,6 @@
                 }
             } 
             else if(data.state === 'rolling' || data.state === 'result') {
-                // Result aate hi Timer ruk jayega
                 if (window.localTimerInterval) clearInterval(window.localTimerInterval);
                 
                 if(lastState === 'betting') {
@@ -244,6 +225,46 @@
             document.getElementById('a-tie').innerText = "₹" + tPool.tie.toLocaleString();
             document.getElementById('a-high').innerText = "₹" + tPool.high.toLocaleString();
         });
+    }
+
+    // 🔥 RECOVERY FUNCTION 🔥
+    function recoverMyBets() {
+        if(!userID) return;
+        db.ref(`Game/7UpDown/Bets/${userID}`).once('value', snap => {
+            let saved = snap.val();
+            if(saved) {
+                Object.keys(saved).forEach(side => {
+                    let val = saved[side];
+                    if(val > 0 && myBets[side] !== undefined) {
+                        myBets[side] = val;
+                        document.getElementById('my-'+side).innerText = "My Bet: ₹" + val.toLocaleString();
+                        document.getElementById('my-'+side).style.display = 'block';
+                        
+                        let box = document.getElementById(side);
+                        if(box) {
+                            let rect = box.getBoundingClientRect();
+                            let c = document.createElement('div'); c.className = 'chip-visual';
+                            c.style.background = '#e74c3c'; 
+                            c.innerText = val >= 1000 ? (val/1000)+'K' : val;
+                            c.style.left = (rect.left + rect.width/2 - 11) + 'px';
+                            c.style.top = (rect.top + rect.height/2 - 11) + 'px';
+                            document.body.appendChild(c);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    function resetTable() {
+        document.querySelectorAll('.chip-visual').forEach(c => c.remove());
+        document.querySelectorAll('.box').forEach(b => b.classList.remove('win-glow'));
+        myBets = {low:0,tie:0,high:0}; 
+        ['low','tie','high'].forEach(s => {
+            document.getElementById('my-'+s).innerText = "My Bet: ₹0";
+            document.getElementById('my-'+s).style.display = 'none';
+        });
+        document.getElementById('cup').style.transform = 'translateY(-160px)';
     }
 
     function startRoll(v1, v2, winId) {
@@ -321,17 +342,6 @@
             chip.style.top = (rect.top + 15 + Math.random()*(rect.height-40)) + 'px';
             playCoinSound();
         }, 30);
-    }
-
-    function resetTable() {
-        document.querySelectorAll('.chip-visual').forEach(c => c.remove());
-        document.querySelectorAll('.box').forEach(b => b.classList.remove('win-glow'));
-        myBets = {low:0,tie:0,high:0}; 
-        ['low','tie','high'].forEach(s => {
-            document.getElementById('my-'+s).innerText = "My Bet: ₹0";
-            document.getElementById('my-'+s).style.display = 'none';
-        });
-        document.getElementById('cup').style.transform = 'translateY(-160px)';
     }
 
     function startBotAnimation() {
