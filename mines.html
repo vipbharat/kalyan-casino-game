@@ -74,10 +74,10 @@
         #winMsg { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #00ff88, #00b35e); border: 3px solid #fff; color: #000; padding: 20px 40px; border-radius: 20px; font-weight: 900; display: none; z-index: 20; box-shadow: 0 15px 40px rgba(0,255,136,0.6); text-align: center; animation: popIn 0.4s ease-out; }
     </style>
 </head>
-<body>
+<body onclick="initAudioContext()">
 
-    <audio id="soundGem" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
-    <audio id="soundBomb" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3"></audio>
+    <audio id="soundGem" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" preload="auto"></audio>
+    <audio id="soundBomb" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3" preload="auto"></audio>
 
     <div class="header">
         <a href="Dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
@@ -101,8 +101,7 @@
             </div>
         </div>
 
-        <div class="mines-grid" id="grid">
-            </div>
+        <div class="mines-grid" id="grid"></div>
 
         <div id="winMsg">
             <div style="font-size: 16px; text-transform: uppercase; color: #111; margin-bottom: 5px;">You Won</div>
@@ -141,6 +140,7 @@
         const phone = localStorage.getItem('userPhone') || "Guest";
 
         let currentBalance = 0;
+        let isAudioUnlocked = false;
 
         if (phone === "Guest") {
             alert("Please login first!");
@@ -152,6 +152,22 @@
             currentBalance = (parseFloat(data.balance||0) + parseFloat(data.winning_balance||0) + parseFloat(data.bonus_balance||0));
             document.getElementById('balance').innerText = currentBalance.toFixed(2);
         });
+
+        function initAudioContext() {
+            if(!isAudioUnlocked) {
+                document.getElementById('soundGem').play().then(() => document.getElementById('soundGem').pause()).catch(e=>{});
+                document.getElementById('soundBomb').play().then(() => document.getElementById('soundBomb').pause()).catch(e=>{});
+                isAudioUnlocked = true;
+            }
+        }
+
+        function playSound(id) {
+            if(isAudioUnlocked) {
+                let s = document.getElementById(id);
+                s.currentTime = 0;
+                s.play().catch(e => console.log(e));
+            }
+        }
 
         // Game Vars
         let isPlaying = false;
@@ -170,10 +186,6 @@
         const dispMult = document.getElementById('dispMult');
         const dispMines = document.getElementById('dispMines');
         const winMsg = document.getElementById('winMsg');
-        
-        // Audio Vars
-        const sGem = document.getElementById('soundGem');
-        const sBomb = document.getElementById('soundBomb');
 
         function initGrid() {
             gridEl.innerHTML = "";
@@ -240,12 +252,12 @@
 
             if (minePositions[index]) {
                 // BOMB 💣
-                sBomb.currentTime = 0; sBomb.play(); // Play Blast Sound
+                playSound('soundBomb');
                 tile.classList.add('bomb'); tile.innerHTML = "💣";
                 gameOver(false);
             } else {
                 // GEM 💎
-                sGem.currentTime = 0; sGem.play(); // Play Gem Ting Sound
+                playSound('soundGem');
                 tile.classList.add('gem'); tile.innerHTML = "💎";
                 openedGems++;
                 currentMultiplier = calculateMultiplier(totalMines, openedGems);
