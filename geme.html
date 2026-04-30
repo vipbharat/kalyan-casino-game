@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger VIP - Master Fixed</title>
+    <title>Dragon Tiger VIP - Socket Edition</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial Black', sans-serif; }
         body { background: #000; overflow: hidden; width: 100vw; height: 100vh; position: relative; user-select: none; }
-        
-        /* 🔥 PRELOADER CLASS (For Zero Lag Images) 🔥 */
-        .preload-images { display: none; }
-
         #game-mount {
             position: absolute; width: 100vw; height: 100vh;
             background: linear-gradient(180deg, #11052c 0%, #2a0b5c 100%);
@@ -33,7 +30,7 @@
         .cards-stage { display: flex; align-items: center; gap: 10px; position: relative; z-index: 20;}
         
         .crd { width: 55px; height: 80px; border-radius: 4px; border: 2px solid #ffd700; background: #fff; position: relative; box-shadow: 0 5px 15px #000; transition: transform 0.3s; transform-style: preserve-3d; }
-        .cbk { position: absolute; inset: 0; background: #222 url('https://deckofcardsapi.com/static/img/back.png') center/cover; border-radius: 2px; z-index: 10; backface-visibility: hidden; }
+        .cbk { position: absolute; inset: 0; background: #222 url('https://deckofcardsapi.com/static/img/back.png') center/cover; border-radius: 2px; z-index: 10; backface-visibility: hidden; transition: 0.3s; }
         .crd-val { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 2px; background: #fff; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 20px; line-height: 1.2;}
         .red-suit { color: red; }
         .black-suit { color: black; }
@@ -50,8 +47,11 @@
         .pa { position: absolute; bottom: 5px; right: 8px; background: #ffd700; color: #000; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 900; }
         .mbb { position: absolute; top: 5px; left: 8px; background: #00e5ff; color: #000; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: none; font-weight: 900; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #fff; }
         .gw { box-shadow: 0 0 25px #39ff14, inset 0 0 20px #fff !important; border-color: #39ff14 !important; transform: scale(1.02); }
-        #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 200; }
-        .placed-chip { position: absolute; width: 26px; height: 26px; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.6)); transition: all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 300; }
+        
+        /* 🔥 CHIP LAYER FIXED 🔥 */
+        #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 200; overflow: hidden; }
+        .placed-chip { position: absolute; width: 26px; height: 26px; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.6)); transition: all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 300; pointer-events: none;}
+        
         .side-panel { width: 75px; display: flex; flex-direction: column; justify-content: space-evenly; background: rgba(0,0,0,0.4); z-index: 80; border-left: 1px solid #ffd700; border-right: 1px solid #ffd700; }
         .bot-user { display: flex; flex-direction: column; align-items: center; position: relative; height: 50px; }
         .player-icon { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid #ffd700; object-fit: cover; background: #222; }
@@ -73,16 +73,6 @@
     </style>
 </head>
 <body>
-    
-    <div class="preload-images">
-        <img src="assets/50_0.png">
-        <img src="assets/100_0.png">
-        <img src="assets/500_0.png">
-        <img src="assets/1000_0.png">
-        <img src="assets/5000_1.png">
-        <img src="assets/10000_0.png">
-    </div>
-
     <div id="start-screen" onclick="enterCasino()" style="position: fixed; inset: 0; background: #0a0515; z-index: 9999999; display: flex; justify-content: center; align-items: center; color: #ffd700; cursor: pointer;"><h1>TAP TO PLAY</h1></div>
     <div id="loading-screen" style="position: fixed; inset: 0; background: #000; z-index: 9999998; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700;"><p>DOWNLOADING ASSETS...</p></div>
 
@@ -110,23 +100,10 @@
                 <video class="flying-beast" id="beast-right" src="assets/VID_20260426_202810_2.mp4" autoplay loop muted playsinline></video>
             </div>
             <div class="history-bar" id="hr"></div>
-            
             <div class="betting-area">
-                <div class="bet-box dbx" onclick="pB('dragon')" id="bx-d">
-                    <div class="box-title">Dragon</div>
-                    <div class="pa" id="md">₹0</div>
-                    <div class="mbb" id="mb-d">₹0</div>
-                </div>
-                <div class="bet-box tibx" onclick="pB('tie')" id="bx-ti">
-                    <div class="box-title" style="font-size:18px;">Tie</div>
-                    <div class="pa" id="mti">₹0</div>
-                    <div class="mbb" id="mb-ti">₹0</div>
-                </div>
-                <div class="bet-box tbx" onclick="pB('tiger')" id="bx-t">
-                    <div class="box-title">Tiger</div>
-                    <div class="pa" id="mt">₹0</div>
-                    <div class="mbb" id="mb-t">₹0</div>
-                </div>
+                <div class="bet-box dbx" onclick="pB('dragon')" id="bx-d"><div class="box-title">Dragon</div><div class="pa" id="md">₹0</div><div class="mbb" id="mb-d">₹0</div></div>
+                <div class="bet-box tibx" onclick="pB('tie')" id="bx-ti"><div class="box-title" style="font-size:18px;">Tie</div><div class="pa" id="mti">₹0</div><div class="mbb" id="mb-ti">₹0</div></div>
+                <div class="bet-box tbx" onclick="pB('tiger')" id="bx-t"><div class="box-title">Tiger</div><div class="pa" id="mt">₹0</div><div class="mbb" id="mb-t">₹0</div></div>
             </div>
         </div>
 
@@ -139,7 +116,8 @@
                 <div class="w-bal">₹ <span id="bal-bot">0.00</span></div>
             </div>
             <div class="chip-tray" id="tray">
-                <img src="assets/50_0.png" class="chip sel" data-value="50" onclick="sC(this)">
+                <img src="assets/10_0.png" class="chip sel" data-value="10" onclick="sC(this)">
+                <img src="assets/50_0.png" class="chip" data-value="50" onclick="sC(this)">
                 <img src="assets/100_0.png" class="chip" data-value="100" onclick="sC(this)">
                 <img src="assets/500_0.png" class="chip" data-value="500" onclick="sC(this)">
                 <img src="assets/1000_0.png" class="chip" data-value="1000" onclick="sC(this)">
@@ -158,16 +136,15 @@
 
     <script>
         const $ = i => document.getElementById(i);
-        let iBO = 0, cC = 50, tB = 0, depBal = 0, winBal = 0, lastBeep = -1, lastState = '';
-        let mB = { dragon: 0, tiger: 0, tie: 0 }; 
-        let myBets = { dragon: 0, tiger: 0, tie: 0 }; 
-        
-        const chipImgs = { 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
+        let iBO = 0, cC = 10, tB = 0, dB=0, wB=0, bB=0;
+        let mB = { dragon: 0, tiger: 0, tie: 0 }, myBets = { dragon: 0, tiger: 0, tie: 0 };
+        let lastBeep = -1;
+        const chipImgs = { 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
 
         function enterCasino() { 
             $('start-screen').style.display='none'; $('loading-screen').style.display='flex'; 
             if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-            setTimeout(() => { $('loading-screen').style.display='none'; }, 2000); 
+            setTimeout(() => { $('loading-screen').style.display='none'; }, 5000); 
         }
 
         function initAudio() { 
@@ -187,193 +164,117 @@
             $('left-players').innerHTML = lh; $('right-players').innerHTML = rh;
         }
         genPlayers();
+        setInterval(() => { $('oc-top').innerText = Math.floor(Math.random() * 25) + 220; }, 4000);
 
-        function getOffset(el) {
-            if(!el) return {x:0, y:0, w:0, h:0};
-            let x = 0, y = 0, w = el.offsetWidth, h = el.offsetHeight;
-            while (el && el.id !== 'game-mount' && el !== document.body) {
-                x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent;
-            }
-            return { x: x + w/2, y: y + h/2, w, h }; 
-        }
-
-        // 🔥 NO DELAY CHIP SPAWN FUNCTION 🔥
-        function spC(side, imgSrc, srcEl) {
+        // 🔥 PERFECT CHIP POSITIONING CALCULATION 🔥
+        function spC(side, imgSrc, srcEl, isSystemAnim = false) {
             if(!srcEl) return;
             pS('snd-drop', 0.5);
             let layer = $('chips-layer'), box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
             let chip = document.createElement('img');
             chip.src = imgSrc; chip.className = 'placed-chip';
             
-            let sPos = getOffset(srcEl), bPos = getOffset(box);
+            // Get positions relative to game-mount to avoid off-screen scatter
+            let sR = srcEl.getBoundingClientRect();
+            let mR = $('game-mount').getBoundingClientRect();
+            let bR = box.getBoundingClientRect();
             
-            chip.style.left = (sPos.x - 13) + "px";
-            chip.style.top = (sPos.y - 13) + "px";
+            // Start exact center of source avatar/wallet
+            chip.style.left = (sR.left - mR.left + sR.width/2 - 13) + "px";
+            chip.style.top = (sR.top - mR.top + sR.height/2 - 13) + "px";
             chip.style.transform = "scale(0.3)";
             layer.appendChild(chip);
 
+            // Fly strictly into the target box padding bounds
             setTimeout(() => {
-                let rx = (Math.random() - 0.5) * (bPos.w - 40), ry = (Math.random() - 0.5) * (bPos.h - 40);
-                chip.style.left = (bPos.x + rx - 13) + "px";
-                chip.style.top = (bPos.y + ry - 13) + "px";
+                let padX = 15, padY = 15;
+                let randX = padX + Math.random() * (bR.width - padX*2);
+                let randY = padY + Math.random() * (bR.height - padY*2);
+                
+                chip.style.left = (bR.left - mR.left + randX - 13) + "px";
+                chip.style.top = (bR.top - mR.top + randY - 13) + "px";
                 chip.style.transform = "scale(1)";
             }, 50);
+            
             chip.setAttribute('data-side', side);
 
-            // Sirf bots ki bet se total pool update karna
-            let valMatch = imgSrc.match(/\/(\d+)_/);
-            let val = valMatch ? parseInt(valMatch[1]) : 100;
-            mB[side] += val;
-            $('m' + (side === 'tie' ? 'ti' : side.charAt(0))).innerText = '₹' + mB[side];
-            
+            if(!isSystemAnim) {
+                let valMatch = imgSrc.match(/\/(\d+)_/);
+                let val = valMatch ? parseInt(valMatch[1]) : 100;
+                mB[side] += val;
+                $('m' + (side === 'tie' ? 'ti' : side.charAt(0))).innerText = '₹' + mB[side];
+            }
+            if(layer.children.length > 100) layer.firstChild.remove();
             return chip;
         }
 
         try {
             firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
-            const db = firebase.database(), ph = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST";
+            const db = firebase.database();
+            const ph = localStorage.getItem('userPhone') || "GUEST";
             
-            db.ref('users/'+ph).on('value', s => {
-                let d=s.val()||{}; 
-                depBal = parseFloat(d.balance||0); 
-                winBal = parseFloat(d.winning_balance||0);
-                tB = depBal + winBal + parseFloat(d.bonus_balance||0);
-                $('bal-bot').innerText = tB.toFixed(2); $('p-id').innerText = ph.slice(-4);
-                document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
-            });
+            // 🔥 YAHAN APNA RENDER URL DALEIN 🔥
+            const socket = io("https://kalyan-engine.onrender.com");
 
-            // 🔥 SMART TIMER & WAITING FIX 🔥
-            db.ref('Game/DragonTiger/Status').on('value', s => {
-                let st = s.val(); if(!st) return;
+            // Event Listeners from Render Socket
+            socket.on('DragonTiger_timerUpdate', (data) => {
                 let tmr = $('tmr'); 
-                
-                if(st.state === 'betting') {
-                    if(lastState !== 'betting') {
-                        iBO = 1; 
-                        rUI(); 
-                        recoverMyBets(); 
-                        $('alert-start').classList.add('show'); 
-                        setTimeout(()=>$('alert-start').classList.remove('show'), 1200); 
+                if(data.state === 'betting') {
+                    tmr.innerText = data.timer + "s"; 
+                    tmr.style.color = data.timer <= 5 ? "#ff3333" : "#ffd700";
+                    if(iBO===0) { 
+                        iBO=1; rUI(); 
+                        $('alert-start').classList.add('show'); setTimeout(()=>$('alert-start').classList.remove('show'), 1200); 
                     }
-                    lastState = 'betting';
-                    
-                    let currentT = st.timer;
-                    let now = Date.now();
-                    let savedEndTime = localStorage.getItem('dt1_endTime');
-                    
-                    if (savedEndTime && savedEndTime > now && (savedEndTime - now) <= (st.timer * 1000 + 2000)) {
-                        currentT = Math.floor((savedEndTime - now) / 1000);
-                    } else {
-                        localStorage.setItem('dt1_endTime', now + (currentT * 1000));
-                    }
-
-                    if (window.localTimerInterval) clearInterval(window.localTimerInterval);
-                    
-                    if (currentT >= 0) {
-                        tmr.innerText = currentT + "s"; 
-                        tmr.style.color = currentT <= 5 ? "#f33" : "#ffd700";
-                        if(currentT<=5 && currentT>0 && lastBeep!==currentT) { pS('snd-beep', 0.8); lastBeep=currentT; }
-                        
-                        window.localTimerInterval = setInterval(() => {
-                            currentT--;
-                            if(currentT >= 0) {
-                                tmr.innerText = currentT + "s"; 
-                                tmr.style.color = currentT <= 5 ? "#f33" : "#ffd700";
-                                if(currentT<=5 && currentT>0 && lastBeep!==currentT) { pS('snd-beep', 0.8); lastBeep=currentT; }
-                            } else {
-                                clearInterval(window.localTimerInterval);
-                                tmr.innerText = "0s";
-                            }
-                        }, 1000);
-                    }
+                    if(data.timer<=5 && data.timer>0 && lastBeep!==data.timer) { pS('snd-beep', 0.8); lastBeep=data.timer; }
                 } else {
-                    // Result ya Rolling state mein WAITING dikhega aur result ghumega
-                    if (window.localTimerInterval) clearInterval(window.localTimerInterval);
-                    if(lastState === 'betting') {
-                        iBO = 0; lastBeep = -1; 
-                        tmr.innerText = "WAITING..."; tmr.style.color = "#fff";
-                        $('alert-stop').classList.add('show'); 
-                        setTimeout(()=>$('alert-stop').classList.remove('show'), 1200);
-                        setTimeout(() => { $('vs-clash-screen').style.display='flex'; setTimeout(()=>$('vs-clash-screen').style.display='none', 1000); }, 1200);
-                        setTimeout(() => sR_Sequence(st.winner), 2400);
-                    }
-                    lastState = st.state;
-                    if(!iBO) tmr.innerText = "WAITING...";
+                    tmr.innerText = "STOP!"; tmr.style.color = "#fff";
                 }
             });
 
-            // 🔥 RECOVERY OF MY BETS 🔥
-            function recoverMyBets() {
-                if(!ph || ph === "GUEST") return;
-                db.ref(`Game/DragonTiger/Bets/${ph}`).once('value', snap => {
-                    let saved = snap.val();
-                    if(saved) {
-                        setTimeout(() => {
-                            Object.keys(saved).forEach(side => {
-                                let val = saved[side];
-                                if(val > 0 && myBets[side] === 0) {
-                                    myBets[side] = val;
-                                    mB[side] += val; 
-                                    
-                                    let mbID = 'mb-' + (side === 'tie' ? 'ti' : side.charAt(0));
-                                    let paID = 'm' + (side === 'tie' ? 'ti' : side.charAt(0));
-                                    
-                                    $(mbID).innerText = '₹' + myBets[side]; 
-                                    $(mbID).style.display = 'block'; 
-                                    $(paID).innerText = '₹' + mB[side];
+            socket.on('DragonTiger_result', (data) => {
+                iBO=0; lastBeep=-1; 
+                $('alert-stop').classList.add('show'); setTimeout(()=>$('alert-stop').classList.remove('show'), 1200);
+                setTimeout(() => { $('vs-clash-screen').style.display='flex'; setTimeout(()=>$('vs-clash-screen').style.display='none', 1000); }, 1200);
+                setTimeout(() => sR_Sequence(data.winner || 'tie'), 2400);
+            });
 
-                                    let box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
-                                    if(box) {
-                                        let bPos = getOffset(box); 
-                                        let c = document.createElement('img');
-                                        c.src = "assets/500_0.png"; // visual chip for recovery
-                                        c.className = 'placed-chip';
-                                        c.style.left = (bPos.x - 13 + (Math.random()*20-10)) + "px";
-                                        c.style.top = (bPos.y - 13 + (Math.random()*20-10)) + "px";
-                                        c.setAttribute('data-side', side); 
-                                        $('chips-layer').appendChild(c);
-                                    }
-                                }
-                            });
-                        }, 300);
-                    }
-                });
-            }
+            socket.on('DragonTiger_newRound', () => {
+                iBO = 1; rUI();
+                $('alert-start').classList.add('show'); setTimeout(()=>$('alert-start').classList.remove('show'), 1200); 
+            });
+
+            db.ref('users/'+ph).on('value', s => {
+                let d=s.val()||{}; dB = parseFloat(d.balance||0); wB = parseFloat(d.winning_balance||0); bB = parseFloat(d.bonus_balance||0);
+                tB = Math.max(0, dB+wB+bB);
+                $('bal-bot').innerText = tB.toFixed(2); $('p-id').innerText = ph.slice(-4);
+                document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
+            });
 
             db.ref('Game/DragonTiger/History').on('value', s => {
                 let h=s.val()||[], m=''; h.slice(0,18).forEach(w => m+=`<div class="h-dot h-${w==='dragon'?'d':(w==='tiger'?'t':'tie')}">${w[0].toUpperCase()}</div>`);
                 $('hr').innerHTML = m;
             });
+            
+            // Player Bet Event
+            window.pB = (s) => { 
+                if(!iBO || tB < cC) return; 
+                let nD=dB, nW=wB, rm=cC;
+                if(nD>=rm) nD-=rm; else { rm-=nD; nD=0; nW-=rm; }
+                db.ref('users/'+ph).update({balance: Math.max(0,nD), winning_balance: Math.max(0,nW)});
+                db.ref(`Game/DragonTiger/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
+                
+                spC(s, chipImgs[cC], $('my-wallet'), false); 
+                myBets[s] += cC;
+                let mbID = 'mb-' + (s === 'tie' ? 'ti' : s.charAt(0));
+                $(mbID).innerText = '₹' + myBets[s];
+                $(mbID).style.display = 'block';
+            };
+
         } catch(e){}
 
         window.sC = (el) => { if(el.classList.contains('locked')) return; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); cC=parseInt(el.dataset.value); };
-        
-        // 🔥 PERFECT MY BET DEDUCTION AND DISPLAY 🔥
-        window.pB = (s) => { 
-            if(!iBO || tB < cC) return; 
-            if(!ph || ph === "GUEST") { alert("Login Error!"); return; }
-            
-            let nDep = depBal, nWin = winBal, rem = cC;
-            if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
-            
-            tB -= cC; 
-            depBal = nDep; 
-            winBal = nWin;
-            $('bal-bot').innerText = tB.toFixed(2);
-            
-            db.ref('users/'+ph).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
-            db.ref(`Game/DragonTiger/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
 
-            myBets[s] += cC;
-            let mbID = 'mb-' + (s === 'tie' ? 'ti' : s.charAt(0));
-            $(mbID).innerText = '₹' + myBets[s];
-            $(mbID).style.display = 'block';
-
-            // Animation local pool update ke sath
-            spC(s, chipImgs[cC], $('my-wallet')); 
-        };
-
-        // Fake Bots placing chips
         setInterval(() => { 
             if(iBO) { 
                 let s = Math.random()>0.5 ? 'dragon' : 'tiger'; if(Math.random()>0.9) s='tie';
@@ -383,7 +284,7 @@
                 else srcEl = $('top-online'); 
                 
                 let randomChipKey = Object.keys(chipImgs)[Math.floor(Math.random() * Object.keys(chipImgs).length)];
-                spC(s, chipImgs[randomChipKey], srcEl);
+                spC(s, chipImgs[randomChipKey], srcEl, true);
             } 
         }, 250);
 
@@ -396,32 +297,25 @@
             else { dIdx = Math.floor(Math.random()*13); tIdx = dIdx; } 
 
             pS('snd-card', 1); $('b-d').style.opacity='0'; 
-            $('d-v').innerHTML = `<div class="text-card black-suit"><div>${vals[dIdx]}</div><div>♠</div></div>`;
+            $('d-v').innerHTML = `<div class="black-suit" style="font-size:20px; font-weight:900;">${vals[dIdx]}<br><span style="font-size:30px">♠</span></div>`;
             setTimeout(() => {
                 pS('snd-card', 1); $('b-t').style.opacity='0';
-                $('t-v').innerHTML = `<div class="text-card red-suit"><div>${vals[tIdx]}</div><div>♥</div></div>`;
+                $('t-v').innerHTML = `<div class="red-suit" style="font-size:20px; font-weight:900;">${vals[tIdx]}<br><span style="font-size:30px">♥</span></div>`;
+                
                 setTimeout(() => {
                     let winBox = $('bx-' + (w==='dragon'?'d':(w==='tiger'?'t':'ti')));
-                    let dealerPos = getOffset($('tmr')); 
+                    let mR = $('game-mount').getBoundingClientRect();
                     winBox.classList.add('gw');
+                    
+                    let dealerR = $('tmr').getBoundingClientRect(); 
                     
                     document.querySelectorAll('.placed-chip').forEach(c => {
                         if(c.getAttribute('data-side') !== w) {
-                            c.style.left = (dealerPos.x - 13) + "px";
-                            c.style.top = (dealerPos.y - 13) + "px";
+                            c.style.left = (dealerR.left - mR.left + dealerR.width/2 - 13) + "px";
+                            c.style.top = (dealerR.top - mR.top + dealerR.height/2 - 13) + "px";
                             c.style.opacity = '0';
                         }
                     });
-
-                    // 🔥 PERFECT WINNING DISTRIBUTION TO FIREBASE 🔥
-                    let winAmt = 0;
-                    if(w === 'dragon') winAmt = myBets.dragon * 2;
-                    else if(w === 'tiger') winAmt = myBets.tiger * 2;
-                    else if(w === 'tie') winAmt = myBets.tie * 9;
-
-                    if(winAmt > 0 && ph && ph !== "GUEST") {
-                        db.ref('users/'+ph+'/winning_balance').set(winBal + winAmt);
-                    }
 
                     document.querySelectorAll('.bot-user').forEach(bot => {
                         let tag = bot.querySelector('.wl-tag');
@@ -433,11 +327,13 @@
 
                     setTimeout(() => {
                         pS('snd-fly', 1);
-                        let winBoxPos = getOffset(winBox);
-                        for(let i=0; i<20; i++) {
+                        let wR = winBox.getBoundingClientRect();
+                        for(let i=0; i<15; i++) {
                             let c = document.createElement('img'); c.src = "assets/100_0.png"; c.className = 'placed-chip';
-                            c.style.left = (winBoxPos.x - 13) + "px"; c.style.top = (winBoxPos.y - 13) + "px";
+                            c.style.left = (wR.left - mR.left + wR.width/2 - 13) + "px"; 
+                            c.style.top = (wR.top - mR.top + wR.height/2 - 13) + "px";
                             $('chips-layer').appendChild(c);
+                            
                             setTimeout(() => { 
                                 let r = Math.random(), target;
                                 if(r < 0.2) target = $('my-wallet');
@@ -445,13 +341,24 @@
                                 else if(r < 0.7) target = $('bl'+Math.floor(Math.random()*5));
                                 else target = $('br'+Math.floor(Math.random()*5));
                                 
-                                let tPos = getOffset(target);
-                                c.style.left = (tPos.x - 13) + "px"; 
-                                c.style.top = (tPos.y - 13) + "px"; 
+                                let tR = target.getBoundingClientRect();
+                                c.style.left = (tR.left - mR.left + tR.width/2 - 13) + "px"; 
+                                c.style.top = (tR.top - mR.top + tR.height/2 - 13) + "px"; 
                                 c.style.opacity='0';
                             }, 50);
                             setTimeout(()=>c.remove(), 1000);
                         }
+
+                        // 🔥 WINNING PAYOUT LOGIC 🔥
+                        let wa=0;
+                        if(w==='dragon') wa = myBets.dragon * 2;
+                        else if(w==='tiger') wa = myBets.tiger * 2;
+                        else if(w==='tie') wa = myBets.tie * 9;
+                        
+                        if(wa > 0 && ph !== "GUEST") {
+                            db.ref('users/'+ph+'/winning_balance').set(wB + wa);
+                        }
+
                     }, 800);
                 }, 1000);
             }, 800);
@@ -464,7 +371,7 @@
             
             ['d','t','ti'].forEach(s => {
                 $('m'+s).innerText = '₹0';
-                $('mb-'+s).innerText = '₹0';
+                $('mb-'+s).innerText = 'MY BET: ₹0';
                 $('mb-'+s).style.display = 'none'; 
             });
 
