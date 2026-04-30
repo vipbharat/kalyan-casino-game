@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger VIP - Final Edition</title>
+    <title>Dragon Tiger VIP - Master Fixed</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial Black', sans-serif; }
         body { background: #000; overflow: hidden; width: 100vw; height: 100vh; position: relative; user-select: none; }
+        
+        /* 🔥 PRELOADER CLASS (For Zero Lag Images) 🔥 */
+        .preload-images { display: none; }
+
         #game-mount {
             position: absolute; width: 100vw; height: 100vh;
             background: linear-gradient(180deg, #11052c 0%, #2a0b5c 100%);
@@ -69,6 +73,16 @@
     </style>
 </head>
 <body>
+    
+    <div class="preload-images">
+        <img src="assets/50_0.png">
+        <img src="assets/100_0.png">
+        <img src="assets/500_0.png">
+        <img src="assets/1000_0.png">
+        <img src="assets/5000_1.png">
+        <img src="assets/10000_0.png">
+    </div>
+
     <div id="start-screen" onclick="enterCasino()" style="position: fixed; inset: 0; background: #0a0515; z-index: 9999999; display: flex; justify-content: center; align-items: center; color: #ffd700; cursor: pointer;"><h1>TAP TO PLAY</h1></div>
     <div id="loading-screen" style="position: fixed; inset: 0; background: #000; z-index: 9999998; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700;"><p>DOWNLOADING ASSETS...</p></div>
 
@@ -96,10 +110,23 @@
                 <video class="flying-beast" id="beast-right" src="assets/VID_20260426_202810_2.mp4" autoplay loop muted playsinline></video>
             </div>
             <div class="history-bar" id="hr"></div>
+            
             <div class="betting-area">
-                <div class="bet-box dbx" onclick="pB('dragon')" id="bx-d"><div class="box-title">Dragon</div><div class="pa" id="md">₹0</div><div class="mbb" id="mb-d">₹0</div></div>
-                <div class="bet-box tibx" onclick="pB('tie')" id="bx-ti"><div class="box-title" style="font-size:18px;">Tie</div><div class="pa" id="mti">₹0</div><div class="mbb" id="mb-ti">₹0</div></div>
-                <div class="bet-box tbx" onclick="pB('tiger')" id="bx-t"><div class="box-title">Tiger</div><div class="pa" id="mt">₹0</div><div class="mbb" id="mb-t">₹0</div></div>
+                <div class="bet-box dbx" onclick="pB('dragon')" id="bx-d">
+                    <div class="box-title">Dragon</div>
+                    <div class="pa" id="md">₹0</div>
+                    <div class="mbb" id="mb-d">₹0</div>
+                </div>
+                <div class="bet-box tibx" onclick="pB('tie')" id="bx-ti">
+                    <div class="box-title" style="font-size:18px;">Tie</div>
+                    <div class="pa" id="mti">₹0</div>
+                    <div class="mbb" id="mb-ti">₹0</div>
+                </div>
+                <div class="bet-box tbx" onclick="pB('tiger')" id="bx-t">
+                    <div class="box-title">Tiger</div>
+                    <div class="pa" id="mt">₹0</div>
+                    <div class="mbb" id="mb-t">₹0</div>
+                </div>
             </div>
         </div>
 
@@ -131,15 +158,16 @@
 
     <script>
         const $ = i => document.getElementById(i);
-        let iBO = 0, cC = 50, tB = 0, depBal = 0, winBal = 0, myBets = { dragon: 0, tiger: 0, tie: 0 }, lastBeep = -1;
-        let lastState = '';
+        let iBO = 0, cC = 50, tB = 0, depBal = 0, winBal = 0, lastBeep = -1, lastState = '';
+        let mB = { dragon: 0, tiger: 0, tie: 0 }; 
+        let myBets = { dragon: 0, tiger: 0, tie: 0 }; 
         
         const chipImgs = { 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
 
         function enterCasino() { 
             $('start-screen').style.display='none'; $('loading-screen').style.display='flex'; 
             if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-            setTimeout(() => { $('loading-screen').style.display='none'; }, 5000); 
+            setTimeout(() => { $('loading-screen').style.display='none'; }, 2000); 
         }
 
         function initAudio() { 
@@ -169,7 +197,8 @@
             return { x: x + w/2, y: y + h/2, w, h }; 
         }
 
-        function spC(side, imgSrc, srcEl, isSystemAnim = false) {
+        // 🔥 NO DELAY CHIP SPAWN FUNCTION 🔥
+        function spC(side, imgSrc, srcEl) {
             if(!srcEl) return;
             pS('snd-drop', 0.5);
             let layer = $('chips-layer'), box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
@@ -190,14 +219,20 @@
                 chip.style.transform = "scale(1)";
             }, 50);
             chip.setAttribute('data-side', side);
+
+            // Sirf bots ki bet se total pool update karna
+            let valMatch = imgSrc.match(/\/(\d+)_/);
+            let val = valMatch ? parseInt(valMatch[1]) : 100;
+            mB[side] += val;
+            $('m' + (side === 'tie' ? 'ti' : side.charAt(0))).innerText = '₹' + mB[side];
+            
             return chip;
         }
 
         try {
             firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
-            const db = firebase.database(), ph = localStorage.getItem('userPhone') || "GUEST";
+            const db = firebase.database(), ph = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST";
             
-            // FETCH & LISTEN TO REAL BALANCE
             db.ref('users/'+ph).on('value', s => {
                 let d=s.val()||{}; 
                 depBal = parseFloat(d.balance||0); 
@@ -207,23 +242,7 @@
                 document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
             });
 
-            // POOL TOTALS
-            db.ref('Game/DragonTiger/Bets').on('value', s => {
-                let allB = s.val() || {};
-                let tPool = {dragon:0, tiger:0, tie:0};
-                for(let u in allB) { 
-                    if(!u.includes('bot')) {
-                        tPool.dragon += (allB[u]['dragon'] || 0);
-                        tPool.tiger += (allB[u]['tiger'] || 0);
-                        tPool.tie += (allB[u]['tie'] || 0);
-                    }
-                }
-                $('md').innerText = '₹' + tPool.dragon.toLocaleString();
-                $('mt').innerText = '₹' + tPool.tiger.toLocaleString();
-                $('mti').innerText = '₹' + tPool.tie.toLocaleString();
-            });
-
-            // SMART TIMER & RECOVERY
+            // 🔥 SMART TIMER & WAITING FIX 🔥
             db.ref('Game/DragonTiger/Status').on('value', s => {
                 let st = s.val(); if(!st) return;
                 let tmr = $('tmr'); 
@@ -248,9 +267,9 @@
                         localStorage.setItem('dt1_endTime', now + (currentT * 1000));
                     }
 
-                    if (currentT >= 0 && currentT <= 20) {
-                        if (window.localTimerInterval) clearInterval(window.localTimerInterval);
-                        
+                    if (window.localTimerInterval) clearInterval(window.localTimerInterval);
+                    
+                    if (currentT >= 0) {
                         tmr.innerText = currentT + "s"; 
                         tmr.style.color = currentT <= 5 ? "#f33" : "#ffd700";
                         if(currentT<=5 && currentT>0 && lastBeep!==currentT) { pS('snd-beep', 0.8); lastBeep=currentT; }
@@ -267,21 +286,23 @@
                             }
                         }, 1000);
                     }
-                } else if(st.state === 'result' || st.state === 'rolling') {
+                } else {
+                    // Result ya Rolling state mein WAITING dikhega aur result ghumega
                     if (window.localTimerInterval) clearInterval(window.localTimerInterval);
                     if(lastState === 'betting') {
                         iBO = 0; lastBeep = -1; 
-                        tmr.innerText = "STOP!"; tmr.style.color = "#fff";
+                        tmr.innerText = "WAITING..."; tmr.style.color = "#fff";
                         $('alert-stop').classList.add('show'); 
                         setTimeout(()=>$('alert-stop').classList.remove('show'), 1200);
                         setTimeout(() => { $('vs-clash-screen').style.display='flex'; setTimeout(()=>$('vs-clash-screen').style.display='none', 1000); }, 1200);
                         setTimeout(() => sR_Sequence(st.winner), 2400);
                     }
-                    lastState = 'result';
+                    lastState = st.state;
+                    if(!iBO) tmr.innerText = "WAITING...";
                 }
             });
 
-            // RECOVERY
+            // 🔥 RECOVERY OF MY BETS 🔥
             function recoverMyBets() {
                 if(!ph || ph === "GUEST") return;
                 db.ref(`Game/DragonTiger/Bets/${ph}`).once('value', snap => {
@@ -292,17 +313,25 @@
                                 let val = saved[side];
                                 if(val > 0 && myBets[side] === 0) {
                                     myBets[side] = val;
-                                    let mbID = 'mb-' + (side === 'tie' ? 'ti' : side.charAt(0));
-                                    $(mbID).innerText = '₹' + val; 
-                                    $(mbID).style.display = 'block'; 
+                                    mB[side] += val; 
                                     
+                                    let mbID = 'mb-' + (side === 'tie' ? 'ti' : side.charAt(0));
+                                    let paID = 'm' + (side === 'tie' ? 'ti' : side.charAt(0));
+                                    
+                                    $(mbID).innerText = '₹' + myBets[side]; 
+                                    $(mbID).style.display = 'block'; 
+                                    $(paID).innerText = '₹' + mB[side];
+
                                     let box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
                                     if(box) {
-                                        let bPos = getOffset(box); let c = document.createElement('img');
-                                        c.src = "assets/500_0.png"; c.className = 'placed-chip';
+                                        let bPos = getOffset(box); 
+                                        let c = document.createElement('img');
+                                        c.src = "assets/500_0.png"; // visual chip for recovery
+                                        c.className = 'placed-chip';
                                         c.style.left = (bPos.x - 13 + (Math.random()*20-10)) + "px";
                                         c.style.top = (bPos.y - 13 + (Math.random()*20-10)) + "px";
-                                        c.setAttribute('data-side', side); $('chips-layer').appendChild(c);
+                                        c.setAttribute('data-side', side); 
+                                        $('chips-layer').appendChild(c);
                                     }
                                 }
                             });
@@ -319,28 +348,32 @@
 
         window.sC = (el) => { if(el.classList.contains('locked')) return; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); cC=parseInt(el.dataset.value); };
         
-        // 🔥 PERFECT BET DEDUCTION AND FIREBASE SYNC 🔥
+        // 🔥 PERFECT MY BET DEDUCTION AND DISPLAY 🔥
         window.pB = (s) => { 
             if(!iBO || tB < cC) return; 
             if(!ph || ph === "GUEST") { alert("Login Error!"); return; }
             
-            // Deduct balance
             let nDep = depBal, nWin = winBal, rem = cC;
             if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
-            db.ref('users/'+ph).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
             
-            // Add bet to Firebase
+            tB -= cC; 
+            depBal = nDep; 
+            winBal = nWin;
+            $('bal-bot').innerText = tB.toFixed(2);
+            
+            db.ref('users/'+ph).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
             db.ref(`Game/DragonTiger/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
 
-            // Local Visuals
-            spC(s, chipImgs[cC], $('my-wallet')); 
             myBets[s] += cC;
             let mbID = 'mb-' + (s === 'tie' ? 'ti' : s.charAt(0));
             $(mbID).innerText = '₹' + myBets[s];
             $(mbID).style.display = 'block';
+
+            // Animation local pool update ke sath
+            spC(s, chipImgs[cC], $('my-wallet')); 
         };
 
-        // Fake Bots
+        // Fake Bots placing chips
         setInterval(() => { 
             if(iBO) { 
                 let s = Math.random()>0.5 ? 'dragon' : 'tiger'; if(Math.random()>0.9) s='tie';
@@ -350,7 +383,7 @@
                 else srcEl = $('top-online'); 
                 
                 let randomChipKey = Object.keys(chipImgs)[Math.floor(Math.random() * Object.keys(chipImgs).length)];
-                spC(s, chipImgs[randomChipKey], srcEl, true);
+                spC(s, chipImgs[randomChipKey], srcEl);
             } 
         }, 250);
 
@@ -426,9 +459,11 @@
 
         function rUI() {
             $('chips-layer').innerHTML = '';
+            mB = { dragon: 0, tiger: 0, tie: 0 }; 
             myBets = { dragon: 0, tiger: 0, tie: 0 }; 
             
             ['d','t','ti'].forEach(s => {
+                $('m'+s).innerText = '₹0';
                 $('mb-'+s).innerText = '₹0';
                 $('mb-'+s).style.display = 'none'; 
             });
