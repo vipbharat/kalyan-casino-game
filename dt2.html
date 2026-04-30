@@ -207,7 +207,7 @@ function preloadAllCards() {
 preloadAllCards();
 
 const $=i=>document.getElementById(i);if(!firebase.apps.length)firebase.initializeApp({apiKey:"AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",databaseURL:"https://kalyan-casino-default-rtdb.firebaseio.com",projectId:"kalyan-casino"});const db=firebase.database(),ph=localStorage.getItem('userPhone')||localStorage.getItem('phone');
-// Default chip is now 50
+
 let iBO=0,cC=50,cCc='radial-gradient(circle, #ff4081, #c2185b)',tB=0,dB=0,wB=0,bB=0,mB={dragon:0,tiger:0,tie:0};
 let sPl={dragon:0,tiger:0,tie:0},bPl={dragon:0,tiger:0,tie:0};let bI,iAI=0,iD=0,bL=[];
 
@@ -215,7 +215,6 @@ function sT(m){let t=$('tst');if(!t){t=document.createElement('div');t.id='tst';
 function uA(){if(!iAI){['bgM','bS','cS','dS','snd-dragon','snd-tiger','snd-coins'].forEach(i=>{let e=$(i);if(e){e.play().then(()=>{if(i!=='bgM'){e.pause();e.currentTime=0}}).catch(e=>{})}});let m=$('bgM');if(m)m.volume=.2;iAI=1}}
 function pS(i,v){try{let s=$(i);if(s){s.currentTime=0;s.volume=v;s.play().catch(e=>{})}}catch(e){}}
 
-// 🔥 LIVE PLAYERS KAM KAR DIYE (Random around 280-305) 🔥
 setInterval(()=>{$('oc').innerText=Math.floor(Math.random()*25)+280},4000);
 
 if(ph){db.ref('users/'+ph).on('value',s=>{let d=s.val()||{};dB=parseFloat(d.balance||0);wB=parseFloat(d.winning_balance||0);bB=parseFloat(d.bonus_balance||0);tB=Math.max(0,dB+wB+bB);$('bal').innerText=tB.toFixed(2)});
@@ -232,7 +231,6 @@ db.ref('Game/DragonTiger2/History').on('value',s=>{let h=s.val();if(h&&Array.isA
 function gB(){bL=[];for(let i=0;i<5;i++)bL.push({id:Math.floor(Math.random()*8999)+1000,b:Math.floor(Math.random()*100000)+50000});rB()}
 setInterval(()=>{let n=Math.floor(Math.random()*2)+1;for(let i=0;i<n;i++)bL[Math.floor(Math.random()*bL.length)]={id:Math.floor(Math.random()*8999)+1000,b:Math.floor(Math.random()*100000)+50000};bL.forEach(b=>{b.b+=(Math.random()>.5?2500:-1500);if(b.b>150000)b.b=140000;if(b.b<10000)b.b=60000});rB()},3500);
 
-// 🔥 COLOURFUL BOTTOM PLAYERS 🔥
 function rB(){
     let h="";
     let avatarCols = ['#ff5252', '#448aff', '#69f0ae', '#ffd740', '#e040fb'];
@@ -250,10 +248,8 @@ function uP(){$('md').innerText="₹"+(sPl.dragon+bPl.dragon).toLocaleString();$
 window.pB=function(s){if(!iBO)return;if(!ph)return sT("Login Error!");if(tB<cC)return sT("INSUFFICIENT BALANCE!");let nD=dB,nW=wB,rm=cC;if(nD>=rm)nD-=rm;else{rm-=nD;nD=0;nW-=rm}db.ref('users/'+ph).update({balance:Math.max(0,nD),winning_balance:Math.max(0,nW)});
 db.ref(`Game/DragonTiger2/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));mB[s]+=cC;let mt=$('mb-'+(s=='tie'?'ti':s.charAt(0)));if(mt){mt.innerText="MY BET: ₹"+mB[s].toLocaleString();mt.style.display='block'}spC(s,cC,cCc);pS('bS',1)};
 
-// Updated to keep 50 black text if needed, or white
 function spC(s,a,c){let sid=(s=='tie'?'ti':s.charAt(0));let b=$('ch-'+sid);if(!b)return;let p=document.createElement('div');p.className='cp';p.innerText=a>=1000?(a/1000)+'K':a;p.style.background=c;p.style.color=(a===10000||a===50)?'#fff':'#fff'; if(a===10000||a===1000) p.style.color='#000'; p.style.top="150%";p.style.left=s==='dragon'?"-100px":"150px";p.style.opacity="0";b.appendChild(p);setTimeout(()=>{p.style.left=(Math.random()*60+20)+"%";p.style.top=(Math.random()*60+20)+"%";p.style.opacity="1"},50);if(b.children.length>55)b.firstChild.remove()}
 
-// 🔥 CHIPS GRADIENT FUNCTION UPDATED FOR 50 to 10k 🔥
 function gBC(a){
     return a===50?'radial-gradient(circle, #ff4081, #c2185b)':
            a===100?'radial-gradient(circle, #4fc3f7, #0288d1)':
@@ -264,10 +260,10 @@ function gBC(a){
 }
 
 function bBA(){if(!iBO)return;let bb=0;['dragon','tiger'].forEach(s=>{
-    // Bot logic updated to use 50 instead of 10
     let a=[50,100,500,1000,5000][Math.floor(Math.random()*5)],rb=bL[Math.floor(Math.random()*bL.length)];if(rb.b>=a){rb.b-=a;spC(s,a,gBC(a));bPl[s]+=a;bb=1}
 });if(Math.random()>.7){let ta=[50,100][Math.floor(Math.random()*2)];spC('tie',ta,gBC(ta));bPl.tie+=ta;bb=1}if(bb){uP();pS('bS',.05)}}
 
+// 🔥 SMART LOCAL TIMER LOGIC 🔥
 db.ref('Game/DragonTiger2/Status').on('value',s=>{
     let st=s.val();if(!st)return;let te=$('tmr');
     
@@ -280,11 +276,30 @@ db.ref('Game/DragonTiger2/Status').on('value',s=>{
             let aStart = $('alert-start');
             if(aStart) { aStart.style.display = 'block'; setTimeout(() => aStart.style.display = 'none', 800); }
         }
-        te.innerText=st.timer+"s";
-        if(st.timer<=5){te.style.color="#f33";te.style.textShadow="0 0 20px #f33"}
-        else{te.style.color="var(--neon-p)";te.style.textShadow="0 0 15px var(--neon-p)"}
+        
+        if (st.timer > 0 && st.timer <= 20) {
+            if (window.localTimerInterval) clearInterval(window.localTimerInterval);
+            
+            let currentT = st.timer;
+            te.innerText=currentT+"s";
+            if(currentT<=5){te.style.color="#f33";te.style.textShadow="0 0 20px #f33"}
+            else{te.style.color="var(--neon-p)";te.style.textShadow="0 0 15px var(--neon-p)"}
+            
+            window.localTimerInterval = setInterval(() => {
+                currentT--;
+                if(currentT >= 0) {
+                    te.innerText=currentT+"s";
+                    if(currentT<=5){te.style.color="#f33";te.style.textShadow="0 0 20px #f33"}
+                    else{te.style.color="var(--neon-p)";te.style.textShadow="0 0 15px var(--neon-p)"}
+                } else {
+                    clearInterval(window.localTimerInterval);
+                }
+            }, 1000);
+        }
     }
     else if(st.state==='result'){
+        if (window.localTimerInterval) clearInterval(window.localTimerInterval);
+        
         if(iBO || !iD){ 
             iBO=0; iD=1; clearInterval(bI); 
             te.innerText="STOP!"; te.style.color="#fff"; te.style.textShadow="0 0 15px #fff";
