@@ -410,12 +410,10 @@
             if(div.children.length > 40) div.firstChild.remove();
         }
 
-        // 🔥 SMOOTH BOT BETTING: Har bot alag samay par bet lagayega 🔥
         function botBetAction() {
             if(!isBettingOpen) return;
             
             botsList.forEach(bot => {
-                // 30% chance ki bot is pal bet lagaye (Continuous feeling)
                 if(Math.random() < 0.3) {
                     let s = Math.random() < 0.5 ? 'andar' : 'bahar';
                     let amt = [10, 50, 100, 500, 1000][Math.floor(Math.random()*5)];
@@ -466,6 +464,7 @@
             return div;
         }
 
+        // 🔥 SMART LOCAL TIMER LOGIC START 🔥
         db.ref('Game/AndarBahar/Status').on('value', snap => {
             let st = snap.val(); if(!st) return;
             let msg = document.getElementById('status-msg');
@@ -476,28 +475,48 @@
                     document.getElementById('alert-wait').style.display = 'none';
                     document.getElementById('btn-andar').classList.remove('win-glow');
                     document.getElementById('btn-bahar').classList.remove('win-glow');
+                    document.querySelectorAll('.side-bet-box').forEach(b => b.classList.remove('side-win-glow'));
                     document.getElementById('track-andar').innerHTML = '<span class="track-label">ANDAR</span>';
                     document.getElementById('track-bahar').innerHTML = '<span class="track-label">BAHAR</span>';
                     document.querySelectorAll('.placed-bet, .sb-placed').forEach(d => d.style.display = 'none');
                     document.querySelectorAll('.chips-container-overlay').forEach(c => c.innerHTML = '');
                     
-                    // 🔥 Start Alert Fast 🔥
                     let aStart = document.getElementById('alert-start');
                     aStart.style.display = 'block'; setTimeout(() => aStart.style.display = 'none', 800);
 
                     myBets = {andar:0, bahar:0}; mySideBets = {}; botPool = {andar:0, bahar:0};
                     updatePoolUI();
                     clearInterval(botInterval);
-                    botInterval = setInterval(botBetAction, 250); // Fast check for smooth betting
+                    botInterval = setInterval(botBetAction, 250);
                 }
+                
                 document.getElementById('joker-spot').innerHTML = '';
                 document.getElementById('joker-spot').appendChild(createCard(st.jokerVal, st.jokerSuit));
-                msg.innerText = `PLACE BETS: ${st.timer}s`;
-                msg.style.color = st.timer <= 5 ? '#ff3333' : '#00ff88';
+                
+                // Naya Local Timer Trigger
+                if(st.timer > 0 && st.timer <= 20) {
+                    if(window.localTimerInterval) clearInterval(window.localTimerInterval);
+                    
+                    let currentT = st.timer;
+                    msg.innerText = `PLACE BETS: ${currentT}s`;
+                    msg.style.color = currentT <= 5 ? '#ff3333' : '#00ff88';
+                    
+                    window.localTimerInterval = setInterval(() => {
+                        currentT--;
+                        if(currentT >= 0) {
+                            msg.innerText = `PLACE BETS: ${currentT}s`;
+                            msg.style.color = currentT <= 5 ? '#ff3333' : '#00ff88';
+                        } else {
+                            clearInterval(window.localTimerInterval);
+                        }
+                    }, 1000);
+                }
             } 
             else if(st.state === 'dealing' && isBettingOpen) {
+                // Result Aate hi Timer rok do
+                if(window.localTimerInterval) clearInterval(window.localTimerInterval);
                 isBettingOpen = false; clearInterval(botInterval);
-                // 🔥 Stop Alert Fast 🔥
+                
                 let aStop = document.getElementById('alert-stop');
                 aStop.style.display = 'block'; setTimeout(() => aStop.style.display = 'none', 800);
 
@@ -540,9 +559,25 @@
                 if(isLast) {
                     document.getElementById('status-msg').innerText = `${win.toUpperCase()} WINS!`;
                     document.getElementById(win === 'andar' ? 'btn-andar' : 'btn-bahar').classList.add('win-glow');
+                    
+                    // 🔥 NAYA SIDE BETS HIGHLIGHT LOGIC 🔥
+                    let totalCards = steps;
+                    let winningSideId = '';
+                    if(totalCards <= 5) winningSideId = 'box-s1_5';
+                    else if(totalCards <= 10) winningSideId = 'box-s6_10';
+                    else if(totalCards <= 15) winningSideId = 'box-s11_15';
+                    else if(totalCards <= 25) winningSideId = 'box-s16_25';
+                    else if(totalCards <= 30) winningSideId = 'box-s26_30';
+                    else if(totalCards <= 35) winningSideId = 'box-s31_35';
+                    else if(totalCards <= 40) winningSideId = 'box-s36_40';
+                    else winningSideId = 'box-s41_plus';
+                    
+                    if(winningSideId) {
+                        document.getElementById(winningSideId).classList.add('side-win-glow');
+                    }
+                    
                     calculatePayouts(win, steps);
                     
-                    // Show Please Wait after win
                     setTimeout(() => {
                         document.getElementById('alert-wait').style.display = 'block';
                     }, 3000);
@@ -563,9 +598,20 @@
             document.getElementById('record-board').innerHTML = hHtml;
         });
 
+        // 🔥 NAYA COMPLETE SIDE BETS PAYOUT LOGIC 🔥
         function calculatePayouts(win, totalCards) {
             if(!phone) return;
             let winAmt = (win === 'andar') ? myBets.andar * 1.95 : myBets.bahar * 2.0;
+
+            if(mySideBets['s1_5'] && totalCards <= 5) winAmt += mySideBets['s1_5'] * 2;
+            if(mySideBets['s6_10'] && totalCards >= 6 && totalCards <= 10) winAmt += mySideBets['s6_10'] * 3;
+            if(mySideBets['s11_15'] && totalCards >= 11 && totalCards <= 15) winAmt += mySideBets['s11_15'] * 4;
+            if(mySideBets['s16_25'] && totalCards >= 16 && totalCards <= 25) winAmt += mySideBets['s16_25'] * 3.5;
+            if(mySideBets['s26_30'] && totalCards >= 26 && totalCards <= 30) winAmt += mySideBets['s26_30'] * 12;
+            if(mySideBets['s31_35'] && totalCards >= 31 && totalCards <= 35) winAmt += mySideBets['s31_35'] * 20;
+            if(mySideBets['s36_40'] && totalCards >= 36 && totalCards <= 40) winAmt += mySideBets['s36_40'] * 45;
+            if(mySideBets['s41_plus'] && totalCards >= 41) winAmt += mySideBets['s41_plus'] * 100;
+
             if(winAmt > 0) {
                 db.ref(`users/${phone}/winning_balance`).set(firebase.database.ServerValue.increment(Number(winAmt.toFixed(2))));
             }
