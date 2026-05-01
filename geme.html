@@ -24,7 +24,7 @@
         
         .action-area { flex: 0.9; position: relative; display: flex; justify-content: center; align-items: center; }
         
-        /* 🔥 NAYA MP4 VIDEO BACKGROUND LAYER 🔥 */
+        /* 🔥 MP4 VIDEO BACKGROUND LAYER 🔥 */
         .bg-gif { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.55; pointer-events: none; mix-blend-mode: screen; }
 
         .flying-beast { 
@@ -281,11 +281,14 @@
                 document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
             });
 
+            // 🔥 HISTORY EXACT BUG FIX (BULLETPROOF) 🔥
             db.ref('Game/DragonTiger/History').on('value', s => {
                 let h=s.val()||[], m=''; 
                 h.slice(0,18).forEach(w => {
-                    let dispChar = w === 'dragon' ? 'D' : 'T'; 
-                    m += `<div class="h-dot h-${w==='dragon'?'d':(w==='tiger'?'t':'tie')}">${dispChar}</div>`;
+                    let safeW = w ? w.toString().toLowerCase().trim() : '';
+                    let dispChar = safeW === 'dragon' ? 'D' : 'T'; 
+                    let cls = safeW === 'dragon' ? 'd' : (safeW === 'tiger' ? 't' : 'tie');
+                    m += `<div class="h-dot h-${cls}">${dispChar}</div>`;
                 });
                 $('hr').innerHTML = m;
             });
@@ -325,8 +328,10 @@
             const vals = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
             let dIdx, tIdx;
             
-            if(w === 'dragon') { dIdx = Math.floor(Math.random()*6)+7; tIdx = Math.floor(Math.random()*6); } 
-            else if(w === 'tiger') { tIdx = Math.floor(Math.random()*6)+7; dIdx = Math.floor(Math.random()*6); } 
+            let safeW = w ? w.toString().toLowerCase().trim() : 'tie';
+
+            if(safeW === 'dragon') { dIdx = Math.floor(Math.random()*6)+7; tIdx = Math.floor(Math.random()*6); } 
+            else if(safeW === 'tiger') { tIdx = Math.floor(Math.random()*6)+7; dIdx = Math.floor(Math.random()*6); } 
             else { dIdx = Math.floor(Math.random()*13); tIdx = dIdx; } 
 
             pS('snd-card', 1); $('b-d').style.opacity='0'; 
@@ -336,14 +341,14 @@
                 $('t-v').innerHTML = `<div class="red-suit" style="font-size:20px; font-weight:900;">${vals[tIdx]}<br><span style="font-size:30px">♥</span></div>`;
                 
                 setTimeout(() => {
-                    let winBox = $('bx-' + (w==='dragon'?'d':(w==='tiger'?'t':'ti')));
-                    winBox.classList.add('gw');
+                    let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
+                    if(winBox) winBox.classList.add('gw');
                     
                     let dealerBox = $('tmr'); 
                     let dPos = getPos(dealerBox);
                     
                     document.querySelectorAll('.placed-chip').forEach(c => {
-                        if(c.getAttribute('data-side') !== w) {
+                        if(c.getAttribute('data-side') !== safeW) {
                             c.style.left = (dPos.x + dealerBox.offsetWidth/2 - 13) + "px";
                             c.style.top = (dPos.y + dealerBox.offsetHeight/2 - 13) + "px";
                             c.style.opacity = '0';
@@ -386,9 +391,9 @@
                         }
 
                         let wa=0;
-                        if(w==='dragon') wa = myBets.dragon * 2;
-                        else if(w==='tiger') wa = myBets.tiger * 2;
-                        else if(w==='tie') wa = myBets.tie * 9;
+                        if(safeW==='dragon') wa = myBets.dragon * 2;
+                        else if(safeW==='tiger') wa = myBets.tiger * 2;
+                        else if(safeW==='tie') wa = myBets.tie * 9;
                         
                         if(wa > 0 && ph !== "GUEST") {
                             db.ref('users/'+ph+'/winning_balance').set(wB + wa);
