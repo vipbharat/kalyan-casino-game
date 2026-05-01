@@ -24,10 +24,10 @@
         
         .action-area { flex: 0.8; position: relative; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 20px; }
         
-        /* 🔥 VIDEOS TOUCHING CARDS FIX 🔥 */
-        .flying-beast { position: absolute; bottom: 5%; height: 95%; object-fit: contain; pointer-events: none; z-index: 5; mix-blend-mode: screen; filter: brightness(1.2); }
-        #beast-left { left: 8%; width: 40%; } 
-        #beast-right { right: 8%; width: 40%; }
+        /* 🔥 VIDEOS POSITIONING FIXED (Dur kiya gaya hai) 🔥 */
+        .flying-beast { position: absolute; bottom: 10%; height: 80%; width: 35%; object-fit: contain; pointer-events: none; z-index: 5; mix-blend-mode: screen; filter: brightness(1.2); }
+        #beast-left { left: 2%; } 
+        #beast-right { right: 2%; }
 
         .cards-stage { display: flex; align-items: center; gap: 10px; position: relative; z-index: 20;}
         
@@ -52,7 +52,6 @@
         .mbb { position: absolute; top: 5px; left: 8px; background: #00e5ff; color: #000; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: none; font-weight: 900; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #fff; }
         .gw { box-shadow: 0 0 25px #39ff14, inset 0 0 20px #fff !important; border-color: #39ff14 !important; transform: scale(1.02); }
         
-        /* 🔥 CHIP LAYER FIXED 🔥 */
         #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 200; overflow: hidden; }
         .placed-chip { position: absolute; width: 26px; height: 26px; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.6)); transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 300; pointer-events: none;}
         
@@ -150,7 +149,7 @@
         function enterCasino() { 
             $('start-screen').style.display='none'; $('loading-screen').style.display='flex'; 
             if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-            setTimeout(() => { $('loading-screen').style.display='none'; }, 5000); 
+            setTimeout(() => { $('loading-screen').style.display='none'; }, 2000); 
         }
 
         function initAudio() { 
@@ -172,18 +171,23 @@
         genPlayers();
         setInterval(() => { $('oc-top').innerText = Math.floor(Math.random() * 25) + 220; }, 4000);
 
-        // 🔥 CHIPS FIX LOGIC (Landscape ya Portrait me scatter nahi hoga) 🔥
         function getPos(el) {
             let x = 0, y = 0;
             while(el && el.id !== 'game-mount') {
-                x += el.offsetLeft;
-                y += el.offsetTop;
-                el = el.offsetParent;
+                x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent;
             }
             return {x, y};
         }
 
-        function spC(side, imgSrc, srcEl, isSystemAnim = false) {
+        // K formatting function
+        function formatMoney(val) {
+            if (val >= 100000) return (val/100000).toFixed(2) + 'L';
+            if (val >= 1000) return (val/1000).toFixed(1) + 'K';
+            return val;
+        }
+
+        // 🔥 POOL COUNTING FIXED (chipVal direct parameter) 🔥
+        function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
             if(!srcEl) return;
             pS('snd-drop', 0.5);
             let layer = $('chips-layer'), box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
@@ -215,13 +219,12 @@
             
             chip.setAttribute('data-side', side);
 
-            if(!isSystemAnim) {
-                let valMatch = imgSrc.match(/\/(\d+)_/);
-                let val = valMatch ? parseInt(valMatch[1]) : 100;
-                mB[side] += val;
-                $('m' + (side === 'tie' ? 'ti' : side.charAt(0))).innerText = '₹' + mB[side];
+            // Accurately sum total pool box values
+            if(!isSystemAnim && chipVal > 0) {
+                mB[side] += chipVal;
+                $('m' + (side === 'tie' ? 'ti' : side.charAt(0))).innerText = '₹' + formatMoney(mB[side]);
             }
-            if(layer.children.length > 100) layer.firstChild.remove();
+            if(layer.children.length > 150) layer.firstChild.remove();
             return chip;
         }
 
@@ -278,10 +281,10 @@
                 db.ref('users/'+ph).update({balance: Math.max(0,nD), winning_balance: Math.max(0,nW)});
                 db.ref(`Game/DragonTiger/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
                 
-                spC(s, chipImgs[cC], $('my-wallet'), false); 
+                spC(s, chipImgs[cC], $('my-wallet'), false, cC); 
                 myBets[s] += cC;
                 let mbID = 'mb-' + (s === 'tie' ? 'ti' : s.charAt(0));
-                $(mbID).innerText = '₹' + myBets[s];
+                $(mbID).innerText = '₹' + formatMoney(myBets[s]);
                 $(mbID).style.display = 'block';
             };
 
@@ -298,7 +301,7 @@
                 else srcEl = $('top-online'); 
                 
                 let randomChipKey = Object.keys(chipImgs)[Math.floor(Math.random() * Object.keys(chipImgs).length)];
-                spC(s, chipImgs[randomChipKey], srcEl, true);
+                spC(s, chipImgs[randomChipKey], srcEl, false, parseInt(randomChipKey));
             } 
         }, 250);
 
@@ -331,11 +334,13 @@
                         }
                     });
 
+                    // 🔥 BOTS WIN/LOSS AMOUNT FIXED (1K se 50K tak) 🔥
                     document.querySelectorAll('.bot-user').forEach(bot => {
                         let tag = bot.querySelector('.wl-tag');
                         let isWin = Math.random() > 0.5; 
-                        let amt = (Math.floor(Math.random() * 50) + 10) * 10;
-                        tag.innerText = isWin ? '+' + amt : '-' + amt;
+                        let amtNum = (Math.floor(Math.random() * 500) + 10) * 100; // Generate 1000 to 50000
+                        let amtStr = amtNum >= 1000 ? (amtNum/1000).toFixed(1) + 'K' : amtNum;
+                        tag.innerText = isWin ? '+' + amtStr : '-' + amtStr;
                         tag.className = 'wl-tag ' + (isWin ? 'show-win' : 'show-lose');
                     });
 
