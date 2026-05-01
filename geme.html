@@ -22,23 +22,34 @@
         .online-counter { position: absolute; top: 10px; right: 10px; z-index: 1000; padding: 5px 15px; background: rgba(0,0,0,0.8); border: 2px solid #00ff88; border-radius: 20px; color: #00ff88; font-size: 12px; }
         .casino-board { width: 85%; height: 75%; background: rgba(30, 20, 60, 0.9); border: 3px solid #5a419c; border-radius: 12px; display: flex; flex-direction: column; position: relative; z-index: 10; margin-bottom: 50px; }
         
-        .action-area { flex: 0.8; position: relative; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 20px; }
+        /* 🔥 Action Area Centered 🔥 */
+        .action-area { flex: 0.9; position: relative; display: flex; justify-content: center; align-items: center; }
         
-        /* 🔥 VIDEOS POSITIONING FIXED (Dur kiya gaya hai) 🔥 */
-        .flying-beast { position: absolute; bottom: 10%; height: 80%; width: 35%; object-fit: contain; pointer-events: none; z-index: 5; mix-blend-mode: screen; filter: brightness(1.2); }
-        #beast-left { left: 2%; } 
-        #beast-right { right: 2%; }
+        /* 🔥 VIDEOS POSITIONING & TOUCH FIX (Khali jagah khatam) 🔥 */
+        .flying-beast { 
+            position: absolute; 
+            bottom: 0; /* Touch history bar */
+            height: 100%; /* Stretch to top */
+            width: 44%; 
+            object-fit: cover; /* Fill the area without transparent gaps */
+            pointer-events: none; 
+            z-index: 5; 
+            mix-blend-mode: screen; 
+            filter: brightness(1.2); 
+        }
+        #beast-left { left: 0; } 
+        #beast-right { right: 0; }
 
-        .cards-stage { display: flex; align-items: center; gap: 10px; position: relative; z-index: 20;}
+        .cards-stage { display: flex; align-items: center; gap: 10px; position: relative; z-index: 20; padding-bottom: 10px;}
         
         .crd { width: 55px; height: 80px; border-radius: 4px; border: 2px solid #ffd700; background: #fff; position: relative; box-shadow: 0 5px 15px #000; transition: transform 0.3s; transform-style: preserve-3d; }
         .cbk { position: absolute; inset: 0; background: #222 url('https://deckofcardsapi.com/static/img/back.png') center/cover; border-radius: 2px; z-index: 10; backface-visibility: hidden; transition: 0.3s; }
         .crd-val { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 2px; background: #fff; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 20px; line-height: 1.2;}
         .red-suit { color: red; }
         .black-suit { color: black; }
-        .timer-badge { position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%); background: #600; color: #ffd700; padding: 3px 20px; border-radius: 15px; border: 1.5px solid #ffd700; font-size: 14px; font-weight: 900; z-index: 100; }
+        .timer-badge { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); background: #600; color: #ffd700; padding: 3px 20px; border-radius: 15px; border: 1.5px solid #ffd700; font-size: 14px; font-weight: 900; z-index: 100; }
         
-        .history-bar { height: 35px; display: flex; align-items: center; gap: 5px; padding: 0 15px; background: rgba(0,0,0,0.5); overflow: hidden; border-top: 2px solid #4a317c; }
+        .history-bar { height: 35px; display: flex; align-items: center; gap: 5px; padding: 0 15px; background: rgba(0,0,0,0.5); overflow: hidden; border-top: 2px solid #4a317c; position: relative; z-index: 30;}
         .h-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); }
         .h-d { background: #5c4cdb; } .h-t { background: #e68900; } .h-tie { background: #43a047; }
         
@@ -77,7 +88,7 @@
         .clash-dragon, .clash-tiger { width: 45%; mix-blend-mode: screen; }
     </style>
 </head>
-<body>
+<body onclick="initAudio()">
     <div id="start-screen" onclick="enterCasino()" style="position: fixed; inset: 0; background: #0a0515; z-index: 9999999; display: flex; justify-content: center; align-items: center; color: #ffd700; cursor: pointer;"><h1>TAP TO PLAY</h1></div>
     <div id="loading-screen" style="position: fixed; inset: 0; background: #000; z-index: 9999998; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700;"><p>DOWNLOADING ASSETS...</p></div>
 
@@ -104,7 +115,9 @@
                 </div>
                 <video class="flying-beast" id="beast-right" src="assets/VID_20260426_202810_2.mp4" autoplay loop muted playsinline></video>
             </div>
+            
             <div class="history-bar" id="hr"></div>
+            
             <div class="betting-area">
                 <div class="bet-box dbx" onclick="pB('dragon')" id="bx-d"><div class="box-title">Dragon</div><div class="pa" id="md">₹0</div><div class="mbb" id="mb-d">₹0</div></div>
                 <div class="bet-box tibx" onclick="pB('tie')" id="bx-ti"><div class="box-title" style="font-size:18px;">Tie</div><div class="pa" id="mti">₹0</div><div class="mbb" id="mb-ti">₹0</div></div>
@@ -179,14 +192,12 @@
             return {x, y};
         }
 
-        // K formatting function
         function formatMoney(val) {
             if (val >= 100000) return (val/100000).toFixed(2) + 'L';
             if (val >= 1000) return (val/1000).toFixed(1) + 'K';
             return val;
         }
 
-        // 🔥 POOL COUNTING FIXED (chipVal direct parameter) 🔥
         function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
             if(!srcEl) return;
             pS('snd-drop', 0.5);
@@ -219,7 +230,6 @@
             
             chip.setAttribute('data-side', side);
 
-            // Accurately sum total pool box values
             if(!isSystemAnim && chipVal > 0) {
                 mB[side] += chipVal;
                 $('m' + (side === 'tie' ? 'ti' : side.charAt(0))).innerText = '₹' + formatMoney(mB[side]);
@@ -269,8 +279,13 @@
                 document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
             });
 
+            // 🔥 HISTORY 'T' FIX 🔥
             db.ref('Game/DragonTiger/History').on('value', s => {
-                let h=s.val()||[], m=''; h.slice(0,18).forEach(w => m+=`<div class="h-dot h-${w==='dragon'?'d':(w==='tiger'?'t':'tie')}">${w[0].toUpperCase()}</div>`);
+                let h=s.val()||[], m=''; 
+                h.slice(0,18).forEach(w => {
+                    let dispChar = w === 'dragon' ? 'D' : 'T'; // Tie aur Tiger dono ke liye 'T' dikhega
+                    m += `<div class="h-dot h-${w==='dragon'?'d':(w==='tiger'?'t':'tie')}">${dispChar}</div>`;
+                });
                 $('hr').innerHTML = m;
             });
             
@@ -334,11 +349,11 @@
                         }
                     });
 
-                    // 🔥 BOTS WIN/LOSS AMOUNT FIXED (1K se 50K tak) 🔥
+                    // 🔥 BOTS WIN/LOSS AMOUNT FIXED (1K se 10K tak) 🔥
                     document.querySelectorAll('.bot-user').forEach(bot => {
                         let tag = bot.querySelector('.wl-tag');
                         let isWin = Math.random() > 0.5; 
-                        let amtNum = (Math.floor(Math.random() * 500) + 10) * 100; // Generate 1000 to 50000
+                        let amtNum = (Math.floor(Math.random() * 90) + 10) * 100; // Generate 1000 to 10000
                         let amtStr = amtNum >= 1000 ? (amtNum/1000).toFixed(1) + 'K' : amtNum;
                         tag.innerText = isWin ? '+' + amtStr : '-' + amtStr;
                         tag.className = 'wl-tag ' + (isWin ? 'show-win' : 'show-lose');
