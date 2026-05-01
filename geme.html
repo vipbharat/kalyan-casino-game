@@ -25,13 +25,13 @@
         /* 🔥 Action Area Centered 🔥 */
         .action-area { flex: 0.9; position: relative; display: flex; justify-content: center; align-items: center; }
         
-        /* 🔥 VIDEOS POSITIONING & TOUCH FIX (Khali jagah khatam) 🔥 */
+        /* 🔥 VIDEOS POSITIONING FIXED (Peeche kiya gaya aur cards se door) 🔥 */
         .flying-beast { 
             position: absolute; 
-            bottom: 0; /* Touch history bar */
-            height: 100%; /* Stretch to top */
-            width: 44%; 
-            object-fit: cover; /* Fill the area without transparent gaps */
+            bottom: 5%; 
+            height: 90%; 
+            width: 38%; /* Chota karke peeche kiya */
+            object-fit: cover; 
             pointer-events: none; 
             z-index: 5; 
             mix-blend-mode: screen; 
@@ -47,7 +47,9 @@
         .crd-val { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 2px; background: #fff; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 20px; line-height: 1.2;}
         .red-suit { color: red; }
         .black-suit { color: black; }
-        .timer-badge { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); background: #600; color: #ffd700; padding: 3px 20px; border-radius: 15px; border: 1.5px solid #ffd700; font-size: 14px; font-weight: 900; z-index: 100; }
+        
+        /* 🔥 TIMER HIGHEST Z-INDEX (Ab nahi chupega) 🔥 */
+        .timer-badge { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); background: #600; color: #ffd700; padding: 3px 20px; border-radius: 15px; border: 1.5px solid #ffd700; font-size: 14px; font-weight: 900; z-index: 500; }
         
         .history-bar { height: 35px; display: flex; align-items: center; gap: 5px; padding: 0 15px; background: rgba(0,0,0,0.5); overflow: hidden; border-top: 2px solid #4a317c; position: relative; z-index: 30;}
         .h-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); }
@@ -172,12 +174,15 @@
 
         function pS(i,v) { let s=$(i); if(s) { let cl = s.cloneNode(); cl.volume = v; cl.play().catch(()=>{}); } }
 
+        // 🔥 FULL NUMBERS IN BOTS BALANCE 🔥
         function genPlayers() {
             const avs = ['Avatar0.png', 'Avatar2.png', 'Avatar3.png', 'Avatar4.png', 'Avatar5.png', 'Avatar6.png', 'Avatar7.png', 'Avatar9.png', 'Avatar11.png'];
             let lh = '', rh = '';
             for(let i=0; i<5; i++) {
-                lh += `<div class="bot-user" id="bl${i}"><img class="player-icon" src="assets/${avs[Math.floor(Math.random()*avs.length)]}"><div class="player-bal">${Math.floor(Math.random()*50)+20}K</div><div class="wl-tag"></div></div>`;
-                rh += `<div class="bot-user" id="br${i}"><img class="player-icon" src="assets/${avs[Math.floor(Math.random()*avs.length)]}"><div class="player-bal">${Math.floor(Math.random()*50)+20}K</div><div class="wl-tag"></div></div>`;
+                let rBal1 = (Math.floor(Math.random()*50)+20) * 1000; // E.g., 24000
+                let rBal2 = (Math.floor(Math.random()*50)+20) * 1000;
+                lh += `<div class="bot-user" id="bl${i}"><img class="player-icon" src="assets/${avs[Math.floor(Math.random()*avs.length)]}"><div class="player-bal">${rBal1}</div><div class="wl-tag"></div></div>`;
+                rh += `<div class="bot-user" id="br${i}"><img class="player-icon" src="assets/${avs[Math.floor(Math.random()*avs.length)]}"><div class="player-bal">${rBal2}</div><div class="wl-tag"></div></div>`;
             }
             $('left-players').innerHTML = lh; $('right-players').innerHTML = rh;
         }
@@ -192,10 +197,9 @@
             return {x, y};
         }
 
+        // 🔥 FULL NUMBERS FORMATTING 🔥
         function formatMoney(val) {
-            if (val >= 100000) return (val/100000).toFixed(2) + 'L';
-            if (val >= 1000) return (val/1000).toFixed(1) + 'K';
-            return val;
+            return val; 
         }
 
         function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
@@ -279,11 +283,10 @@
                 document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
             });
 
-            // 🔥 HISTORY 'T' FIX 🔥
             db.ref('Game/DragonTiger/History').on('value', s => {
                 let h=s.val()||[], m=''; 
                 h.slice(0,18).forEach(w => {
-                    let dispChar = w === 'dragon' ? 'D' : 'T'; // Tie aur Tiger dono ke liye 'T' dikhega
+                    let dispChar = w === 'dragon' ? 'D' : 'T'; 
                     m += `<div class="h-dot h-${w==='dragon'?'d':(w==='tiger'?'t':'tie')}">${dispChar}</div>`;
                 });
                 $('hr').innerHTML = m;
@@ -349,13 +352,12 @@
                         }
                     });
 
-                    // 🔥 BOTS WIN/LOSS AMOUNT FIXED (1K se 10K tak) 🔥
+                    // 🔥 FULL NUMBERS IN WIN/LOSS (No K format) 🔥
                     document.querySelectorAll('.bot-user').forEach(bot => {
                         let tag = bot.querySelector('.wl-tag');
                         let isWin = Math.random() > 0.5; 
-                        let amtNum = (Math.floor(Math.random() * 90) + 10) * 100; // Generate 1000 to 10000
-                        let amtStr = amtNum >= 1000 ? (amtNum/1000).toFixed(1) + 'K' : amtNum;
-                        tag.innerText = isWin ? '+' + amtStr : '-' + amtStr;
+                        let amtNum = (Math.floor(Math.random() * 90) + 10) * 100; // 1000 to 10000
+                        tag.innerText = isWin ? '+' + amtNum : '-' + amtNum;
                         tag.className = 'wl-tag ' + (isWin ? 'show-win' : 'show-lose');
                     });
 
