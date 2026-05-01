@@ -24,7 +24,6 @@
         
         .action-area { flex: 0.9; position: relative; display: flex; justify-content: center; align-items: center; }
         
-        /* 🔥 MP4 VIDEO BACKGROUND LAYER 🔥 */
         .bg-gif { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.55; pointer-events: none; mix-blend-mode: screen; }
 
         .flying-beast { 
@@ -53,7 +52,7 @@
         
         .history-bar { height: 35px; display: flex; align-items: center; gap: 5px; padding: 0 15px; background: rgba(0,0,0,0.5); overflow: hidden; border-top: 2px solid #4a317c; position: relative; z-index: 30;}
         .h-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); }
-        .h-d { background: #5c4cdb; } .h-t { background: #e68900; } .h-tie { background: #43a047; }
+        .h-d { background: #5c4cdb; } .h-t { background: #e68900; } .h-tie { background: #43a047; color: #000; }
         
         .betting-area { flex: 1.2; display: flex; padding: 10px; gap: 10px; position: relative; z-index: 50; }
         .bet-box { flex: 1; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; cursor: pointer; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); transition: 0.2s; overflow: visible; }
@@ -281,15 +280,30 @@
                 document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
             });
 
-            // 🔥 HISTORY EXACT BUG FIX (BULLETPROOF) 🔥
+            // 🔥 HISTORY STRICT VIP FILTER (No Garbage Allowed) 🔥
             db.ref('Game/DragonTiger/History').on('value', s => {
-                let h=s.val()||[], m=''; 
-                h.slice(0,18).forEach(w => {
-                    let safeW = w ? w.toString().toLowerCase().trim() : '';
-                    let dispChar = safeW === 'dragon' ? 'D' : 'T'; 
-                    let cls = safeW === 'dragon' ? 'd' : (safeW === 'tiger' ? 't' : 'tie');
-                    m += `<div class="h-dot h-${cls}">${dispChar}</div>`;
+                let h = s.val();
+                if(!h) return;
+                
+                // Agar data object mein aaye toh usko array mein convert karo
+                let arr = Array.isArray(h) ? h : Object.values(h);
+                let m = ''; 
+                
+                arr.slice(0, 18).forEach(w => {
+                    if(!w) return; // Agar khali hai toh skip karo
+                    
+                    let val = String(w).toLowerCase().trim();
+                    
+                    // Sirf asali result screen par aayenge, baaki sab kachra ignore hoga
+                    if(val === 'dragon') {
+                        m += `<div class="h-dot h-d">D</div>`;
+                    } else if(val === 'tiger') {
+                        m += `<div class="h-dot h-t">T</div>`;
+                    } else if(val === 'tie') {
+                        m += `<div class="h-dot h-tie">T</div>`;
+                    }
                 });
+                
                 $('hr').innerHTML = m;
             });
             
