@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger VIP - Socket Edition</title>
+    <title>Dragon Tiger VIP - Master Lock Edition</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -160,6 +160,7 @@
         const chipImgs = { 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
         
         let localHistory = []; 
+        let isResultProcessing = false; // 🔥 MASTER LOCK 🔥
 
         function enterCasino() { 
             $('start-screen').style.display='none'; $('loading-screen').style.display='flex'; 
@@ -227,6 +228,7 @@
             
             chip.setAttribute('data-side', side);
 
+            // 🔥 Bot Chips visible honge box total mein, par server read nahi karega 🔥
             if(!isSystemAnim && chipVal > 0) {
                 mB[side] += chipVal;
                 $('m' + (side === 'tie' ? 'ti' : side.charAt(0))).innerText = '₹' + formatMoney(mB[side]);
@@ -262,6 +264,7 @@
                     tmr.style.color = data.timer <= 5 ? "#ff3333" : "#ffd700";
                     if(iBO===0) { 
                         iBO=1; rUI(); 
+                        isResultProcessing = false; // Lock kholo naye round ke liye
                         $('alert-start').classList.add('show'); setTimeout(()=>$('alert-start').classList.remove('show'), 1200); 
                     }
                     if(data.timer<=5 && data.timer>0 && lastBeep!==data.timer) { pS('snd-beep', 0.8); lastBeep=data.timer; }
@@ -276,6 +279,9 @@
             });
 
             socket.on('DragonTiger_result', (data) => {
+                if(isResultProcessing) return; // Multiple emits roko
+                isResultProcessing = true; 
+                
                 iBO=0; lastBeep=-1; 
                 $('alert-stop').classList.add('show'); setTimeout(()=>$('alert-stop').classList.remove('show'), 1200);
                 setTimeout(() => { $('vs-clash-screen').style.display='flex'; setTimeout(()=>$('vs-clash-screen').style.display='none', 1000); }, 1200);
@@ -283,7 +289,7 @@
             });
 
             socket.on('DragonTiger_newRound', () => {
-                iBO = 1; rUI();
+                iBO = 1; isResultProcessing = false; rUI();
                 $('alert-start').classList.add('show'); setTimeout(()=>$('alert-start').classList.remove('show'), 1200); 
             });
 
@@ -300,7 +306,7 @@
                     if(h) {
                         let hr = $('hr');
                         hr.innerHTML = '';
-                        Object.values(h).forEach(w => {
+                        Object.values(h).reverse().forEach(w => {
                             let val = String(w).toLowerCase().trim();
                             let char = val === 'dragon' ? 'D' : 'T';
                             let cls = val === 'dragon' ? 'h-d' : (val === 'tiger' ? 'h-t' : 'h-tie');
@@ -352,7 +358,7 @@
                 else srcEl = $('top-online'); 
                 
                 let randomChipKey = Object.keys(chipImgs)[Math.floor(Math.random() * Object.keys(chipImgs).length)];
-                spC(s, chipImgs[randomChipKey], srcEl, false, parseInt(randomChipKey)); // BOT CHIPS UI ME JUDENGE
+                spC(s, chipImgs[randomChipKey], srcEl, false, parseInt(randomChipKey)); // Bot chips screen par judenge
             } 
         }, 250);
 
@@ -375,6 +381,7 @@
                     let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
                     if(winBox) winBox.classList.add('gw');
                     
+                    // 🔥 EKDUM PERFECT SYNC: Jaise hi box glow karega, ek hi bar naya D ya T aayega
                     if(window.addNewHistoryDot) {
                         window.addNewHistoryDot(safeW);
                     }
