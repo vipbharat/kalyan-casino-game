@@ -50,10 +50,15 @@
         
         .timer-badge { position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%); background: #600; color: #ffd700; padding: 3px 20px; border-radius: 15px; border: 1.5px solid #ffd700; font-size: 14px; font-weight: 900; z-index: 500; }
         
-        .history-bar { height: 35px; display: flex; align-items: center; gap: 5px; padding: 0 15px; background: rgba(0,0,0,0.5); overflow: hidden; border-top: 2px solid #4a317c; position: relative; z-index: 30;}
-        .h-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); }
+        /* 🔥 HISTORY BAR FIXED FOR SLIDING EFFECT 🔥 */
+        .history-bar { height: 35px; display: flex; align-items: center; justify-content: flex-start; gap: 5px; padding: 0 15px; background: rgba(0,0,0,0.5); overflow: hidden; border-top: 2px solid #4a317c; position: relative; z-index: 30;}
+        .h-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); flex-shrink: 0; transition: transform 0.3s ease; }
         .h-d { background: #5c4cdb; } .h-t { background: #e68900; } .h-tie { background: #43a047; color: #000; }
         
+        /* 🔥 NAYA RECORD POP ANIMATION 🔥 */
+        .newest-record { animation: popNew 0.5s ease-out forwards; border: 2px solid #fff; box-shadow: 0 0 8px #fff; }
+        @keyframes popNew { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.3); } 100% { transform: scale(1); opacity: 1; } }
+
         .betting-area { flex: 1.2; display: flex; padding: 10px; gap: 10px; position: relative; z-index: 50; }
         .bet-box { flex: 1; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; cursor: pointer; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); transition: 0.2s; overflow: visible; }
         .dbx { background: rgba(124, 108, 240, 0.4); border: 2px solid #7c6cf0; }
@@ -261,7 +266,6 @@
             const socket = io("https://kalyan-engine.onrender.com");
             const netUI = $('network-overlay');
 
-            // 🔥 NAYA SYNC LOGIC 🔥
             window.addEventListener('offline', () => { netUI.style.display = 'flex'; });
             window.addEventListener('online', () => { if(socket.connected) netUI.style.display = 'none'; });
             
@@ -269,10 +273,7 @@
             socket.on('connect', () => { 
                 if(navigator.onLine) {
                     netUI.style.display = 'none'; 
-                    // Network wapas aate hi sab purana data wipe kar do aur sync ke liye ready ho jao
-                    iBO = 0; 
-                    rUI(); 
-                    $('tmr').innerText = "SYNCING..."; 
+                    iBO = 0; rUI(); $('tmr').innerText = "SYNCING..."; 
                 }
             });
 
@@ -288,7 +289,6 @@
                     if(data.timer<=5 && data.timer>0 && lastBeep!==data.timer) { pS('snd-beep', 0.8); lastBeep=data.timer; }
                 } else {
                     tmr.innerText = "STOP!"; tmr.style.color = "#fff";
-                    // Agar phone offline tha aur "STOP" aana miss ho gaya
                     if(iBO === 1) {
                         iBO = 0; rUI();
                         $('alert-stop').classList.add('show'); setTimeout(()=>$('alert-stop').classList.remove('show'), 1200);
@@ -316,18 +316,31 @@
                 document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
             });
 
+            // 🔥 HISTORY SLIDING FIX (Left to Right Flow & Animation) 🔥
             db.ref('Game/DragonTiger/History').on('value', s => {
                 let h = s.val();
                 if(!h) return;
+                
                 let arr = Array.isArray(h) ? h : Object.values(h);
                 let m = ''; 
-                arr.slice(0, 18).forEach(w => {
+                
+                // Naya record server index 0 par bhejta hai. Hum array ko reverse karke 
+                // dikhayenge taaki naya record Right Side mein pop ho!
+                let showArr = arr.slice(0, 15).reverse(); 
+
+                showArr.forEach((w, index) => {
                     if(!w) return;
                     let val = String(w).toLowerCase().trim();
-                    if(val === 'dragon') m += `<div class="h-dot h-d">D</div>`;
-                    else if(val === 'tiger') m += `<div class="h-dot h-t">T</div>`;
-                    else if(val === 'tie') m += `<div class="h-dot h-tie">T</div>`;
+                    
+                    // Aakhiri box (jo sabse right mein hoga) usko animation denge
+                    let isNewest = (index === showArr.length - 1);
+                    let extraClass = isNewest ? 'newest-record' : ''; 
+
+                    if(val === 'dragon') m += `<div class="h-dot h-d ${extraClass}">D</div>`;
+                    else if(val === 'tiger') m += `<div class="h-dot h-t ${extraClass}">T</div>`;
+                    else if(val === 'tie') m += `<div class="h-dot h-tie ${extraClass}">T</div>`;
                 });
+                
                 $('hr').innerHTML = m;
             });
             
