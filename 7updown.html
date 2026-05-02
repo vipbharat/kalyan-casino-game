@@ -29,10 +29,10 @@
         .loading-chakra { width: 60px; height: 60px; border: 6px solid rgba(255, 215, 0, 0.2); border-top-color: var(--gold); border-radius: 50%; animation: spinChakra 1s linear infinite; margin-bottom: 20px; }
         @keyframes spinChakra { 100% { transform: rotate(360deg); } }
 
-        /* 🔥 GAME AREA TAKES REMAINING SPACE 🔥 */
-        .game-area { flex: 1; display:flex; flex-direction:column; align-items:center; justify-content:space-evenly; position: relative; width: 100%; padding: 10px 0; }
+        /* 🔥 GAME AREA TAKES REMAINING SPACE (UPAR KHALI RAHEGA) 🔥 */
+        .game-area { flex: 1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom: 10px; position: relative; width: 100%; }
         
-        .table-center { position: relative; width: 150px; height: 140px; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 20px; }
+        .table-center { position: relative; width: 150px; height: 140px; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 20px; margin-bottom: 10px; }
         .center-timer { position: absolute; top: -35px; left: 50%; transform: translateX(-50%); font-size: 2.2rem; color: #fff; text-shadow: 0 0 20px #ff007f; font-weight: 900; z-index: 60; background: rgba(0,0,0,0.6); padding: 2px 20px; border-radius: 12px; border: 2px solid #ff007f; white-space: nowrap;}
         .casino-cup { position: absolute; width: 130px; height: 120px; background: linear-gradient(to right, #4a00e0, #8e2de2, #4a00e0); border-bottom: 4px solid var(--gold); border-radius: 10px 10px 15px 15px; bottom: 10px; z-index: 50; transition: transform 0.8s; transform: translateY(-160px); }
         .casino-cup::before { content: ''; position: absolute; top: -15px; left: 0; width: 100%; height: 30px; background: #2a006e; border-radius: 50%; border: 2px solid #b266ff; }
@@ -70,7 +70,7 @@
         #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 50; overflow: hidden;}
         .chip-visual { pointer-events: none; position: absolute; width: 26px; height: 26px; z-index: 15; transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1); filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.8));}
         
-        /* 🔥 FOOTER FIXED TO BOTTOM (Flex shrink 0) 🔥 */
+        /* 🔥 FOOTER FIXED TO BOTTOM 🔥 */
         .footer-wrapper { width: 100%; flex-shrink: 0; display: flex; flex-direction: column; z-index: 150; }
 
         .history-bar { padding: 0 15px; display: flex; align-items: center; justify-content: flex-start; gap: 5px; width: 100%; height: 35px; background: rgba(0,0,0,0.8); border-top: 2px solid var(--gold); border-bottom: 2px solid var(--gold); overflow: hidden; }
@@ -298,7 +298,7 @@
         }
     });
 
-    // 🔥 HISTORY TRANSLATOR 🔥
+    // 🔥 HISTORY TRANSLATOR (Safe Lock to avoid 7 bug) 🔥
     function getSafeRecord(raw) {
         if(!raw) return { id: 'tie', char: '7', bg: '#d4af37', txt: '#000' };
         let s = String(raw).toLowerCase().trim();
@@ -329,6 +329,13 @@
             hHtml += `<div class="h-dot ${extraClass}" style="background:${rec.bg}; color:${rec.txt}; border-color:${rec.bg}">${rec.char}</div>`;
         });
         document.getElementById('history-row').innerHTML = hHtml;
+    }
+
+    // Isko direct call nahi karenge, result aane par hi push hoga
+    function addNewHistoryDot(winId) {
+        localHistory.push(winId);
+        if(localHistory.length > 15) localHistory.shift();
+        renderHistory();
     }
 
     socket.on('7UpDown_timerUpdate', (data) => {
@@ -368,21 +375,22 @@
         if(isResultProcessing) return;
         isResultProcessing = true; lastBeep = -1;
         
-        let win = getSafeRecord(data.winner).id;
+        // Ensure result is mapped properly
+        let winStr = getSafeRecord(data.winner).id;
+        
         let v1 = data.v1;
         let v2 = data.v2;
 
-        // Agar server ne v1, v2 diye hain toh strict override karo
+        // Ensure V1, V2 matches winner if server didn't send strict v1, v2
         if(v1 !== undefined && v2 !== undefined) {
             let sum = v1 + v2;
-            if(sum < 7) win = 'low';
-            else if(sum > 7) win = 'high';
-            else win = 'tie';
+            if(sum < 7) winStr = 'low';
+            else if(sum > 7) winStr = 'high';
+            else winStr = 'tie';
         } else {
-            // Nahi toh generate karo based on winner
-            if(win === 'low') {
+            if(winStr === 'low') {
                 do { v1 = Math.floor(Math.random()*6)+1; v2 = Math.floor(Math.random()*6)+1; } while(v1+v2 >= 7);
-            } else if(win === 'high') {
+            } else if(winStr === 'high') {
                 do { v1 = Math.floor(Math.random()*6)+1; v2 = Math.floor(Math.random()*6)+1; } while(v1+v2 <= 7);
             } else {
                 let pairs = [[1,6], [2,5], [3,4], [4,3], [5,2], [6,1]];
@@ -391,7 +399,7 @@
             }
         }
         
-        startRoll(v1, v2, win);
+        startRoll(v1, v2, winStr);
     });
 
     socket.on('7UpDown_newRound', () => { isResultProcessing = false; });
@@ -426,11 +434,7 @@
                 let winBox = document.getElementById(winId);
                 if(winBox) winBox.classList.add('win-glow');
                 
-                // History Update is guaranteed to match the visual dice now
-                localHistory.push(winId);
-                if(localHistory.length > 15) localHistory.shift();
-                renderHistory();
-
+                addNewHistoryDot(winId); 
                 playSound('snd-win', 1.0);
 
                 let centerPos = cup.getBoundingClientRect();
@@ -535,7 +539,7 @@
         }
     }
 
-    // 🔥 FIX: CHIPS DON'T OVERLAP THE TEXT NOW 🔥
+    // 🔥 FIX: Chip Drop Area Restricted to upper half of the box 🔥
     function spawnChip(side, imgSrc, srcId, isSystemAnim=false) {
         let layer = document.getElementById('chips-layer'), box = document.getElementById(side);
         if(!box || !layer) return;
@@ -555,7 +559,7 @@
 
         setTimeout(() => {
             let randX = 15 + Math.random() * (bR.width - 30);
-            let safeHeight = bR.height * 0.5; // Only drop in the top 50% of the box
+            let safeHeight = bR.height * 0.5; // Only Top 50%
             let randY = 15 + Math.random() * safeHeight; 
             
             chip.style.left = (bR.left + randX) + "px";
