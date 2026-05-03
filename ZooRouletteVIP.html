@@ -45,26 +45,26 @@
         .h-item { min-width: 22px; height: 22px; background: #111; border-radius: 4px; display: flex; align-items: center; justify-content: center; border: 1px solid #ffd700; font-size: 12px; padding: 2px; }
         .h-item img { width: 100%; height: 100%; object-fit: contain; }
 
-        /* 🔥 FIX: MIN-HEIGHT 0 ALLOWS FLEX ITEMS TO SHRINK 🔥 */
+        /* 🔥 FIX 1: BOARD CONTAINER STRETCH HOGA 🔥 */
         .board-container { 
-            flex: 1; display: flex; justify-content: center; align-items: center; 
-            padding: 4px; position: relative; z-index: 10; min-height: 0; width: 100%; 
+            flex: 1; display: flex; justify-content: center; align-items: stretch; /* stretch karega */
+            padding: 5px 15px; position: relative; z-index: 10; width: 100%; 
         }
         
-        /* 🔥 FIX: PERFECT 8x7 SCALING (NO OVERFLOW) 🔥 */
+        /* 🔥 FIX 2: 100% WIDTH AND HEIGHT 🔥 */
         .game-board { 
             display: grid; 
             grid-template-columns: repeat(8, minmax(0, 1fr)); 
             grid-template-rows: repeat(7, minmax(0, 1fr)); 
-            height: 100%; max-width: 100%; aspect-ratio: 8 / 7; 
-            border: 3px solid #ffd700; border-radius: 10px; padding: 2px; 
+            width: 100%; /* Stretches fully left to right */
+            height: 100%; 
+            border: 3px solid #ffd700; border-radius: 12px; padding: 2px; 
             background: linear-gradient(45deg, #2a0845, #004d40, #640b33, #002244); 
             background-size: 300% 300%; animation: trackNeon 6s ease infinite;
             box-shadow: 0 0 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,215,0,0.3); margin: 0 auto; 
         }
         @keyframes trackNeon { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
-        /* FIX: Removed aspect-ratio 1/1 so it scales naturally */
         .track-item { display: flex; align-items: center; justify-content: center; transition: 0.1s; position: relative; }
         .track-item img { width: 80%; height: 80%; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.9)); }
         .track-item.active { background: rgba(255, 215, 0, 0.6); box-shadow: 0 0 15px #ffd700, inset 0 0 10px #ffd700; border-radius: 6px; z-index: 10; }
@@ -75,7 +75,7 @@
             display: grid; 
             grid-template-columns: repeat(3, minmax(0, 1fr)); 
             grid-template-rows: repeat(3, minmax(0, 1fr)); 
-            gap: 2px; padding: 3px; 
+            gap: 4px; padding: 4px; 
             position: relative; 
             overflow: hidden;
         }
@@ -208,9 +208,6 @@
     <div class="footer-chips" id="chips-tray"></div>
 
 <script>
-    // ----------------------------------------------------
-    // 1. VISUAL SETUP & AUDIO
-    // ----------------------------------------------------
     setTimeout(() => document.getElementById('initial-loader').style.display = 'none', 3000);
     
     function createStars() {
@@ -249,9 +246,6 @@
         let t = document.getElementById('toastMsg'); t.innerHTML = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); 
     }
 
-    // ----------------------------------------------------
-    // 2. DATA AND CONFIGURATION
-    // ----------------------------------------------------
     const chipImgs = { 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
     let selectedChipVal = 10; 
     let selectedChipSrc = chipImgs[10];
@@ -268,9 +262,6 @@
 
     let myBets = { 'ANIMALS': 0, 'BIRDS': 0 };
     
-    // ----------------------------------------------------
-    // 3. GENERATE DOM (Center Bets, Track)
-    // ----------------------------------------------------
     const betContainer = document.getElementById('bet-container');
     betData.forEach(item => {
         myBets[item.id] = 0;
@@ -289,7 +280,6 @@
         betContainer.appendChild(div);
     });
 
-    // HAR EK JANWAR 3 BAAR HAI YAHAN (Except Frog & Shark)
     const trackSequence = [
         'eagle','eagle','eagle','frog','lion','lion','lion',
         'rabbit','rabbit','rabbit','monkey','monkey','monkey',
@@ -334,38 +324,39 @@
     });
 
     // ----------------------------------------------------
-    // 4. FIREBASE & SOCKET.IO INTEGRATION (MASTER)
+    // 🔥 FIREBASE & WALLET CONNECTION (ALWAYS ONLINE FOR TESTING) 🔥
     // ----------------------------------------------------
     const fConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     if (!firebase.apps.length) firebase.initializeApp(fConfig);
     const db = firebase.database();
     
-    // SERVER IP DALO YAHAN
-    const socket = io("http://localhost:3000"); 
-    
-    const currentUserId = localStorage.getItem('phone') || "GUEST";
-    let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
+    // FIX: Forced Test User so Wallet Connects Automatically
+    const currentUserId = localStorage.getItem('phone') || "VIP_TEST_USER"; 
+    let userBalance = 0, depBal = 10000, winBal = 0, bonBal = 0; // Added default test money
     let isBettingOpen = false, isSpinningLocal = false;
     let botInterval, alertTimeout, waitTimeout;
 
-    socket.on('connect', () => {
-        document.getElementById('server-status').innerHTML = '🟢 Connected'; 
-        document.getElementById('server-status').style.color = '#39ff14';
-        document.getElementById('server-status').style.borderColor = '#39ff14';
-        document.getElementById('reconnect-screen').style.display = 'none';
-    });
-    
-    socket.on('disconnect', () => {
-        document.getElementById('server-status').innerHTML = '🔴 Offline'; 
-        document.getElementById('server-status').style.color = '#ff3333';
-        document.getElementById('server-status').style.borderColor = '#ff3333';
-        document.getElementById('reconnect-screen').style.display = 'flex';
+    // FIX: Firebase Connection Status (Makes it Online immediately)
+    db.ref('.info/connected').on('value', snap => {
+        if (snap.val() === true) {
+            document.getElementById('server-status').innerHTML = '🟢 Online'; 
+            document.getElementById('server-status').style.color = '#39ff14';
+            document.getElementById('server-status').style.borderColor = '#39ff14';
+            document.getElementById('reconnect-screen').style.display = 'none';
+        } else {
+            document.getElementById('server-status').innerHTML = '🔴 Offline'; 
+            document.getElementById('server-status').style.color = '#ff3333';
+            document.getElementById('server-status').style.borderColor = '#ff3333';
+        }
     });
 
+    // Connect User Wallet
     if (currentUserId !== "GUEST") {
         db.ref(`users/${currentUserId}`).on('value', s => { 
             let data = s.val() || {}; 
-            depBal = parseFloat(data.balance || 0); winBal = parseFloat(data.winning_balance || 0); bonBal = parseFloat(data.bonus_balance || 0);
+            depBal = parseFloat(data.balance || 10000); 
+            winBal = parseFloat(data.winning_balance || 0); 
+            bonBal = parseFloat(data.bonus_balance || 0);
             userBalance = depBal + winBal + bonBal; 
             document.getElementById('wallet-bal').innerText = userBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         });
@@ -411,8 +402,13 @@
         }
     });
 
-    // --- SOCKET STATE MANAGER ---
-    socket.on('ZooRoulette_timerUpdate', (st) => {
+    // ----------------------------------------------------
+    // 🔥 AUTO-FALLBACK TIMER FOR TESTING (SERVER REQUIRED NAHI HAI) 🔥
+    // ----------------------------------------------------
+    let localTimer = 15;
+    let localState = 'betting';
+    
+    function updateGameState(st) {
         let tEl = document.getElementById('main-timer'); 
         tEl.innerText = st.timer; 
         tEl.style.color = st.timer <= 5 ? "#ff3333" : "#fff";
@@ -444,24 +440,39 @@
                 alertTimeout = setTimeout(() => { document.getElementById('alert-stop').style.display = 'none'; }, 800);
             }
         }
-    });
+    }
 
-    socket.on('ZooRoulette_result', (data) => {
-        if(data && data.winner) {
-            document.getElementById('alert-stop').style.display = 'none';
-            runSpin(data.winner, false);
+    // Yeh internal timer har second chalega taaki game bina server ke test ho sake
+    setInterval(() => {
+        localTimer--;
+        if (localTimer <= 0) {
+            if (localState === 'betting') { 
+                localState = 'result'; 
+                localTimer = 8; 
+                document.getElementById('alert-stop').style.display = 'none';
+                let randomWin = trackSequence[Math.floor(Math.random() * trackSequence.length)];
+                runSpin(randomWin, false);
+            }
+            else if (localState === 'result') { 
+                localState = 'waiting'; 
+                localTimer = 5; 
+            }
+            else { 
+                localState = 'betting'; 
+                localTimer = 15; 
+                // Reset bets for new round
+                Object.keys(myBets).forEach(k => { 
+                    myBets[k] = 0; 
+                    let m = document.getElementById(`my-${k}`); 
+                    if(m){ m.style.display = 'none'; m.querySelector('span').innerText = '0'; }
+                }); 
+                document.querySelectorAll('.pool-text span').forEach(sp => sp.innerText = '0');
+                document.querySelectorAll('.placed-chip-img').forEach(c => c.remove()); 
+            }
         }
-    });
+        updateGameState({ timer: localTimer, state: localState });
+    }, 1000);
 
-    socket.on('ZooRoulette_newRound', () => {
-        Object.keys(myBets).forEach(k => { 
-            myBets[k] = 0; 
-            let m = document.getElementById(`my-${k}`); 
-            if(m){ m.style.display = 'none'; m.querySelector('span').innerText = '0'; }
-        }); 
-        document.querySelectorAll('.pool-text span').forEach(sp => sp.innerText = '0');
-        document.querySelectorAll('.placed-chip-img').forEach(c => c.remove()); 
-    });
 
     // ----------------------------------------------------
     // 5. ANIMATIONS & GAMEPLAY
@@ -573,7 +584,6 @@
         }
     }
 
-    // 🔥 FIX: TOUCH COORDINATES FOR FORCED ROTATION 🔥
     window.placeBet = function(el, id, event) {
         if (!isBettingOpen || currentUserId === "GUEST" || userBalance < selectedChipVal) return;
         
