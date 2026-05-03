@@ -47,16 +47,17 @@
 
         .board-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 5px; position: relative; z-index: 10; }
         
-        /* 🔥 8x7 PERFECT GRID 🔥 */
+        /* 🔥 8x7 PERFECT GRID (FIXED OVERFLOW WITH MINMAX) 🔥 */
         .game-board { 
             display: grid; 
-            grid-template-columns: repeat(8, 1fr); 
-            grid-template-rows: repeat(7, 1fr); 
+            grid-template-columns: repeat(8, minmax(0, 1fr)); 
+            grid-template-rows: repeat(7, minmax(0, 1fr)); 
             width: 100%; max-width: 480px; 
             border: 3px solid #ffd700; border-radius: 12px; padding: 2px; 
             background: linear-gradient(45deg, #2a0845, #004d40, #640b33, #002244); 
             background-size: 300% 300%; animation: trackNeon 6s ease infinite;
             box-shadow: 0 0 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,215,0,0.3); margin: 0 auto; 
+            overflow: hidden;
         }
         @keyframes trackNeon { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
@@ -67,8 +68,12 @@
         
         .center-bets { 
             grid-area: 2 / 2 / 7 / 8; 
-            display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 5px; padding: 6px; 
+            display: grid; 
+            grid-template-columns: repeat(3, minmax(0, 1fr)); 
+            grid-template-rows: repeat(3, minmax(0, 1fr)); 
+            gap: 3px; padding: 4px; 
             position: relative; 
+            overflow: hidden;
         }
         
         .huge-timer { 
@@ -78,7 +83,12 @@
             z-index: 999; pointer-events: none; line-height: 1.2; display: none;
         }
 
-        .bet-btn { border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #555; position: relative; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.6); width: 100%; height: 100%; }
+        .bet-btn { 
+            border-radius: 6px; display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; border: 2px solid #555; position: relative; cursor: pointer; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.6); width: 100%; height: 100%; 
+            min-width: 0; min-height: 0; overflow: hidden; 
+        }
         .bet-btn:active { transform: scale(0.95); }
         .bet-btn.winning { box-shadow: 0 0 35px #39ff14 !important; border-color: #39ff14 !important; background: #003300 !important; transform: scale(1.05); z-index: 15; animation: blinkWin 0.5s infinite alternate; }
         @keyframes blinkWin { to { box-shadow: 0 0 40px #39ff14; filter: brightness(1.3); } }
@@ -116,6 +126,22 @@
         .alert { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; width: 80%; max-width: 300px; display: none; pointer-events: none; }
         .alert img, .alert video { width: 100%; filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); }
         .toast-msg { position: fixed; top: 15%; left: 50%; transform: translateX(-50%); background: rgba(220, 38, 38, 0.95); color: white; padding: 10px 20px; border-radius: 8px; font-weight: 900; z-index: 9999; border: 2px solid #fff; display: none; font-size: 13px; text-align: center; }
+
+        /* 🔥 FORCE LANDSCAPE IN PORTRAIT MODE 🔥 */
+        @media screen and (orientation: portrait) {
+            html, body {
+                width: 100vh !important;
+                height: 100vw !important;
+                overflow: hidden !important;
+            }
+            body {
+                transform: rotate(90deg);
+                transform-origin: top left;
+                position: absolute;
+                top: 0;
+                left: 100vw;
+            }
+        }
     </style>
 </head>
 <body onclick="initAudio()">
@@ -179,7 +205,7 @@
 
 <script>
     // ----------------------------------------------------
-    // 1. VISUAL SETUP & LANDSCAPE LOCK
+    // 1. VISUAL SETUP & AUDIO
     // ----------------------------------------------------
     setTimeout(() => document.getElementById('initial-loader').style.display = 'none', 3000);
     
@@ -206,14 +232,9 @@
             vid.muted = true; vid.play().catch(e=>{}); 
         }
         
-        // 🔥 FORCE FULLSCREEN & LANDSCAPE LOCK 🔥
         let elem = document.documentElement;
         if (elem.requestFullscreen) {
-            elem.requestFullscreen().then(() => {
-                if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock("landscape").catch(err => console.log(err));
-                }
-            }).catch(err => console.log(err));
+            elem.requestFullscreen().catch(err => console.log(err));
         }
     }
 
@@ -451,7 +472,7 @@
         
         let fly = document.createElement('img'); 
         fly.className = 'placed-chip-img'; 
-        fly.src = chipImgs[fV] || chipImgs[100]; // Strict Chip Address
+        fly.src = chipImgs[fV] || chipImgs[100]; 
         fly.style.left = '50vw'; fly.style.top = '20vh'; 
         document.body.appendChild(fly); 
         playSound('soundBet', 0.02);
@@ -548,7 +569,7 @@
         }
     }
 
-    // Safely attached to window
+    // 🔥 FIX: TOUCH COORDINATES FOR FORCED ROTATION IN placeBet 🔥
     window.placeBet = function(el, id, event) {
         if (!isBettingOpen || currentUserId === "GUEST" || userBalance < selectedChipVal) return;
         
@@ -573,8 +594,18 @@
         let mTag = document.getElementById(`my-${id}`); 
         mTag.style.display = 'block'; mTag.querySelector('span').innerText = myBets[id];
         
+        // Determine correct touch coordinates based on orientation
+        let startX = event.clientX;
+        let startY = event.clientY;
+
+        if (window.innerHeight > window.innerWidth) {
+            // CSS rotated coordinate math
+            startX = event.clientY;
+            startY = window.innerWidth - event.clientX;
+        }
+
         let f = document.createElement('img'); f.className = 'placed-chip-img'; f.src = selectedChipSrc; 
-        f.style.left = event.clientX + 'px'; f.style.top = event.clientY + 'px'; document.body.appendChild(f);
+        f.style.left = startX + 'px'; f.style.top = startY + 'px'; document.body.appendChild(f);
         
         let tB = el.getBoundingClientRect();
         setTimeout(() => { 
