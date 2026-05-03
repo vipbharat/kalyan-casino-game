@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Kalyan VIP Zoo - Premium Edition</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;900&display=swap" rel="stylesheet">
+    <title>Kalyan VIP Zoo - Max Board Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -13,90 +13,116 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
         
+        /* 🔥 BODY KO FIX KAR DIYA 🔥 */
         html, body { width: 100%; height: 100%; overflow: hidden; background: #000; position: fixed; }
 
-        /* 🔥 PREMIUM WRAPPER 🔥 */
-        #game-wrapper {
+        /* 🔥 LANDSCAPE CANVAS (Main Rotation Engine) 🔥 */
+        #landscape-canvas {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            display: flex; flex-direction: column;
             background: radial-gradient(circle at center, #1b263b, #0d1b2a, #000000);
-            box-sizing: border-box; overflow: hidden;
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            overflow: hidden;
         }
 
-        /* Portrait Mode auto-rotate logic */
+        /* Phone seedha hone par perfect 90 degree ghumega */
         @media screen and (orientation: portrait) {
-            #game-wrapper {
+            #landscape-canvas {
                 top: 50%; left: 50%; width: 100vh; height: 100vw;
                 transform: translate(-50%, -50%) rotate(90deg);
             }
         }
 
-        .bg-img-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0.2; pointer-events: none; }
-        
-        /* Modals and Alerts */
+        /* Modals & Loaders */
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; font-weight: 900; font-size: 18px; }
         .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,215,0,0.2); border-top: 5px solid #ffd700; border-radius: 50%; animation: spinLoader 1s linear infinite; margin-bottom: 15px; }
         @keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Top Header */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 4px 15px; background: linear-gradient(90deg, #111, #333, #111); border-bottom: 1px solid #ffd700; position: relative; z-index: 100; height: 35px; }
-        .logo { font-size: 16px; font-weight: 900; color: #ffd700; text-shadow: 0 0 5px rgba(255,215,0,0.8); flex: 1; text-align: center; letter-spacing: 1px; }
-        .back-btn { font-size: 18px; cursor: pointer; color: #fff; width: 30px; }
+        /* =========================================
+           🔥 MAXIMUM SPACE LAYOUT SYSTEM 🔥
+           ========================================= */
 
-        /* 🔥 MAIN 3-COLUMN LAYOUT 🔥 */
-        .main-area { flex: 1; display: flex; flex-direction: row; align-items: stretch; position: relative; z-index: 10; padding: 5px; gap: 5px; min-height: 0; }
+        /* LEFT PANEL: Profile & Record */
+        .left-panel {
+            position: absolute; left: 5px; top: 5px; bottom: 5px; width: 65px;
+            display: flex; flex-direction: column; align-items: center;
+            background: rgba(0,0,0,0.6); border: 1px solid #334155; border-radius: 8px; padding: 5px; z-index: 100;
+        }
+        .back-btn { font-size: 20px; cursor: pointer; margin-bottom: 5px; filter: drop-shadow(0 2px 2px #000); }
+        .wallet-box { width: 100%; text-align: center; background: #111; color: #ffd700; border: 1px solid #ffd700; border-radius: 4px; padding: 2px 0; font-size: 10px; font-weight: 900; margin-bottom: 5px; box-shadow: 0 2px 4px #000; }
+        .server-status { font-size: 9px; font-weight: bold; color: #39ff14; margin-bottom: 5px; }
+        .r-title { color: #ffd700; font-size: 9px; font-weight: bold; margin-bottom: 5px; background: #222; padding: 2px 5px; border-radius: 4px; width: 100%; text-align: center; }
+        
+        .h-list { display: flex; flex-direction: column; gap: 4px; width: 100%; flex: 1; overflow: hidden; align-items: center; }
+        .h-item { width: 26px; height: 26px; background: #1e293b; border-radius: 4px; border: 1px solid #ffd700; display: flex; justify-content: center; align-items: center; padding: 2px; }
+        .h-item img { width: 100%; height: 100%; object-fit: contain; }
 
-        /* LEFT PANEL (Profile & Wallet) */
-        .left-panel { width: 65px; background: rgba(0,0,0,0.5); border-radius: 8px; border: 1px solid #444; display: flex; flex-direction: column; align-items: center; padding: 5px 2px; }
-        .avatar-box { width: 45px; height: 45px; background: #222; border-radius: 50%; border: 2px solid #ffd700; margin-bottom: 10px; display: flex; justify-content: center; align-items: center; font-size: 24px; }
-        .wallet-box { width: 100%; text-align: center; background: #111; color: #ffd700; border: 1px solid #ffd700; border-radius: 4px; padding: 4px 0; font-size: 10px; font-weight: 900; margin-bottom: 5px; }
-        .server-status { font-size: 9px; font-weight: 900; padding: 2px 5px; border-radius: 10px; border: 1px solid #ff3333; color: #ff3333; text-align: center; width: 100%; margin-bottom: auto; }
-        .online-count { font-size: 9px; color: #00ff88; font-weight: bold; text-align: center; margin-top: auto; }
+        /* RIGHT PANEL: Beast & Bird Buttons */
+        .right-panel {
+            position: absolute; right: 5px; top: 5px; bottom: 5px; width: 110px;
+            display: flex; flex-direction: column; gap: 5px; z-index: 100;
+        }
+        .cat-btn { 
+            flex: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            cursor: pointer; border: 2px solid; box-shadow: 0 4px 10px rgba(0,0,0,0.8); position: relative; 
+        }
+        .cat-btn:active { transform: scale(0.96); }
+        .bg-beast { background: linear-gradient(145deg, #d32f2f, #660000); border-color: #ff5252; }
+        .bg-bird { background: linear-gradient(145deg, #1976d2, #002171); border-color: #448aff; }
+        .cat-title { font-size: 14px; font-weight: 900; text-shadow: 0 2px 4px #000; color: #fff; margin-top: 5px; }
+        .pool-text { position: absolute; top: -5px; right: -5px; font-size: 10px; color: #000; font-weight: 900; background: #ffc107; padding: 2px 6px; border-radius: 8px; border: 1px solid #fff; box-shadow: 0 2px 4px #000; }
+        .my-bet-tag { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background: #00e5ff; color: #000; font-size: 11px; padding: 1px 8px; border-radius: 4px 4px 0 0; font-weight: 900; display: none; }
 
-        /* CENTER PANEL (Game Board) */
-        .center-panel { flex: 1; display: flex; justify-content: center; align-items: center; min-width: 0; position: relative; }
+        /* BOTTOM PANEL: Chips Tray */
+        .bottom-panel {
+            position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+            height: 45px; display: flex; align-items: center; gap: 8px;
+            background: rgba(0,0,0,0.85); border: 2px solid #ffd700; border-radius: 30px; padding: 0 15px; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.9);
+        }
+        .chip-img { width: 35px; height: 35px; cursor: pointer; transition: 0.2s; filter: drop-shadow(0 3px 4px #000); }
+        .chip-img.active { transform: scale(1.15) translateY(-5px); filter: drop-shadow(0 0 10px #ffd700); }
+
+        /* 🔥 CENTER PANEL: BIGGEST POSSIBLE BOARD 🔥 */
+        .center-panel {
+            position: absolute; left: 75px; right: 120px; top: 5px; bottom: 55px; /* Chips ki jagah chhod kar poora space lega */
+            display: flex; justify-content: center; align-items: center; z-index: 10;
+        }
         
         .game-board { 
             display: grid; 
             grid-template-columns: repeat(8, minmax(0, 1fr)); 
             grid-template-rows: repeat(7, minmax(0, 1fr)); 
-            height: 100%; max-width: 100%; aspect-ratio: 8 / 7; margin: 0 auto;
-            background: #0b0f19; border: 3px solid #ffb300; border-radius: 12px; padding: 4px; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.5);
+            height: 100%; max-width: 100%; aspect-ratio: 8 / 7; margin: auto; /* Perfectly Square boxes */
+            background: #0f172a; border: 3px solid #ffb300; border-radius: 12px; padding: 4px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(0,0,0,0.6);
             gap: 2px;
         }
 
-        /* 🔥 PREMIUM TRACK ITEMS 🔥 */
         .track-item { 
-            background: #1c2438; border: 1px solid #3a4763; border-radius: 6px; 
+            background: #1e293b; border: 1px solid #334155; border-radius: 6px; 
             display: flex; align-items: center; justify-content: center; 
-            position: relative; transition: 0.1s; overflow: hidden;
+            position: relative; transition: 0.1s; 
         }
-        .track-item img { width: 75%; height: 75%; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8)); z-index: 2; }
-        .track-item .mult-tag { position: absolute; bottom: 1px; right: 2px; font-size: 8px; color: #ffd700; font-weight: 900; z-index: 3; }
+        .track-item img { width: 80%; height: 80%; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.9)); z-index: 2; }
+        .track-item .mult-tag { position: absolute; bottom: 1px; right: 2px; font-size: 8px; color: #ffd700; font-weight: 900; z-index: 3; text-shadow: 0 1px 2px #000; }
         
-        .track-item.active { background: #ffd700; border-color: #fff; box-shadow: 0 0 15px #ffd700; z-index: 10; }
-        .track-item.winning { background: #39ff14 !important; border-color: #fff; transform: scale(1.1); box-shadow: 0 0 20px #39ff14; z-index: 20; animation: blinkWin 0.5s infinite alternate; }
+        .track-item.active { background: #ffd700; border-color: #fff; box-shadow: 0 0 15px #ffd700; z-index: 10; transform: scale(1.05); }
+        .track-item.winning { background: #39ff14 !important; border-color: #fff; transform: scale(1.15); box-shadow: 0 0 25px #39ff14; z-index: 20; animation: blinkWin 0.5s infinite alternate; }
 
-        /* CENTER BETS INNER BOX */
+        /* Inner Center Bets 3x3 Grid */
         .center-bets { 
             grid-area: 2 / 2 / 7 / 8; 
-            display: grid; 
-            grid-template-columns: repeat(3, minmax(0, 1fr)); 
-            grid-template-rows: repeat(3, minmax(0, 1fr)); 
-            gap: 4px; padding: 6px; background: rgba(0,0,0,0.4); 
-            border: 2px solid #555; border-radius: 8px; position: relative; 
+            display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); 
+            gap: 5px; padding: 6px; background: rgba(0,0,0,0.5); 
+            border: 2px solid #334155; border-radius: 8px; position: relative; 
         }
 
         .bet-btn { 
             border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            border: 2px solid; position: relative; cursor: pointer; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); 
+            border: 2px solid; position: relative; cursor: pointer; box-shadow: inset 0 0 10px rgba(0,0,0,0.6), 0 3px 5px rgba(0,0,0,0.5); 
             min-width: 0; min-height: 0; overflow: hidden; 
         }
         .bet-btn:active { transform: scale(0.95); }
-        .bet-btn.winning { border-color: #39ff14 !important; background: #003300 !important; transform: scale(1.05); z-index: 15; box-shadow: 0 0 20px #39ff14; animation: blinkWin 0.5s infinite alternate; }
-        @keyframes blinkWin { to { box-shadow: 0 0 30px #39ff14; filter: brightness(1.3); } }
+        .bet-btn.winning { border-color: #39ff14 !important; background: #003300 !important; transform: scale(1.05); z-index: 15; box-shadow: 0 0 30px #39ff14; animation: blinkWin 0.5s infinite alternate; }
+        @keyframes blinkWin { to { box-shadow: 0 0 40px #39ff14; filter: brightness(1.3); } }
         
         .btn-monkey { border-color: #a1887f; background: linear-gradient(to bottom, #4e342e, #3e2723); }
         .btn-rabbit { border-color: #ce93d8; background: linear-gradient(to bottom, #6a1b9a, #4a148c); }
@@ -108,106 +134,71 @@
         .btn-elephant { border-color: #b0bec5; background: linear-gradient(to bottom, #546e7a, #37474f); }
         .btn-dove { border-color: #eeeeee; background: linear-gradient(to bottom, #616161, #424242); }
 
-        .bet-btn img { width: 50%; height: 50%; object-fit: contain; filter: drop-shadow(0 3px 3px #000); margin-bottom: 2px; }
-        .btn-icon-emoji { font-size: 26px; filter: drop-shadow(0 3px 3px #000); margin-bottom: 2px; }
-        
-        .pool-text { position: absolute; top: -2px; right: 0px; font-size: 9px; color: #fff; background: #ff0000; padding: 1px 4px; border-radius: 4px; font-weight: bold; z-index: 10; }
-        .my-bet-tag { position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%); background: #00e5ff; color: #000; font-size: 9px; padding: 1px 6px; border-radius: 4px 4px 0 0; font-weight: 900; display: none; z-index: 20; }
-        .btn-multi { color: #ffd700; font-size: 10px; font-weight: 900; background: rgba(0,0,0,0.6); padding: 0 4px; border-radius: 4px; }
+        .bet-btn img { width: 55%; height: 55%; object-fit: contain; filter: drop-shadow(0 3px 4px #000); margin-bottom: 2px; }
+        .btn-icon-emoji { font-size: 28px; filter: drop-shadow(0 3px 4px #000); margin-bottom: 2px; }
+        .btn-multi { color: #ffd700; font-size: 11px; font-weight: 900; background: rgba(0,0,0,0.8); padding: 0 6px; border-radius: 4px; border: 1px solid #ffd700; }
 
         .huge-timer { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            font-size: 45px; font-weight: 900; color: #fff; text-shadow: 0 0 15px #ff007f; 
-            background: rgba(0,0,0,0.9); padding: 10px 40px; border-radius: 10px; border: 3px solid #ff007f; 
-            z-index: 999; display: none;
+            font-size: 50px; font-weight: 900; color: #fff; text-shadow: 0 0 15px #ff007f; 
+            background: rgba(0,0,0,0.95); padding: 10px 40px; border-radius: 15px; border: 3px solid #ff007f; 
+            z-index: 999; display: none; box-shadow: 0 0 30px #ff007f;
         }
 
-        /* 🔥 RIGHT PANEL (VERTICAL RECORD) 🔥 */
-        .right-panel { width: 45px; background: rgba(0,0,0,0.5); border-radius: 8px; border: 1px solid #444; display: flex; flex-direction: column; align-items: center; padding: 5px 2px; }
-        .r-title { color: #ffd700; font-size: 9px; font-weight: bold; margin-bottom: 5px; writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: 2px; }
-        .h-list { display: flex; flex-direction: column; gap: 4px; flex: 1; width: 100%; overflow: hidden; align-items: center; }
-        .h-item { width: 30px; height: 30px; background: #1c2438; border-radius: 50%; border: 1px solid #ffd700; display: flex; justify-content: center; align-items: center; padding: 3px; }
-        .h-item img { width: 100%; height: 100%; object-fit: contain; }
-
-        /* BOTTOM AREA (Categories & Chips) */
-        .bottom-area { padding: 5px 15px; display: flex; flex-direction: column; gap: 5px; background: linear-gradient(0deg, #000, transparent); z-index: 100; position: relative; }
-        
-        .category-bets { display: flex; justify-content: space-evenly; gap: 10px; width: 100%; max-width: 600px; margin: 0 auto; }
-        .cat-btn { flex: 1; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid; box-shadow: 0 4px 6px rgba(0,0,0,0.6); position: relative; }
-        .bg-beast { background: linear-gradient(145deg, #d32f2f, #660000); border-color: #ff5252; }
-        .bg-bird { background: linear-gradient(145deg, #1976d2, #002171); border-color: #448aff; }
-        
-        .footer-chips { display: flex; justify-content: space-evenly; align-items: center; width: 100%; padding: 4px 0; background: rgba(0,0,0,0.6); border-radius: 10px; }
-        .chip-img { width: 38px; height: 38px; cursor: pointer; transition: 0.2s; filter: drop-shadow(0 4px 4px #000); }
-        .chip-img.active { transform: scale(1.15) translateY(-5px); filter: drop-shadow(0 0 10px #ffd700); }
-
+        /* Notifications & Chips */
         .placed-chip-img { position: absolute; width: 22px; height: 22px; pointer-events: none; z-index: 100; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.8)); transition: all 0.5s ease; }
         .win-anim-chip { z-index: 999 !important; }
 
         .alert { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; width: 50%; max-width: 250px; display: none; pointer-events: none; }
         .alert img, .alert video { width: 100%; filter: drop-shadow(0 0 20px rgba(0,0,0,1)); border-radius: 10px; }
-        .toast-msg { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); background: rgba(220, 38, 38, 0.95); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 900; z-index: 9999; border: 2px solid #fff; display: none; font-size: 13px; text-align: center; }
+        .toast-msg { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(220, 38, 38, 0.95); color: white; padding: 8px 20px; border-radius: 8px; font-weight: 900; z-index: 9999; border: 2px solid #fff; display: none; font-size: 14px; text-align: center; box-shadow: 0 4px 10px #000; }
     </style>
 </head>
 <body onclick="initAudio()">
 
-    <div id="game-wrapper">
-        <img src="assets/1000056453.png" class="bg-img-layer" onerror="this.style.display='none'">
+    <div id="landscape-canvas">
         
         <div class="overlay" id="initial-loader" style="display:flex;">
             <div class="spinner"></div><div style="color:#ffd700;">LOADING CASINO...</div>
         </div>
-
         <div class="toast-msg" id="toastMsg">⚠️ Warning</div>
         <div id="alert-start" class="alert"><img src="assets/start-logo-261-5745.png" onerror="this.style.display='none'"></div>
         <div id="alert-stop" class="alert"><img src="assets/stop-2-5754.gif" onerror="this.style.display='none'"></div>
         <div id="alert-wait" class="alert"><video id="vid-wait" autoplay muted loop playsinline><source src="assets/VID-20260420-WA0000.mp4"></video></div>
 
-        <div class="header">
+        <div class="left-panel">
             <div class="back-btn" onclick="history.back()">⬅️</div>
-            <div class="logo">KALYAN VIP ZOO</div>
-            <div style="width: 30px;"></div> </div>
-
-        <div class="main-area">
-            
-            <div class="left-panel">
-                <div class="avatar-box">👨‍💼</div>
-                <div class="wallet-box">₹<span id="wallet-bal">0.00</span></div>
-                <div id="server-status" class="server-status">🔴 Offline</div>
-                <div class="online-count">🟢 <span id="online-count">245</span></div>
-            </div>
-
-            <div class="center-panel">
-                <div class="game-board" id="board">
-                    <div class="center-bets" id="bet-container">
-                        <div class="huge-timer" id="main-timer">WAIT</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="right-panel">
-                <div class="r-title">RECORD</div>
-                <div class="h-list" id="history-list"></div>
-            </div>
-
+            <div id="server-status" class="server-status">🟢 On</div>
+            <div class="wallet-box">₹<br><span id="wallet-bal">0.0</span></div>
+            <div class="r-title">REC</div>
+            <div class="h-list" id="history-list"></div>
         </div>
 
-        <div class="bottom-area">
-            <div class="category-bets">
-                <div class="cat-btn bg-beast" id="btn-ANIMALS" onclick="placeBet(this, 'ANIMALS', event)">
-                    <div class="pool-text">₹<span id="total-ANIMALS">0</span></div>
-                    <div style="font-size:14px; font-weight:900; text-shadow:0 2px 2px #000; color:#fff;">🦁 BEAST (1.9x)</div>
-                    <div class="my-bet-tag" id="my-ANIMALS">₹<span>0</span></div>
-                </div>
-                <div class="cat-btn bg-bird" id="btn-BIRDS" onclick="placeBet(this, 'BIRDS', event)">
-                    <div class="pool-text">₹<span id="total-BIRDS">0</span></div>
-                    <div style="font-size:14px; font-weight:900; text-shadow:0 2px 2px #000; color:#fff;">🦅 BIRD (1.9x)</div>
-                    <div class="my-bet-tag" id="my-BIRDS">₹<span>0</span></div>
+        <div class="center-panel">
+            <div class="game-board" id="board">
+                <div class="center-bets" id="bet-container">
+                    <div class="huge-timer" id="main-timer">WAIT</div>
                 </div>
             </div>
-
-            <div class="footer-chips" id="chips-tray"></div>
         </div>
+
+        <div class="right-panel">
+            <div class="cat-btn bg-beast" id="btn-ANIMALS" onclick="placeBet(this, 'ANIMALS', event)">
+                <div class="pool-text">₹<span id="total-ANIMALS">0</span></div>
+                <div style="font-size: 30px; filter: drop-shadow(0 2px 4px #000);">🦁</div>
+                <div class="cat-title">BEAST (1.9x)</div>
+                <div class="my-bet-tag" id="my-ANIMALS">₹<span>0</span></div>
+            </div>
+            <div class="cat-btn bg-bird" id="btn-BIRDS" onclick="placeBet(this, 'BIRDS', event)">
+                <div class="pool-text">₹<span id="total-BIRDS">0</span></div>
+                <div style="font-size: 30px; filter: drop-shadow(0 2px 4px #000);">🦅</div>
+                <div class="cat-title">BIRD (1.9x)</div>
+                <div class="my-bet-tag" id="my-BIRDS">₹<span>0</span></div>
+            </div>
+        </div>
+
+        <div class="bottom-panel" id="chips-tray"></div>
+
     </div>
 
     <audio id="soundSpin" src="https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3"></audio>
@@ -216,7 +207,7 @@
     <audio id="soundCoins" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3"></audio>
 
 <script>
-    setTimeout(() => document.getElementById('initial-loader').style.display = 'none', 3000);
+    setTimeout(() => document.getElementById('initial-loader').style.display = 'none', 2500);
 
     let isAudioInit = false;
     function initAudio() { 
@@ -263,7 +254,6 @@
         betContainer.appendChild(div);
     });
 
-    // HAR JANWAR PAR MULTIPLIER ADD KIYA
     const trackSequence = [
         {id:'eagle', m:'x12'},{id:'eagle', m:'x12'},{id:'eagle', m:'x12'},{id:'frog', m:'HOUSE'},{id:'lion', m:'x12'},{id:'lion', m:'x12'},{id:'lion', m:'x12'},
         {id:'rabbit', m:'x6'},{id:'rabbit', m:'x6'},{id:'rabbit', m:'x6'},{id:'monkey', m:'x8'},{id:'monkey', m:'x8'},{id:'monkey', m:'x8'},
@@ -277,9 +267,9 @@
     function addTrackItem(obj, row, col) {
         let div = document.createElement('div'); div.className = 'track-item'; div.style.gridArea = `${row} / ${col}`; 
         if (obj.id === 'frog') { 
-            div.innerHTML = `<span style="font-size: 22px">🐸</span><div style="position:absolute;font-size:7px;bottom:1px;background:red;color:white;padding:1px 3px;font-weight:900;border-radius:3px;z-index:3;">HOUSE</div>`; 
+            div.innerHTML = `<span style="font-size: 26px">🐸</span><div style="position:absolute;font-size:8px;bottom:2px;background:red;color:white;padding:1px 4px;font-weight:900;border-radius:4px;z-index:3;">HOUSE</div>`; 
         } else if (obj.id === 'shark') { 
-            div.innerHTML = `<span style="font-size: 22px">🦈</span><div style="position:absolute;font-size:7px;bottom:1px;background:#ffd700;color:black;padding:1px 3px;font-weight:900;border-radius:3px;z-index:3;">x24</div>`; 
+            div.innerHTML = `<span style="font-size: 26px">🦈</span><div style="position:absolute;font-size:8px;bottom:2px;background:#ffd700;color:black;padding:1px 4px;font-weight:900;border-radius:4px;z-index:3;">x24</div>`; 
         } else { 
             div.innerHTML = `<img src="assets/${obj.id}.png.png" onerror="this.style.display='none'"><span class="mult-tag">${obj.m}</span>`; 
         }
@@ -321,9 +311,9 @@
     db.ref('.info/connected').on('value', snap => {
         let sbox = document.getElementById('server-status');
         if (snap.val() === true) {
-            sbox.innerHTML = '🟢 Online'; sbox.style.color = '#39ff14'; sbox.style.borderColor = '#39ff14';
+            sbox.innerHTML = '🟢 On'; sbox.style.color = '#39ff14';
         } else {
-            sbox.innerHTML = '🔴 Offline'; sbox.style.color = '#ff3333'; sbox.style.borderColor = '#ff3333';
+            sbox.innerHTML = '🔴 Off'; sbox.style.color = '#ff3333';
         }
     });
 
@@ -334,11 +324,10 @@
             winBal = parseFloat(data.winning_balance || 0); 
             bonBal = parseFloat(data.bonus_balance || 0);
             userBalance = depBal + winBal + bonBal; 
-            document.getElementById('wallet-bal').innerText = userBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('wallet-bal').innerText = userBalance > 999 ? (userBalance/1000).toFixed(1)+'k' : userBalance.toLocaleString();
         });
     }
 
-    // VERTICAL HISTORY APPEND
     function updHistory(wId) {
         if(!wId) return;
         const list = document.getElementById('history-list');
@@ -347,7 +336,6 @@
         if(normId === 'frog') n.innerHTML = `<span style="font-size:16px">🐸</span>`;
         else if(normId === 'shark') n.innerHTML = `<span style="font-size:16px">🦈</span>`;
         else n.innerHTML = `<img src="assets/${normId}.png.png" onerror="this.style.display='none'">`;
-        
         list.insertBefore(n, list.firstChild);
         if(list.children.length > 7) list.removeChild(list.lastChild); 
     }
@@ -431,7 +419,7 @@
     }, 1000);
 
     // ----------------------------------------------------
-    // 5. GAMEPLAY & CHIP ANIMATIONS
+    // 5. GAMEPLAY & PERFECT FLYING CHIPS
     // ----------------------------------------------------
     function botAction() {
         if(!isBettingOpen) return; 
@@ -455,8 +443,8 @@
         let dest = destNode.getBoundingClientRect();
         
         setTimeout(() => {
-            fly.style.left = (dest.left + 10 + Math.random() * (dest.width - 20)) + 'px';
-            fly.style.top = (dest.top + 10 + Math.random() * (dest.height - 20)) + 'px';
+            fly.style.left = (dest.left + 15 + Math.random() * (dest.width - 30)) + 'px';
+            fly.style.top = (dest.top + 15 + Math.random() * (dest.height - 30)) + 'px';
         }, 50);
         if (document.querySelectorAll('.placed-chip-img').length > 100) document.querySelector('.placed-chip-img').remove();
     }
@@ -531,6 +519,7 @@
         }
     }
 
+    // 🔥 PERFECT CHIP PLACEMENT MATH 🔥
     window.placeBet = function(el, id, event) {
         if (!isBettingOpen || currentUserId === "GUEST" || userBalance < selectedChipVal) return;
         
@@ -564,16 +553,12 @@
         
         let tB = el.getBoundingClientRect();
         setTimeout(() => { 
-            f.style.left = (tB.left + 10 + Math.random()*(tB.width-20)) + 'px'; 
-            f.style.top = (tB.top + 10 + Math.random()*(tB.height-20)) + 'px'; 
+            f.style.left = (tB.left + 15 + Math.random()*(tB.width-30)) + 'px'; 
+            f.style.top = (tB.top + 15 + Math.random()*(tB.height-30)) + 'px'; 
             f.style.zIndex = 41; 
         }, 50);
     };
 
-    setInterval(() => { 
-        let c = 245 + Math.floor(Math.random() * 7) - 3; 
-        document.querySelector('.online-count span').innerText = c < 180 ? 180 : c; 
-    }, 2500);
 </script>
 </body>
 </html>
