@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kalyan VIP Zoo - Pro Track</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
@@ -61,15 +60,15 @@
         
         .huge-timer { position: absolute; top: 0; left: 50%; transform: translate(-50%, -5%); font-size: 75px; font-weight: 900; color: #ffd700; text-shadow: 0 0 30px #ffd700, 0 0 10px #000; z-index: 50; pointer-events: none; }
         
-        /* 🔥 FIX: COLORFUL CONTINUOUS TRACK (Dibbe alag nahi dikhenge) 🔥 */
+        /* 🔥 BINA DIBBE WALA CONTINUOUS COLORFUL TRACK 🔥 */
         .game-board { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
             grid-template-rows: repeat(7, 1fr); 
-            gap: 0px; /* Absolutely no gap */
+            gap: 0px; 
             width: 100%; height: 100%; max-width: 480px; 
             border: 3px solid #ffd700; border-radius: 12px; padding: 0px; position: relative; 
-            background: linear-gradient(45deg, #2a0845, #004d40, #640b33, #002244); /* Moving track color */
+            background: linear-gradient(45deg, #2a0845, #004d40, #640b33, #002244); 
             background-size: 300% 300%;
             animation: trackNeon 6s ease infinite;
             box-shadow: 0 0 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,215,0,0.3);
@@ -79,7 +78,7 @@
 
         .track-item { 
             background: transparent; 
-            border: none; /* No borders, completely seamless */
+            border: none; 
             display: flex; align-items: center; justify-content: center; transition: 0.1s; position: relative;
         }
         .track-item img { width: 85%; height: 85%; object-fit: contain; filter: drop-shadow(0 3px 3px rgba(0,0,0,0.9)); }
@@ -87,15 +86,13 @@
         .track-item.active { background: rgba(255, 215, 0, 0.6); box-shadow: 0 0 20px #ffd700, inset 0 0 15px #ffd700; border-radius: 8px; z-index: 10; }
         .track-item.winning { background: rgba(57, 255, 20, 0.8) !important; box-shadow: 0 0 30px #39ff14, inset 0 0 20px #39ff14 !important; transform: scale(1.15); z-index: 20; border-radius: 8px; animation: blinkWin 0.5s infinite alternate;}
         
-        /* Inner black box for betting */
         .center-bets { 
             grid-area: 2 / 2 / 7 / 7; 
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px; 
-            background: #111520; /* Solid dark background to hide track gradient inside */
+            background: #111520; 
             border: 2px solid #ffd700; border-radius: 10px; margin: 2px; 
         }
         
-        /* Custom Button Colors like your screenshot */
         .bet-btn { border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #555; position: relative; cursor: pointer; transition: 0.1s; box-shadow: 0 4px 6px rgba(0,0,0,0.6);}
         .bet-btn:active { transform: scale(0.95); }
         .btn-monkey { border-color: #8d6e63; background: #3e2723; }
@@ -156,7 +153,7 @@
     <div class="reconnecting-overlay" id="reconnect-screen">
         <div class="spinner"></div>
         <div>Loading...</div>
-        <div style="font-size:14px; margin-top:5px; color:#ccc;">Connecting to Server</div>
+        <div style="font-size:14px; margin-top:5px; color:#ccc;">Connecting to Firebase...</div>
     </div>
 
     <div id="alert-start" class="game-alert"><img src="assets/start-logo-261-5745.png" alt="Start Betting"></div>
@@ -214,86 +211,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
     <script>
-        // ==========================================
-        // 1. DATA AND ASSETS
-        // ==========================================
-        const chipImgs = { 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png" };
-        let selectedChipVal = 10; 
-        let selectedChipSrc = chipImgs[10];
-
-        const beastsList = ['monkey', 'rabbit', 'lion', 'elephant'];
-        const birdsList = ['peacock', 'eagle', 'parrot', 'dove'];
-
-        const imgMap = {
-            'monkey': 'assets/monkey.png.png', 'rabbit': 'assets/rabbit.png.png', 'lion': 'assets/lion.png.png',
-            'elephant': 'assets/elephant.png.png', 'peacock': 'assets/peacock.png.png', 'eagle': 'assets/eagle.png.png',
-            'parrot': 'assets/parrot.png.png', 'dove': 'assets/dove.png.png'
-        };
-
-        const emojiMap = {
-            'monkey': '🐒', 'rabbit': '🐇', 'peacock': '🦚', 'lion': '🦁',
-            'eagle': '🦅', 'parrot': '🦜', 'elephant': '🐘', 'dove': '🕊️',
-            'frog': '🐸', 'shark': '🦈'
-        };
-
-        const betData = [
-            {id:'monkey', m:8, cls:'btn-monkey'}, {id:'rabbit', m:6, cls:'btn-rabbit'}, {id:'peacock', m:8, cls:'btn-peacock'}, 
-            {id:'lion', m:12, cls:'btn-lion'}, {id:'shark', m:24, cls:'btn-shark', type:'emoji'}, 
-            {id:'eagle', m:12, cls:'btn-eagle'}, 
-            {id:'parrot', m:6, cls:'btn-parrot'}, {id:'elephant', m:8, cls:'btn-elephant'}, {id:'dove', m:8, cls:'btn-dove'}
-        ];
-
-        const trackSequence = [
-            'eagle','eagle','eagle','frog','lion','lion','lion', 
-            'rabbit','rabbit','monkey','monkey','monkey', 
-            'elephant','elephant','parrot','shark','parrot','parrot','dove', 
-            'dove','dove','peacock','peacock','peacock'
-        ];
-
-        let myBets = { 'ANIMALS': 0, 'BIRDS': 0 };
-        let trackElements = [];
-
-        // ==========================================
-        // 2. DOM GENERATION (MANDATORY RENDER FIRST)
-        // ==========================================
-        const betContainer = document.getElementById('bet-container');
-        betData.forEach(item => {
-            myBets[item.id] = 0;
-            const div = document.createElement('div');
-            div.className = `bet-btn ${item.cls}`; div.id = `btn-${item.id}`;
-            div.onclick = (e) => placeBet(div, item.id, e);
-            
-            let iconHtml = item.type === 'emoji' ? `<div class="btn-icon-emoji">${emojiMap[item.id]}</div>` : `<img src="${imgMap[item.id]}" class="btn-img">`;
-
-            div.innerHTML = `
-                <div class="pool-text">₹<span id="total-${item.id}">0</span></div>
-                ${iconHtml}
-                <div class="btn-multi">${item.m}x</div>
-                <div class="my-bet-tag" id="my-${item.id}">₹<span>0</span></div>
-            `;
-            betContainer.appendChild(div);
-        });
-
-        const board = document.getElementById('board');
-        for(let i=1; i<=7; i++) createTrackItem(trackSequence[trackElements.length], 1, i);
-        for(let i=2; i<=6; i++) createTrackItem(trackSequence[trackElements.length], i, 7);
-        for(let i=7; i>=1; i--) createTrackItem(trackSequence[trackElements.length], 7, i);
-        for(let i=6; i>=2; i--) createTrackItem(trackSequence[trackElements.length], i, 1);
-
-        function createTrackItem(id, row, col) {
-            let div = document.createElement('div');
-            div.className = 'track-item'; div.style.gridArea = `${row} / ${col}`; 
-            
-            if(id === 'frog') {
-                div.innerHTML = `<span style="font-size: 26px">🐸</span><div style="position:absolute;font-size:8px;bottom:2px;background:red;color:white;padding:1px 4px;font-weight:900;border-radius:4px;">HOUSE</div>`;
-            } else if(id === 'shark') {
-                div.innerHTML = `<span style="font-size: 26px">🦈</span><div style="position:absolute;font-size:8px;bottom:2px;background:#ffd700;color:black;padding:1px 4px;font-weight:900;border-radius:4px;">24x</div>`;
-            } else {
-                div.innerHTML = `<img src="${imgMap[id]}" alt="${id}">`;
-            }
-            board.appendChild(div); trackElements.push(div);
-        }
-
         function createStars() {
             const container = document.getElementById('stars-container');
             for(let i=0; i<40; i++) {
@@ -316,139 +233,157 @@
             }, 3000); 
         });
 
-        // ==========================================
-        // 3. FIREBASE & SOCKET INIT (SAFE WRAPPED)
-        // ==========================================
-        let db, socket;
-        let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
+        // ---------------- FIREBASE INITIALIZATION ----------------
+        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
         const currentUserId = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+        
+        let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
+        const chipImgs = { 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png" };
+        let selectedChipVal = 10; 
+        let selectedChipSrc = chipImgs[10];
 
-        try {
-            const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
-            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-            
-            db.ref('.info/connected').on('value', function(snap) {
-                let overlay = document.getElementById('reconnect-screen');
-                if(snap.val() === true) { overlay.style.display = 'none'; } else { overlay.style.display = 'flex'; }
-            });
+        const beastsList = ['monkey', 'rabbit', 'lion', 'elephant'];
+        const birdsList = ['peacock', 'eagle', 'parrot', 'dove'];
+        const imgMap = {
+            'monkey': 'assets/monkey.png.png', 'rabbit': 'assets/rabbit.png.png', 'lion': 'assets/lion.png.png',
+            'elephant': 'assets/elephant.png.png', 'peacock': 'assets/peacock.png.png', 'eagle': 'assets/eagle.png.png',
+            'parrot': 'assets/parrot.png.png', 'dove': 'assets/dove.png.png'
+        };
+        const emojiMap = { 'monkey': '🐒', 'rabbit': '🐇', 'peacock': '🦚', 'lion': '🦁', 'eagle': '🦅', 'parrot': '🦜', 'elephant': '🐘', 'dove': '🕊️', 'frog': '🐸', 'shark': '🦈' };
 
-            if (currentUserId) {
-                db.ref(`users/${currentUserId}`).on('value', (s) => {
-                    const d = s.val() || {}; 
-                    depBal = parseFloat(d.balance||0); winBal = parseFloat(d.winning_balance||0); bonBal = parseFloat(d.bonus_balance||0);
-                    userBalance = depBal + winBal + bonBal; 
-                    document.getElementById('wallet-bal').innerText = userBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                });
+        const betData = [
+            {id:'monkey', m:8, cls:'btn-monkey'}, {id:'rabbit', m:6, cls:'btn-rabbit'}, {id:'peacock', m:8, cls:'btn-peacock'}, 
+            {id:'lion', m:12, cls:'btn-lion'}, {id:'shark', m:24, cls:'btn-shark', type:'emoji'}, 
+            {id:'eagle', m:12, cls:'btn-eagle'}, 
+            {id:'parrot', m:6, cls:'btn-parrot'}, {id:'elephant', m:8, cls:'btn-elephant'}, {id:'dove', m:8, cls:'btn-dove'}
+        ];
+
+        let myBets = { 'ANIMALS': 0, 'BIRDS': 0 };
+        const betContainer = document.getElementById('bet-container');
+        
+        betData.forEach(item => {
+            myBets[item.id] = 0;
+            const div = document.createElement('div');
+            div.className = `bet-btn ${item.cls}`; div.id = `btn-${item.id}`;
+            div.onclick = (e) => placeBet(div, item.id, e);
+            let iconHtml = item.type === 'emoji' ? `<div class="btn-icon-emoji">${emojiMap[item.id]}</div>` : `<img src="${imgMap[item.id]}" class="btn-img">`;
+            div.innerHTML = `<div class="pool-text">₹<span id="total-${item.id}">0</span></div>${iconHtml}<div class="btn-multi">${item.m}x</div><div class="my-bet-tag" id="my-${item.id}">₹<span>0</span></div>`;
+            betContainer.appendChild(div);
+        });
+
+        const trackSequence = [ 'eagle','eagle','eagle','frog','lion','lion','lion', 'rabbit','rabbit','monkey','monkey','monkey', 'elephant','elephant','parrot','shark','parrot','parrot','dove', 'dove','dove','peacock','peacock','peacock' ];
+        let trackElements = [];
+        const board = document.getElementById('board');
+        
+        for(let i=1; i<=7; i++) createTrackItem(trackSequence[trackElements.length], 1, i);
+        for(let i=2; i<=6; i++) createTrackItem(trackSequence[trackElements.length], i, 7);
+        for(let i=7; i>=1; i--) createTrackItem(trackSequence[trackElements.length], 7, i);
+        for(let i=6; i>=2; i--) createTrackItem(trackSequence[trackElements.length], i, 1);
+
+        function createTrackItem(id, row, col) {
+            let div = document.createElement('div');
+            div.className = 'track-item'; div.style.gridArea = `${row} / ${col}`; 
+            if(id === 'frog') { div.innerHTML = `<span style="font-size: 26px">🐸</span><div style="position:absolute;font-size:8px;bottom:2px;background:red;color:white;padding:1px 4px;font-weight:900;border-radius:4px;">HOUSE</div>`; } 
+            else if(id === 'shark') { div.innerHTML = `<span style="font-size: 26px">🦈</span><div style="position:absolute;font-size:8px;bottom:2px;background:#ffd700;color:black;padding:1px 4px;font-weight:900;border-radius:4px;">24x</div>`; } 
+            else { div.innerHTML = `<img src="${imgMap[id]}" alt="${id}">`; }
+            board.appendChild(div); trackElements.push(div);
+        }
+
+        // ---------------- FIREBASE CONNECTIONS (TIMER & WALLET) ----------------
+        db.ref('.info/connected').on('value', function(snap) {
+            let sBox = document.getElementById('server-status');
+            let overlay = document.getElementById('reconnect-screen');
+            if (snap.val() === true) {
+                sBox.innerHTML = '🟢 Connected'; sBox.className = 'server-status server-connected'; overlay.style.display = 'none'; 
+            } else {
+                sBox.innerHTML = '🔴 Offline'; sBox.className = 'server-status server-disconnected'; overlay.style.display = 'flex'; 
             }
+        });
 
-            db.ref('Game/ZooRoulette/History').once('value', (s) => {
-                let pR = s.val();
-                if (pR && Array.isArray(pR)) { [...pR].reverse().forEach(win => updateHistory(win)); }
+        if (currentUserId) {
+            db.ref(`users/${currentUserId}`).on('value', (s) => {
+                const d = s.val() || {}; 
+                depBal = parseFloat(d.balance||0); winBal = parseFloat(d.winning_balance||0); bonBal = parseFloat(d.bonus_balance||0);
+                userBalance = depBal + winBal + bonBal; 
+                document.getElementById('wallet-bal').innerText = userBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             });
+        }
 
-            db.ref('Game/ZooRoulette/Bets').on('value', s => {
-                let allB = s.val() || {};
-                let tp = {'monkey':0, 'rabbit':0, 'lion':0, 'elephant':0, 'peacock':0, 'eagle':0, 'parrot':0, 'dove':0, 'shark':0, 'ANIMALS':0, 'BIRDS':0};
-                for(let u in allB) { if(!u.includes('bot')) for(let c in allB[u]) if(tp[c] !== undefined) tp[c] += allB[u][c]; }
-                for(let c in tp) {
-                    let elem = document.getElementById(`total-${c}`);
-                    if(elem && tp[c] > 0) elem.innerText = tp[c].toLocaleString();
-                }
-            });
-        } catch(e) { console.error("Firebase Error", e); }
+        db.ref('Game/ZooRoulette/History').once('value', (s) => {
+            let pR = s.val(); if (pR && Array.isArray(pR)) { [...pR].reverse().forEach(win => updateHistory(win)); }
+        });
 
-        try {
-            if(typeof io !== 'undefined') {
-                socket = io("https://kalyan-engine.onrender.com");
-                
-                socket.on('connect', () => {
-                    document.getElementById('server-status').innerHTML = '🟢 Connected';
-                    document.getElementById('server-status').className = 'server-status server-connected';
-                    document.getElementById('reconnect-screen').style.display = 'none';
-                });
-                socket.on('disconnect', () => {
-                    document.getElementById('server-status').innerHTML = '🔴 Offline';
-                    document.getElementById('server-status').className = 'server-status server-disconnected';
-                    document.getElementById('reconnect-screen').style.display = 'flex';
-                });
+        db.ref('Game/ZooRoulette/Bets').on('value', s => {
+            let allB = s.val() || {};
+            let tp = {'monkey':0, 'rabbit':0, 'lion':0, 'elephant':0, 'peacock':0, 'eagle':0, 'parrot':0, 'dove':0, 'shark':0, 'ANIMALS':0, 'BIRDS':0};
+            for(let u in allB) { if(!u.includes('bot')) for(let c in allB[u]) if(tp[c] !== undefined) tp[c] += allB[u][c]; }
+            for(let c in tp) { let elem = document.getElementById(`total-${c}`); if(elem && tp[c] > 0) elem.innerText = tp[c].toLocaleString(); }
+        });
 
-                socket.on('ZooRoulette_timerUpdate', (st) => {
-                    if(st.state === 'betting') {
-                        isSpinningLocal = false; clearAllLag(); 
-                        
-                        document.getElementById('main-timer').innerText = st.timer;
-                        document.getElementById('main-timer').style.display = 'block';
-                        document.getElementById('main-timer').style.color = st.timer <= 5 ? "#ff3333" : "#ffd700";
-                        
-                        trackElements.forEach(el => { el.classList.remove('active'); el.classList.remove('winning'); });
-                        document.querySelectorAll('.bet-btn, .cat-btn').forEach(b => b.classList.remove('winning'));
-                        
-                        if(!isBettingOpen) { 
-                            isBettingOpen = true; resetTable(); 
-                            let aStart = document.getElementById('alert-start');
-                            aStart.style.display = 'block'; setTimeout(() => aStart.style.display = 'none', 800); 
-                            startLivePlayerBets(); 
-                        }
-                    } else {
-                        if(isBettingOpen) {
-                            isBettingOpen = false; clearInterval(liveBettingInterval);
-                            document.getElementById('main-timer').style.display = 'none'; 
-                            let aStop = document.getElementById('alert-stop');
-                            aStop.style.display = 'block'; alertStopTimeout = setTimeout(() => { aStop.style.display = 'none'; }, 800); 
-                        }
-                    }
-                });
-
-                socket.on('ZooRoulette_result', (st) => {
-                    if(!isSpinningLocal) {
-                        isSpinningLocal = true; clearInterval(liveBettingInterval);
-                        document.getElementById('main-timer').style.display = 'none'; 
-                        let rawWin = st.winner || st.Winner || st.result || st.Result;
-                        if(rawWin) { setTimeout(() => { runTrackSpinByName(rawWin, false); }, 500); }
-                    }
-                });
-            }
-        } catch(e) { console.error("Socket IO Error", e); }
-
-        // ==========================================
-        // 4. GAME LOGIC & FUNCTIONS
-        // ==========================================
         let isBettingOpen = false, isSpinningLocal = false, liveBettingInterval;
         let alertStopTimeout, waitVideoTimeout;
         let lastWinner = '';
 
+        // 🔥 FIREBASE TIMER LISTENER (Fixed Timer not running) 🔥
+        db.ref('Game/ZooRoulette/Status').on('value', (s) => {
+            let st = s.val(); if(!st) return;
+
+            if(st.state === 'betting') {
+                isSpinningLocal = false; clearAllLag(); 
+                document.getElementById('main-timer').innerText = st.timer;
+                document.getElementById('main-timer').style.display = 'block';
+                document.getElementById('main-timer').style.color = st.timer <= 5 ? "#ff3333" : "#ffd700";
+                
+                trackElements.forEach(el => { el.classList.remove('active'); el.classList.remove('winning'); });
+                document.querySelectorAll('.bet-btn, .cat-btn').forEach(b => b.classList.remove('winning'));
+                
+                if(!isBettingOpen) { 
+                    isBettingOpen = true; resetTable(); 
+                    let aStart = document.getElementById('alert-start');
+                    aStart.style.display = 'block'; setTimeout(() => aStart.style.display = 'none', 800); 
+                    startLivePlayerBets(); 
+                }
+            } 
+            else if (st.state === 'spinning' || st.state === 'result') {
+                if(isBettingOpen && !isSpinningLocal) {
+                    isBettingOpen = false; isSpinningLocal = true;
+                    clearInterval(liveBettingInterval);
+                    document.getElementById('main-timer').style.display = 'none'; 
+                    
+                    let rawWin = st.winner || st.Winner || st.result || st.Result;
+                    
+                    if (st.timer > -12 && st.timer < 0) {
+                        if(rawWin) runTrackSpinByName(rawWin, true); 
+                    } else {
+                        let aStop = document.getElementById('alert-stop');
+                        aStop.style.display = 'block';
+                        alertStopTimeout = setTimeout(() => {
+                            aStop.style.display = 'none';
+                            if(rawWin) { runTrackSpinByName(rawWin, false); }
+                        }, 800); 
+                    }
+                }
+            }
+        });
+
+        // ---------------- SOUND & ANIMATION ----------------
         let isAudioInit = false;
         function initAudio() { 
-            if(!isAudioInit) {
-                isAudioInit = true;
-                let vid = document.getElementById('vid-wait');
-                vid.muted = true; vid.play().catch(e=>{});
-            }
+            if(!isAudioInit) { isAudioInit = true; let vid = document.getElementById('vid-wait'); vid.muted = true; vid.play().catch(e=>{}); }
         }
         function playSound(obj, vol) { try { if(!isAudioInit) return; let c = obj.cloneNode(); c.volume = vol; c.play().catch(e=>{}); } catch(e){} }
-
-        function showToast(msg) {
-            let t = document.getElementById('toastMsg'); t.innerHTML = msg; t.style.display = 'block';
-            setTimeout(() => { t.style.display = 'none'; }, 3000);
-        }
+        function showToast(msg) { let t = document.getElementById('toastMsg'); t.innerHTML = msg; t.style.display = 'block'; setTimeout(() => { t.style.display = 'none'; }, 3000); }
 
         function updateHistory(winId) {
             if(!winId) return;
             const list = document.getElementById('history-list');
             const newItem = document.createElement('div');
             newItem.className = 'h-item'; 
-            
-            let normId = winId.toLowerCase().trim();
-            if (normId === 'd24') normId = 'shark';
-
-            if(normId === 'frog' || normId === 'shark') {
-                 newItem.innerHTML = `<span style="font-size: 16px">${emojiMap[normId]}</span>`;
-            } else if(imgMap[normId]) {
-                 newItem.innerHTML = `<img src="${imgMap[normId]}">`;
-            } else {
-                 newItem.innerText = '?';
-            }
+            let normId = winId.toLowerCase().trim(); if (normId === 'd24') normId = 'shark';
+            if(normId === 'frog' || normId === 'shark') { newItem.innerHTML = `<span style="font-size: 16px">${emojiMap[normId]}</span>`; } 
+            else if(imgMap[normId]) { newItem.innerHTML = `<img src="${imgMap[normId]}">`; } else { newItem.innerText = '?'; }
             list.insertBefore(newItem, list.firstChild);
             if(list.children.length > 8) list.removeChild(list.lastChild); 
         }
@@ -457,10 +392,8 @@
             if (liveBettingInterval) clearInterval(liveBettingInterval);
             liveBettingInterval = setInterval(() => {
                 if (!isBettingOpen) return;
-                
                 const onlineBox = document.getElementById('online-badge').getBoundingClientRect();
-                const startX = onlineBox.left + (onlineBox.width / 2); 
-                const startY = onlineBox.top + (onlineBox.height / 2);
+                const startX = onlineBox.left + (onlineBox.width / 2); const startY = onlineBox.top + (onlineBox.height / 2);
                 
                 const targets = ['monkey', 'elephant', 'peacock', 'lion', 'shark', 'eagle', 'parrot', 'rabbit', 'dove', 'ANIMALS', 'BIRDS'];
                 const randomTargetId = targets[Math.floor(Math.random() * targets.length)];
@@ -471,11 +404,8 @@
                 const rVal = fakeChipVals[Math.floor(Math.random() * fakeChipVals.length)];
 
                 let flyChip = document.createElement('img');
-                flyChip.className = 'placed-chip-img'; 
-                flyChip.src = chipImgs[rVal] || chipImgs[100];
-                flyChip.style.left = startX + 'px'; flyChip.style.top = startY + 'px'; 
-                document.body.appendChild(flyChip);
-                
+                flyChip.className = 'placed-chip-img'; flyChip.src = chipImgs[rVal] || chipImgs[100];
+                flyChip.style.left = startX + 'px'; flyChip.style.top = startY + 'px'; document.body.appendChild(flyChip);
                 playSound(document.getElementById('soundBet'), 0.02); 
 
                 let dest = targetBox.getBoundingClientRect();
@@ -489,8 +419,7 @@
         }
 
         function clearAllLag() {
-            clearTimeout(alertStopTimeout);
-            clearTimeout(waitVideoTimeout);
+            clearTimeout(alertStopTimeout); clearTimeout(waitVideoTimeout);
             document.getElementById('alert-stop').style.display = 'none';
             document.getElementById('alert-wait').style.display = 'none';
         }
@@ -500,39 +429,21 @@
             if(winnerName === 'd24') winnerName = 'shark';
 
             let possibleTargetIndices = [];
-            trackSequence.forEach((nameOnGrid, index) => {
-                if (nameOnGrid === winnerName) possibleTargetIndices.push(index);
-            });
-
-            if (possibleTargetIndices.length === 0) {
-                 possibleTargetIndices = [0]; winnerName = trackSequence[0];
-            }
-
+            trackSequence.forEach((nameOnGrid, index) => { if (nameOnGrid === winnerName) possibleTargetIndices.push(index); });
+            if (possibleTargetIndices.length === 0) { possibleTargetIndices = [0]; winnerName = trackSequence[0]; }
             let finalStopIndex = possibleTargetIndices[Math.floor(Math.random() * possibleTargetIndices.length)];
 
-            if(skipAnimation) {
-                trackElements.forEach(el => el.classList.remove('active'));
-                showWinnerBox(winnerName, finalStopIndex, true); 
-                return;
-            }
+            if(skipAnimation) { trackElements.forEach(el => el.classList.remove('active')); showWinnerBox(winnerName, finalStopIndex, true); return; }
 
             let sSnd = document.getElementById('soundSpin'); sSnd.currentTime = 0; sSnd.loop = true; sSnd.volume = 0.8; sSnd.play().catch(e=>{});
-            
-            let currentIdx = 0;
-            let totalSteps = (trackSequence.length * 2) + finalStopIndex; 
-            let step = 0; let speed = 40;
+            let currentIdx = 0; let totalSteps = (trackSequence.length * 2) + finalStopIndex; let step = 0; let speed = 40;
 
             function nextStep() {
                 trackElements.forEach(el => el.classList.remove('active'));
                 trackElements[currentIdx].classList.add('active');
-                
-                if (step >= totalSteps) { 
-                    sSnd.pause(); showWinnerBox(winnerName, currentIdx, false); return; 
-                }
-                
+                if (step >= totalSteps) { sSnd.pause(); showWinnerBox(winnerName, currentIdx, false); return; }
                 step++; currentIdx = (currentIdx + 1) % trackSequence.length;
                 if(totalSteps - step < 10) speed += 30;
-                
                 setTimeout(nextStep, speed);
             }
             nextStep();
@@ -541,26 +452,18 @@
         function animateWinningChips(wId) {
             let boardRect = document.getElementById('board').getBoundingClientRect();
             let onlineRect = document.getElementById('online-badge').getBoundingClientRect();
-
             let catTarget = null;
             if (beastsList.includes(wId)) catTarget = document.getElementById('btn-ANIMALS').getBoundingClientRect();
             if (birdsList.includes(wId)) catTarget = document.getElementById('btn-BIRDS').getBoundingClientRect();
 
             let targets = [];
-            for(let i=0; i<15; i++) {
-                if (catTarget && Math.random() > 0.4) targets.push(catTarget);
-                else targets.push(onlineRect);
-            }
-
+            for(let i=0; i<15; i++) { if (catTarget && Math.random() > 0.4) targets.push(catTarget); else targets.push(onlineRect); }
             playSound(document.getElementById('soundCoins'), 0.8); 
 
             targets.forEach((target, i) => {
                 setTimeout(() => {
-                    let chip = document.createElement('img');
-                    chip.className = 'placed-chip-img win-anim-chip';
-                    chip.src = chipImgs[100]; 
-                    chip.style.left = (boardRect.left + boardRect.width/2) + 'px';
-                    chip.style.top = (boardRect.top + boardRect.height/2) + 'px';
+                    let chip = document.createElement('img'); chip.className = 'placed-chip-img win-anim-chip'; chip.src = chipImgs[100]; 
+                    chip.style.left = (boardRect.left + boardRect.width/2) + 'px'; chip.style.top = (boardRect.top + boardRect.height/2) + 'px';
                     document.body.appendChild(chip);
 
                     setTimeout(() => {
@@ -568,7 +471,6 @@
                         chip.style.top = (target.top + target.height/2 + (Math.random()*30 - 15)) + 'px';
                         chip.style.opacity = '0'; chip.style.transform = 'scale(0.5)';
                     }, 50);
-
                     setTimeout(() => chip.remove(), 700);
                 }, i * 40); 
             });
@@ -576,10 +478,8 @@
 
         function showWinnerBox(wId, trackIndex, skipDelay) {
             playSound(document.getElementById('soundWin'), 1.0); 
-            
             trackElements[trackIndex].classList.add('winning');
-            let winBtn = document.getElementById(`btn-${wId}`);
-            if(winBtn) winBtn.classList.add('winning');
+            let winBtn = document.getElementById(`btn-${wId}`); if(winBtn) winBtn.classList.add('winning');
 
             document.querySelectorAll('.placed-chip-img:not(.win-anim-chip)').forEach(c => {
                 c.style.opacity = '0'; c.style.transform = 'scale(0)'; setTimeout(() => c.remove(), 500); 
@@ -587,49 +487,34 @@
 
             document.querySelectorAll('.pool-text span').forEach(s => s.innerText = '0');
             document.querySelectorAll('.my-bet-tag').forEach(tag => tag.style.display = 'none');
-
             if (lastWinner !== wId) { lastWinner = wId; updateHistory(wId); }
 
             let totalWin = 0;
             if(currentUserId && db) {
                 let winObj = betData.find(z => z.id === wId);
                 if(winObj && myBets[wId] > 0) totalWin += myBets[wId] * winObj.m;
-                
-                if(beastsList.includes(wId) && myBets['ANIMALS'] > 0) {
-                    totalWin += myBets['ANIMALS'] * 1.9; document.getElementById('btn-ANIMALS').classList.add('winning');
-                }
-                if(birdsList.includes(wId) && myBets['BIRDS'] > 0) {
-                    totalWin += myBets['BIRDS'] * 1.9; document.getElementById('btn-BIRDS').classList.add('winning');
-                }
-
+                if(beastsList.includes(wId) && myBets['ANIMALS'] > 0) { totalWin += myBets['ANIMALS'] * 1.9; document.getElementById('btn-ANIMALS').classList.add('winning'); }
+                if(birdsList.includes(wId) && myBets['BIRDS'] > 0) { totalWin += myBets['BIRDS'] * 1.9; document.getElementById('btn-BIRDS').classList.add('winning'); }
                 if(totalWin > 0) db.ref(`users/${currentUserId}/winning_balance`).set(winBal + totalWin);
             }
 
             if(totalWin > 0 && !skipDelay) showToast(`🎉 WOOOHOO! Aap jeete ₹${totalWin}`);
-
             if(!skipDelay) { animateWinningChips(wId); }
 
             if(skipDelay) {
-                document.getElementById('alert-wait').style.display = 'block';
-                let v = document.getElementById('vid-wait'); v.muted = true; v.play().catch(e=>{});
+                document.getElementById('alert-wait').style.display = 'block'; let v = document.getElementById('vid-wait'); v.muted = true; v.play().catch(e=>{});
             } else {
-                waitVideoTimeout = setTimeout(() => {
-                    document.getElementById('alert-wait').style.display = 'block';
-                    let v = document.getElementById('vid-wait'); v.muted = true; v.play().catch(e=>{});
-                }, 3500);
+                waitVideoTimeout = setTimeout(() => { document.getElementById('alert-wait').style.display = 'block'; let v = document.getElementById('vid-wait'); v.muted = true; v.play().catch(e=>{}); }, 3500);
             }
         }
 
         function resetTable() {
             document.querySelectorAll('.placed-chip-img').forEach(c => c.remove()); 
             betData.forEach(z => { myBets[z.id] = 0; document.getElementById(`my-${z.id}`).style.display = 'none'; document.getElementById(`my-${z.id}`).querySelector('span').innerText = '0'; });
-            
             myBets['ANIMALS'] = 0; myBets['BIRDS'] = 0;
             document.getElementById('my-ANIMALS').style.display = 'none'; document.getElementById('my-ANIMALS').querySelector('span').innerText = '0';
             document.getElementById('my-BIRDS').style.display = 'none'; document.getElementById('my-BIRDS').querySelector('span').innerText = '0';
-
-            document.querySelectorAll('.pool-text span').forEach(s => s.innerText = '0');
-            lastWinner = '';
+            document.querySelectorAll('.pool-text span').forEach(s => s.innerText = '0'); lastWinner = '';
         }
 
         function placeBet(el, targetId, e) {
@@ -670,11 +555,7 @@
         }
         
         let currentOnline = 245;
-        setInterval(() => { 
-            currentOnline += Math.floor(Math.random() * 7) - 3; 
-            if(currentOnline < 180) currentOnline = 180;
-            document.getElementById('online-count').innerText = currentOnline; 
-        }, 2500); 
+        setInterval(() => { currentOnline += Math.floor(Math.random() * 7) - 3; if(currentOnline < 180) currentOnline = 180; document.getElementById('online-count').innerText = currentOnline; }, 2500); 
     </script>
 </body>
 </html>
