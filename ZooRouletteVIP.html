@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Kalyan VIP Zoo - Pro Track Edition</title>
+    <title>Kalyan VIP Zoo - Pro Final Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -13,17 +13,15 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
         
-        /* 🔥 BODY KO FIX KAR DIYA 🔥 */
         html, body { width: 100%; height: 100%; overflow: hidden; background: #000; position: fixed; }
 
-        /* 🔥 LANDSCAPE CANVAS (Main Rotation Engine) 🔥 */
+        /* 🔥 LANDSCAPE CANVAS 🔥 */
         #landscape-canvas {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
             background: radial-gradient(circle at center, #111827, #020617, #000000);
             overflow: hidden;
         }
 
-        /* Phone seedha hone par perfect 90 degree ghumega */
         @media screen and (orientation: portrait) {
             #landscape-canvas {
                 top: 50%; left: 50%; width: 100vh; height: 100vw;
@@ -31,24 +29,26 @@
             }
         }
 
-        /* Modals & Loaders */
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; color: white; font-weight: 900; font-size: 18px; }
         .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,215,0,0.2); border-top: 5px solid #ffd700; border-radius: 50%; animation: spinLoader 1s linear infinite; margin-bottom: 15px; }
         @keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* =========================================
-           🔥 MAXIMUM SPACE LAYOUT SYSTEM 🔥
+           🔥 TOP PANEL: ONLINE PLAYERS & TIMER 🔥
            ========================================= */
-
-        /* TOP PANEL: Dedicated Safe Area For Timer */
         .top-panel {
-            position: absolute; left: 75px; right: 120px; top: 5px; height: 40px;
-            display: flex; justify-content: center; align-items: center; z-index: 100;
+            position: absolute; left: 75px; right: 120px; top: 5px; height: 45px;
+            display: flex; justify-content: center; align-items: center; gap: 20px; z-index: 100;
         }
         
-        /* Timer ab screen ke top par float karega, board par overlap nahi hoga */
+        .online-players {
+            background: rgba(0,0,0,0.8); border: 2px solid #00ff88; color: #00ff88;
+            padding: 4px 15px; border-radius: 20px; font-size: 14px; font-weight: 900;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.4); display: flex; align-items: center; gap: 5px;
+        }
+
         .huge-timer { 
-            font-size: 28px; font-weight: 900; color: #fff; text-shadow: 0 0 10px #ff007f; 
+            font-size: 32px; font-weight: 900; color: #fff; text-shadow: 0 0 10px #ff007f; 
             background: rgba(0,0,0,0.8); padding: 2px 25px; border-radius: 20px; border: 2px solid #ff007f; 
             box-shadow: 0 0 15px #ff007f; display: none; letter-spacing: 2px;
         }
@@ -83,13 +83,12 @@
         .pool-text { position: absolute; top: -5px; right: -5px; font-size: 10px; color: #000; font-weight: 900; background: #ffc107; padding: 2px 6px; border-radius: 8px; border: 1px solid #fff; box-shadow: 0 2px 4px #000; }
         .my-bet-tag { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background: #00e5ff; color: #000; font-size: 11px; padding: 1px 8px; border-radius: 4px 4px 0 0; font-weight: 900; display: none; }
 
-        /* BOTTOM PANEL: Wallet (Violet) & Chips Tray */
+        /* BOTTOM PANEL: Wallet & Chips Tray */
         .bottom-panel {
             position: absolute; bottom: 5px; left: 75px; right: 120px;
             height: 45px; display: flex; align-items: center; justify-content: space-between;
             background: rgba(0,0,0,0.85); border: 2px solid #ffd700; border-radius: 30px; padding: 0 10px; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.9);
         }
-        /* Wallet (Violet) Yahan Aa Gaya Chips Ke Paas */
         .wallet-box { display: flex; align-items: center; background: #111; color: #ffd700; border: 1px solid #ffd700; border-radius: 20px; padding: 4px 12px; font-size: 14px; font-weight: 900; box-shadow: inset 0 0 10px rgba(255,215,0,0.2); }
         .chips-tray { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: flex-end; }
         .chip-img { width: 35px; height: 35px; cursor: pointer; transition: 0.2s; filter: drop-shadow(0 3px 4px #000); }
@@ -97,32 +96,28 @@
 
         /* 🔥 CENTER PANEL: STRETCHED GAME BOARD 🔥 */
         .center-panel {
-            position: absolute; left: 75px; right: 120px; top: 48px; bottom: 55px; /* Top Timer & Bottom Chips ki jagah chor di */
+            position: absolute; left: 75px; right: 120px; top: 55px; bottom: 55px; /* Top Timer ki jagah secure kar di */
             display: flex; justify-content: center; align-items: stretch; z-index: 10;
         }
         
-        /* 🔥 FIX: GAP 0, DIBBE DIBBE NAHI DIKHENGE 🔥 */
         .game-board { 
             display: grid; 
             grid-template-columns: repeat(8, minmax(0, 1fr)); 
             grid-template-rows: repeat(7, minmax(0, 1fr)); 
             height: 100%; width: 100%; max-width: 900px; margin: auto; 
-            background: #0f172a; border: 4px solid #ffb300; border-radius: 14px; padding: 0px; /* Padding & Gap removed */
+            background: #0f172a; border: 4px solid #ffb300; border-radius: 14px; padding: 0px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(0,0,0,0.6);
-            gap: 0; overflow: hidden; /* Perfect Continuous Track */
+            gap: 0; overflow: hidden;
         }
 
-        /* 🔥 HAR JANWAR KA CONTINUOUS COLOR 🔥 
-           Border hata diya, bas faint divider rakha hai jisse solid track lage 
-        */
+        /* 🔥 UNIFIED BORDER (CORPORATOR) & BACKGROUNDS 🔥 */
         .track-item { 
             display: flex; align-items: center; justify-content: center; 
             position: relative; transition: 0.1s; 
-            border: 0.5px solid rgba(255,255,255,0.05); /* Faint separator */
+            border: 0.5px solid rgba(255, 215, 0, 0.3); /* Ek hi Golden Border sabke liye */
             box-shadow: inset 0 0 8px rgba(0,0,0,0.4);
         }
         
-        /* Animal specific background colors for Track */
         .bg-eagle { background: rgba(239, 83, 80, 0.4); }
         .bg-lion { background: rgba(255, 202, 40, 0.35); }
         .bg-rabbit { background: rgba(171, 71, 188, 0.4); }
@@ -137,17 +132,16 @@
         .track-item img { width: 75%; height: 75%; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.9)); z-index: 2; }
         .track-item .mult-tag { position: absolute; bottom: 1px; right: 2px; font-size: 8px; color: #ffd700; font-weight: 900; z-index: 3; text-shadow: 0 1px 2px #000; }
         
-        /* Active Animation for specific block */
         .track-item.active { background: #ffd700 !important; border: 2px solid #fff; box-shadow: 0 0 15px #ffd700; z-index: 10; transform: scale(1.05); border-radius: 6px; }
         .track-item.winning { background: #39ff14 !important; border: 2px solid #fff; transform: scale(1.15); box-shadow: 0 0 25px #39ff14; z-index: 20; border-radius: 6px; animation: blinkWin 0.5s infinite alternate; }
 
-        /* 🔥 INNER BETS 🔥 */
+        /* INNER BETS */
         .center-bets { 
             grid-area: 2 / 2 / 7 / 8; 
             display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); 
             gap: 6px; padding: 6px; background: rgba(0,0,0,0.7); 
             border: 2px solid #334155; border-radius: 10px; position: relative; 
-            margin: 5px; /* Inner margin taaki running track se alag dikhe */
+            margin: 5px; 
         }
 
         .bet-btn { 
@@ -163,15 +157,22 @@
         .btn-rabbit { border-color: #ce93d8; background: linear-gradient(to bottom, #6a1b9a, #4a148c); }
         .btn-peacock { border-color: #80deea; background: linear-gradient(to bottom, #00838f, #006064); }
         .btn-lion { border-color: #ffca28; background: linear-gradient(to bottom, #f57c00, #e65100); }
-        .btn-shark { border-color: #ffd700; background: radial-gradient(circle, #424242, #212121); }
+        .btn-shark { border-color: #ffd700; background: radial-gradient(circle, #424242, #111); }
         .btn-eagle { border-color: #ef9a9a; background: linear-gradient(to bottom, #c62828, #b71c1c); }
         .btn-parrot { border-color: #a5d6a7; background: linear-gradient(to bottom, #2e7d32, #1b5e20); }
         .btn-elephant { border-color: #b0bec5; background: linear-gradient(to bottom, #546e7a, #37474f); }
         .btn-dove { border-color: #eeeeee; background: linear-gradient(to bottom, #616161, #424242); }
 
-        .bet-btn img { height: 60%; width: auto; max-width: 80%; object-fit: contain; filter: drop-shadow(0 3px 4px #000); margin-bottom: 2px; }
+        .bet-btn img { height: 50%; width: auto; max-width: 80%; object-fit: contain; filter: drop-shadow(0 3px 4px #000); margin-bottom: 2px; }
         .btn-icon-emoji { font-size: 32px; filter: drop-shadow(0 3px 4px #000); margin-bottom: 2px; }
-        .btn-multi { color: #ffd700; font-size: 11px; font-weight: 900; background: rgba(0,0,0,0.8); padding: 0 6px; border-radius: 4px; border: 1px solid #ffd700; }
+        
+        /* 🔥 FIX: CLEAR & BRIGHT MULTIPLIER FOR SHARK & OTHERS 🔥 */
+        .btn-multi { 
+            color: #000; font-size: 13px; font-weight: 900; 
+            background: #ffd700; padding: 2px 8px; border-radius: 6px; 
+            border: 1px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.8); 
+            margin-top: 2px; z-index: 5;
+        }
 
         /* Notifications & Chips */
         .placed-chip-img { position: absolute; width: 22px; height: 22px; pointer-events: none; z-index: 100; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.8)); transition: all 0.5s ease; }
@@ -179,7 +180,7 @@
 
         .alert { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; width: 50%; max-width: 250px; display: none; pointer-events: none; }
         .alert img, .alert video { width: 100%; filter: drop-shadow(0 0 20px rgba(0,0,0,1)); border-radius: 10px; }
-        .toast-msg { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(220, 38, 38, 0.95); color: white; padding: 8px 20px; border-radius: 8px; font-weight: 900; z-index: 9999; border: 2px solid #fff; display: none; font-size: 14px; text-align: center; box-shadow: 0 4px 10px #000; }
+        .toast-msg { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); background: rgba(220, 38, 38, 0.95); color: white; padding: 8px 20px; border-radius: 8px; font-weight: 900; z-index: 9999; border: 2px solid #fff; display: none; font-size: 14px; text-align: center; box-shadow: 0 4px 10px #000; }
     </style>
 </head>
 <body onclick="initAudio()">
@@ -195,6 +196,7 @@
         <div id="alert-wait" class="alert"><video id="vid-wait" autoplay muted loop playsinline><source src="assets/VID-20260420-WA0000.mp4"></video></div>
 
         <div class="top-panel">
+            <div class="online-players">👥 <span id="online-count">245</span></div>
             <div class="huge-timer" id="main-timer">WAIT</div>
         </div>
 
@@ -208,7 +210,7 @@
         <div class="center-panel">
             <div class="game-board" id="board">
                 <div class="center-bets" id="bet-container">
-                    </div>
+                </div>
             </div>
         </div>
 
@@ -289,11 +291,14 @@
         betContainer.appendChild(div);
     });
 
+    // 🔥 SHARK POSITION CHANGED: Between Elephant & Parrot 🔥
     const trackSequence = [
         {id:'eagle', m:'x12'},{id:'eagle', m:'x12'},{id:'eagle', m:'x12'},{id:'frog', m:'HOUSE'},{id:'lion', m:'x12'},{id:'lion', m:'x12'},{id:'lion', m:'x12'},
         {id:'rabbit', m:'x6'},{id:'rabbit', m:'x6'},{id:'rabbit', m:'x6'},{id:'monkey', m:'x8'},{id:'monkey', m:'x8'},{id:'monkey', m:'x8'},
-        {id:'elephant', m:'x8'},{id:'elephant', m:'x8'},{id:'elephant', m:'x8'},{id:'parrot', m:'x6'},{id:'parrot', m:'x6'},{id:'parrot', m:'x6'},
-        {id:'shark', m:'x24'},{id:'dove', m:'x8'},{id:'dove', m:'x8'},{id:'dove', m:'x8'},{id:'peacock', m:'x8'},{id:'peacock', m:'x8'},{id:'peacock', m:'x8'}
+        {id:'elephant', m:'x8'},{id:'elephant', m:'x8'},{id:'elephant', m:'x8'},
+        {id:'shark', m:'x24'}, // <--- Machhali Hathi aur Tote ke beech mein
+        {id:'parrot', m:'x6'},{id:'parrot', m:'x6'},{id:'parrot', m:'x6'},
+        {id:'dove', m:'x8'},{id:'dove', m:'x8'},{id:'dove', m:'x8'},{id:'peacock', m:'x8'},{id:'peacock', m:'x8'},{id:'peacock', m:'x8'}
     ];
     
     let trackElements = [];
@@ -301,7 +306,7 @@
     
     function addTrackItem(obj, row, col) {
         let div = document.createElement('div'); 
-        div.className = `track-item bg-${obj.id}`; // Assigned distinct color backgrounds
+        div.className = `track-item bg-${obj.id}`; 
         div.style.gridArea = `${row} / ${col}`; 
         
         if (obj.id === 'frog') { 
@@ -343,8 +348,6 @@
     let userBalance = 0, depBal = 10000, winBal = 0, bonBal = 0;
     let isBettingOpen = false, isSpinningLocal = false;
     let botInterval, alertTimeout, waitTimeout;
-    const beastsList = ['monkey', 'rabbit', 'lion', 'elephant'];
-    const birdsList = ['peacock', 'eagle', 'parrot', 'dove'];
 
     db.ref('.info/connected').on('value', snap => {
         let sbox = document.getElementById('server-status');
@@ -409,7 +412,7 @@
             clearTimeout(alertTimeout); clearTimeout(waitTimeout);
             document.getElementById('alert-stop').style.display = 'none'; 
             document.getElementById('alert-wait').style.display = 'none'; 
-            tEl.style.display = 'block'; // Timer dikhega safe top zone mein
+            tEl.style.display = 'block'; 
             trackElements.forEach(e => { e.elem.classList.remove('active', 'winning'); });
             document.querySelectorAll('.bet-btn, .cat-btn').forEach(b => b.classList.remove('winning'));
             
@@ -457,7 +460,7 @@
     }, 1000);
 
     // ----------------------------------------------------
-    // 5. GAMEPLAY & PERFECT FLYING CHIPS
+    // 🔥 PERFECT CHIPS FLYING FROM ONLINE PLAYERS 🔥
     // ----------------------------------------------------
     function botAction() {
         if(!isBettingOpen) return; 
@@ -469,9 +472,12 @@
         let fly = document.createElement('img'); fly.className = 'placed-chip-img'; 
         fly.src = chipImgs[fV] || chipImgs[100]; 
         
+        // 1. Bots ki chips ab exactly 'Online Players' box se udegii
+        let opRect = document.querySelector('.online-players').getBoundingClientRect();
         let isPortrait = window.matchMedia("(orientation: portrait)").matches;
-        fly.style.left = (window.innerWidth / 2) + 'px'; 
-        fly.style.top = (window.innerHeight / 2) + 'px'; 
+        
+        fly.style.left = (opRect.left + opRect.width/2) + 'px'; 
+        fly.style.top = (opRect.top + opRect.height/2) + 'px'; 
         if (isPortrait) fly.style.transform = 'rotate(90deg)';
         document.body.appendChild(fly); 
         playSound('soundBet', 0.02);
@@ -557,7 +563,6 @@
         }
     }
 
-    // 🔥 PERFECT CHIP PLACEMENT MATH 🔥
     window.placeBet = function(el, id, event) {
         if (!isBettingOpen || currentUserId === "GUEST" || userBalance < selectedChipVal) return;
         
@@ -597,6 +602,10 @@
         }, 50);
     };
 
+    setInterval(() => { 
+        let c = 245 + Math.floor(Math.random() * 20) - 10; 
+        document.querySelector('.online-players span').innerText = c < 200 ? 210 : c; 
+    }, 2500);
 </script>
 </body>
 </html>
