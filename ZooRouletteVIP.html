@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
-    <title>Kalyan VIP Zoo - Preloader & Perfect Animation</title>
+    <title>Kalyan VIP Zoo - Fast Payout Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -33,8 +33,6 @@
 
         /* LOADERS & TAP TO START */
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-weight: 900; }
-        
-        /* 🔥 Loader ko sabse upar rakha hai taaki bina load hue Tap to Start na dikhe 🔥 */
         #initial-loader { z-index: 100001; background: #000; } 
         #tap-to-start { z-index: 100000; background: rgba(0,0,0,0.9); cursor: pointer; }
         
@@ -117,9 +115,8 @@
         .pool-text { position: absolute; top: 4px; right: 8px; font-size: 14px; color: #fff; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; z-index: 10; pointer-events: none; }
         .my-bet-text { position: absolute; top: 4px; left: 8px; font-size: 14px; color: #39ff14; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; display: none; z-index: 10; pointer-events: none; }
 
-        /* VS & TIMER */
-        .center-png-box { grid-area: 1 / 3 / span 2 / span 1; display: flex; justify-content: center; align-items: center; position: relative; background: rgba(0,0,0,0.4); border: 2px solid #00e5ff; border-radius: 6px; box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.4); pointer-events: none; overflow: hidden; }
-        
+        /* TIMER FIXED */
+        .center-png-box { grid-area: 1 / 3 / span 2 / span 1; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.4); border: 2px solid #00e5ff; border-radius: 6px; box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.4); pointer-events: none; overflow: hidden; width: 100%; height: 100%; }
         .huge-timer { z-index: 10; font-size: clamp(35px, 6vw, 60px); font-weight: 900; color: #fff; text-shadow: 0 0 15px #ff007f, 0 0 5px #ff007f, 2px 2px 5px #000; transition: opacity 0.2s; pointer-events: none; font-variant-numeric: tabular-nums; text-align: center; width: 100%; }
 
         #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 500; }
@@ -180,7 +177,7 @@
     <audio id="snd-fly" src="assets/7ba0aedc-0356-404d-9c4a-c34acec66469.mp3" preload="auto"></audio>
 
 <script>
-    // 🔥 ASSET PRELOADER ENGINE 🔥
+    // PRELOADER ENGINE
     const assetsToLoad = [
         "assets/monkey.png.png", "assets/rabbit.png.png", "assets/parrot.png.png", "assets/dove.png.png",
         "assets/lion.png.png", "assets/elephant.png.png", "assets/peacock.png.png", "assets/eagle.png.png",
@@ -190,17 +187,15 @@
     let loadedAssets = 0;
     let loaderText = document.getElementById('load-pct');
     
-    // Automatically load all images before removing loader
     assetsToLoad.forEach(src => {
         let img = new Image();
         img.onload = img.onerror = () => {
             loadedAssets++;
             if(loaderText) loaderText.innerText = Math.floor((loadedAssets / assetsToLoad.length) * 100) + '%';
             if(loadedAssets === assetsToLoad.length) {
-                // Done loading
                 setTimeout(() => {
                     document.getElementById('initial-loader').style.display = 'none';
-                    document.getElementById('tap-to-start').style.display = 'flex'; // Show Tap button after load
+                    document.getElementById('tap-to-start').style.display = 'flex'; 
                 }, 500);
             }
         };
@@ -356,7 +351,7 @@
         let r = s.val(); if (r && Array.isArray(r)) { [...r].forEach(w => updHistory(w)); }
     });
 
-    // GAME ENGINE & 5 SECOND BEEP
+    // GAME ENGINE & BEEP
     let localTimer=15, localState='betting', botInt, lastBeep=-1;
     
     setInterval(() => {
@@ -457,7 +452,7 @@
         let stop = trackElements.findIndex(e=>e.id===win);
         let curr=0, steps=0, total=(trackElements.length*2)+stop, speed=50;
         
-        playSound('soundSpin', 0.8); // 🔥 Custom Car Spin Audio Start 🔥
+        playSound('soundSpin', 0.8); 
 
         function step() {
             trackElements.forEach(e=>e.elem.classList.remove('active'));
@@ -466,7 +461,7 @@
                 trackElements[curr].elem.classList.add('winning'); 
                 let b=$('btn-'+win); if(b) b.classList.add('winning');
                 
-                let s = $('soundSpin'); if(s) { s.pause(); s.currentTime = 0; } // Stop spin audio
+                let s = $('soundSpin'); if(s) { s.pause(); s.currentTime = 0; }
                 
                 processWin(win); 
                 return; 
@@ -477,6 +472,7 @@
         step();
     }
 
+    // 🔥 FIX: WIN PROCESS WITH FAST LOCAL UPDATE & NO DB DEPENDENCY FOR CHECKING 🔥
     function processWin(winId) {
         playSound('soundWin', 1.0); 
         updHistory(winId); 
@@ -486,24 +482,31 @@
         let isBird = ['peacock','eagle','parrot','dove'].includes(winId);
 
         if (currentUserId !== "GUEST") {
-            db.ref(`Game/ZooRoulette/Bets/${currentUserId}`).once('value', s => {
-                let uBets = s.val() || {};
-                let bW = uBets[winId] || 0;
-                let bBeast = uBets['ANIMALS'] || 0;
-                let bBird = uBets['BIRDS'] || 0;
+            // Local Memory Checking (Speed + Reliability)
+            let bW = myBets[winId] || 0;
+            let bBeast = myBets['ANIMALS'] || 0;
+            let bBird = myBets['BIRDS'] || 0;
 
-                if (bW > 0) {
-                    let ob = trackSequence.find(z => z.id === winId);
-                    if(ob) totalWin += bW * parseInt(ob.m.replace('x',''));
-                }
-                if (isBeast && bBeast > 0) { totalWin += bBeast * 1.9; document.getElementById('btn-ANIMALS').classList.add('winning'); }
-                if (isBird && bBird > 0) { totalWin += bBird * 1.9; document.getElementById('btn-BIRDS').classList.add('winning'); }
+            if (bW > 0) {
+                let ob = trackSequence.find(z => z.id === winId);
+                if(ob) totalWin += bW * parseInt(ob.m.replace('x',''));
+            }
+            if (isBeast && bBeast > 0) { 
+                totalWin += bBeast * 1.9; 
+                let btnAni = document.getElementById('btn-ANIMALS');
+                if(btnAni) btnAni.classList.add('winning'); 
+            }
+            if (isBird && bBird > 0) { 
+                totalWin += bBird * 1.9; 
+                let btnBird = document.getElementById('btn-BIRDS');
+                if(btnBird) btnBird.classList.add('winning'); 
+            }
 
-                if (totalWin > 0) {
-                    showToast(`🎉 WOOOHOO! Aap jeete ₹${Math.floor(totalWin)}`);
-                    db.ref(`users/${currentUserId}/winning_balance`).set(winB + totalWin);
-                }
-            });
+            if (totalWin > 0) {
+                showToast(`🎉 WOOOHOO! Aap jeete ₹${Math.floor(totalWin)}`);
+                // Fast DB Push
+                db.ref(`users/${currentUserId}/winning_balance`).set(firebase.database.ServerValue.increment(totalWin));
+            }
         }
         
         let b = document.getElementById(`btn-${winId}`);
@@ -513,7 +516,6 @@
             let onlinePos = getPos(document.getElementById('online-players-box'));
             let isPortrait = window.matchMedia("(orientation: portrait)").matches;
 
-            // 🔥 Play Return Chips Flying Sound 🔥
             playSound('snd-fly', 1.0);
 
             for(let i=0; i<15; i++) {
@@ -526,19 +528,19 @@
                     document.getElementById('chips-layer').appendChild(c);
                     
                     setTimeout(() => { 
-                        // 🔥 50% to Wallet, 50% to Online Players Box, CLEARLY VISIBLE 🔥
                         let targetPos = i % 2 === 0 ? walletPos : onlinePos;
                         c.style.left = (targetPos.x + 30) + 'px'; 
                         c.style.top = (targetPos.y + 15) + 'px'; 
                     }, 50); 
                     
-                    setTimeout(() => { c.style.opacity = '0'; }, 400); // Fade AFTER arriving
+                    setTimeout(() => { c.style.opacity = '0'; }, 400); 
                     setTimeout(() => c.remove(), 700);
                 }, i * 40); 
             }
         }
     }
 
+    // SMART BETTING LIMITS
     window.placeBet = function(el, id, ev) {
         if(!isBettingOpen) { showToast("⛔ Wait! Betting is closed."); return; }
         if(userBalance < selectedChipVal) { showToast("⚠️ Low Balance!"); return; }
