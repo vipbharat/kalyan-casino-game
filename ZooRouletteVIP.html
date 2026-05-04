@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
-    <title>Kalyan VIP Zoo - High Traffic Edition</title>
+    <title>Kalyan VIP Zoo - No K Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -43,9 +43,16 @@
         .start-text { font-size: 28px; color: #00e5ff; text-shadow: 0 0 15px #00e5ff; animation: blinkPulse 1s infinite alternate; letter-spacing: 2px; }
         @keyframes blinkPulse { 0% { opacity: 0.5; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1.05); } }
 
-        /* BANNER ANIMATIONS */
-        .banner-overlay { position: absolute; top: 50%; left: -100vw; transform: translate(-50%, -50%) scale(2.2); width: 60vw; z-index: 2000; pointer-events: none; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        /* 🔥 BANNER ANIMATIONS (Ab left to right perfect slide hoga) 🔥 */
+        .banner-overlay { 
+            position: absolute; top: 50%; left: -100%; 
+            transform: translate(-50%, -50%) scale(2.2); 
+            width: 60%; z-index: 2000; pointer-events: none; 
+            transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
         .banner-overlay.show { left: 50%; }
+        .banner-overlay.exit { left: 200%; }
+        .banner-overlay.hide-instant { transition: none !important; left: -100%; }
 
         /* LEFT PANEL: Profile & Record */
         .left-panel {
@@ -210,10 +217,11 @@
         <div class="start-text">TAP TO START GAME</div>
     </div>
 
-    <img src="assets/kaishitouzhub.png" id="alert-start" class="banner-overlay">
-    <img src="assets/tingzhitouzhu.png" id="alert-stop" class="banner-overlay">
-
     <div id="landscape-canvas">
+        
+        <img src="assets/kaishitouzhub.png" id="alert-start" class="banner-overlay">
+        <img src="assets/tingzhitouzhu.png" id="alert-stop" class="banner-overlay">
+
         <div class="overlay" id="initial-loader">
             <div class="spinner"></div><div style="color:#00e5ff;">LOADING CASINO...</div>
         </div>
@@ -306,7 +314,7 @@
         </div>
 
         <div class="bottom-right-panel" id="online-players-box">
-            <div class="online-players">👥 <span id="online-count">245</span></div>
+            <div class="online-players">👥 <span id="online-count">238</span></div>
         </div>
 
         <div class="bottom-panel">
@@ -363,7 +371,7 @@
         return {x, y};
     }
 
-    // BANNER ANIMATION TRIGGER
+    // 🔥 BANNER ANIMATION FIX (Left to Right completely fixed) 🔥
     function triggerBanner(id) {
         let el = document.getElementById(id);
         el.classList.add('hide-instant');
@@ -383,11 +391,7 @@
     let selectedChipVal = 10; let selectedChipSrc = chipImgs[10];
 
     const betKeys = ['monkey', 'rabbit', 'peacock', 'lion', 'shark', 'eagle', 'parrot', 'elephant', 'dove', 'ANIMALS', 'BIRDS'];
-    
-    // 🔥 NEW: FAKE & REAL POOL SEPARATION TO AVOID DB OVERWRITE 🔥
-    let realPools = {}; 
-    let fakePools = {};
-    betKeys.forEach(k => { realPools[k] = 0; fakePools[k] = 0; });
+    let myBets = {}; betKeys.forEach(k => myBets[k] = 0);
 
     const trackSequence = [
         {id:'eagle', m:'x12'},{id:'eagle', m:'x12'},{id:'eagle', m:'x12'},{id:'frog', m:'HOUSE'},{id:'lion', m:'x12'},{id:'lion', m:'x12'},{id:'lion', m:'x12'},
@@ -458,7 +462,8 @@
             let data = s.val() || {}; 
             depBal = parseFloat(data.balance || 0); winBal = parseFloat(data.winning_balance || 0); bonBal = parseFloat(data.bonus_balance || 0);
             userBalance = Math.max(0, depBal + winBal + bonBal); 
-            document.getElementById('wallet-bal').innerText = userBalance > 9999 ? (userBalance/1000).toFixed(1)+'k' : userBalance.toFixed(2);
+            // 🔥 REMOVED K FORMAT FROM WALLET 🔥
+            document.getElementById('wallet-bal').innerText = userBalance.toFixed(2);
         });
     }
 
@@ -478,30 +483,19 @@
         let r = s.val(); if (r && Array.isArray(r)) { [...r].reverse().forEach(w => updHistory(w)); }
     });
 
-    // 🔥 REAL POOLS LISTENER 🔥
     db.ref('Game/ZooRoulette/Bets').on('value', s => {
         let allB = s.val() || {};
-        betKeys.forEach(k => realPools[k] = 0);
-        for(let u in allB) { 
-            if(!u.includes('bot')) {
-                for(let c in allB[u]) {
-                    if(realPools[c] !== undefined) realPools[c] += allB[u][c]; 
-                }
-            } 
+        let tp = {'monkey':0, 'rabbit':0, 'lion':0, 'elephant':0, 'peacock':0, 'eagle':0, 'parrot':0, 'dove':0, 'shark':0, 'ANIMALS':0, 'BIRDS':0};
+        for(let u in allB) { if(!u.includes('bot')) for(let c in allB[u]) if(tp[c] !== undefined) tp[c] += allB[u][c]; }
+        for(let c in tp) { 
+            let elem = document.getElementById(`total-${c}`); 
+            // 🔥 REMOVED K FORMAT FROM BET BOXES 🔥
+            if(elem) elem.innerText = tp[c] > 0 ? tp[c] : "0"; 
         }
-        renderTotals();
     });
 
-    function renderTotals() {
-        betKeys.forEach(k => {
-            let total = realPools[k] + fakePools[k];
-            let elem = document.getElementById(`total-${k}`);
-            if(elem) elem.innerText = total > 999 ? (total/1000).toFixed(1)+'k' : (total === 0 ? "0" : total);
-        });
-    }
-
     // ----------------------------------------------------
-    // 🔥 GAME LOOP & FAKE BOT MANAGER 🔥
+    // 🔥 GAME LOOP 🔥
     // ----------------------------------------------------
     let localTimer = 15;
     let localState = 'betting';
@@ -516,7 +510,6 @@
 
             isSpinningLocal = false; 
             
-            // CLEAR GLOWS
             trackElements.forEach(e => { e.elem.classList.remove('active', 'winning'); });
             document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('winning'));
             
@@ -525,9 +518,7 @@
                 document.getElementById('chips-layer').innerHTML = ''; 
                 
                 triggerBanner('alert-start'); 
-                
-                // Fast Bot Interval for 200+ Players
-                clearInterval(botInterval); botInterval = setInterval(botAction, 200); 
+                clearInterval(botInterval); botInterval = setInterval(botAction, 250); 
             }
         } 
         else if (st.state === 'result' || st.state === 'waiting') {
@@ -555,59 +546,41 @@
             else if (localState === 'result') { localState = 'waiting'; localTimer = 5; }
             else { 
                 localState = 'betting'; localTimer = 15; 
-                
-                // RESET FAKE POOLS
-                betKeys.forEach(k => { fakePools[k] = 0; }); 
-                renderTotals();
+                Object.keys(myBets).forEach(k => { myBets[k] = 0; }); 
+                document.querySelectorAll('.pool-text span').forEach(sp => sp.innerText = '0');
             }
         }
         updateGameState({ timer: localTimer, state: localState });
     }, 1000);
 
-    // 🔥 HIGH TRAFFIC BOT ACTION 🔥
     function botAction() {
         if(!isBettingOpen) return; 
+        if(Math.random() > 0.4) return;
+        const targets = betKeys;
+        let tId = targets[Math.floor(Math.random() * targets.length)];
+        let fV = chipVals[Math.floor(Math.random() * chipVals.length)];
         
-        // Throw 2 to 4 chips at a time to simulate heavy betting
-        let numBots = Math.floor(Math.random() * 3) + 2; 
+        let fly = document.createElement('img'); fly.className = 'placed-chip-img'; 
+        fly.src = chipImgs[fV] || chipImgs[100]; 
         
-        for(let i=0; i<numBots; i++) {
-            if(Math.random() > 0.8) continue; 
-            
-            let tId = betKeys[Math.floor(Math.random() * betKeys.length)];
-            let fV = chipVals[Math.floor(Math.random() * chipVals.length)];
-            
-            // Bias towards medium/high chips for bigger visual pools
-            if(Math.random() > 0.5) fV = chipVals[Math.floor(Math.random() * 4) + 1]; 
-            
-            // Add to Fake Pool Locally
-            fakePools[tId] += fV;
-            
-            let fly = document.createElement('img'); fly.className = 'placed-chip-img'; 
-            fly.src = chipImgs[fV] || chipImgs[100]; 
-            
-            let sPos = getPos(document.getElementById('online-players-box'));
-            let isPortrait = window.matchMedia("(orientation: portrait)").matches;
-            
-            fly.style.left = (sPos.x + 20 + Math.random()*20) + 'px'; 
-            fly.style.top = (sPos.y + 10 + Math.random()*10) + 'px'; 
-            if (isPortrait) fly.style.transform = 'rotate(90deg)';
-            document.getElementById('chips-layer').appendChild(fly); 
-            
-            // Limit sound to avoid overlap noise
-            if(Math.random() > 0.8) playSound('soundBet', 0.01);
-            
-            let destNode = document.getElementById(`btn-${tId}`);
-            if(destNode) {
-                let destPos = getPos(destNode);
-                setTimeout(() => {
-                    fly.style.left = (destPos.x + 15 + Math.random() * (destNode.offsetWidth - 30)) + 'px';
-                    fly.style.top = (destPos.y + 15 + Math.random() * (destNode.offsetHeight - 30)) + 'px';
-                    setTimeout(() => { fly.style.opacity = '0'; setTimeout(() => fly.remove(), 250); }, 300);
-                }, 50 + (i * 20)); // slight stagger
-            }
-        }
-        renderTotals();
+        let sPos = getPos(document.getElementById('online-players-box'));
+        let isPortrait = window.matchMedia("(orientation: portrait)").matches;
+        
+        fly.style.left = (sPos.x + 20) + 'px'; 
+        fly.style.top = (sPos.y + 10) + 'px'; 
+        if (isPortrait) fly.style.transform = 'rotate(90deg)';
+        document.getElementById('chips-layer').appendChild(fly); 
+        playSound('soundBet', 0.02);
+        
+        let destNode = document.getElementById(`btn-${tId}`);
+        if(!destNode) return;
+        let destPos = getPos(destNode);
+        
+        setTimeout(() => {
+            fly.style.left = (destPos.x + 15 + Math.random() * (destNode.offsetWidth - 30)) + 'px';
+            fly.style.top = (destPos.y + 15 + Math.random() * (destNode.offsetHeight - 30)) + 'px';
+            setTimeout(() => { fly.style.opacity = '0'; setTimeout(() => fly.remove(), 250); }, 300);
+        }, 50);
     }
 
     function runSpin(winRaw, skipAnim) {
@@ -642,23 +615,12 @@
 
         if (currentUserId !== "GUEST") {
             let ob = betData.find(z => z.id === winId); 
-            // NOTE: Only fetch user's personal bet from DB, not from visual pools
-            db.ref(`Game/ZooRoulette/Bets/${currentUserId}`).once('value', s => {
-                let uBets = s.val() || {};
-                let bW = uBets[winId] || 0;
-                let bBeast = uBets['ANIMALS'] || 0;
-                let bBird = uBets['BIRDS'] || 0;
-
-                if(ob && bW > 0) totalWin += bW * ob.m;
-                if (isBeast && bBeast > 0) { totalWin += bBeast * 1.9; document.getElementById('btn-ANIMALS').classList.add('winning'); }
-                if (isBird && bBird > 0) { totalWin += bBird * 1.9; document.getElementById('btn-BIRDS').classList.add('winning'); }
-
-                if (totalWin > 0) {
-                    showToast(`🎉 WOOOHOO! Aap jeete ₹${totalWin}`);
-                    db.ref(`users/${currentUserId}/winning_balance`).set(winBal + totalWin);
-                }
-            });
+            if(ob && myBets[winId] > 0) totalWin += myBets[winId] * ob.m;
+            if (isBeast && myBets['ANIMALS'] > 0) { totalWin += myBets['ANIMALS'] * 1.9; document.getElementById('btn-ANIMALS').classList.add('winning'); }
+            if (isBird && myBets['BIRDS'] > 0) { totalWin += myBets['BIRDS'] * 1.9; document.getElementById('btn-BIRDS').classList.add('winning'); }
         }
+        
+        if (totalWin > 0 && !skipAnim) showToast(`🎉 WOOOHOO! Aap jeete ₹${totalWin}`);
         
         if (!skipAnim) {
             let winBoxPos = getPos(b);
@@ -684,6 +646,10 @@
                 }, i * 40); 
             }
             playSound('soundCoins', 0.8);
+
+            setTimeout(() => {
+                if (totalWin > 0 && currentUserId !== "GUEST") { db.ref(`users/${currentUserId}/winning_balance`).set(winBal + totalWin); }
+            }, 800);
         }
     }
 
@@ -699,6 +665,15 @@
         if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
         db.ref(`users/${currentUserId}`).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
         db.ref(`Game/ZooRoulette/Bets/${currentUserId}/${id}`).set(firebase.database.ServerValue.increment(selectedChipVal));
+        
+        myBets[id] += selectedChipVal; 
+        let totalEl = document.getElementById(`total-${id}`);
+        if(totalEl) {
+            // 🔥 REMOVED K FORMAT PARSING, NOW USES FULL INTEGER 🔥
+            let currTotal = parseInt(totalEl.innerText) || 0;
+            currTotal += selectedChipVal;
+            totalEl.innerText = currTotal;
+        }
         
         let wPos = getPos(document.getElementById('my-wallet'));
         let isPortrait = window.matchMedia("(orientation: portrait)").matches;
