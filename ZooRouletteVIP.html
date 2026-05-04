@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
-    <title>Kalyan VIP Zoo - Perfect UI & Logic</title>
+    <title>Kalyan VIP Zoo - Perfect Timer</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -97,9 +97,7 @@
         .btn-parrot { border-color: #a5d6a7; background: linear-gradient(to bottom, #2e7d32, #1b5e20); }
         .btn-elephant { border-color: #b0bec5; background: linear-gradient(to bottom, #546e7a, #37474f); }
         .btn-dove { border-color: #eeeeee; background: linear-gradient(to bottom, #616161, #424242); }
-        .btn-animals { border-color: #4caf50; background: linear-gradient(145deg, #1b5e20, #003300); }
-        .btn-birds { border-color: #448aff; background: linear-gradient(145deg, #1565c0, #001a4d); }
-
+        
         /* PNGs & Texts (Clear UI) */
         .img-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; pointer-events: none; position: relative; }
         .bet-btn img { max-width: 75%; max-height: 70%; object-fit: contain; filter: drop-shadow(0 4px 5px #000); transform: translateY(-5%) scale(1.12); }
@@ -109,38 +107,34 @@
         .pool-text { position: absolute; top: 4px; right: 8px; font-size: 14px; color: #fff; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; z-index: 10; pointer-events: none; }
         .my-bet-text { position: absolute; top: 4px; left: 8px; font-size: 14px; color: #39ff14; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; display: none; z-index: 10; pointer-events: none; }
 
-        /* 🔥 PERFECT VS & TIMER (Responsive Flexbox - Kabhi Overlap Nahi Hoga) 🔥 */
+        /* 🔥 TIMER FIXED: VS Removed, Tabular-nums prevents box resize 🔥 */
         .center-png-box { 
             grid-area: 1 / 3 / span 2 / span 1; 
             display: flex; 
-            flex-direction: column; 
-            justify-content: space-evenly; 
+            justify-content: center; 
             align-items: center; 
             background: rgba(0,0,0,0.4); 
             border: 2px solid #00e5ff; 
             border-radius: 6px; 
             box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.4); 
             pointer-events: none; 
-            padding: 5px 0;
+            overflow: hidden; /* Prevents box expansion */
+            width: 100%;
+            height: 100%;
         }
-        .vs-text { 
-            color: #00e5ff; 
-            font-size: clamp(20px, 4vw, 30px); 
-            font-weight: 900; 
-            text-shadow: 0 0 10px #00e5ff; 
-            pointer-events: none; 
-            z-index: 5; 
-            line-height: 1;
-        }
+        
         .huge-timer { 
             z-index: 10; 
-            font-size: clamp(35px, 7vw, 60px); 
+            font-size: clamp(35px, 6vw, 60px); 
             font-weight: 900; 
             color: #fff; 
             text-shadow: 0 0 15px #ff007f, 0 0 5px #ff007f, 2px 2px 5px #000; 
             transition: opacity 0.2s; 
             pointer-events: none; 
             line-height: 1;
+            font-variant-numeric: tabular-nums; /* Magic trick: keeps 1 and 0 same width */
+            text-align: center;
+            width: 100%;
         }
 
         #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 500; }
@@ -149,9 +143,9 @@
         .toast-msg { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0, 229, 255, 0.95); color: #000; padding: 10px 25px; border-radius: 8px; font-weight: 900; z-index: 9999; display: none; }
     </style>
 </head>
-<body onclick="startAudio()">
+<body>
 
-    <div class="overlay" id="tap-to-start" style="display:flex; background:#000;">
+    <div class="overlay" id="tap-to-start" style="display:flex; background:#000;" onclick="startAudio()">
         <div class="start-text">TAP TO START GAME</div>
     </div>
 
@@ -253,7 +247,7 @@
     let myBets = {}, fakePools = {}, realPools = {};
     betKeys.forEach(k => { myBets[k]=0; fakePools[k]=0; realPools[k]=0; });
 
-    // 🔥 GENERATE 13 BOXES (WITH CORRECT CLEAN UI) 🔥
+    // GENERATE 13 BOXES
     const bc = $('bet-container');
     const layout = [
         {id:'monkey',m:8,r:1,c:1},{id:'rabbit',m:6,r:1,c:2},
@@ -269,7 +263,8 @@
         div.style.gridArea = `${b.r}/${b.c}/span ${b.rs||1}/span ${b.cs||1}`;
         if(b.type === 'vs') {
             div.className = 'center-png-box';
-            div.innerHTML = `<div class="vs-text">VS</div><div class="huge-timer" id="main-timer">15</div>`;
+            // 🔥 FIXED: VS REMOVED, ONLY TIMER KEPT TO PREVENT BOX EXPANSION 🔥
+            div.innerHTML = `<div class="huge-timer" id="main-timer">15</div>`;
         } else {
             div.className = `bet-btn btn-${b.id.toLowerCase()} ${b.id==='ANIMALS'?'btn-animals':''} ${b.id==='BIRDS'?'btn-birds':''}`; 
             div.id = `btn-${b.id}`;
@@ -336,11 +331,7 @@
         const list = $('history-list');
         const n = document.createElement('div'); n.className = 'h-item'; 
         let normId = wId.toLowerCase().trim(); if (normId === 'd24') normId = 'shark';
-        let iconHtml = '';
-        if(normId === 'frog') iconHtml = `<span style="font-size:16px">🐸</span>`;
-        else if(normId === 'shark') iconHtml = `<span style="font-size:16px">🦈</span>`;
-        else iconHtml = `<img src="assets/${normId}.png.png" onerror="this.innerHTML='🐾';">`;
-        n.innerHTML = iconHtml;
+        n.innerHTML = normId === 'frog' ? `<span>🐸</span>` : (normId === 'shark' ? `<span>🦈</span>` : `<img src="assets/${normId}.png.png" onerror="this.innerHTML='🐾';">`);
         list.insertBefore(n, list.firstChild); 
         if(list.children.length > 8) list.removeChild(list.lastChild); 
     }
