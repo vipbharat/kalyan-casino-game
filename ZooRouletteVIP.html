@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
-    <title>Kalyan VIP Zoo - Bug Free Edition</title>
+    <title>Kalyan VIP Zoo - High Traffic Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -47,7 +47,7 @@
         .banner-overlay { position: absolute; top: 50%; left: -100vw; transform: translate(-50%, -50%) scale(2.2); width: 60vw; z-index: 2000; pointer-events: none; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .banner-overlay.show { left: 50%; }
 
-        /* LEFT PANEL */
+        /* LEFT PANEL: Profile & Record */
         .left-panel {
             position: absolute; left: 5px; top: 5px; bottom: 5px; width: 65px;
             display: flex; flex-direction: column; align-items: center;
@@ -84,7 +84,7 @@
             display: flex; flex-direction: column; justify-content: center; padding-left: 15px; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.9);
         }
-        .w-id { font-size: 10px; color: #ccc; font-weight: bold; } 
+        .w-id { font-size: 10px; color: #ccc; font-weight: bold; text-transform: uppercase; } 
         .w-bal { font-size: 16px; color: #ffd700; font-weight: 900; }
 
         .chips-tray { 
@@ -175,7 +175,6 @@
         .bet-btn img { max-width: 75%; max-height: 70%; object-fit: contain; filter: drop-shadow(0 4px 5px rgba(0,0,0,0.8)); display: block; image-rendering: -webkit-optimize-contrast; transform: translateY(-5%) scale(1.12); }
         .btn-icon-emoji { font-size: 38px; filter: drop-shadow(0 3px 4px #000); pointer-events: none; transform: translateY(-5%); }
 
-        /* 🔥 FIX: MULTIPLIER PERFECTLY CENTERED AT BOTTOM 🔥 */
         .btn-multi { 
             position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
             color: #000; font-size: 12px; font-weight: 900; background: #00e5ff; 
@@ -185,7 +184,7 @@
 
         .pool-text { position: absolute; top: 0; right: 0; font-size: 11px; color: #fff; font-weight: 900; background: rgba(0,0,0,0.8); padding: 2px 6px; border-bottom-left-radius: 6px; border-top-right-radius: 4px; border: 1px solid #00e5ff; border-top: none; border-right: none; z-index: 10; pointer-events: none; box-shadow: -2px 2px 4px rgba(0,0,0,0.5); }
 
-        /* 🔥 FIX: TIMER SAFE FROM ONERROR NUKING 🔥 */
+        /* Center Animation Box & Timer */
         .center-png-box {
             display: flex; justify-content: center; align-items: center; flex-direction: column;
             background: rgba(0,0,0,0.4); border: 2px solid #00e5ff; border-radius: 6px;
@@ -199,7 +198,7 @@
             box-shadow: 0 0 20px #00e5ff; transition: opacity 0.2s; pointer-events: none;
         }
 
-        /* Chips Fading Very Fast */
+        /* Chips Fading */
         .placed-chip-img { position: absolute; width: 22px; height: 22px; pointer-events: none; z-index: 100; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.8)); transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.2s ease; }
         
         .toast-msg { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0, 229, 255, 0.95); color: #000; padding: 10px 25px; border-radius: 8px; font-weight: 900; z-index: 9999; border: 2px solid #fff; display: none; font-size: 15px; text-align: center; box-shadow: 0 4px 10px #000; }
@@ -307,7 +306,7 @@
         </div>
 
         <div class="bottom-right-panel" id="online-players-box">
-            <div class="online-players">👥 <span id="online-count">238</span></div>
+            <div class="online-players">👥 <span id="online-count">245</span></div>
         </div>
 
         <div class="bottom-panel">
@@ -364,11 +363,31 @@
         return {x, y};
     }
 
+    // BANNER ANIMATION TRIGGER
+    function triggerBanner(id) {
+        let el = document.getElementById(id);
+        el.classList.add('hide-instant');
+        el.classList.remove('show', 'exit');
+        void el.offsetWidth; 
+        
+        el.classList.remove('hide-instant');
+        el.classList.add('show');
+        
+        setTimeout(() => {
+            el.classList.remove('show');
+            el.classList.add('exit');
+        }, 1200); 
+    }
+
     const chipImgs = { 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
     let selectedChipVal = 10; let selectedChipSrc = chipImgs[10];
 
     const betKeys = ['monkey', 'rabbit', 'peacock', 'lion', 'shark', 'eagle', 'parrot', 'elephant', 'dove', 'ANIMALS', 'BIRDS'];
-    let myBets = {}; betKeys.forEach(k => myBets[k] = 0);
+    
+    // 🔥 NEW: FAKE & REAL POOL SEPARATION TO AVOID DB OVERWRITE 🔥
+    let realPools = {}; 
+    let fakePools = {};
+    betKeys.forEach(k => { realPools[k] = 0; fakePools[k] = 0; });
 
     const trackSequence = [
         {id:'eagle', m:'x12'},{id:'eagle', m:'x12'},{id:'eagle', m:'x12'},{id:'frog', m:'HOUSE'},{id:'lion', m:'x12'},{id:'lion', m:'x12'},{id:'lion', m:'x12'},
@@ -419,13 +438,14 @@
     const fConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     if (!firebase.apps.length) firebase.initializeApp(fConfig);
     const db = firebase.database();
-    
-    const currentUserId = localStorage.getItem('phone') || "VIP_TEST_USER"; 
+    const socket = io("https://kalyan-engine.onrender.com");
+
+    const currentUserId = localStorage.getItem('userPhone') || "GUEST"; 
     let userBalance = 0, depBal = 10000, winBal = 0, bonBal = 0;
     let isBettingOpen = false, isSpinningLocal = false;
     let botInterval;
 
-    document.getElementById('p-id').innerText = currentUserId === "VIP_TEST_USER" ? "1084" : currentUserId.slice(-4);
+    document.getElementById('p-id').innerText = currentUserId === "GUEST" ? "GUEST" : currentUserId.slice(-4);
 
     db.ref('.info/connected').on('value', snap => {
         let sbox = document.getElementById('server-status');
@@ -436,7 +456,7 @@
     if (currentUserId !== "GUEST") {
         db.ref(`users/${currentUserId}`).on('value', s => { 
             let data = s.val() || {}; 
-            depBal = parseFloat(data.balance || 10000); winBal = parseFloat(data.winning_balance || 0); bonBal = parseFloat(data.bonus_balance || 0);
+            depBal = parseFloat(data.balance || 0); winBal = parseFloat(data.winning_balance || 0); bonBal = parseFloat(data.bonus_balance || 0);
             userBalance = Math.max(0, depBal + winBal + bonBal); 
             document.getElementById('wallet-bal').innerText = userBalance > 9999 ? (userBalance/1000).toFixed(1)+'k' : userBalance.toFixed(2);
         });
@@ -458,19 +478,30 @@
         let r = s.val(); if (r && Array.isArray(r)) { [...r].reverse().forEach(w => updHistory(w)); }
     });
 
+    // 🔥 REAL POOLS LISTENER 🔥
     db.ref('Game/ZooRoulette/Bets').on('value', s => {
         let allB = s.val() || {};
-        let tp = {'monkey':0, 'rabbit':0, 'lion':0, 'elephant':0, 'peacock':0, 'eagle':0, 'parrot':0, 'dove':0, 'shark':0, 'ANIMALS':0, 'BIRDS':0};
-        for(let u in allB) { if(!u.includes('bot')) for(let c in allB[u]) if(tp[c] !== undefined) tp[c] += allB[u][c]; }
-        for(let c in tp) { 
-            let elem = document.getElementById(`total-${c}`); 
-            if(elem && tp[c] > 0) elem.innerText = tp[c] > 999 ? (tp[c]/1000).toFixed(1)+'k' : tp[c]; 
-            else if(elem) elem.innerText = "0";
+        betKeys.forEach(k => realPools[k] = 0);
+        for(let u in allB) { 
+            if(!u.includes('bot')) {
+                for(let c in allB[u]) {
+                    if(realPools[c] !== undefined) realPools[c] += allB[u][c]; 
+                }
+            } 
         }
+        renderTotals();
     });
 
+    function renderTotals() {
+        betKeys.forEach(k => {
+            let total = realPools[k] + fakePools[k];
+            let elem = document.getElementById(`total-${k}`);
+            if(elem) elem.innerText = total > 999 ? (total/1000).toFixed(1)+'k' : (total === 0 ? "0" : total);
+        });
+    }
+
     // ----------------------------------------------------
-    // 🔥 GAME LOOP 🔥
+    // 🔥 GAME LOOP & FAKE BOT MANAGER 🔥
     // ----------------------------------------------------
     let localTimer = 15;
     let localState = 'betting';
@@ -485,7 +516,7 @@
 
             isSpinningLocal = false; 
             
-            // 🔥 CLEAR ALL WINNING CLASSES INSTANTLY 🔥
+            // CLEAR GLOWS
             trackElements.forEach(e => { e.elem.classList.remove('active', 'winning'); });
             document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('winning'));
             
@@ -493,10 +524,10 @@
                 isBettingOpen = true; 
                 document.getElementById('chips-layer').innerHTML = ''; 
                 
-                document.getElementById('alert-start').classList.add('show'); 
-                setTimeout(() => document.getElementById('alert-start').classList.remove('show'), 1200); 
+                triggerBanner('alert-start'); 
                 
-                clearInterval(botInterval); botInterval = setInterval(botAction, 250); 
+                // Fast Bot Interval for 200+ Players
+                clearInterval(botInterval); botInterval = setInterval(botAction, 200); 
             }
         } 
         else if (st.state === 'result' || st.state === 'waiting') {
@@ -508,9 +539,7 @@
                 isSpinningLocal = true; 
                 clearInterval(botInterval); 
                 tEl.style.opacity = '0'; 
-                
-                document.getElementById('alert-stop').classList.add('show'); 
-                setTimeout(() => { document.getElementById('alert-stop').classList.remove('show'); }, 1200);
+                triggerBanner('alert-stop'); 
             }
         }
     }
@@ -526,42 +555,59 @@
             else if (localState === 'result') { localState = 'waiting'; localTimer = 5; }
             else { 
                 localState = 'betting'; localTimer = 15; 
-                Object.keys(myBets).forEach(k => { myBets[k] = 0; }); 
-                document.querySelectorAll('.pool-text span').forEach(sp => sp.innerText = '0');
+                
+                // RESET FAKE POOLS
+                betKeys.forEach(k => { fakePools[k] = 0; }); 
+                renderTotals();
             }
         }
         updateGameState({ timer: localTimer, state: localState });
     }, 1000);
 
-    // 🔥 BOTS BETTING (From Online Players -> Fades Fast) 🔥
+    // 🔥 HIGH TRAFFIC BOT ACTION 🔥
     function botAction() {
         if(!isBettingOpen) return; 
-        if(Math.random() > 0.4) return;
-        const targets = betKeys;
-        let tId = targets[Math.floor(Math.random() * targets.length)];
-        let fV = chipVals[Math.floor(Math.random() * chipVals.length)];
         
-        let fly = document.createElement('img'); fly.className = 'placed-chip-img'; 
-        fly.src = chipImgs[fV] || chipImgs[100]; 
+        // Throw 2 to 4 chips at a time to simulate heavy betting
+        let numBots = Math.floor(Math.random() * 3) + 2; 
         
-        let sPos = getPos(document.getElementById('online-players-box'));
-        let isPortrait = window.matchMedia("(orientation: portrait)").matches;
-        
-        fly.style.left = (sPos.x + 20) + 'px'; 
-        fly.style.top = (sPos.y + 10) + 'px'; 
-        if (isPortrait) fly.style.transform = 'rotate(90deg)';
-        document.getElementById('chips-layer').appendChild(fly); 
-        playSound('soundBet', 0.02);
-        
-        let destNode = document.getElementById(`btn-${tId}`);
-        if(!destNode) return;
-        let destPos = getPos(destNode);
-        
-        setTimeout(() => {
-            fly.style.left = (destPos.x + 15 + Math.random() * (destNode.offsetWidth - 30)) + 'px';
-            fly.style.top = (destPos.y + 15 + Math.random() * (destNode.offsetHeight - 30)) + 'px';
-            setTimeout(() => { fly.style.opacity = '0'; setTimeout(() => fly.remove(), 250); }, 300);
-        }, 50);
+        for(let i=0; i<numBots; i++) {
+            if(Math.random() > 0.8) continue; 
+            
+            let tId = betKeys[Math.floor(Math.random() * betKeys.length)];
+            let fV = chipVals[Math.floor(Math.random() * chipVals.length)];
+            
+            // Bias towards medium/high chips for bigger visual pools
+            if(Math.random() > 0.5) fV = chipVals[Math.floor(Math.random() * 4) + 1]; 
+            
+            // Add to Fake Pool Locally
+            fakePools[tId] += fV;
+            
+            let fly = document.createElement('img'); fly.className = 'placed-chip-img'; 
+            fly.src = chipImgs[fV] || chipImgs[100]; 
+            
+            let sPos = getPos(document.getElementById('online-players-box'));
+            let isPortrait = window.matchMedia("(orientation: portrait)").matches;
+            
+            fly.style.left = (sPos.x + 20 + Math.random()*20) + 'px'; 
+            fly.style.top = (sPos.y + 10 + Math.random()*10) + 'px'; 
+            if (isPortrait) fly.style.transform = 'rotate(90deg)';
+            document.getElementById('chips-layer').appendChild(fly); 
+            
+            // Limit sound to avoid overlap noise
+            if(Math.random() > 0.8) playSound('soundBet', 0.01);
+            
+            let destNode = document.getElementById(`btn-${tId}`);
+            if(destNode) {
+                let destPos = getPos(destNode);
+                setTimeout(() => {
+                    fly.style.left = (destPos.x + 15 + Math.random() * (destNode.offsetWidth - 30)) + 'px';
+                    fly.style.top = (destPos.y + 15 + Math.random() * (destNode.offsetHeight - 30)) + 'px';
+                    setTimeout(() => { fly.style.opacity = '0'; setTimeout(() => fly.remove(), 250); }, 300);
+                }, 50 + (i * 20)); // slight stagger
+            }
+        }
+        renderTotals();
     }
 
     function runSpin(winRaw, skipAnim) {
@@ -596,12 +642,23 @@
 
         if (currentUserId !== "GUEST") {
             let ob = betData.find(z => z.id === winId); 
-            if(ob && myBets[winId] > 0) totalWin += myBets[winId] * ob.m;
-            if (isBeast && myBets['ANIMALS'] > 0) { totalWin += myBets['ANIMALS'] * 1.9; document.getElementById('btn-ANIMALS').classList.add('winning'); }
-            if (isBird && myBets['BIRDS'] > 0) { totalWin += myBets['BIRDS'] * 1.9; document.getElementById('btn-BIRDS').classList.add('winning'); }
+            // NOTE: Only fetch user's personal bet from DB, not from visual pools
+            db.ref(`Game/ZooRoulette/Bets/${currentUserId}`).once('value', s => {
+                let uBets = s.val() || {};
+                let bW = uBets[winId] || 0;
+                let bBeast = uBets['ANIMALS'] || 0;
+                let bBird = uBets['BIRDS'] || 0;
+
+                if(ob && bW > 0) totalWin += bW * ob.m;
+                if (isBeast && bBeast > 0) { totalWin += bBeast * 1.9; document.getElementById('btn-ANIMALS').classList.add('winning'); }
+                if (isBird && bBird > 0) { totalWin += bBird * 1.9; document.getElementById('btn-BIRDS').classList.add('winning'); }
+
+                if (totalWin > 0) {
+                    showToast(`🎉 WOOOHOO! Aap jeete ₹${totalWin}`);
+                    db.ref(`users/${currentUserId}/winning_balance`).set(winBal + totalWin);
+                }
+            });
         }
-        
-        if (totalWin > 0 && !skipAnim) showToast(`🎉 WOOOHOO! Aap jeete ₹${totalWin}`);
         
         if (!skipAnim) {
             let winBoxPos = getPos(b);
@@ -627,14 +684,10 @@
                 }, i * 40); 
             }
             playSound('soundCoins', 0.8);
-
-            setTimeout(() => {
-                if (totalWin > 0) { db.ref(`users/${currentUserId}/winning_balance`).set(winBal + totalWin); }
-            }, 800);
         }
     }
 
-    // 🔥 MAIN BETTING FUNCTION (FROM VIOLET WALLET -> FADES FAST) 🔥
+    // 🔥 MAIN BETTING FUNCTION 🔥
     window.placeBet = function(el, id, event) {
         if (!isBettingOpen) { showToast("⛔ Wait! Betting is closed."); return; }
         if (currentUserId === "GUEST") { showToast("⚠️ Login to place bets!"); return; }
@@ -646,14 +699,6 @@
         if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
         db.ref(`users/${currentUserId}`).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
         db.ref(`Game/ZooRoulette/Bets/${currentUserId}/${id}`).set(firebase.database.ServerValue.increment(selectedChipVal));
-        
-        myBets[id] += selectedChipVal; 
-        let totalEl = document.getElementById(`total-${id}`);
-        if(totalEl) {
-            let currTotal = parseInt(totalEl.innerText.replace(/k/g, '000')) || 0;
-            currTotal += selectedChipVal;
-            totalEl.innerText = currTotal > 999 ? (currTotal/1000).toFixed(1)+'k' : currTotal;
-        }
         
         let wPos = getPos(document.getElementById('my-wallet'));
         let isPortrait = window.matchMedia("(orientation: portrait)").matches;
