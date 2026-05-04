@@ -96,7 +96,7 @@
 
         /* 🔥 CENTER PANEL: STRETCHED GAME BOARD 🔥 */
         .center-panel {
-            position: absolute; left: 75px; right: 120px; top: 55px; bottom: 55px;
+            position: absolute; left: 75px; right: 120px; top: 55px; bottom: 55px; 
             display: flex; justify-content: center; align-items: stretch; z-index: 10;
         }
         
@@ -134,7 +134,7 @@
         .track-item.active { background: #ffd700 !important; border: 2px solid #fff; box-shadow: 0 0 15px #ffd700; z-index: 10; transform: scale(1.05); border-radius: 6px; }
         .track-item.winning { background: #39ff14 !important; border: 2px solid #fff; transform: scale(1.15); box-shadow: 0 0 25px #39ff14; z-index: 20; border-radius: 6px; animation: blinkWin 0.5s infinite alternate; }
 
-        /* 🔥 INNER BETS - ANTI-BLUR & CENTER FIX 🔥 */
+        /* 🔥 INNER BETS 🔥 */
         .center-bets { 
             grid-area: 2 / 2 / 7 / 8; 
             display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); 
@@ -161,14 +161,29 @@
         .btn-elephant { border-color: #b0bec5; background: linear-gradient(to bottom, #546e7a, #37474f); }
         .btn-dove { border-color: #eeeeee; background: linear-gradient(to bottom, #616161, #424242); }
 
-        /* PERFECT IMAGE CENTERING & ANTI-BLUR */
+        /* 🔥 PERFECT IMAGE ZOOM & 1.5% DOWN FIX 🔥 */
         .img-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; pointer-events: none; }
-        .bet-btn img { max-width: 65%; max-height: 55%; object-fit: contain; filter: drop-shadow(0 4px 5px rgba(0,0,0,0.8)); margin: auto; display: block; image-rendering: -webkit-optimize-contrast; }
+        .bet-btn img { 
+            max-width: 67%; /* Zoomed */
+            max-height: 57%; /* Zoomed */
+            object-fit: contain; 
+            filter: drop-shadow(0 4px 5px rgba(0,0,0,0.8)); 
+            margin: auto; 
+            display: block; 
+            image-rendering: -webkit-optimize-contrast; 
+            transform: translateY(1.5%) scale(1.02); /* 1.5% niche & zoom fix */
+        }
         
-        .btn-icon-emoji { font-size: 32px; filter: drop-shadow(0 3px 4px #000); pointer-events: none; }
+        .btn-icon-emoji { 
+            font-size: 34px; 
+            filter: drop-shadow(0 3px 4px #000); 
+            pointer-events: none; 
+            transform: translateY(1.5%); 
+        }
+
         .btn-multi { color: #000; font-size: 12px; font-weight: 900; background: #ffd700; padding: 2px 8px; border-radius: 6px; border: 1px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.8); margin-bottom: 2px; z-index: 5; pointer-events: none; }
 
-        /* 🔥 CLEAR LIVE CHIP COUNTING BOX 🔥 */
+        /* LIVE CHIP COUNTING BOX */
         .pool-text { position: absolute; top: 0; right: 0; font-size: 11px; color: #fff; font-weight: 900; background: rgba(0,0,0,0.8); padding: 2px 6px; border-bottom-left-radius: 6px; border-top-right-radius: 4px; border: 1px solid #ffd700; border-top: none; border-right: none; z-index: 10; pointer-events: none; box-shadow: -2px 2px 4px rgba(0,0,0,0.5); }
 
         /* Notifications & Chips */
@@ -274,19 +289,16 @@
     ];
     let myBets = { 'ANIMALS': 0, 'BIRDS': 0 };
     
-    // 🔥 GENERATE BET BUTTONS WITH FIXES 🔥
     const betContainer = document.getElementById('bet-container');
     betData.forEach(item => {
         myBets[item.id] = 0;
         const div = document.createElement('div');
         div.className = `bet-btn ${item.cls}`; 
         div.id = `btn-${item.id}`;
-        // Direct click event binding for guaranteed touch response
         div.setAttribute('onclick', `placeBet(this, '${item.id}', event)`);
         
         let iconHtml = item.type === 'emoji' ? `<div class="btn-icon-emoji">${item.emoji}</div>` : `<img src="assets/${item.id}.png.png" onerror="this.style.display='none'">`;
         
-        // Anti-blur wrapper & pointer-events: none (prevents click intercept)
         div.innerHTML = `
             <div class="pool-text"><span id="total-${item.id}">0</span></div>
             <div class="img-wrapper">${iconHtml}</div>
@@ -350,8 +362,6 @@
     let userBalance = 0, depBal = 10000, winBal = 0, bonBal = 0;
     let isBettingOpen = false, isSpinningLocal = false;
     let botInterval, alertTimeout, waitTimeout;
-    const beastsList = ['monkey', 'rabbit', 'lion', 'elephant'];
-    const birdsList = ['peacock', 'eagle', 'parrot', 'dove'];
 
     db.ref('.info/connected').on('value', snap => {
         let sbox = document.getElementById('server-status');
@@ -429,7 +439,7 @@
             }
         } 
         else if (st.state === 'result' || st.state === 'waiting') {
-            isBettingOpen = false; // SECURE STATE FIX
+            isBettingOpen = false; 
             if (!isSpinningLocal) {
                 isSpinningLocal = true; 
                 clearInterval(botInterval); 
@@ -464,9 +474,6 @@
         updateGameState({ timer: localTimer, state: localState });
     }, 1000);
 
-    // ----------------------------------------------------
-    // 5. GAMEPLAY & PERFECT FLYING CHIPS
-    // ----------------------------------------------------
     function botAction() {
         if(!isBettingOpen) return; 
         if(Math.random() > 0.4) return;
@@ -591,7 +598,6 @@
         let mTag = document.getElementById(`my-${id}`); 
         if(mTag) { mTag.style.display = 'block'; mTag.querySelector('span').innerText = myBets[id]; }
 
-        // Live Total Bet Update (Local Flash)
         let totalEl = document.getElementById(`total-${id}`);
         if(totalEl) {
             let currTotal = parseInt(totalEl.innerText.replace(/k/g, '000')) || 0;
@@ -602,7 +608,6 @@
         let startX = event.clientX; let startY = event.clientY;
         let isPortrait = window.matchMedia("(orientation: portrait)").matches;
 
-        // Ensure fallback coordinates if click is somehow missed
         if(!startX || !startY) {
             let tRect = document.getElementById('chips-tray').getBoundingClientRect();
             startX = tRect.left + 50; startY = tRect.top + 20;
@@ -627,10 +632,6 @@
         }, 50);
     };
 
-    setInterval(() => { 
-        let c = 245 + Math.floor(Math.random() * 20) - 10; 
-        document.querySelector('.online-players span').innerText = c < 200 ? 210 : c; 
-    }, 2500);
 </script>
 </body>
 </html>
