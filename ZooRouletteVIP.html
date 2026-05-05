@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
-    <title>Kalyan VIP Zoo - Ultimate UI & Server Synced</title>
+    <title>Kalyan VIP Zoo - Server Synced Master</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -95,34 +95,8 @@
         .pool-text { position: absolute; top: 4px; right: 8px; font-size: 14px; color: #fff; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; z-index: 10; pointer-events: none; }
         .my-bet-text { position: absolute; top: 4px; left: 8px; font-size: 14px; color: #39ff14; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; display: none; z-index: 10; pointer-events: none; }
 
-        /* 🔥 TIMER FIXED: VS Removed, Pink box removed, Tabular-nums keeps it perfect 🔥 */
-        .center-png-box { 
-            grid-area: 1 / 3 / span 2 / span 1; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            background: rgba(0,0,0,0.4); 
-            border: 2px solid #00e5ff; 
-            border-radius: 6px; 
-            box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.4); 
-            pointer-events: none; 
-            overflow: hidden; 
-            width: 100%; 
-            height: 100%; 
-        }
-        
-        .huge-timer { 
-            z-index: 10; 
-            font-size: clamp(35px, 6vw, 60px); 
-            font-weight: 900; 
-            color: #fff; 
-            text-shadow: 0 0 15px #ff007f, 0 0 5px #ff007f, 2px 2px 5px #000; 
-            transition: opacity 0.2s; 
-            pointer-events: none; 
-            font-variant-numeric: tabular-nums; 
-            text-align: center; 
-            width: 100%; 
-        }
+        .center-png-box { grid-area: 1 / 3 / span 2 / span 1; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.4); border: 2px solid #00e5ff; border-radius: 6px; box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.4); pointer-events: none; overflow: hidden; width: 100%; height: 100%; }
+        .huge-timer { z-index: 10; font-size: clamp(35px, 6vw, 60px); font-weight: 900; color: #fff; text-shadow: 0 0 15px #ff007f, 0 0 5px #ff007f, 2px 2px 5px #000; transition: opacity 0.2s; pointer-events: none; font-variant-numeric: tabular-nums; text-align: center; width: 100%; }
 
         #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 500; }
         .placed-chip-img { position: absolute; width: 22px; height: 22px; transition: all 0.35s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.2s; z-index: 100; }
@@ -150,7 +124,7 @@
 
         <div class="left-panel">
             <div class="back-btn" onclick="history.back()">⬅️</div>
-            <div id="server-status" class="server-status">🟢 On</div>
+            <div id="server-status" class="server-status">🔴 On</div>
             <div class="r-title">REC</div>
             <div class="h-list" id="history-list"></div>
         </div>
@@ -269,7 +243,6 @@
         div.style.gridArea = `${b.r}/${b.c}/span ${b.rs||1}/span ${b.cs||1}`;
         if(b.type === 'vs') {
             div.className = 'center-png-box';
-            // 🔥 YAHAN SE VS HATAYA GAYA HAI, SIRF TIMER HAI 🔥
             div.innerHTML = `<div class="huge-timer" id="main-timer">15</div>`;
         } else {
             div.className = `bet-btn btn-${b.id.toLowerCase()} ${b.id==='ANIMALS'?'btn-animals':''} ${b.id==='BIRDS'?'btn-birds':''}`; 
@@ -317,11 +290,11 @@
         tray.appendChild(m);
     });
 
-    // FIREBASE & SOCKET
+    // 🔥 FIREBASE & SOCKET INIT 🔥
     firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
     const db = firebase.database();
     
-    // SERVER LINK
+    // Server ka connection
     const socket = io("https://kalyan-engine.onrender.com"); 
 
     const currentUserId = localStorage.getItem('userPhone') || "GUEST";
@@ -354,48 +327,46 @@
         let r = s.val(); if (r && Array.isArray(r)) { [...r].forEach(w => updHistory(w)); }
     });
 
-    // GAME ENGINE & BEEP
-    let localTimer=15, localState='betting', botInt, lastBeep=-1;
+    // 🔥 MASTER FIX: CLIENT TIMER IS NOW CONTROLLED BY SERVER ONLY 🔥
+    let botInt, lastBeep=-1, currentState = '';
     
-    setInterval(() => {
-        localTimer--;
+    socket.on('ZooRoulette_timerUpdate', (data) => {
+        let serverTimer = data.timer;
+        let serverState = data.state;
         let tmr = $('main-timer');
 
-        if (localState === 'betting' && localTimer <= 5 && localTimer > 0 && lastBeep !== localTimer) {
+        // Play Beep on 5 seconds left
+        if (serverState === 'betting' && serverTimer <= 5 && serverTimer > 0 && lastBeep !== serverTimer) {
             playSound('snd-beep', 0.8);
-            lastBeep = localTimer;
+            lastBeep = serverTimer;
         }
 
-        if(localState === 'betting' && localTimer === 1) {
+        // Stop betting exactly at 1 second to sync animation smoothly before round starts
+        if (serverState === 'betting' && serverTimer === 1) {
             isBettingOpen = false;
             clearInterval(botInt); 
-            triggerBanner('alert-stop');
         }
 
-        if(localTimer <= 0) {
-            if(localState === 'betting') {
-                localState = 'result';
-                localTimer = 8;
-                lastBeep = -1;
-                
-                tmr.innerText = "STOP";
-                tmr.style.color = "#ff3333";
-                setTimeout(() => { tmr.style.opacity = '0'; }, 1000); 
-                
-                // Result waiting from Server
-            }
-            else if(localState === 'result') {
-                localState = 'waiting';
-                localTimer = 5;
-            }
-            else {
-                localState = 'betting';
-                localTimer = 15;
-                lastBeep = -1;
-                isBettingOpen = true;
-                tmr.style.opacity = '1';
-                tmr.style.color = "#fff";
+        // Update visual UI Timer
+        if (serverState === 'betting') {
+            tmr.innerText = serverTimer > 0 ? serverTimer : 0;
+            tmr.style.color = serverTimer <= 5 ? "#ff3333" : "#fff";
+            tmr.style.opacity = '1';
+        } else {
+            tmr.innerText = "STOP";
+            tmr.style.color = "#ff3333";
+        }
 
+        // Handle State Change Events
+        if (currentState !== serverState) {
+            currentState = serverState;
+
+            if (serverState === 'betting') {
+                // ROUND START
+                isBettingOpen = true;
+                lastBeep = -1;
+                
+                // Reset visual bets
                 betKeys.forEach(k => { 
                     myBets[k]=0; fakePools[k]=0; realPools[k]=0;
                     let e=$(`total-${k}`); if(e) e.innerText="0"; 
@@ -407,16 +378,22 @@
                 triggerBanner('alert-start'); 
                 clearInterval(botInt); 
                 botInt = setInterval(botAction, 150); 
+                
+            } else if (serverState === 'result') {
+                // STOP BETTING & PREPARE SPIN
+                isBettingOpen = false;
+                clearInterval(botInt);
+                triggerBanner('alert-stop');
+                setTimeout(() => { tmr.style.opacity = '0'; }, 1000); 
+
+            } else if (serverState === 'waiting') {
+                isBettingOpen = false;
+                clearInterval(botInt);
             }
         }
+    });
 
-        if(localState === 'betting') {
-            tmr.innerText = localTimer > 0 ? localTimer : 0;
-            tmr.style.color = localTimer <= 5 ? "#ff3333" : "#fff";
-        }
-    }, 1000);
-
-    // SOCKET LISTENER FOR SERVER PROFIT SYNC
+    // 🔴 LISTEN FOR SERVER SPIN RESULT 🔴
     socket.on('ZooRoulette_result', (data) => {
         runSpin(data.winner); 
     });
@@ -455,6 +432,7 @@
         }
     }
 
+    // ANIMATE THE BOARD
     function runSpin(win) {
         let stop = trackElements.findIndex(e=>e.id===win);
         let curr=0, steps=0, total=(trackElements.length*2)+stop, speed=50;
@@ -479,7 +457,6 @@
         step();
     }
 
-    // PROCESS WIN & LOCAL DATABASE PUSH
     function processWin(winId) {
         playSound('soundWin', 1.0); 
         updHistory(winId); 
@@ -545,7 +522,7 @@
         }
     }
 
-    // SMART BETTING & SERVER FIREBASE PUSH
+    // SMART BETTING
     window.placeBet = function(el, id, ev) {
         if(!isBettingOpen) { showToast("⛔ Wait! Betting is closed."); return; }
         if(userBalance < selectedChipVal) { showToast("⚠️ Low Balance!"); return; }
