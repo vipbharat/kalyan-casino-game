@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     
     <style>
@@ -45,59 +46,77 @@
         
         .loader { display: none; text-align: center; padding: 20px; color: #00ff88; font-weight: bold; font-size: 14px;}
         .success-alert { display: none; background: #00a05a; color: #fff; padding: 12px; text-align: center; border-radius: 6px; margin-top: 15px; font-weight: 900; font-size: 14px;}
+        
+        /* Silent Login Box Styles */
+        #login-box { text-align:center; padding:20px; background:#050510; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
+        .btn-save { background: linear-gradient(135deg, #00a05a, #00ff88); color: #000; border: none; font-weight: 900; cursor: pointer; text-transform: uppercase; border-radius: 6px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="header"><h2><i class="fa-solid fa-chess-board"></i> Ultimate Admin</h2></div>
+    <div id="login-box">
+        <i class="fa-solid fa-shield-halved" style="font-size: 60px; color: #00ff88; margin-bottom: 20px;"></i>
+        <h2 style="color: #00ff88; margin-top: 0; font-weight: 900; letter-spacing: 2px;">GOD MODE</h2>
+        <p style="color: #888; font-size: 12px; margin-bottom: 30px; text-transform: uppercase;">Authorized Personnel Only</p>
+        
+        <input type="password" id="adminInput" placeholder="Enter Secret Name" style="padding:15px; background: #1a1a2e; border: 1px solid #444; border-radius: 6px; color: #fff; font-weight:bold; text-align: center; width: 100%; max-width: 320px; font-size: 18px; outline: none; margin-bottom: 15px;">
+        <button onclick="loginAsAdmin()" class="btn-save" style="width: 100%; max-width: 320px; padding: 15px; font-size: 16px;">UNLOCK PANEL</button>
+    </div>
 
-        <div class="match-select-box">
-            <label>Select Match First</label>
-            <select id="master-match-select" onchange="clearData()"><option value="">-- Matches Loading --</option></select>
-        </div>
-
-        <div class="tabs">
-            <button class="tab-btn active" id="btn-bot" onclick="switchTab('bot')"><i class="fa-solid fa-robot"></i> Bots</button>
-            <button class="tab-btn" id="btn-pts" onclick="switchTab('pts')"><i class="fa-solid fa-chart-line"></i> Update Points</button>
-        </div>
-
-        <div id="section-bot" class="section active">
-            <button class="btn-primary" style="background: #1a0033; color:#00b0ff; border:1px solid #00b0ff; margin-bottom: 15px;" onclick="fetchPlayersForBots()"><i class="fa-solid fa-users"></i> Load 22 Players</button>
-            
-            <div id="bot-selection-area" style="display: none;">
-                <div style="font-size: 11px; color: #ffd700; margin-bottom: 10px;">Select Players (Bot inhi mein se 11 ki team banayega):</div>
-                <div class="player-grid" id="bot-players-list"></div>
-                <div style="text-align:right; font-size:12px; color:#00ff88; font-weight:bold; margin-bottom:15px;" id="bot-selected-count">0 Selected</div>
-
-                <div class="input-group">
-                    <label>Contest Entry Fee</label>
-                    <input type="number" id="bot-fee" value="49">
-                </div>
-                <div class="input-group">
-                    <label>Kitne Bots Daalne Hain?</label>
-                    <input type="number" id="bot-count" value="10" placeholder="Jaise: 10, 50, 100">
-                </div>
-                <button class="btn-primary" onclick="generateBots()"><i class="fa-solid fa-bolt"></i> Inject Unique Bots</button>
+    <div id="main-content" style="display: none;">
+        <div class="container">
+            <div class="header">
+                <h2><i class="fa-solid fa-chess-board"></i> Ultimate Admin</h2>
+                <button onclick="logoutAdmin()" style="background:transparent; border:none; color:#ff004c; font-size:18px; cursor:pointer; margin-top: 10px;"><i class="fa-solid fa-power-off"></i> Logout</button>
             </div>
-            
-            <div class="loader" id="bot-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Generating Unique Squads...</div>
-            <div class="success-alert" id="bot-success"><span id="bot-success-txt"></span></div>
-        </div>
 
-        <div id="section-pts" class="section">
-            <div style="font-size: 11px; color: #ffd700; margin-bottom: 10px; border: 1px dashed #ffd700; padding: 8px; border-radius: 5px;">
-                <b>Magic System:</b> Points update karte hi saari Teams ka score recalculate hoga aur Leaderboard hil jayega!
+            <div class="match-select-box">
+                <label>Select Match First</label>
+                <select id="master-match-select" onchange="clearData()"><option value="">-- Matches Loading --</option></select>
             </div>
-            <button class="btn-primary" style="background: #1a0033; color:#00ff88; border:1px solid #00ff88;" onclick="fetchPlayersForPoints()"><i class="fa-solid fa-cloud-arrow-down"></i> Load Scorecard</button>
-            
-            <div class="loader" id="pts-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Loading Stats...</div>
-            
-            <div id="players-points-container" style="margin-top: 15px; display: none;">
-                <div id="dynamic-players-list"></div>
+
+            <div class="tabs">
+                <button class="tab-btn active" id="btn-bot" onclick="switchTab('bot')"><i class="fa-solid fa-robot"></i> Bots</button>
+                <button class="tab-btn" id="btn-pts" onclick="switchTab('pts')"><i class="fa-solid fa-chart-line"></i> Update Points</button>
+            </div>
+
+            <div id="section-bot" class="section active">
+                <button class="btn-primary" style="background: #1a0033; color:#00b0ff; border:1px solid #00b0ff; margin-bottom: 15px;" onclick="fetchPlayersForBots()"><i class="fa-solid fa-users"></i> Load 22 Players</button>
                 
-                <button class="btn-primary" onclick="saveAllDetailedPoints()"><i class="fa-solid fa-floppy-disk"></i> Update Points & Leaderboard</button>
-                <div class="success-alert" id="pts-success">Points Updated & Leaderboard Ranked Successfully!</div>
+                <div id="bot-selection-area" style="display: none;">
+                    <div style="font-size: 11px; color: #ffd700; margin-bottom: 10px;">Select Players (Bot inhi mein se 11 ki team banayega):</div>
+                    <div class="player-grid" id="bot-players-list"></div>
+                    <div style="text-align:right; font-size:12px; color:#00ff88; font-weight:bold; margin-bottom:15px;" id="bot-selected-count">0 Selected</div>
+
+                    <div class="input-group">
+                        <label>Contest Entry Fee</label>
+                        <input type="number" id="bot-fee" value="49">
+                    </div>
+                    <div class="input-group">
+                        <label>Kitne Bots Daalne Hain?</label>
+                        <input type="number" id="bot-count" value="10" placeholder="Jaise: 10, 50, 100">
+                    </div>
+                    <button class="btn-primary" onclick="generateBots()"><i class="fa-solid fa-bolt"></i> Inject Unique Bots</button>
+                </div>
+                
+                <div class="loader" id="bot-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Generating Unique Squads...</div>
+                <div class="success-alert" id="bot-success"><span id="bot-success-txt"></span></div>
+            </div>
+
+            <div id="section-pts" class="section">
+                <div style="font-size: 11px; color: #ffd700; margin-bottom: 10px; border: 1px dashed #ffd700; padding: 8px; border-radius: 5px;">
+                    <b>Magic System:</b> Points update karte hi saari Teams ka score recalculate hoga aur Leaderboard hil jayega!
+                </div>
+                <button class="btn-primary" style="background: #1a0033; color:#00ff88; border:1px solid #00ff88;" onclick="fetchPlayersForPoints()"><i class="fa-solid fa-cloud-arrow-down"></i> Load Scorecard</button>
+                
+                <div class="loader" id="pts-loader"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br>Loading Stats...</div>
+                
+                <div id="players-points-container" style="margin-top: 15px; display: none;">
+                    <div id="dynamic-players-list"></div>
+                    
+                    <button class="btn-primary" onclick="saveAllDetailedPoints()"><i class="fa-solid fa-floppy-disk"></i> Update Points & Leaderboard</button>
+                    <div class="success-alert" id="pts-success">Points Updated & Leaderboard Ranked Successfully!</div>
+                </div>
             </div>
         </div>
     </div>
@@ -109,13 +128,66 @@
 
         let allLoadedPlayers = []; 
 
-        db.ref('Game/Kalyan11/VIPMatches').on('value', snapshot => {
-            let select = document.getElementById('master-match-select');
-            select.innerHTML = '<option value="">-- Select Match --</option>';
-            if(snapshot.exists()){
-                snapshot.forEach(child => { select.innerHTML += `<option value="${child.key}">${child.val().team1} vs ${child.val().team2}</option>`; });
+        // ================= 🔒 NAYA SILENT LOGIN LOGIC =================
+    
+        var mySecretName = "Boss123"; // 🛑 YAHAN APNA SECRET NAAM DALEIN
+        
+        firebase.auth().onAuthStateChanged(user => {
+            // Agar Master Email se login hai, toh panel dikhao
+            if (user && user.email === "vipbharat6@gmail.com") {
+                document.getElementById('login-box').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+                loadMatchData(); // Data ab load hoga
+            } else {
+                // Warna Login Box dikhao
+                document.getElementById('login-box').style.display = 'flex';
+                document.getElementById('main-content').style.display = 'none';
             }
         });
+
+        function loginAsAdmin() {
+            var enteredName = document.getElementById('adminInput').value;
+
+            if (enteredName === mySecretName) {
+                
+                var myPassword = "YOUR_NEW_PASSWORD_HERE"; // 🛑 YAHAN APNA NAYA PASSWORD DALEIN
+
+                var btn = document.querySelector('#login-box button');
+                btn.innerText = "AUTHENTICATING...";
+                
+                firebase.auth().signInWithEmailAndPassword("vipbharat6@gmail.com", myPassword)
+                .then((user) => {
+                    alert("👑 Swagat hai Boss! Panel Unlocked.");
+                })
+                .catch((error) => {
+                    alert("❌ Error: Password galat hai ya account nahi mila.");
+                    btn.innerText = "UNLOCK PANEL";
+                });
+
+            } else {
+                alert("⛔ Access Denied: Galat Secret Naam!");
+            }
+        }
+
+        function logoutAdmin() {
+            if(confirm("Logout karna chahte hain?")) {
+                firebase.auth().signOut().then(() => {
+                    location.reload();
+                });
+            }
+        }
+
+        // ==============================================================
+
+        function loadMatchData() {
+            db.ref('Game/Kalyan11/VIPMatches').on('value', snapshot => {
+                let select = document.getElementById('master-match-select');
+                select.innerHTML = '<option value="">-- Select Match --</option>';
+                if(snapshot.exists()){
+                    snapshot.forEach(child => { select.innerHTML += `<option value="${child.key}">${child.val().team1} vs ${child.val().team2}</option>`; });
+                }
+            });
+        }
 
         function switchTab(tab) {
             ['bot', 'pts'].forEach(t => {
