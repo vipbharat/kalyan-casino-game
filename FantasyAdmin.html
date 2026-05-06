@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kalyan VIP - Auto Engine Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #050510; color: #fff; margin: 0; padding: 20px; }
-        .header { background: linear-gradient(135deg, #1a0033, #00ff88); padding: 15px; text-align: center; font-weight: 900; font-size: 20px; border-radius: 10px; margin-bottom: 20px; color: #000; box-shadow: 0 0 15px rgba(0,255,136,0.4); }
+        body { font-family: 'Segoe UI', sans-serif; background: #050510; color: #fff; margin: 0; padding: 0; }
+        .header { position: relative; background: linear-gradient(135deg, #1a0033, #00ff88); padding: 15px; text-align: center; font-weight: 900; font-size: 20px; border-radius: 10px; margin-bottom: 20px; color: #000; box-shadow: 0 0 15px rgba(0,255,136,0.4); }
         .admin-box { background: #111; border: 1px solid #333; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .admin-box h3 { color: #00ff88; margin-top: 0; border-bottom: 1px dashed #444; padding-bottom: 10px; }
         .input-group { margin-bottom: 15px; }
@@ -47,14 +49,13 @@
         .success { color: #00ff88; } .error { color: #ff004c; } .loading { color: #ffd700; }
         .clear-btn { background: #ff004c; border: none; color: white; padding: 0 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
 
+        /* MODAL STYLES (Ghost Squad) */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: #111; width: 95%; max-width: 600px; max-height: 85vh; border-radius: 15px; border: 2px solid #00ff88; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0,255,136,0.2);}
         .modal-header { padding: 15px; background: #1a1a2e; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
         .modal-header h2 { margin: 0; color: #ffd700; font-size: 18px; text-transform: uppercase;}
         .close-btn { color: #ff004c; font-size: 24px; font-weight: bold; cursor: pointer; }
-        
         .modal-body { padding: 15px; overflow-y: auto; flex: 1; display: flex; gap: 15px; align-items: flex-start;} 
-        
         .team-col { flex: 1; display: flex; flex-direction: column; gap: 8px; width: 100%;}
         .team-col h3 { margin: 0 0 10px 0; text-align: center; font-size: 14px; padding-bottom: 5px; border-bottom: 1px dashed #555; text-transform: uppercase; }
         .t1-header { color: #00ff88; }
@@ -63,33 +64,23 @@
         .player-edit-card { flex-shrink: 0; background: #222; border: 1px solid #444; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; transition: 0.3s;}
         .player-edit-card.dimmed { opacity: 0.4; border-color: #555; filter: grayscale(50%); }
         .p-top-row { display: flex; align-items: stretch; border-bottom: 1px solid #444; }
-        
         .vis-btn { background: #111; border: none; border-right: 1px solid #444; color: #fff; padding: 0 12px; cursor: pointer; transition: 0.2s; font-size: 14px; }
-        .vis-btn:active { transform: scale(0.8); }
         .vis-btn.app-visible { color: #00ff88; }
         .vis-btn.app-hidden { color: #ff004c; }
-
         .p-toggle { flex-grow: 1; padding: 10px; cursor: pointer; text-align: center; font-size: 11px; font-weight: bold; transition: 0.2s; user-select: none; }
         .p-toggle.playing { background: rgba(0,255,136,0.2); color: #00ff88; }
         .p-toggle.benched { background: rgba(255,0,76,0.2); color: #ff004c; }
         .p-toggle.unannounced { color: #fff; }
-
         .swap-btn { background: #111; border: none; border-left: 1px solid #444; color: #3498db; padding: 0 12px; cursor: pointer; transition: 0.2s; font-size: 12px; }
-        .swap-btn:active { transform: scale(0.8); color: #fff; }
-        
         .role-select { background: #111; color: #ffd700; border: none; padding: 6px; font-size: 10px; font-weight: bold; text-align: center; outline: none; cursor: pointer; width: 100%;}
-        
         .add-p-btn { background: #222; border: 1px dashed #00ff88; color: #00ff88; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: bold; margin-bottom: 5px; width: 100%; transition: 0.2s;}
-        .add-p-btn:active { background: #00ff88; color: #000; }
-
         .modal-footer { padding: 15px; background: #1a1a2e; border-top: 1px solid #333; }
         .btn-save-lineup { width: 100%; background: #00ff88; color: #000; font-weight: 900; padding: 12px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;}
         #payoutLoader { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; flex-direction:column; justify-content:center; align-items:center; color:#00ff88; font-size:20px; font-weight:900; }
 
         /* 🔒 100% SECURE LOGIN BOX STYLES */
         #login-box { text-align:center; padding:20px; background:#050510; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
-        .btn-save-auth { background: linear-gradient(135deg, #00ff88, #00a05a); color: #000; border: none; font-weight: 900; cursor: pointer; text-transform: uppercase; border-radius: 6px; padding: 15px; width: 100%; max-width: 320px; font-size: 16px; box-shadow: 0 4px 15px rgba(0,255,136,0.4); }
-        .content-padding { padding: 20px; }
+        .btn-save-auth { background: linear-gradient(135deg, #00ff88, #00a05a); color: #000; border: none; font-weight: 900; cursor: pointer; text-transform: uppercase; border-radius: 6px; padding: 15px; width: 100%; max-width: 320px; font-size: 16px; box-shadow: 0 4px 15px rgba(255,215,0,0.4); }
     </style>
 </head>
 <body>
@@ -98,13 +89,12 @@
         <i class="fa-solid fa-user-secret" style="font-size: 60px; color: #00ff88; margin-bottom: 20px;"></i>
         <h2 style="color: #00ff88; margin-top: 0; font-weight: 900; letter-spacing: 2px;">GOD MODE</h2>
         <p style="color: #888; font-size: 12px; margin-bottom: 30px; text-transform: uppercase;">100% Secure Login</p>
-        
         <input type="password" id="adminInput" placeholder="Enter Firebase Password" style="padding:15px; background: #1a1a2e; border: 1px solid #444; border-radius: 6px; color: #fff; font-weight:bold; text-align: center; width: 100%; max-width: 320px; font-size: 18px; outline: none; margin-bottom: 15px;">
         <button onclick="loginAsAdmin()" class="btn-save-auth">UNLOCK PANEL</button>
     </div>
 
     <div id="main-content" style="display: none;">
-        <div class="content-padding">
+        <div style="padding: 20px;">
             <div class="header">
                 👑 KALYAN VIP AUTO ENGINE
                 <button onclick="logoutAdmin()" style="position:absolute; right:15px; top:12px; background:transparent; border:none; color:#ff004c; font-size:20px; cursor:pointer;"><i class="fa-solid fa-power-off"></i></button>
@@ -128,22 +118,18 @@
                 <div class="input-group"><label>⏱️ Match Start Time</label><input type="datetime-local" id="matchTime"></div>
                 
                 <h3 style="margin-top:20px;"><i class="fa-solid fa-wand-magic-sparkles"></i> 2. Pre-Launch Squads</h3>
-                
                 <textarea id="t1Players" style="display:none;"></textarea> 
                 <textarea id="t2Players" style="display:none;"></textarea> 
-
                 <div class="split-move-container">
                     <div class="move-col-wrap">
                         <label id="lblT1Move" style="color: #00ff88; text-align: center; text-transform: uppercase;">1 Team</label>
                         <div class="move-col" id="t1MoveCol" style="border-color: #00ff88;"></div>
                     </div>
-
                     <div class="move-col-wrap">
                         <label id="lblT2Move" style="color: #ffd700; text-align: center; text-transform: uppercase;">2 Team</label>
                         <div class="move-col" id="t2MoveCol" style="border-color: #ffd700;"></div>
                     </div>
                 </div>
-
                 <button class="btn-live" onclick="launchSmartMatch()">🚀 LAUNCH VIP MATCH</button>
             </div>
 
@@ -158,8 +144,7 @@
                         <h2>🟢 SQUAD & TOSS MANAGER</h2>
                         <div class="close-btn" onclick="closeLineupModal()">&times;</div>
                     </div>
-                    <div class="modal-body" id="modalPlayerList">
-                        </div>
+                    <div class="modal-body" id="modalPlayerList"></div>
                     <div class="modal-footer">
                         <button class="btn-save-lineup" onclick="saveLineupToFirebase()"><i class="fa-solid fa-cloud-arrow-up"></i> PUBLISH TO APP</button>
                     </div>
@@ -178,13 +163,12 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
 
-        let isDataLoaded = false;
-        
+        // ================= 🔒 LOGIN LOGIC =================
         firebase.auth().onAuthStateChanged(user => {
             if (user && user.email === "vipbharat6@gmail.com") {
                 document.getElementById('login-box').style.display = 'none';
                 document.getElementById('main-content').style.display = 'block';
-                if(!isDataLoaded) { loadAdminData(); isDataLoaded = true; } 
+                loadAdminData();
             } else {
                 document.getElementById('login-box').style.display = 'flex';
                 document.getElementById('main-content').style.display = 'none';
@@ -193,39 +177,21 @@
 
         function loginAsAdmin() {
             var enteredPassword = document.getElementById('adminInput').value;
-            
-            if (!enteredPassword) {
-                alert("Please enter password!");
-                return;
-            }
+            if (!enteredPassword) return alert("Please enter password!");
             
             var btn = document.querySelector('#login-box button');
             btn.innerText = "AUTHENTICATING...";
-            
-            // Password Check Hoga aur turant display block ho jayega
             firebase.auth().signInWithEmailAndPassword("vipbharat6@gmail.com", enteredPassword)
-            .then((user) => { 
-                alert("👑 Swagat hai Boss! Panel Unlocked."); 
-                
-                // NAYA JADOO: Direct yahi se UI change hoga, no reload!
-                document.getElementById('login-box').style.display = 'none';
-                document.getElementById('main-content').style.display = 'block';
-                
-                if(!isDataLoaded) { loadAdminData(); isDataLoaded = true; }
-                btn.innerText = "UNLOCK PANEL";
-            })
+            .then(() => { alert("👑 Swagat hai Boss! Panel Unlocked."); })
             .catch((error) => {
                 alert("❌ Error: Password galat hai ya account nahi mila.");
                 btn.innerText = "UNLOCK PANEL";
             });
         }
 
-        function logoutAdmin() {
-            if(confirm("Logout karna chahte hain?")) {
-                firebase.auth().signOut().then(() => { location.reload(); });
-            }
-        }
+        function logoutAdmin() { if(confirm("Logout?")) { firebase.auth().signOut().then(() => { location.reload(); }); } }
 
+        // ================= ⚙️ APP LOGIC =================
         let globalApiMatchId = "";
         let currentEditingMatchId = "";
         let currentPlayersData = {};
@@ -265,28 +231,18 @@
             let t2Arr = parsePlayers(document.getElementById('t2Players').value);
             let t1Name = document.getElementById('t1Name').value || "Team 1";
             let t2Name = document.getElementById('t2Name').value || "Team 2";
-            
             document.getElementById('lblT1Move').innerText = `1 ${t1Name} (${t1Arr.length})`;
             document.getElementById('lblT2Move').innerText = `2 ${t2Name} (${t2Arr.length})`;
-            
-            let t1Html = ""; 
-            t1Arr.forEach((p, i) => { 
-                t1Html += `<div class="move-card t1-move-card"><span>${p}</span><button class="move-btn to-right" onclick="movePlayer(1, ${i})"><i class="fa-solid fa-arrow-right-long"></i></button></div>`; 
-            }); 
+            let t1Html = ""; t1Arr.forEach((p, i) => { t1Html += `<div class="move-card t1-move-card"><span>${p}</span><button class="move-btn to-right" onclick="movePlayer(1, ${i})"><i class="fa-solid fa-arrow-right-long"></i></button></div>`; }); 
             document.getElementById('t1MoveCol').innerHTML = t1Html;
-            
-            let t2Html = ""; 
-            t2Arr.forEach((p, i) => { 
-                t2Html += `<div class="move-card t2-move-card"><button class="move-btn to-left" onclick="movePlayer(2, ${i})"><i class="fa-solid fa-arrow-left-long"></i></button><span>${p}</span></div>`; 
-            }); 
+            let t2Html = ""; t2Arr.forEach((p, i) => { t2Html += `<div class="move-card t2-move-card"><button class="move-btn to-left" onclick="movePlayer(2, ${i})"><i class="fa-solid fa-arrow-left-long"></i></button><span>${p}</span></div>`; }); 
             document.getElementById('t2MoveCol').innerHTML = t2Html;
         }
 
         function movePlayer(fromTeam, index) {
             let t1Arr = parsePlayers(document.getElementById('t1Players').value);
             let t2Arr = parsePlayers(document.getElementById('t2Players').value);
-            if (fromTeam === 1) { t2Arr.push(t1Arr.splice(index, 1)[0]); } 
-            else { t1Arr.push(t2Arr.splice(index, 1)[0]); }
+            if (fromTeam === 1) { t2Arr.push(t1Arr.splice(index, 1)[0]); } else { t1Arr.push(t2Arr.splice(index, 1)[0]); }
             document.getElementById('t1Players').value = t1Arr.join(', ');
             document.getElementById('t2Players').value = t2Arr.join(', ');
             renderMoveSystem();
@@ -303,32 +259,32 @@
             return "BAT";
         }
 
-        function launchSmartMatch() {
-            let eUrl = document.getElementById('engineUrl').value.trim();
-            let mName = document.getElementById('matchName').value.trim();
-            let t1 = document.getElementById('t1Name').value.trim().toUpperCase();
-            let t2 = document.getElementById('t2Name').value.trim().toUpperCase();
-            
-            let t1Arr = parsePlayers(document.getElementById('t1Players').value);
-            let t2Arr = parsePlayers(document.getElementById('t2Players').value);
-            let rawTime = document.getElementById('matchTime').value; 
-            
-            if(!mName || !t1 || !t2 || t1Arr.length === 0 || t2Arr.length === 0 || !rawTime) return alert("⚠️ Details bhariye!");
+        async function launchSmartMatch() {
+            try {
+                let eUrl = document.getElementById('engineUrl').value.trim();
+                let mName = document.getElementById('matchName').value.trim();
+                let t1 = document.getElementById('t1Name').value.trim().toUpperCase();
+                let t2 = document.getElementById('t2Name').value.trim().toUpperCase();
+                let t1Arr = parsePlayers(document.getElementById('t1Players').value);
+                let t2Arr = parsePlayers(document.getElementById('t2Players').value);
+                let rawTime = document.getElementById('matchTime').value; 
+                if(!mName || !t1 || !t2 || t1Arr.length === 0 || t2Arr.length === 0 || !rawTime) return alert("⚠️ Details bhariye!");
 
-            let msTime = new Date(rawTime).getTime();
-            let mId = globalApiMatchId ? globalApiMatchId : "MATCH_" + Date.now();
-            let pData = {};
-            let safeT1 = t1.replace(/[^a-zA-Z0-9]/g, '');
-            let safeT2 = t2.replace(/[^a-zA-Z0-9]/g, '');
+                let msTime = new Date(rawTime).getTime();
+                let mId = globalApiMatchId ? globalApiMatchId : "MATCH_" + Date.now();
+                let pData = {};
+                let safeT1 = t1.replace(/[^a-zA-Z0-9]/g, '');
+                let safeT2 = t2.replace(/[^a-zA-Z0-9]/g, '');
 
-            t1Arr.forEach((cn, i) => { pData[safeT1 + "_" + i] = { name: cn, team: safeT1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced", inApp: true }; });
-            t2Arr.forEach((cn, i) => { pData[safeT2 + "_" + i] = { name: cn, team: safeT2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced", inApp: true }; });
+                t1Arr.forEach((cn, i) => { pData[safeT1 + "_" + i] = { name: cn, team: safeT1.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced", inApp: true }; });
+                t2Arr.forEach((cn, i) => { pData[safeT2 + "_" + i] = { name: cn, team: safeT2.substring(0,3), role: getSmartRole(cn), credits: 8.5, points: 0, playingStatus: "unannounced", inApp: true }; });
 
-            db.ref('Game/Kalyan11/VIPMatches/' + mId).set({ engineUrl: eUrl, name: mName, team1: t1, team2: t2, timestamp: msTime, status: "Upcoming" });
-            db.ref('Game/Kalyan11/AdminFullSquads/' + mId).set(pData);
-            db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData);
-            db.ref('Game/Kalyan11/LiveEngine/' + mId).set({ matchId: mId, cricbuzzLink: eUrl, wakeUpTime: msTime - 1200000 })
-            .then(() => { alert("✅ Match Launched Successfully!"); location.reload(); });
+                await db.ref('Game/Kalyan11/VIPMatches/' + mId).set({ engineUrl: eUrl, name: mName, team1: t1, team2: t2, timestamp: msTime, status: "Upcoming" });
+                await db.ref('Game/Kalyan11/AdminFullSquads/' + mId).set(pData);
+                await db.ref('Game/Kalyan11/MatchPlayers/' + mId).set(pData);
+                await db.ref('Game/Kalyan11/LiveEngine/' + mId).set({ matchId: mId, cricbuzzLink: eUrl, wakeUpTime: msTime - 1200000 });
+                alert("✅ Match Launched!"); location.reload();
+            } catch (e) { alert("❌ Error: " + e.message); }
         }
 
         function loadAdminData() {
@@ -348,132 +304,64 @@
             });
         }
 
-        function deleteMatch(mId) { 
-            if(confirm("Delete this match?")) { 
-                db.ref('Game/Kalyan11/VIPMatches/'+mId).remove(); 
-                db.ref('Game/Kalyan11/LiveEngine/'+mId).remove(); 
-                db.ref('Game/Kalyan11/MatchPlayers/'+mId).remove();
-                db.ref('Game/Kalyan11/AdminFullSquads/'+mId).remove();
-            } 
-        }
+        function deleteMatch(mId) { if(confirm("Delete?")) { db.ref('Game/Kalyan11/VIPMatches/'+mId).remove(); db.ref('Game/Kalyan11/LiveEngine/'+mId).remove(); db.ref('Game/Kalyan11/MatchPlayers/'+mId).remove(); db.ref('Game/Kalyan11/AdminFullSquads/'+mId).remove(); } }
 
+        // 🔥 GHOST SQUAD & LINEUP LOGIC 🔥
         function openLineupModal(matchId) {
             currentEditingMatchId = matchId;
             document.getElementById('lineupModal').style.display = 'flex';
-            
             db.ref('Game/Kalyan11/AdminFullSquads/' + matchId).once('value', snap => {
-                if(snap.exists()) {
-                    currentPlayersData = snap.val();
-                    renderModalList();
-                } else {
-                    db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value', snap2 => {
-                        currentPlayersData = snap2.val() || {};
-                        Object.values(currentPlayersData).forEach(p => p.inApp = true); 
-                        renderModalList();
-                    });
-                }
+                currentPlayersData = snap.val() || {};
+                renderModalList();
             });
         }
         
         function renderModalList() {
-            let container = document.getElementById('modalPlayerList'); 
-            container.innerHTML = "";
-            
+            let container = document.getElementById('modalPlayerList'); container.innerHTML = "";
             let teams = [...new Set(Object.values(currentPlayersData).map(p => p.team))];
-            let team1 = teams[0] || "Team 1";
-            let team2 = teams[1] || "Team 2";
+            let team1 = teams[0] || "Team 1"; let team2 = teams[1] || "Team 2";
 
-            let t1Html = `<div class="team-col"><h3 class="t1-header">1 ${team1}</h3>
-                          <button class="add-p-btn" onclick="addNewPlayerToTeam('${team1}')">+ Add Naya Player</button>`;
-            let t2Html = `<div class="team-col"><h3 class="t2-header">2 ${team2}</h3>
-                          <button class="add-p-btn" onclick="addNewPlayerToTeam('${team2}')">+ Add Naya Player</button>`;
+            let t1Html = `<div class="team-col"><h3 class="t1-header">1 ${team1}</h3><button class="add-p-btn" onclick="addNewPlayerToTeam('${team1}')">+ Add Player</button>`;
+            let t2Html = `<div class="team-col"><h3 class="t2-header">2 ${team2}</h3><button class="add-p-btn" onclick="addNewPlayerToTeam('${team2}')">+ Add Player</button>`;
 
             Object.keys(currentPlayersData).forEach(pKey => {
                 let p = currentPlayersData[pKey];
                 let isAppVisible = p.inApp !== false;
-                let s = p.playingStatus === 'playing' ? 'playing' : (p.playingStatus === 'benched' ? 'benched' : 'unannounced');
-                let r = p.role || 'BAT'; 
-                
-                let isTeam1 = p.team === team1;
-                let switchTeamTo = isTeam1 ? team2 : team1; 
-                
+                let s = p.playingStatus || 'unannounced';
                 let cardHtml = `
                 <div class="player-edit-card ${!isAppVisible ? 'dimmed' : ''}">
                     <div class="p-top-row">
-                        <button class="vis-btn ${isAppVisible ? 'app-visible' : 'app-hidden'}" onclick="toggleVisibility('${pKey}')" title="${isAppVisible ? 'App mein dikh raha hai' : 'App se chupaya gaya hai'}">
-                            <i class="fa-solid ${isAppVisible ? 'fa-eye' : 'fa-eye-slash'}"></i>
-                        </button>
+                        <button class="vis-btn ${isAppVisible ? 'app-visible' : 'app-hidden'}" onclick="toggleVisibility('${pKey}')"><i class="fa-solid ${isAppVisible ? 'fa-eye' : 'fa-eye-slash'}"></i></button>
                         <div class="p-toggle ${s}" onclick="toggleStatus('${pKey}')">${p.name}</div>
-                        
-                        <button class="swap-btn" onclick="switchPlayerTeam('${pKey}', '${switchTeamTo}')" title="Khiladi ko dusri team mein bhejein">
-                            <i class="fa-solid fa-right-left"></i>
-                        </button>
-
+                        <button class="swap-btn" onclick="switchPlayerTeam('${pKey}', '${p.team === team1 ? team2 : team1}')"><i class="fa-solid fa-right-left"></i></button>
                     </div>
-                    <select class="role-select" onchange="changeRole('${pKey}', this.value)">
-                        <option value="WK" ${r === 'WK' ? 'selected' : ''}>WK</option>
-                        <option value="BAT" ${r === 'BAT' ? 'selected' : ''}>BAT</option>
-                        <option value="AR" ${r === 'AR' ? 'selected' : ''}>AR</option>
-                        <option value="BOWL" ${r === 'BOWL' ? 'selected' : ''}>BOWL</option>
-                    </select>
                 </div>`;
-
-                if(isTeam1) { t1Html += cardHtml; } else { t2Html += cardHtml; }
+                if(p.team === team1) t1Html += cardHtml; else t2Html += cardHtml;
             });
-
-            t1Html += `</div>`; t2Html += `</div>`;
-            container.innerHTML = t1Html + t2Html; 
+            container.innerHTML = t1Html + "</div>" + t2Html + "</div>";
         }
 
-        function switchPlayerTeam(pKey, newTeam) {
-            currentPlayersData[pKey].team = newTeam;
-            renderModalList();
-        }
+        function toggleVisibility(k) { currentPlayersData[k].inApp = !(currentPlayersData[k].inApp !== false); renderModalList(); }
+        function toggleStatus(k) { currentPlayersData[k].playingStatus = currentPlayersData[k].playingStatus === "playing" ? "benched" : "playing"; renderModalList(); }
+        function switchPlayerTeam(pKey, newTeam) { currentPlayersData[pKey].team = newTeam; renderModalList(); }
+        function addNewPlayerToTeam(teamName) { let pName = prompt("Name:"); if(pName) { let pKey = "NEW_"+Date.now(); currentPlayersData[pKey] = {name: pName, team: teamName, role: "BAT", points: 0, playingStatus: "playing", inApp: true }; renderModalList(); } }
 
-        function toggleVisibility(k) {
-            currentPlayersData[k].inApp = !(currentPlayersData[k].inApp !== false);
-            renderModalList();
-        }
-
-        function addNewPlayerToTeam(teamName) {
-            let pName = prompt(`Naye khiladi ka naam likhein (${teamName} ke liye):`);
-            if(pName && pName.trim() !== "") {
-                let safeTeam = teamName.substring(0,3).replace(/[^a-zA-Z0-9]/g, '');
-                let pKey = safeTeam + "_NEW_" + Math.floor(Math.random()*10000);
-                currentPlayersData[pKey] = {
-                    name: pName.trim(), team: safeTeam, role: "BAT", credits: 8.5, points: 0,
-                    playingStatus: "playing", inApp: true
-                };
-                renderModalList();
-            }
-        }
-
-        function toggleStatus(k) {
-            let p = currentPlayersData[k];
-            p.playingStatus = p.playingStatus === "playing" ? "benched" : "playing";
-            renderModalList(); 
-        }
-
-        function changeRole(k, newRole) { currentPlayersData[k].role = newRole; }
-        
         function saveLineupToFirebase() {
-            let appVisiblePlayers = {};
+            let playingPlayers = {}; // 🔥 NAYA JADOO: Jo player Khel rahe hain unhen hi match mein bhejein
             Object.keys(currentPlayersData).forEach(k => {
-                if(currentPlayersData[k].inApp !== false) {
-                    appVisiblePlayers[k] = currentPlayersData[k];
+                if(currentPlayersData[k].playingStatus === 'playing') {
+                    playingPlayers[k] = currentPlayersData[k];
                 }
             });
-
             db.ref('Game/Kalyan11/AdminFullSquads/' + currentEditingMatchId).set(currentPlayersData);
-            db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).set(appVisiblePlayers).then(() => { 
-                alert("✅ Changes aur Team Swap App mein Update ho gaye hain!"); 
+            db.ref('Game/Kalyan11/MatchPlayers/' + currentEditingMatchId).set(playingPlayers).then(() => { 
+                alert("✅ Playing 11 App mein update ho gayi!"); 
                 closeLineupModal(); 
             });
         }
         function closeLineupModal() { document.getElementById('lineupModal').style.display = 'none'; }
-        
-        function calculatePrizeLogic(rank, entry, totalSpots) { if(entry === 0) return 0; if(entry === 99) { if(rank === 1) return 50000; if(rank <= 10) return 1000; return 0; } if(rank === 1) return Math.floor(entry * totalSpots * 0.4); if(rank <= Math.floor(totalSpots * 0.4)) return entry; return 0; }
 
+        // PAYOUT LOGIC
         async function processPerfectPayout(matchId) {
             if(!confirm("⚠️ PAYOUT KAREIN?")) return;
             const loader = document.getElementById('payoutLoader'); loader.style.display = 'flex';
@@ -481,39 +369,20 @@
                 let pSnap = await db.ref('Game/Kalyan11/MatchPlayers/' + matchId).once('value');
                 let playersObj = pSnap.val() || {};
                 let tSnap = await db.ref('Game/Kalyan11/Contests/' + matchId + '/Teams').once('value');
-                let allRealTeams = [];
-
                 if(tSnap.exists()) {
                     tSnap.forEach(child => {
-                        let t = child.val();
-                        let calculatedPoints = 0;
+                        let t = child.val(); let calculatedPoints = 0;
                         Object.values(t.players || {}).forEach(pKey => {
                             let livePt = parseFloat(playersObj[pKey]?.points || 0);
                             if(pKey === t.captain) calculatedPoints += (livePt * 2);
                             else if(pKey === t.viceCaptain) calculatedPoints += (livePt * 1.5);
                             else calculatedPoints += livePt;
                         });
-                        allRealTeams.push({ teamKey: child.key, phone: t.phone, entry_paid: parseInt(t.entry_paid || 99), points: parseFloat(calculatedPoints.toFixed(1)), payment_status: t.payment_status || "PENDING" });
                         db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${child.key}`).update({total_points: calculatedPoints});
                     });
                 }
-                allRealTeams.sort((a,b) => b.points - a.points);
-                let totalPaidUsers = 0;
-                for(let r = 0; r < allRealTeams.length; r++) {
-                    let currentTeam = allRealTeams[r];
-                    let rank = r + 1;
-                    let prize = calculatePrizeLogic(rank, currentTeam.entry_paid, 100); 
-                    if(prize > 0 && currentTeam.payment_status !== "PAID") {
-                        await db.ref(`Game/Kalyan11/Contests/${matchId}/Teams/${currentTeam.teamKey}`).update({ payment_status: "PAID" });
-                        let wSnap = await db.ref(`users/${currentTeam.phone}`).once('value');
-                        let currentWinBal = parseFloat(wSnap.val()?.winning_balance || 0);
-                        await db.ref(`users/${currentTeam.phone}`).update({ winning_balance: currentWinBal + prize });
-                        totalPaidUsers++;
-                    }
-                }
-                await db.ref(`Game/Kalyan11/VIPMatches/${matchId}`).update({ timestamp: new Date().getTime() - 15000000 });
-                loader.style.display = 'none'; alert(`✅ PAYOUT SUCCESSFUL!\nTotal Winners Paid: ${totalPaidUsers}`);
-            } catch (error) { loader.style.display = 'none'; alert("❌ ERROR: " + error.message); }
+                loader.style.display = 'none'; alert("✅ Payout Done!");
+            } catch (e) { loader.style.display = 'none'; alert("❌ Error: " + e.message); }
         }
     </script>
 </body>
