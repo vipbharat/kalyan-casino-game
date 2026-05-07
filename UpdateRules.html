@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VIP Admin - Result Panel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <style>
         body { background: #0a0a0b; color: #fff; font-family: sans-serif; padding: 15px; margin: 0; }
-        .header { background: linear-gradient(45deg, #b21f1f, #1a2a6c); padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; border-bottom: 3px solid #ffd700; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .header { background: linear-gradient(45deg, #b21f1f, #1a2a6c); padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; border-bottom: 3px solid #ffd700; box-shadow: 0 4px 10px rgba(0,0,0,0.5); position: relative;}
         .header h1 { margin: 0; font-size: 18px; font-weight: 900; color: #ffd700; }
         
         .m-card { background: #1a1a1e; border-radius: 12px; padding: 15px; margin-bottom: 15px; border-left: 5px solid #00ff88; box-shadow: 0 4px 8px rgba(0,0,0,0.6); }
@@ -28,8 +31,21 @@
 </head>
 <body>
 
-    <div class="header"><h1>👑 RESULT ADMIN PANEL</h1></div>
-    <div id="panel-container"><p style="text-align:center; color:#888;">Connecting to Live Database...</p></div>
+    <div id="login-box" style="position:fixed; top:0; left:0; width:100%; height:100vh; background:#0a0a0b; z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; padding: 20px; box-sizing: border-box;">
+        <i class="fa-solid fa-lock" style="font-size: 60px; color: #ffd700; margin-bottom: 20px;"></i>
+        <h2 style="color: #ffd700; margin-top: 0; font-weight: 900; letter-spacing: 2px;">GOD MODE</h2>
+        <p style="color: #888; font-size: 12px; margin-bottom: 30px; text-transform: uppercase;">100% Secure Login</p>
+        <input type="password" id="adminInput" placeholder="Enter Firebase Password" style="padding:15px; background: #1a1a1e; border: 1px solid #444; border-radius: 6px; color: #fff; font-weight:bold; text-align: center; width: 100%; max-width: 320px; font-size: 18px; outline: none; margin-bottom: 15px;">
+        <button onclick="loginAsAdmin()" style="background: linear-gradient(45deg, #b21f1f, #1a2a6c); color: #fff; border: none; font-weight: 900; cursor: pointer; text-transform: uppercase; border-radius: 6px; padding: 15px; width: 100%; max-width: 320px; font-size: 16px;">UNLOCK PANEL</button>
+    </div>
+
+    <div id="main-content" style="display: none;">
+        <div class="header">
+            <h1>👑 RESULT ADMIN PANEL</h1>
+            <button onclick="logoutAdmin()" style="position:absolute; right:15px; top:12px; background:transparent; border:none; color:#ffd700; font-size:20px; cursor:pointer;"><i class="fa-solid fa-power-off"></i></button>
+        </div>
+        <div id="panel-container"><p style="text-align:center; color:#888;">Connecting to Live Database...</p></div>
+    </div>
 
     <script>
         // 🔥 Firebase Config 🔥
@@ -38,8 +54,39 @@
             databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
             projectId: "kalyan-casino" 
         };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
+
+        // ================= 🔒 LOGIN LOGIC =================
+        let isDataLoaded = false;
+        
+        firebase.auth().onAuthStateChanged(user => {
+            if (user && user.email === "vipbharat6@gmail.com") {
+                document.getElementById('login-box').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+                if(!isDataLoaded) { startMarketListener(); isDataLoaded = true; }
+            } else {
+                document.getElementById('login-box').style.display = 'flex';
+                document.getElementById('main-content').style.display = 'none';
+            }
+        });
+
+        function loginAsAdmin() {
+            var enteredPassword = document.getElementById('adminInput').value;
+            if (!enteredPassword) return alert("Please enter password!");
+            var btn = document.querySelector('#login-box button'); btn.innerText = "AUTHENTICATING...";
+            
+            firebase.auth().signInWithEmailAndPassword("vipbharat6@gmail.com", enteredPassword)
+            .then(() => { 
+                document.getElementById('login-box').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+                if(!isDataLoaded) { startMarketListener(); isDataLoaded = true; }
+                btn.innerText = "UNLOCK PANEL";
+            }).catch(() => { alert("❌ Error: Password galat hai."); btn.innerText = "UNLOCK PANEL"; });
+        }
+        
+        function logoutAdmin() { if(confirm("Logout?")) firebase.auth().signOut().then(() => location.reload()); }
+        // ==================================================
 
         const markets = { 
             "time_day": "TIME BAZAR", "madhur_day": "MADHUR DAY", "milan_day": "MILAN DAY", "kalyan_day": "KALYAN", 
@@ -72,17 +119,19 @@
         }
         loadPanel();
 
-        // Admin panel mein Live update dikhane ke liye
-        db.ref('market').on('value', snap => {
-            const data = snap.val() || {};
-            Object.keys(markets).forEach(id => { 
-                if(data[id] && data[id].result) {
-                    document.getElementById('live_'+id).innerText = data[id].result; 
-                } else {
-                    document.getElementById('live_'+id).innerText = "***-**-***";
-                }
+        // Admin panel mein Live update dikhane ke liye (Ab yeh login hone ke baad chalega)
+        function startMarketListener() {
+            db.ref('market').on('value', snap => {
+                const data = snap.val() || {};
+                Object.keys(markets).forEach(id => { 
+                    if(data[id] && data[id].result) {
+                        document.getElementById('live_'+id).innerText = data[id].result; 
+                    } else {
+                        document.getElementById('live_'+id).innerText = "***-**-***";
+                    }
+                });
             });
-        });
+        }
 
         // 🔥 Result bhejne ka logic 🔥
         function sendResult(id) {
