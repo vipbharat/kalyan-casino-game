@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VIP Matka Casino - With History</title>
+    <title>VIP Matka Casino - Pro Edition</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <style>
         :root {
             --gold: #ffd700;
@@ -13,112 +17,91 @@
         }
 
         body {
-            background: radial-gradient(circle, var(--table-green), var(--casino-green));
-            color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; 
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), url('1000063588.png');
+            background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed;
+            color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 0; height: 100vh;
+            display: flex; flex-direction: column; overflow: hidden; 
         }
 
-        /* Colorful Casino Header */
+        /* HEADER */
         .header {
-            background: linear-gradient(90deg, #8b0000, #ff0000, #8b0000);
-            border-bottom: 2px solid var(--gold);
-            padding: 10px;
-            text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            z-index: 10;
-            position: relative;
+            background: linear-gradient(90deg, rgba(139,0,0,0.8), rgba(255,0,0,0.8), rgba(139,0,0,0.8));
+            border-bottom: 2px solid var(--gold); padding: 10px; text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10; position: relative;
         }
         .header-title {
-            color: var(--gold);
-            font-size: 22px;
-            font-weight: 900;
-            text-transform: uppercase;
-            text-shadow: 2px 2px 4px #000;
-            margin: 0;
+            color: var(--gold); font-size: 22px; font-weight: 900;
+            text-transform: uppercase; text-shadow: 2px 2px 4px #000; margin: 0;
         }
         .timer { font-size: 14px; margin-top: 5px; color: white; font-weight: bold;}
 
-        /* HISTORY BUTTON */
         .history-btn {
-            position: absolute;
-            top: 15px;
-            right: 10px;
-            background: #222;
-            color: var(--gold);
-            border: 1px solid var(--gold);
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-weight: bold;
-            font-size: 12px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            position: absolute; top: 15px; right: 10px;
+            background: rgba(34,34,34,0.9); color: var(--gold); border: 1px solid var(--gold);
+            padding: 5px 10px; border-radius: 5px; font-weight: bold;
+            font-size: 12px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
-        .history-btn:active { transform: scale(0.95); }
 
-        /* Scrolling Guide (Marquee) */
+        /* WALLET HEADER */
+        .wallet-header {
+            background: rgba(0,0,0,0.7); padding: 8px 15px; border-bottom: 2px solid var(--gold);
+            display: flex; justify-content: space-between; align-items: center; z-index: 9;
+            backdrop-filter: blur(5px);
+        }
+        .wallet-bal { color: var(--gold); font-weight: 900; font-size: 16px; }
+        .user-id { color: #aaa; font-size: 12px; font-weight: bold;}
+
+        /* MARQUEE */
         .marquee-container {
-            background: #000;
-            color: #fff;
-            padding: 6px 0;
-            font-size: 13px;
-            border-bottom: 2px solid var(--gold);
-            white-space: nowrap;
-            overflow: hidden;
-            z-index: 10;
+            background: rgba(0,0,0,0.7); color: #fff; padding: 6px 0; font-size: 13px;
+            border-bottom: 2px solid var(--gold); white-space: nowrap; overflow: hidden; z-index: 10;
         }
         .marquee-text {
-            display: inline-block;
-            padding-left: 100%;
-            animation: marquee 25s linear infinite;
-            color: var(--gold);
-            font-weight: bold;
+            display: inline-block; padding-left: 100%; animation: marquee 25s linear infinite;
+            color: var(--gold); font-weight: bold;
         }
         @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
 
-        /* Today's Results */
+        /* RESULTS SLOTS */
         .results-container {
-            display: flex;
-            justify-content: space-evenly;
-            padding: 10px 0;
-            background: rgba(0, 0, 0, 0.4);
-            border-bottom: 2px solid #555;
-            z-index: 10;
+            display: flex; justify-content: space-evenly; padding: 10px 0;
+            background: rgba(0, 0, 0, 0.4); border-bottom: 2px solid #555; z-index: 10;
         }
         .slot {
-            width: 65px;
-            height: 85px;
-            background: rgba(0, 0, 0, 0.6);
-            border: 2px dashed var(--gold);
-            border-radius: 6px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            width: 65px; height: 85px; background: rgba(0, 0, 0, 0.7);
+            border: 2px dashed var(--gold); border-radius: 6px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .slot small { font-size: 11px; color: #ddd; }
+        .slot small { font-size: 11px; color: #ddd; font-weight: bold; }
         .slot-card { font-size: 24px; font-weight: bold; margin-top: 2px; }
 
-        .limit-msg { text-align: center; color: var(--gold); font-size: 14px; margin: 5px 0; font-weight: bold; }
+        /* 🔥 LIVE POOL CSS 🔥 */
+        .live-pool-box {
+            text-align: center; margin: 5px 10px; padding: 10px;
+            background: rgba(0, 0, 0, 0.8); border: 2px solid #39ff14;
+            border-radius: 8px; box-shadow: 0 0 15px rgba(57, 255, 20, 0.5);
+            animation: pulse-pool 1.5s infinite; z-index: 10;
+        }
+        .live-pool-text { color: #fff; font-size: 12px; font-weight: bold; letter-spacing: 1px; }
+        .live-pool-amount { color: #39ff14; font-size: 22px; font-weight: 900; text-shadow: 0 0 10px #39ff14; display: block; margin-top: 3px;}
+        
+        @keyframes pulse-pool {
+            0% { transform: scale(1); box-shadow: 0 0 10px rgba(57, 255, 20, 0.4); }
+            50% { transform: scale(1.02); box-shadow: 0 0 20px rgba(57, 255, 20, 0.8); }
+            100% { transform: scale(1); box-shadow: 0 0 10px rgba(57, 255, 20, 0.4); }
+        }
 
-        /* Scrollable Deck Area */
+        .limit-msg { text-align: center; color: var(--gold); font-size: 14px; margin: 5px 0; font-weight: bold; background: rgba(0,0,0,0.6); padding: 5px; border-radius: 5px; }
+
+        /* DECK AREA */
         .deck-container {
-            flex: 1; 
-            display: flex;
-            gap: 10px;
-            padding: 5px 10px;
-            overflow-y: auto; 
-            padding-bottom: 20px;
+            flex: 1; display: flex; gap: 10px; padding: 5px 10px; overflow-y: auto; padding-bottom: 20px;
         }
         .half-deck { flex: 1; display: flex; flex-direction: column; }
         .section-title {
             text-align: center; font-weight: bold; font-size: 16px; padding: 8px;
-            background: rgba(0,0,0,0.7); border-radius: 5px; margin-bottom: 10px;
+            background: rgba(0,0,0,0.8); border-radius: 5px; margin-bottom: 10px;
             position: sticky; top: 0; z-index: 5;
         }
         .title-black { color: #fff; border-bottom: 2px solid #aaa; }
@@ -127,11 +110,10 @@
         .suit-columns-wrapper { display: flex; gap: 8px; justify-content: space-between; }
         .suit-column { display: flex; flex-direction: column; gap: 8px; flex: 1; }
 
-        /* REALISTIC CARD DESIGN */
         .real-card {
             background: var(--card-white); border-radius: 6px; height: 90px;
             display: flex; flex-direction: column; justify-content: space-between;
-            padding: 4px; box-shadow: 2px 2px 6px rgba(0,0,0,0.6); cursor: pointer; position: relative;
+            padding: 4px; box-shadow: 2px 2px 8px rgba(0,0,0,0.8); cursor: pointer; position: relative;
         }
         .real-card.black { color: #000; }
         .real-card.red { color: #d60000; }
@@ -140,61 +122,29 @@
         .real-card.selected { background: #fff8dc; border: 3px solid var(--gold); transform: translateY(-5px) scale(1.05); box-shadow: 0 0 15px var(--gold); z-index: 2; }
 
         /* BET PANEL */
-        .bet-panel { background: #111; padding: 12px 15px; border-top: 3px solid var(--gold); z-index: 10; }
+        .bet-panel { background: rgba(17,17,17,0.9); padding: 12px 15px; border-top: 3px solid var(--gold); z-index: 10; backdrop-filter: blur(10px); }
         .quick-chips { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .chip { background: #2a2a2a; color: var(--gold); border: 1px solid var(--gold); padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; flex: 1; margin: 0 3px; cursor: pointer; }
+        .chip { background: #2a2a2a; color: var(--gold); border: 1px solid var(--gold); padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; flex: 1; margin: 0 3px; cursor: pointer; text-align: center; }
         .chip.clear-btn { background: #8b0000; color: white; border: 1px solid #ff4d4d; }
         .input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .bet-input-group { display: flex; align-items: center; width: 50%; }
         .btn-minus, .btn-plus { background: linear-gradient(180deg, #ffd700, #b8860b); color: black; border: 1px solid #8b6508; width: 35px; height: 40px; font-size: 20px; font-weight: bold; border-radius: 5px; cursor: pointer; }
-        input[type="number"] { padding: 8px 0; width: calc(100% - 70px); border: 2px solid #555; border-left: none; border-right: none; background: #222; color: var(--gold); text-align: center; font-size: 18px; font-weight: bold; height: 20px; }
+        input[type="number"] { padding: 8px 0; width: calc(100% - 70px); border: 2px solid #555; border-left: none; border-right: none; background: #222; color: var(--gold); text-align: center; font-size: 18px; font-weight: bold; height: 40px; }
         .payout-box { width: 45%; text-align: right; font-size: 14px; color: #ddd; }
         .payout-amount { color: var(--gold); font-size: 20px; font-weight: bold; display: block; }
-        .place-bet-btn { background: linear-gradient(180deg, #28a745, #1e7e34); color: white; border: 1px solid #145523; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: bold; width: 100%; }
-        .place-bet-btn:disabled { background: #444; color: #888; border-color: #333; }
+        .place-bet-btn { background: linear-gradient(180deg, #28a745, #1e7e34); color: white; border: 1px solid #145523; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: bold; width: 100%; box-shadow: 0 4px 10px rgba(0,0,0,0.6); }
+        .place-bet-btn:disabled { background: #444; color: #888; border-color: #333; box-shadow: none; }
 
-        /* --- HISTORY MODAL CSS --- */
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center;
-        }
-        .modal-content {
-            background: #1a1a1a; width: 90%; max-width: 400px; height: 80%; border-radius: 10px;
-            border: 2px solid var(--gold); display: flex; flex-direction: column; overflow: hidden;
-        }
-        .modal-header {
-            background: #222; padding: 15px; text-align: center; font-size: 18px; font-weight: bold;
-            color: var(--gold); border-bottom: 1px solid #444; position: relative;
-        }
-        .close-btn {
-            position: absolute; right: 15px; top: 12px; background: transparent; border: none;
-            color: white; font-size: 20px; font-weight: bold; cursor: pointer;
-        }
+        /* MODAL */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: #1a1a1a; width: 90%; max-width: 400px; height: 80%; border-radius: 10px; border: 2px solid var(--gold); display: flex; flex-direction: column; overflow: hidden; }
+        .modal-header { background: #222; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; color: var(--gold); border-bottom: 1px solid #444; position: relative; }
+        .close-btn { position: absolute; right: 15px; top: 12px; background: transparent; border: none; color: white; font-size: 20px; font-weight: bold; cursor: pointer; }
         .tab-buttons { display: flex; background: #333; }
-        .tab-btn {
-            flex: 1; padding: 12px; background: #333; color: white; border: none;
-            font-weight: bold; cursor: pointer; font-size: 14px;
-        }
+        .tab-btn { flex: 1; padding: 12px; background: #333; color: white; border: none; font-weight: bold; cursor: pointer; font-size: 14px; }
         .tab-btn.active { background: var(--gold); color: black; }
-        
         .tab-content { flex: 1; padding: 15px; overflow-y: auto; display: none; }
         .tab-content.active { display: block; }
-
-        /* History Tables/Lists */
-        .history-item {
-            background: #2a2a2a; padding: 10px; border-radius: 8px; margin-bottom: 10px;
-            border-left: 4px solid var(--gold); font-size: 13px;
-        }
-        .history-date { color: #aaa; font-size: 11px; margin-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 3px;}
-        .game-draw-row { display: flex; justify-content: space-between; margin-top: 5px; }
-        .game-draw-row span { background: #111; padding: 3px 8px; border-radius: 3px; border: 1px solid #555;}
-        
-        .status-win { color: #28a745; font-weight: bold; }
-        .status-loss { color: #dc3545; font-weight: bold; }
-        .status-pending { color: var(--gold); font-weight: bold; }
-        
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -205,7 +155,11 @@
         <button class="history-btn" onclick="openHistory()">📜 HISTORY</button>
     </div>
 
-    <!-- Scrolling Guide -->
+    <div class="wallet-header">
+        <div class="wallet-bal">💰 ₹<span id="wallet-display">0.00</span></div>
+        <div class="user-id">ID: <span id="user-id-display">Guest</span></div>
+    </div>
+
     <div class="marquee-container">
         <span class="marquee-text">
             🎲 BHARAT VIP MATKA MEIN AAPKA SWAGAT HAI! 🎲 GAME RULES: Din mein 4 draw hote hain. Payouts 💰: 1 Patta = ₹3,000 | 2 Patte = ₹8,000 | 3 Patte = ₹19,000 | 4 Patte = ₹35,000.
@@ -213,16 +167,20 @@
     </div>
 
     <div class="results-container">
-        <div class="slot"><small>2:00 PM</small><div class="slot-card" id="res-14">?</div></div>
-        <div class="slot"><small>4:00 PM</small><div class="slot-card" id="res-16">?</div></div>
-        <div class="slot"><small>6:00 PM</small><div class="slot-card" id="res-18">?</div></div>
-        <div class="slot"><small>8:00 PM</small><div class="slot-card" id="res-20">?</div></div>
+        <div class="slot" id="slot-14"><small>2:00 PM</small><div class="slot-card" id="res-14">?</div></div>
+        <div class="slot" id="slot-16"><small>4:00 PM</small><div class="slot-card" id="res-16">?</div></div>
+        <div class="slot" id="slot-18"><small>6:00 PM</small><div class="slot-card" id="res-18">?</div></div>
+        <div class="slot" id="slot-20"><small>8:00 PM</small><div class="slot-card" id="res-20">?</div></div>
     </div>
 
-    <div class="limit-msg" id="selection-limit-msg">Select Cards</div>
+    <div class="live-pool-box">
+        <span class="live-pool-text">🔥 CURRENT DRAW LIVE POOL 🔥</span>
+        <span class="live-pool-amount">₹ <span id="pool-amount-display">1,45,500</span></span>
+    </div>
+
+    <div class="limit-msg" id="selection-limit-msg">Loading Rules...</div>
     
     <div class="deck-container">
-        <!-- Black Cards -->
         <div class="half-deck">
             <div class="section-title title-black">BLACK (♠ ♣)</div>
             <div class="suit-columns-wrapper">
@@ -230,7 +188,6 @@
                 <div class="suit-column" id="col-clubs"></div>  
             </div>
         </div>
-        <!-- Red Cards -->
         <div class="half-deck">
             <div class="section-title title-red">RED (♥ ♦)</div>
             <div class="suit-columns-wrapper">
@@ -240,20 +197,19 @@
         </div>
     </div>
 
-    <!-- BET PANEL -->
     <div class="bet-panel">
         <div class="quick-chips">
-            <button class="chip" onclick="adjustBet(100)">+100</button>
-            <button class="chip" onclick="adjustBet(500)">+500</button>
-            <button class="chip" onclick="adjustBet(1000)">+1K</button>
-            <button class="chip" onclick="adjustBet(5000)">+5K</button>
-            <button class="chip clear-btn" onclick="clearBet()">CLEAR</button>
+            <div class="chip" onclick="adjustBet(100)">+100</div>
+            <div class="chip" onclick="adjustBet(500)">+500</div>
+            <div class="chip" onclick="adjustBet(1000)">+1K</div>
+            <div class="chip" onclick="adjustBet(5000)">+5K</div>
+            <div class="chip clear-btn" onclick="clearBet()">CLEAR</div>
         </div>
 
         <div class="input-row">
             <div class="bet-input-group">
                 <button class="btn-minus" onclick="adjustBet(-100)">-</button>
-                <input type="number" id="betAmount" min="100" value="100">
+                <input type="number" id="betAmount" min="100" value="100" readonly>
                 <button class="btn-plus" onclick="adjustBet(100)">+</button>
             </div>
             <div class="payout-box">
@@ -264,7 +220,6 @@
         <button class="place-bet-btn" id="betBtn" onclick="placeBet()" disabled>PLACE BET (0 Cards)</button>
     </div>
 
-    <!-- HISTORY MODAL -->
     <div class="modal-overlay" id="historyModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -275,89 +230,87 @@
                 <button class="tab-btn active" onclick="switchTab('gameHistory')" id="btn-gameHistory">Game History</button>
                 <button class="tab-btn" onclick="switchTab('playerHistory')" id="btn-playerHistory">My Bets</button>
             </div>
-            
-            <!-- Game History Tab (7 Days Dummy Data) -->
-            <div class="tab-content active" id="gameHistory">
-                <div class="history-item">
-                    <div class="history-date">Yesterday, 10 May 2026</div>
-                    <div class="game-draw-row">
-                        <span>2PM: ♠A</span> <span>4PM: ♥K</span> <span>6PM: ♣10</span> <span>8PM: ♦2</span>
-                    </div>
-                </div>
-                <div class="history-item">
-                    <div class="history-date">09 May 2026</div>
-                    <div class="game-draw-row">
-                        <span>2PM: ♥5</span> <span>4PM: ♠8</span> <span>6PM: ♦Q</span> <span>8PM: ♣3</span>
-                    </div>
-                </div>
-                <div class="history-item">
-                    <div class="history-date">08 May 2026</div>
-                    <div class="game-draw-row">
-                        <span>2PM: ♣J</span> <span>4PM: ♦A</span> <span>6PM: ♠4</span> <span>8PM: ♥9</span>
-                    </div>
-                </div>
-                <div class="history-item">
-                    <div class="history-date">07 May 2026</div>
-                    <div class="game-draw-row">
-                        <span>2PM: ♦K</span> <span>4PM: ♣2</span> <span>6PM: ♥7</span> <span>8PM: ♠10</span>
-                    </div>
-                </div>
-                <div class="history-item" style="text-align: center; color: #888;">
-                    End of 7 Days Record
-                </div>
-            </div>
-
-            <!-- Player History Tab -->
-            <div class="tab-content" id="playerHistory">
-                <div class="history-item">
-                    <div class="history-date">Today, 11:30 AM</div>
-                    <div>Cards: <b>♠A, ♥K</b></div>
-                    <div style="display: flex; justify-content: space-between; margin-top: 5px;">
-                        <span>Bet: ₹500</span> <span class="status-pending">PENDING</span>
-                    </div>
-                </div>
-                <div class="history-item">
-                    <div class="history-date">Yesterday, 10 May 2026</div>
-                    <div>Cards: <b>♣10</b></div>
-                    <div style="display: flex; justify-content: space-between; margin-top: 5px;">
-                        <span>Bet: ₹100</span> <span class="status-win">WIN (+₹3,000)</span>
-                    </div>
-                </div>
-                <div class="history-item">
-                    <div class="history-date">09 May 2026</div>
-                    <div>Cards: <b>♦5, ♠J, ♥2</b></div>
-                    <div style="display: flex; justify-content: space-between; margin-top: 5px;">
-                        <span>Bet: ₹200</span> <span class="status-loss">LOSS</span>
-                    </div>
-                </div>
-            </div>
+            <div class="tab-content active" id="gameHistory"><div style="text-align: center; color: #888; margin-top: 20px;">History updating live from server...</div></div>
+            <div class="tab-content" id="playerHistory"><div style="text-align: center; color: #888; margin-top: 20px;">Place a bet to see your history.</div></div>
         </div>
     </div>
 
 <script>
-    const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-    const payouts = { 1: 3000, 2: 8000, 3: 19000, 4: 35000 };
-    
-    let selectedCards = [];
-    let maxAllowed = 4;
+    var firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    var database = firebase.database();
 
+    let currentUserId = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+    let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
+
+    // 🔥 HIGH BETTING FAKE POOL LOGIC 🔥
+    // Base amount random start hoga taaki real lage
+    let liveFakePool = Math.floor(Math.random() * 50000) + 120000; 
+    
+    // Har 2 se 4 second mein amount automatic badhega
+    setInterval(() => {
+        let randomBetAdd = (Math.floor(Math.random() * 10) + 1) * 500; // 500 se 5000 ke beech add hoga
+        liveFakePool += randomBetAdd;
+        document.getElementById('pool-amount-display').innerText = liveFakePool.toLocaleString('en-IN');
+    }, Math.floor(Math.random() * 2000) + 2000);
+
+    if (currentUserId) {
+        document.getElementById('user-id-display').innerText = currentUserId;
+        database.ref(`users/${currentUserId}`).on('value', (snap) => {
+            const d = snap.val() || {}; 
+            depBal = parseFloat(d.balance || 0); winBal = parseFloat(d.winning_balance || 0); bonBal = parseFloat(d.bonus_balance || 0);
+            userBalance = depBal + winBal + bonBal; 
+            document.getElementById('wallet-display').innerText = userBalance.toLocaleString('en-IN', {minimumFractionDigits: 2});
+        });
+    }
+
+    function fetchVIPHistory() {
+        const slots = [14, 16, 18, 20];
+        slots.forEach(hour => {
+            database.ref(`Game/VIPMatka/History/${hour}`).on('value', (snap) => {
+                const data = snap.val();
+                const slotElem = document.getElementById(`res-${hour}`);
+                if (data && data.winner) {
+                    slotElem.innerText = data.winner;
+                    slotElem.style.color = (data.winner.includes('♥') || data.winner.includes('♦')) ? '#ff4d4d' : '#fff';
+                    document.getElementById(`slot-${hour}`).style.border = "2px solid #39ff14"; 
+                } else { slotElem.innerText = "?"; slotElem.style.color = "#888"; }
+            });
+        });
+    }
+
+    let maxAllowed = 4;
     function updateRulesByTime() {
         const now = new Date();
-        const timeVal = now.getHours() + (now.getMinutes() / 100);
+        const istTime = new Date(now.getTime() + (now.getTimezoneOffset() + 330) * 60000);
+        const hours = istTime.getHours();
+        const mins = istTime.getMinutes();
+        const timeVal = hours + (mins / 100);
 
-        if (timeVal < 14.00) maxAllowed = 4;
-        else if (timeVal < 16.00) maxAllowed = 3;
-        else if (timeVal < 18.00) maxAllowed = 2;
-        else if (timeVal < 20.00) maxAllowed = 1;
-        else maxAllowed = 4;
+        const allSlots = ['slot-14', 'slot-16', 'slot-18', 'slot-20'];
+        allSlots.forEach(id => {
+            if (document.getElementById(id).style.borderColor !== "rgb(57, 255, 20)") {
+                document.getElementById(id).style.background = "rgba(0,0,0,0.7)"; 
+            }
+        });
 
-        document.getElementById('selection-limit-msg').innerText = `Current Limit: Max ${maxAllowed} Cards Allowed`;
+        let currentDraw = "Next Draw Tomorrow";
+        if (timeVal < 14.00) { maxAllowed = 4; document.getElementById('slot-14').style.background = "rgba(57, 255, 20, 0.25)"; currentDraw = "2:00 PM Draw"; } 
+        else if (timeVal < 16.00) { maxAllowed = 3; document.getElementById('slot-16').style.background = "rgba(57, 255, 20, 0.25)"; currentDraw = "4:00 PM Draw"; } 
+        else if (timeVal < 18.00) { maxAllowed = 2; document.getElementById('slot-18').style.background = "rgba(57, 255, 20, 0.25)"; currentDraw = "6:00 PM Draw"; } 
+        else if (timeVal < 20.00) { maxAllowed = 1; document.getElementById('slot-20').style.background = "rgba(57, 255, 20, 0.25)"; currentDraw = "8:00 PM Draw"; } 
+        else { maxAllowed = 4; }
+
+        document.getElementById('selection-limit-msg').innerHTML = `Currently Betting For: <span style="color:#fff;">${currentDraw}</span> | Max <span style="color:#fff;">${maxAllowed}</span> Cards Allowed`;
     }
+
+    const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    const payouts = { 1: 3000, 2: 8000, 3: 19000, 4: 35000 };
+    let selectedCards = [];
 
     function renderSuitColumn(suitIcon, columnId, isRed) {
         const colElement = document.getElementById(columnId);
         const colorClass = isRed ? 'red' : 'black';
-        
         ranks.forEach(rank => {
             const cardDiv = document.createElement('div');
             cardDiv.className = `real-card ${colorClass}`;
@@ -380,7 +333,7 @@
             if (selectedCards.length < maxAllowed) {
                 selectedCards.push(cardCode);
                 cardElement.classList.add('selected');
-            } else { alert(`Aap is waqt max ${maxAllowed} patte hi select kar sakte hain.`); }
+            } else { alert(`Bhai, abhi wale draw mein max ${maxAllowed} patte hi select kar sakte hain!`); }
         }
         updateUI();
     }
@@ -397,7 +350,6 @@
 
     function updateUI() {
         let amount = parseInt(document.getElementById('betAmount').value) || 0;
-        if(amount < 100) amount = 100; 
         const count = selectedCards.length;
         const potential = count > 0 ? (payouts[count] * (amount / 100)) : 0;
         document.getElementById('payoutDisplay').innerText = `₹ ${potential.toLocaleString('en-IN')}`;
@@ -407,17 +359,31 @@
 
     function placeBet() {
         let amount = parseInt(document.getElementById('betAmount').value) || 0;
-        if(amount < 100) { alert("Minimum bet ₹100 hai!"); return; }
-        alert(`BET PLACED SUCCESSFULLY!\nCards: ${selectedCards.join(', ')}\nAmount: ₹${amount}`);
+        if(!currentUserId) return alert("⚠️ Kripya pehle Login karein!");
+        if(userBalance < amount) return alert("⚠️ Wallet mein balance kam hai!");
+        if(selectedCards.length === 0) return alert("⚠️ Kripya patte select karein!");
+
+        let comboKey = selectedCards.join(','); 
+        
+        database.ref(`Game/VIPMatka/Bets/${currentUserId}/${comboKey}`).set(firebase.database.ServerValue.increment(amount));
+
+        let nDep = depBal, nWin = winBal, rem = amount;
+        if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
+        database.ref('users/'+currentUserId).update({ balance: nDep, winning_balance: nWin });
+
+        // 🔥 User ki bet ko bhi Live Pool me add kar do taaki real lage 🔥
+        liveFakePool += amount;
+        document.getElementById('pool-amount-display').innerText = liveFakePool.toLocaleString('en-IN');
+
+        alert(`✅ Bet Placed Successfully!\nCards: ${comboKey}\nAmount Deducted: ₹${amount}`);
+        
         selectedCards = [];
         document.querySelectorAll('.real-card').forEach(b => b.classList.remove('selected'));
         updateUI();
     }
 
-    // --- MODAL FUNCTIONS ---
     function openHistory() { document.getElementById('historyModal').style.display = 'flex'; }
     function closeHistory() { document.getElementById('historyModal').style.display = 'none'; }
-    
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -425,13 +391,13 @@
         document.getElementById('btn-' + tabId).classList.add('active');
     }
 
+    fetchVIPHistory();
     setInterval(() => {
         const now = new Date();
         document.getElementById('timer').innerText = now.toLocaleTimeString();
         updateRulesByTime();
     }, 1000);
 
-    updateRulesByTime();
 </script>
 </body>
 </html>
