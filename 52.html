@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VIP Matka Casino - With History</title>
+    <style>
+        :root {
+            --gold: #ffd700;
+            --casino-green: #0b4a1a;
+            --table-green: #106b26;
+            --card-white: #fdfdfd;
+        }
+
+        body {
+            background: radial-gradient(circle, var(--table-green), var(--casino-green));
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+        }
+
+        /* Colorful Casino Header */
+        .header {
+            background: linear-gradient(90deg, #8b0000, #ff0000, #8b0000);
+            border-bottom: 2px solid var(--gold);
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 10;
+            position: relative;
+        }
+        .header-title {
+            color: var(--gold);
+            font-size: 22px;
+            font-weight: 900;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px #000;
+            margin: 0;
+        }
+        .timer { font-size: 14px; margin-top: 5px; color: white; font-weight: bold;}
+
+        /* HISTORY BUTTON */
+        .history-btn {
+            position: absolute;
+            top: 15px;
+            right: 10px;
+            background: #222;
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        .history-btn:active { transform: scale(0.95); }
+
+        /* Scrolling Guide (Marquee) */
+        .marquee-container {
+            background: #000;
+            color: #fff;
+            padding: 6px 0;
+            font-size: 13px;
+            border-bottom: 2px solid var(--gold);
+            white-space: nowrap;
+            overflow: hidden;
+            z-index: 10;
+        }
+        .marquee-text {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marquee 25s linear infinite;
+            color: var(--gold);
+            font-weight: bold;
+        }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+
+        /* Today's Results */
+        .results-container {
+            display: flex;
+            justify-content: space-evenly;
+            padding: 10px 0;
+            background: rgba(0, 0, 0, 0.4);
+            border-bottom: 2px solid #555;
+            z-index: 10;
+        }
+        .slot {
+            width: 65px;
+            height: 85px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px dashed var(--gold);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .slot small { font-size: 11px; color: #ddd; }
+        .slot-card { font-size: 24px; font-weight: bold; margin-top: 2px; }
+
+        .limit-msg { text-align: center; color: var(--gold); font-size: 14px; margin: 5px 0; font-weight: bold; }
+
+        /* Scrollable Deck Area */
+        .deck-container {
+            flex: 1; 
+            display: flex;
+            gap: 10px;
+            padding: 5px 10px;
+            overflow-y: auto; 
+            padding-bottom: 20px;
+        }
+        .half-deck { flex: 1; display: flex; flex-direction: column; }
+        .section-title {
+            text-align: center; font-weight: bold; font-size: 16px; padding: 8px;
+            background: rgba(0,0,0,0.7); border-radius: 5px; margin-bottom: 10px;
+            position: sticky; top: 0; z-index: 5;
+        }
+        .title-black { color: #fff; border-bottom: 2px solid #aaa; }
+        .title-red { color: #ff4d4d; border-bottom: 2px solid #ff4d4d; }
+
+        .suit-columns-wrapper { display: flex; gap: 8px; justify-content: space-between; }
+        .suit-column { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+
+        /* REALISTIC CARD DESIGN */
+        .real-card {
+            background: var(--card-white); border-radius: 6px; height: 90px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 4px; box-shadow: 2px 2px 6px rgba(0,0,0,0.6); cursor: pointer; position: relative;
+        }
+        .real-card.black { color: #000; }
+        .real-card.red { color: #d60000; }
+        .card-corner { font-size: 14px; font-weight: bold; line-height: 1.1; text-align: left; }
+        .card-center { font-size: 32px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .real-card.selected { background: #fff8dc; border: 3px solid var(--gold); transform: translateY(-5px) scale(1.05); box-shadow: 0 0 15px var(--gold); z-index: 2; }
+
+        /* BET PANEL */
+        .bet-panel { background: #111; padding: 12px 15px; border-top: 3px solid var(--gold); z-index: 10; }
+        .quick-chips { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .chip { background: #2a2a2a; color: var(--gold); border: 1px solid var(--gold); padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; flex: 1; margin: 0 3px; cursor: pointer; }
+        .chip.clear-btn { background: #8b0000; color: white; border: 1px solid #ff4d4d; }
+        .input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .bet-input-group { display: flex; align-items: center; width: 50%; }
+        .btn-minus, .btn-plus { background: linear-gradient(180deg, #ffd700, #b8860b); color: black; border: 1px solid #8b6508; width: 35px; height: 40px; font-size: 20px; font-weight: bold; border-radius: 5px; cursor: pointer; }
+        input[type="number"] { padding: 8px 0; width: calc(100% - 70px); border: 2px solid #555; border-left: none; border-right: none; background: #222; color: var(--gold); text-align: center; font-size: 18px; font-weight: bold; height: 20px; }
+        .payout-box { width: 45%; text-align: right; font-size: 14px; color: #ddd; }
+        .payout-amount { color: var(--gold); font-size: 20px; font-weight: bold; display: block; }
+        .place-bet-btn { background: linear-gradient(180deg, #28a745, #1e7e34); color: white; border: 1px solid #145523; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: bold; width: 100%; }
+        .place-bet-btn:disabled { background: #444; color: #888; border-color: #333; }
+
+        /* --- HISTORY MODAL CSS --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #1a1a1a; width: 90%; max-width: 400px; height: 80%; border-radius: 10px;
+            border: 2px solid var(--gold); display: flex; flex-direction: column; overflow: hidden;
+        }
+        .modal-header {
+            background: #222; padding: 15px; text-align: center; font-size: 18px; font-weight: bold;
+            color: var(--gold); border-bottom: 1px solid #444; position: relative;
+        }
+        .close-btn {
+            position: absolute; right: 15px; top: 12px; background: transparent; border: none;
+            color: white; font-size: 20px; font-weight: bold; cursor: pointer;
+        }
+        .tab-buttons { display: flex; background: #333; }
+        .tab-btn {
+            flex: 1; padding: 12px; background: #333; color: white; border: none;
+            font-weight: bold; cursor: pointer; font-size: 14px;
+        }
+        .tab-btn.active { background: var(--gold); color: black; }
+        
+        .tab-content { flex: 1; padding: 15px; overflow-y: auto; display: none; }
+        .tab-content.active { display: block; }
+
+        /* History Tables/Lists */
+        .history-item {
+            background: #2a2a2a; padding: 10px; border-radius: 8px; margin-bottom: 10px;
+            border-left: 4px solid var(--gold); font-size: 13px;
+        }
+        .history-date { color: #aaa; font-size: 11px; margin-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 3px;}
+        .game-draw-row { display: flex; justify-content: space-between; margin-top: 5px; }
+        .game-draw-row span { background: #111; padding: 3px 8px; border-radius: 3px; border: 1px solid #555;}
+        
+        .status-win { color: #28a745; font-weight: bold; }
+        .status-loss { color: #dc3545; font-weight: bold; }
+        .status-pending { color: var(--gold); font-weight: bold; }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1 class="header-title">Bharat VIP Matka</h1>
+        <div class="timer" id="timer">Loading time...</div>
+        <button class="history-btn" onclick="openHistory()">📜 HISTORY</button>
+    </div>
+
+    <!-- Scrolling Guide -->
+    <div class="marquee-container">
+        <span class="marquee-text">
+            🎲 BHARAT VIP MATKA MEIN AAPKA SWAGAT HAI! 🎲 GAME RULES: Din mein 4 draw hote hain. Payouts 💰: 1 Patta = ₹3,000 | 2 Patte = ₹8,000 | 3 Patte = ₹19,000 | 4 Patte = ₹35,000.
+        </span>
+    </div>
+
+    <div class="results-container">
+        <div class="slot"><small>2:00 PM</small><div class="slot-card" id="res-14">?</div></div>
+        <div class="slot"><small>4:00 PM</small><div class="slot-card" id="res-16">?</div></div>
+        <div class="slot"><small>6:00 PM</small><div class="slot-card" id="res-18">?</div></div>
+        <div class="slot"><small>8:00 PM</small><div class="slot-card" id="res-20">?</div></div>
+    </div>
+
+    <div class="limit-msg" id="selection-limit-msg">Select Cards</div>
+    
+    <div class="deck-container">
+        <!-- Black Cards -->
+        <div class="half-deck">
+            <div class="section-title title-black">BLACK (♠ ♣)</div>
+            <div class="suit-columns-wrapper">
+                <div class="suit-column" id="col-spades"></div> 
+                <div class="suit-column" id="col-clubs"></div>  
+            </div>
+        </div>
+        <!-- Red Cards -->
+        <div class="half-deck">
+            <div class="section-title title-red">RED (♥ ♦)</div>
+            <div class="suit-columns-wrapper">
+                <div class="suit-column" id="col-hearts"></div> 
+                <div class="suit-column" id="col-diamonds"></div> 
+            </div>
+        </div>
+    </div>
+
+    <!-- BET PANEL -->
+    <div class="bet-panel">
+        <div class="quick-chips">
+            <button class="chip" onclick="adjustBet(100)">+100</button>
+            <button class="chip" onclick="adjustBet(500)">+500</button>
+            <button class="chip" onclick="adjustBet(1000)">+1K</button>
+            <button class="chip" onclick="adjustBet(5000)">+5K</button>
+            <button class="chip clear-btn" onclick="clearBet()">CLEAR</button>
+        </div>
+
+        <div class="input-row">
+            <div class="bet-input-group">
+                <button class="btn-minus" onclick="adjustBet(-100)">-</button>
+                <input type="number" id="betAmount" min="100" value="100">
+                <button class="btn-plus" onclick="adjustBet(100)">+</button>
+            </div>
+            <div class="payout-box">
+                Win Amount: 
+                <span class="payout-amount" id="payoutDisplay">₹ 0</span>
+            </div>
+        </div>
+        <button class="place-bet-btn" id="betBtn" onclick="placeBet()" disabled>PLACE BET (0 Cards)</button>
+    </div>
+
+    <!-- HISTORY MODAL -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                RECORDS & HISTORY
+                <button class="close-btn" onclick="closeHistory()">✕</button>
+            </div>
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchTab('gameHistory')" id="btn-gameHistory">Game History</button>
+                <button class="tab-btn" onclick="switchTab('playerHistory')" id="btn-playerHistory">My Bets</button>
+            </div>
+            
+            <!-- Game History Tab (7 Days Dummy Data) -->
+            <div class="tab-content active" id="gameHistory">
+                <div class="history-item">
+                    <div class="history-date">Yesterday, 10 May 2026</div>
+                    <div class="game-draw-row">
+                        <span>2PM: ♠A</span> <span>4PM: ♥K</span> <span>6PM: ♣10</span> <span>8PM: ♦2</span>
+                    </div>
+                </div>
+                <div class="history-item">
+                    <div class="history-date">09 May 2026</div>
+                    <div class="game-draw-row">
+                        <span>2PM: ♥5</span> <span>4PM: ♠8</span> <span>6PM: ♦Q</span> <span>8PM: ♣3</span>
+                    </div>
+                </div>
+                <div class="history-item">
+                    <div class="history-date">08 May 2026</div>
+                    <div class="game-draw-row">
+                        <span>2PM: ♣J</span> <span>4PM: ♦A</span> <span>6PM: ♠4</span> <span>8PM: ♥9</span>
+                    </div>
+                </div>
+                <div class="history-item">
+                    <div class="history-date">07 May 2026</div>
+                    <div class="game-draw-row">
+                        <span>2PM: ♦K</span> <span>4PM: ♣2</span> <span>6PM: ♥7</span> <span>8PM: ♠10</span>
+                    </div>
+                </div>
+                <div class="history-item" style="text-align: center; color: #888;">
+                    End of 7 Days Record
+                </div>
+            </div>
+
+            <!-- Player History Tab -->
+            <div class="tab-content" id="playerHistory">
+                <div class="history-item">
+                    <div class="history-date">Today, 11:30 AM</div>
+                    <div>Cards: <b>♠A, ♥K</b></div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                        <span>Bet: ₹500</span> <span class="status-pending">PENDING</span>
+                    </div>
+                </div>
+                <div class="history-item">
+                    <div class="history-date">Yesterday, 10 May 2026</div>
+                    <div>Cards: <b>♣10</b></div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                        <span>Bet: ₹100</span> <span class="status-win">WIN (+₹3,000)</span>
+                    </div>
+                </div>
+                <div class="history-item">
+                    <div class="history-date">09 May 2026</div>
+                    <div>Cards: <b>♦5, ♠J, ♥2</b></div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                        <span>Bet: ₹200</span> <span class="status-loss">LOSS</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    const payouts = { 1: 3000, 2: 8000, 3: 19000, 4: 35000 };
+    
+    let selectedCards = [];
+    let maxAllowed = 4;
+
+    function updateRulesByTime() {
+        const now = new Date();
+        const timeVal = now.getHours() + (now.getMinutes() / 100);
+
+        if (timeVal < 14.00) maxAllowed = 4;
+        else if (timeVal < 16.00) maxAllowed = 3;
+        else if (timeVal < 18.00) maxAllowed = 2;
+        else if (timeVal < 20.00) maxAllowed = 1;
+        else maxAllowed = 4;
+
+        document.getElementById('selection-limit-msg').innerText = `Current Limit: Max ${maxAllowed} Cards Allowed`;
+    }
+
+    function renderSuitColumn(suitIcon, columnId, isRed) {
+        const colElement = document.getElementById(columnId);
+        const colorClass = isRed ? 'red' : 'black';
+        
+        ranks.forEach(rank => {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = `real-card ${colorClass}`;
+            cardDiv.onclick = () => toggleCard(cardDiv, suitIcon + rank);
+            cardDiv.innerHTML = `<div class="card-corner">${rank}<br>${suitIcon}</div><div class="card-center">${suitIcon}</div>`;
+            colElement.appendChild(cardDiv);
+        });
+    }
+
+    renderSuitColumn('♠', 'col-spades', false);
+    renderSuitColumn('♣', 'col-clubs', false);
+    renderSuitColumn('♥', 'col-hearts', true);
+    renderSuitColumn('♦', 'col-diamonds', true);
+
+    function toggleCard(cardElement, cardCode) {
+        if (selectedCards.includes(cardCode)) {
+            selectedCards = selectedCards.filter(c => c !== cardCode);
+            cardElement.classList.remove('selected');
+        } else {
+            if (selectedCards.length < maxAllowed) {
+                selectedCards.push(cardCode);
+                cardElement.classList.add('selected');
+            } else { alert(`Aap is waqt max ${maxAllowed} patte hi select kar sakte hain.`); }
+        }
+        updateUI();
+    }
+
+    function adjustBet(amount) {
+        let betInput = document.getElementById('betAmount');
+        let newVal = (parseInt(betInput.value) || 0) + amount;
+        if (newVal < 100) newVal = 100;
+        betInput.value = newVal;
+        updateUI();
+    }
+
+    function clearBet() { document.getElementById('betAmount').value = 100; updateUI(); }
+
+    function updateUI() {
+        let amount = parseInt(document.getElementById('betAmount').value) || 0;
+        if(amount < 100) amount = 100; 
+        const count = selectedCards.length;
+        const potential = count > 0 ? (payouts[count] * (amount / 100)) : 0;
+        document.getElementById('payoutDisplay').innerText = `₹ ${potential.toLocaleString('en-IN')}`;
+        document.getElementById('betBtn').innerText = `PLACE BET (${count} Cards)`;
+        document.getElementById('betBtn').disabled = (count === 0 || amount < 100);
+    }
+
+    function placeBet() {
+        let amount = parseInt(document.getElementById('betAmount').value) || 0;
+        if(amount < 100) { alert("Minimum bet ₹100 hai!"); return; }
+        alert(`BET PLACED SUCCESSFULLY!\nCards: ${selectedCards.join(', ')}\nAmount: ₹${amount}`);
+        selectedCards = [];
+        document.querySelectorAll('.real-card').forEach(b => b.classList.remove('selected'));
+        updateUI();
+    }
+
+    // --- MODAL FUNCTIONS ---
+    function openHistory() { document.getElementById('historyModal').style.display = 'flex'; }
+    function closeHistory() { document.getElementById('historyModal').style.display = 'none'; }
+    
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        document.getElementById('btn-' + tabId).classList.add('active');
+    }
+
+    setInterval(() => {
+        const now = new Date();
+        document.getElementById('timer').innerText = now.toLocaleTimeString();
+        updateRulesByTime();
+    }, 1000);
+
+    updateRulesByTime();
+</script>
+</body>
+</html>
