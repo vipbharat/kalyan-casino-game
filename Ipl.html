@@ -259,22 +259,16 @@
     document.getElementById('mybet-l2').innerText = "₹" + (parseInt(localStorage.getItem('bet_live-t2')) || 0);
 
     function playSound(audioId, vol) {
-        try {
-            let snd = document.getElementById(audioId).cloneNode();
-            snd.volume = vol;
-            snd.play().catch(e=>{});
-        } catch(e){}
+        try { let snd = document.getElementById(audioId).cloneNode(); snd.volume = vol; snd.play().catch(e=>{}); } catch(e){}
     }
 
     function loadBalanceData(p) {
         db.ref('users/' + p).on('value', snap => {
             const d = snap.val() || {};
             document.getElementById('player-id-display').innerText = "ID: " + (d.playerId || "KP" + String(p).slice(-4));
-            
             depBal = parseFloat(d.balance || 0);
             winBal = parseFloat(d.winning_balance || 0);
             bonBal = parseFloat(d.bonus_balance || 0);
-            
             totalBal = Math.max(0, depBal + winBal + bonBal);
             document.getElementById('wallet-bal').innerText = totalBal.toFixed(2);
         });
@@ -317,30 +311,21 @@
         if(type === 'live') {
             fakePools['live-t1'] = 15000 + Math.floor(Math.random()*5000);
             fakePools['live-t2'] = 15000 + Math.floor(Math.random()*5000);
-        } else if (type === 'all') {
-            fakePools = {}; initFakePools();
-        }
+        } else if (type === 'all') { fakePools = {}; initFakePools(); }
         localStorage.setItem('vip_fake_pools', JSON.stringify(fakePools));
     }
 
     db.ref('.info/serverTimeOffset').on('value', snap => { serverOffset = snap.val() || 0; });
     window.resultShown = false; 
 
-    // 🔥 FIX: DYNAMICALLY UPDATE MAIN SCREEN CARDS TO MATCH SCHEDULE 🔥
     function updateLiveMatchUI(matchNo) {
         let t1 = teams[(matchNo - 1) % 10];
         let t2 = teams[(matchNo + 4) % 10];
-
-        // Names
         ['name-t1','l-name-t1', 's-name-t1'].forEach(id => { let e = document.getElementById(id); if(e) e.innerText = t1; });
         ['name-t2','l-name-t2', 's-name-t2'].forEach(id => { let e = document.getElementById(id); if(e) e.innerText = t2; });
-
-        // Logos
-        let logo1 = document.getElementById('logo-t1');
-        let logo2 = document.getElementById('logo-t2');
+        let logo1 = document.getElementById('logo-t1'), logo2 = document.getElementById('logo-t2');
         if(logo1) logo1.src = teamLogos[t1] || "assets/IPL_team_5001.png";
         if(logo2) logo2.src = teamLogos[t2] || "assets/IPL_team_5006.png";
-
         generateSchedule(); 
     }
 
@@ -364,20 +349,18 @@
             currentMatchNoGlobal = 1; 
             document.getElementById('match-no-display').innerText = "1";
             document.getElementById('timer').innerText = "10:00 AM";
-            
-            updateLiveMatchUI(currentMatchNoGlobal); // Sync to Match 1
+            updateLiveMatchUI(currentMatchNoGlobal); 
 
             document.getElementById('champ-lock').style.display = 'none';
             document.getElementById('semi-lock').style.display = 'none';
             document.getElementById('combo-lock').style.display = 'none';
-
             growFakePools(); generatePointsTable(0); 
         } else {
             window.isGameLocked = false;
             currentMatchNoGlobal = newMatchNo;
             document.getElementById('match-no-display').innerText = currentMatchNoGlobal;
 
-            updateLiveMatchUI(currentMatchNoGlobal); // Auto Sync with active match!
+            updateLiveMatchUI(currentMatchNoGlobal);
 
             if(currentMatchNoGlobal > rules.champLock) document.getElementById('champ-lock').style.display = 'flex'; else document.getElementById('champ-lock').style.display = 'none';
             if(currentMatchNoGlobal > rules.semiLock) { document.getElementById('semi-lock').style.display = 'flex'; document.getElementById('combo-lock').style.display = 'flex'; }
@@ -413,7 +396,7 @@
         document.getElementById('schedule-list').innerHTML = listHTML;
     }
 
-    // 🔥 REAL ADMIN SIKANDAR PROFIT LOGIC 🔥
+    // 🔥 100% SECURE CARD REVEAL (SYNCED WITH SERVER) 🔥
     function showCardReveal() {
         let t1Name = document.getElementById('name-t1').innerText;
         let t2Name = document.getElementById('name-t2').innerText;
@@ -425,26 +408,14 @@
         c2Box.innerHTML = "?"; c2Box.classList.remove('opened');
         document.getElementById('match-result-popup').style.display = "flex";
 
-        db.ref('Game/IPL_Match/Bets').once('value', snap => {
-            let allBets = snap.val() || {};
-            let totalT1 = 0, totalT2 = 0;
+        db.ref('Game/IPL_Match/LiveResult').once('value', snap => {
+            let data = snap.val() || {};
+            let t1Wins = data.winner === 'live-t1'; 
             
-            for(let p in allBets) {
-                totalT1 += (allBets[p]['live-t1'] || 0);
-                totalT2 += (allBets[p]['live-t2'] || 0);
-            }
-            
-            let t1Wins;
-            // Jis team par paisa KAM hai, wo jitegi
-            if (totalT1 > totalT2) t1Wins = false; 
-            else if (totalT2 > totalT1) t1Wins = true;
-            else t1Wins = Math.random() > 0.5;
-
             const suits = [{s:'♠️', c:'#000'}, {s:'♥️', c:'#ff3333'}, {s:'♣️', c:'#000'}, {s:'♦️', c:'#ff3333'}];
             const vals = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
             let winIdx = Math.floor(Math.random()*4)+9; 
             let loseIdx = Math.floor(Math.random()*7); 
-            
             let s1 = suits[Math.floor(Math.random()*4)], s2 = suits[Math.floor(Math.random()*4)];
 
             setTimeout(() => { c1Box.classList.add('opened'); c1Box.innerHTML = `<span style="color:${s1.c}">${s1.s}<br>${vals[t1Wins ? winIdx : loseIdx]}</span>`; }, 1000);
@@ -453,11 +424,11 @@
             setTimeout(() => {
                 let myBetT1 = parseInt(localStorage.getItem('bet_live-t1')) || 0;
                 let myBetT2 = parseInt(localStorage.getItem('bet_live-t2')) || 0;
-                let winAmt = t1Wins && myBetT1 > 0 ? myBetT1 * 1.95 : (!t1Wins && myBetT2 > 0 ? myBetT2 * 1.95 : 0);
+                let grossWin = t1Wins && myBetT1 > 0 ? myBetT1 * 1.95 : (!t1Wins && myBetT2 > 0 ? myBetT2 * 1.95 : 0);
                 
-                if(winAmt > 0 && userPhone) {
-                    db.ref('users/'+userPhone+'/winning_balance').set(winBal + winAmt);
-                    document.getElementById('win-loss-msg').innerHTML = `🎉 WON ₹${winAmt.toFixed(2)}`;
+                if(grossWin > 0 && userPhone) {
+                    let netWin = grossWin - (grossWin * 0.05); // Display net win
+                    document.getElementById('win-loss-msg').innerHTML = `🎉 WON ₹${netWin.toFixed(2)}`;
                     document.getElementById('win-loss-msg').style.color = "var(--green)";
                 } else if(myBetT1+myBetT2 > 0) { 
                     document.getElementById('win-loss-msg').innerHTML = "😢 LOST!"; 
@@ -472,11 +443,6 @@
                 document.getElementById('match-result-popup').style.display = "none"; 
                 localStorage.setItem('bet_live-t1', 0); localStorage.setItem('bet_live-t2', 0);
                 document.getElementById('mybet-l1').innerText="₹0"; document.getElementById('mybet-l2').innerText="₹0"; 
-                
-                if(userPhone && userPhone !== "Guest") {
-                    db.ref('Game/IPL_Match/Bets/' + userPhone + '/live-t1').remove();
-                    db.ref('Game/IPL_Match/Bets/' + userPhone + '/live-t2').remove();
-                }
             }, 6500);
         });
     }
@@ -524,16 +490,11 @@
         if(window.isGameLocked && !id.startsWith('live-')) return alert("System is setting up matches. Please wait!");
         if(!userPhone || userPhone === "Guest") return alert("Pehle login karein!");
 
-        pendingBet.id = id;
-        pendingBet.type = type;
-        pendingBet.team = team;
-        pendingBet.amount = 50; 
-
+        pendingBet.id = id; pendingBet.type = type; pendingBet.team = team; pendingBet.amount = 50; 
         document.getElementById('bet-team-name').innerText = team;
         
         document.querySelectorAll('.amt-btn').forEach(btn => btn.classList.remove('selected'));
         document.querySelectorAll('.amt-btn')[0].classList.add('selected');
-
         document.getElementById('bet-amount-modal').style.display = 'flex';
     }
 
@@ -554,13 +515,9 @@
         let nDep = depBal, nWin = winBal;
         if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
         
-        // 1. Update Wallet instantly
         db.ref('users/'+userPhone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
-
-        // 2. Register Bet
         db.ref(`Game/IPL_Match/Bets/${userPhone}/${pendingBet.id}`).set(firebase.database.ServerValue.increment(pendingBet.amount));
 
-        // 3. Update Screen locally instantly
         let id = pendingBet.id;
         if(id.startsWith('live-')) {
             let betKey = 'bet_' + id;
@@ -584,7 +541,6 @@
         if(window.isGameLocked) return alert("⚠️ Combo is locked right now.");
         let t1 = document.getElementById('teamA').value, t2 = document.getElementById('teamB').value;
         if(t1 === t2) return alert("⚠️ Dono teams alag-alag honi chahiye!");
-        
         openBetModal(type, type, t1 + " & " + t2);
     }
 
