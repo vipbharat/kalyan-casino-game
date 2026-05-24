@@ -2,7 +2,7 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kalyan Pro - Ultra VIP Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -11,16 +11,36 @@
         body { 
             background: radial-gradient(circle at top, #2a2a35, var(--bg-dark) 80%); 
             color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; padding-bottom: 80px; overflow-y: auto; overflow-x: hidden;
+            margin: 0; 
+            height: 100vh; /* NAYA: Full screen height lock */
+            overflow: hidden; /* NAYA: Main page ka scroll band */
+            display: flex; 
+            flex-direction: column;
+        }
+
+        /* 🔥 NAYA: Upar ka hissa jo fixed rahega 🔥 */
+        .top-sticky-bar {
+            flex-shrink: 0; 
+            background: rgba(15, 15, 19, 0.95);
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+        }
+
+        /* 🔥 NAYA: Sirf ye dabba scroll hoga 🔥 */
+        .games-scroll-area {
+            flex: 1; /* Bachi hui saari jagah lega */
+            overflow-y: auto; /* Scroll sirf yahan hoga */
+            padding-top: 15px;
+            padding-bottom: 80px;
             scroll-behavior: smooth;
         }
+        /* Scrollbar chhupane ke liye (clean look) */
+        .games-scroll-area::-webkit-scrollbar { display: none; }
 
         /* 👑 Header */
         .header { 
-            background: rgba(15, 15, 19, 0.9); backdrop-filter: blur(10px);
             padding: 15px 20px; border-bottom: 2px solid var(--gold); 
             display: flex; justify-content: space-between; align-items: center; 
-            position: sticky; top: 0; z-index: 100;
             box-shadow: 0 4px 15px rgba(255, 215, 0, 0.15);
         }
         .header-title { font-weight: 900; font-size: 20px; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
@@ -34,11 +54,11 @@
         #admin-notice { 
             background: linear-gradient(to right, #800, #d00, #800); 
             color: #fff; font-size: 13px; padding: 10px; border-bottom: 2px solid var(--gold); 
-            display: block; font-weight: bold; letter-spacing: 1px; text-shadow: 1px 1px 2px #000;
+            display: block; font-weight: bold; letter-spacing: 1px; text-shadow: 1px 1px 2px #000; margin: 0;
         }
 
         /* 🔘 Action Grid */
-        .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 20px 15px; background: rgba(0,0,0,0.3); }
+        .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 15px 15px; background: rgba(0,0,0,0.5); }
         .action-btn { text-align: center; font-size: 11px; cursor: pointer; color: #ddd; font-weight: 600; transition: transform 0.2s; }
         .action-btn:active { transform: scale(0.9); }
         .action-btn i { display: flex; align-items: center; justify-content: center; width: 45px; height: 45px; margin: 0 auto 6px; background: linear-gradient(145deg, #333, #111); border-radius: 50%; border: 1.5px solid var(--gold); font-size: 20px; color: var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 0 8px rgba(255,215,0,0.2); }
@@ -53,7 +73,7 @@
         .join-btn { width: 100%; background: linear-gradient(90deg, #00ff88, #00d2d3); color: #000; border: none; padding: 12px; border-radius: 6px; font-weight: 900; font-size: 16px; cursor: pointer; text-transform: uppercase; }
         
         /* 🎯 Game Cards */
-        .section-title { padding: 10px 15px; color: #fff; font-weight: 900; text-transform: uppercase; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+        .section-title { padding: 10px 15px; color: #fff; font-weight: 900; text-transform: uppercase; font-size: 16px; display: flex; align-items: center; gap: 8px; margin-bottom: 5px;}
         .section-title::before { content: ""; display: block; width: 4px; height: 18px; background: var(--gold); border-radius: 2px; }
         
         .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 15px 15px; }
@@ -77,7 +97,7 @@
         .play-now { background: linear-gradient(135deg, #ff004c, #ff0022); color: #fff; border: 1px solid #ff88a0; padding: 6px; border-radius: 6px; font-weight: 900; width: 100%; font-size: 11px; cursor: pointer; text-transform: uppercase; }
 
         /* Jackpot Toast */
-        #jackpot-toast { position: fixed; bottom: 110px; left: -120%; background: linear-gradient(135deg, #050505, #1a1a2e); padding: 10px 20px; border-radius: 0 40px 40px 0; display: flex; align-items: center; gap: 12px; z-index: 10000; border: 2.5px solid #ffd700; border-left: none; transition: 0.5s; box-shadow: 0 5px 15px rgba(0,0,0,0.8); }
+        #jackpot-toast { position: fixed; bottom: 30px; left: -120%; background: linear-gradient(135deg, #050505, #1a1a2e); padding: 10px 20px; border-radius: 0 40px 40px 0; display: flex; align-items: center; gap: 12px; z-index: 10000; border: 2.5px solid #ffd700; border-left: none; transition: 0.5s; box-shadow: 0 5px 15px rgba(0,0,0,0.8); }
         .toast-visible { left: 0 !important; }
         .jackpot-header { font-size: 10px; font-weight: 900; color: #ff00ff; text-transform: uppercase; }
         #jackpot-text { font-size: 14px; color: #fff; font-weight: bold; margin-top: 1px; }
@@ -86,175 +106,188 @@
 </head>
 <body>
 
-    <div class="header">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div onclick="window.location.href='profile.html'" style="cursor: pointer;">
-                <img id="user-header-pic" src="https://via.placeholder.com/45" alt="Profile" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover;">
+    <div class="top-sticky-bar">
+        <div class="header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div onclick="window.location.href='profile.html'" style="cursor: pointer;">
+                    <img id="user-header-pic" src="https://via.placeholder.com/45" alt="Profile" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover; flex-shrink: 0; background: #222;">
+                </div>
+                <div>
+                    <div class="header-title">KALYAN <span style="color: var(--gold);">PRO</span></div>
+                    <div id="player-id-display" style="font-size: 11px; color: #bbb; font-weight: 600; margin-top: 2px;">ID: Loading...</div>
+                </div>
             </div>
-            <div>
-                <div class="header-title">KALYAN <span style="color: var(--gold);">PRO</span></div>
-                <div id="player-id-display" style="font-size: 11px; color: #bbb; font-weight: 600; margin-top: 2px;">ID: Loading...</div>
-            </div>
+            <div class="balance-card">₹ <span id="balance">0.00</span></div>
         </div>
-        <div class="balance-card">₹ <span id="balance">0.00</span></div>
-    </div>
 
-    <marquee id="admin-notice">🏆 WELCOME TO KALYAN ULTRA VIP - INDIA'S NO.1 TRUSTED CASINO PLATFORM! 🏆</marquee>
+        <marquee id="admin-notice">🏆 WELCOME TO KALYAN ULTRA VIP - INDIA'S NO.1 TRUSTED CASINO PLATFORM! 🏆</marquee>
 
-    <div class="action-grid">
-        <div class="action-btn" onclick="nav('deposit')"><i class="fa-solid fa-wallet" style="color:#00ff88;"></i>DEPOSIT</div>
-        <div class="action-btn" onclick="nav('withdraw')"><i class="fa-solid fa-building-columns" style="color:#ff3333;"></i>WITHDRAW</div>
-        <div class="action-btn" onclick="nav('history')"><i class="fa-solid fa-clock-rotate-left" style="color:#00d2d3;"></i>HISTORY</div>
-        <div class="action-btn" onclick="shareReferral()"><i class="fa-solid fa-users" style="color:#ff9ff3;"></i>REFER</div>
-        <div class="action-btn" onclick="nav('support')"><i class="fa-solid fa-headset" style="color:#feca57;"></i>SUPPORT</div>
-        <div class="action-btn" onclick="location.reload()"><i class="fa-solid fa-sync" style="color:#48dbfb;"></i>REFRESH</div>
-        <div class="action-btn" onclick="nav('offer')"><i class="fa-solid fa-gift" style="color:#ff4757;"></i>OFFERS</div>
-        <div class="action-btn" onclick="nav('rules')"><i class="fa-solid fa-file-contract" style="color:#2ed573;"></i>RULES</div>
-    </div>
-
-    <div class="fantasy-banner" onclick="window.location.href='Matches.html'">
-        <div class="banner-header">
-            <span class="live-tag"><i class="fa-solid fa-circle fa-fade"></i> LIVE</span>
-            <span style="float: right; color: var(--gold); font-weight: bold; font-size: 12px;">🏆 Mega Contest</span>
+        <div class="action-grid">
+            <div class="action-btn" onclick="nav('deposit')"><i class="fa-solid fa-wallet" style="color:#00ff88;"></i>DEPOSIT</div>
+            <div class="action-btn" onclick="nav('withdraw')"><i class="fa-solid fa-building-columns" style="color:#ff3333;"></i>WITHDRAW</div>
+            <div class="action-btn" onclick="nav('history')"><i class="fa-solid fa-clock-rotate-left" style="color:#00d2d3;"></i>HISTORY</div>
+            <div class="action-btn" onclick="shareReferral()"><i class="fa-solid fa-users" style="color:#ff9ff3;"></i>REFER</div>
+            <div class="action-btn" onclick="nav('support')"><i class="fa-solid fa-headset" style="color:#feca57;"></i>SUPPORT</div>
+            <div class="action-btn" onclick="location.reload()"><i class="fa-solid fa-sync" style="color:#48dbfb;"></i>REFRESH</div>
+            <div class="action-btn" onclick="nav('offer')"><i class="fa-solid fa-gift" style="color:#ff4757;"></i>OFFERS</div>
+            <div class="action-btn" onclick="nav('rules')"><i class="fa-solid fa-file-contract" style="color:#2ed573;"></i>RULES</div>
         </div>
-        <div class="match-info">
-            <div class="ipl-text">TATA IPL T20</div>
-            <div class="ipl-sub">India's Biggest Fantasy League</div>
-        </div>
-        <div class="prize-pool">Win ₹40 Crores</div>
-        <button class="join-btn">CREATE TEAM NOW <i class="fa-solid fa-arrow-right"></i></button>
     </div>
-
-    <div class="section-title">Exclusive Premium Games</div>
-    <div class="game-grid">
+    <div class="games-scroll-area">
         
-        <div class="game-card" onclick="window.location.href='Ipl_VIP.html'" style="border-color: #00d2d3; box-shadow: 0 0 15px rgba(0, 210, 211, 0.4);">
-            <div class="new-badge">LIVE 24/7</div>
-            <div class="image-plate">
-                <img src="assets/1000064689.jpg" alt="IPL VIP" class="game-icon-img" style="border-radius: 8px;">
+        <div class="fantasy-banner" onclick="window.location.href='Matches.html'">
+            <div class="banner-header">
+                <span class="live-tag"><i class="fa-solid fa-circle fa-fade"></i> LIVE</span>
+                <span style="float: right; color: var(--gold); font-weight: bold; font-size: 12px;">🏆 Mega Contest</span>
             </div>
-            <h4 style="color: #00d2d3; font-size: 11px;">MEGA LEAGUE VIP</h4>
-            <button class="play-now" style="background: linear-gradient(90deg, #00ff88, #00d2d3); color: #000;">BET NOW</button>
-        </div>
-
-        <div class="game-card" onclick="window.location.href='VIPMatka.html'" style="border-color: #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);">
-            <div class="hot-badge" style="background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000;">VIP 4-DRAW</div>
-            <div class="image-plate">
-                <img src="assets/1000064726.png" alt="VIP Matka" class="game-icon-img" style="border-radius: 8px;">
+            <div class="match-info">
+                <div class="ipl-text">TATA IPL T20</div>
+                <div class="ipl-sub">India's Biggest Fantasy League</div>
             </div>
-            <h4 style="color: #ffd700; font-size: 11px;">VIP Matka</h4>
-            <button class="play-now" style="background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000;">PLAY VIP</button>
+            <div class="prize-pool">Win ₹40 Crores</div>
+            <button class="join-btn">CREATE TEAM NOW <i class="fa-solid fa-arrow-right"></i></button>
         </div>
 
-        <div class="game-card" onclick="window.location.href='kalyan_game.html'">
-            <div class="hot-badge" style="background: linear-gradient(135deg, #800080, #ff00ff); color: #fff;">KALYAN</div>
-            <div class="image-plate"><img src="assets/3d-illustration-playing-cards-chips-dices-black-background_780672-2973.jpg" class="game-icon-img" style="border-radius: 8px;"></div>
-            <button class="play-now" style="background: linear-gradient(135deg, #800080, #ff00ff); color: #fff;">PLAY NOW</button>
-        </div>
+        <div class="section-title">Exclusive Premium Games</div>
+        
+        <div class="game-grid">
+            
+            <div class="game-card" onclick="window.location.href='market.html'" style="border-color: #ff9ff3; box-shadow: 0 0 15px rgba(255, 159, 243, 0.4);">
+                <div class="hot-badge" style="background: #ff00ff;">LIVE MARKET</div>
+                <div class="image-plate">
+                    <img src="assets/1000064726.png" alt="Market" class="game-icon-img" style="border-radius: 8px;">
+                </div>
+                <h4 style="color: #ff9ff3; font-size: 11px;">LIVE MARKET</h4>
+                <button class="play-now" style="background: #ff00ff; color: #fff;">PLAY NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='Tournament.html'">
-            <div class="hot-badge" style="background: #ff0000;">eSPORTS</div>
-            <div class="image-plate"><img src="assets/png-transparent-playerunknown-s-battlegrounds-garena-free-fire-fortnite-t-shirt-android-t-shirt-playerunknown-s-battlegrounds-garena-free-fire-thumbnail.png" class="game-icon-img" style="object-fit: contain;"></div>
-            <button class="play-now" style="background: #ff3333;">JOIN BATTLE</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='Ipl_VIP.html'" style="border-color: #00d2d3; box-shadow: 0 0 15px rgba(0, 210, 211, 0.4);">
+                <div class="new-badge">LIVE 24/7</div>
+                <div class="image-plate">
+                    <img src="assets/1000064689.jpg" alt="IPL VIP" class="game-icon-img" style="border-radius: 8px;">
+                </div>
+                <h4 style="color: #00d2d3; font-size: 11px;">MEGA LEAGUE VIP</h4>
+                <button class="play-now" style="background: linear-gradient(90deg, #00ff88, #00d2d3); color: #000;">BET NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='Number.html'">
-            <div class="new-badge">777 VIP</div>
-            <div class="image-plate"><img src="assets/gameiconImg_903.png" class="game-icon-img"></div>
-            <h4 style="color: #ffd700;">Number Betting</h4>
-            <button class="play-now" style="background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000;">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='VIPMatka.html'" style="border-color: #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);">
+                <div class="hot-badge" style="background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000;">VIP 4-DRAW</div>
+                <div class="image-plate">
+                    <img src="assets/1000064726.png" alt="VIP Matka" class="game-icon-img" style="border-radius: 8px;">
+                </div>
+                <h4 style="color: #ffd700; font-size: 11px;">VIP Matka</h4>
+                <button class="play-now" style="background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000;">PLAY VIP</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='MegaSpin.html'">
-            <div class="hot-badge" style="background: #ffd700; color: #000;">MEGA</div>
-            <div class="image-plate"><img src="assets/1000057189 (1).jpg" class="game-icon-img" style="border-radius: 8px; object-fit: cover;"></div>
-            <button class="play-now" style="background: #ffd700; color: #000;">SPIN NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='kalyan_game.html'">
+                <div class="hot-badge" style="background: linear-gradient(135deg, #800080, #ff00ff); color: #fff;">KALYAN</div>
+                <div class="image-plate"><img src="assets/3d-illustration-playing-cards-chips-dices-black-background_780672-2973.jpg" class="game-icon-img" style="border-radius: 8px;"></div>
+                <button class="play-now" style="background: linear-gradient(135deg, #800080, #ff00ff); color: #fff;">PLAY NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='Ipl.html'">
-            <div class="hot-badge" style="background: #ff9900;">MEGA IPL</div>
-            <div class="image-plate"><img src="assets/gameiconImg_math.png" class="game-icon-img"></div>
-            <button class="play-now" style="background: #ff9900;">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='Tournament.html'">
+                <div class="hot-badge" style="background: #ff0000;">eSPORTS</div>
+                <div class="image-plate"><img src="assets/png-transparent-playerunknown-s-battlegrounds-garena-free-fire-fortnite-t-shirt-android-t-shirt-playerunknown-s-battlegrounds-garena-free-fire-thumbnail.png" class="game-icon-img" style="object-fit: contain;"></div>
+                <button class="play-now" style="background: #ff3333;">JOIN BATTLE</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='crash.html'">
-            <div class="hot-badge" style="background: #00ff88; color: #000;">TRENDING</div>
-            <div class="image-plate"><img src="assets/gameiconImg_199.png" class="game-icon-img"></div>
-            <button class="play-now">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='Number.html'">
+                <div class="new-badge">777 VIP</div>
+                <div class="image-plate"><img src="assets/gameiconImg_903.png" class="game-icon-img"></div>
+                <h4 style="color: #ffd700;">Number Betting</h4>
+                <button class="play-now" style="background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000;">PLAY NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='geme.html'">
-            <div class="hot-badge">HOT</div>
-            <div class="image-plate"><img src="assets/gameiconImg_145.png" class="game-icon-img"></div>
-            <button class="play-now">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='MegaSpin.html'">
+                <div class="hot-badge" style="background: #ffd700; color: #000;">MEGA</div>
+                <div class="image-plate"><img src="assets/1000057189 (1).jpg" class="game-icon-img" style="border-radius: 8px; object-fit: cover;"></div>
+                <button class="play-now" style="background: #ffd700; color: #000;">SPIN NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='dt2.html'">
-            <div class="hot-badge" style="background: #ff00ff;">VIP ROOM</div>
-            <div class="image-plate"><img src="assets/gameiconImg_145.png" class="game-icon-img"></div>
-            <button class="play-now" style="background: #ff00ff;">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='Ipl.html'">
+                <div class="hot-badge" style="background: #ff9900;">MEGA IPL</div>
+                <div class="image-plate"><img src="assets/gameiconImg_math.png" class="game-icon-img"></div>
+                <button class="play-now" style="background: #ff9900;">PLAY NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='andarbahar.html'">
-            <div class="hot-badge">HOT</div>
-            <div class="image-plate"><img src="assets/gameiconImg_189.png" class="game-icon-img"></div>
-            <button class="play-now">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='crash.html'">
+                <div class="hot-badge" style="background: #00ff88; color: #000;">TRENDING</div>
+                <div class="image-plate"><img src="assets/gameiconImg_199.png" class="game-icon-img"></div>
+                <button class="play-now">PLAY NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='ab2.html'">
-            <div class="hot-badge" style="background: #ff00ff;">VIP ROOM</div>
-            <div class="image-plate"><img src="assets/gameiconImg_189.png" class="game-icon-img"></div>
-            <button class="play-now" style="background: #ff00ff;">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='geme.html'">
+                <div class="hot-badge">HOT</div>
+                <div class="image-plate"><img src="assets/gameiconImg_145.png" class="game-icon-img"></div>
+                <button class="play-now">PLAY NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='7updown.html'">
-            <div class="image-plate"><img src="assets/gameiconImg_128.png" class="game-icon-img"></div>
-            <button class="play-now">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='dt2.html'">
+                <div class="hot-badge" style="background: #ff00ff;">VIP ROOM</div>
+                <div class="image-plate"><img src="assets/gameiconImg_145.png" class="game-icon-img"></div>
+                <button class="play-now" style="background: #ff00ff;">PLAY NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='ZooRouletteVIP.html'">
-            <div class="image-plate"><img src="assets/gameiconImg_123.png" class="game-icon-img"></div>
-            <button class="play-now">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='andarbahar.html'">
+                <div class="hot-badge">HOT</div>
+                <div class="image-plate"><img src="assets/gameiconImg_189.png" class="game-icon-img"></div>
+                <button class="play-now">PLAY NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='car_casino.html'">
-            <div class="image-plate"><img src="assets/gameiconImg_140.png" class="game-icon-img"></div>
-            <button class="play-now">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='ab2.html'">
+                <div class="hot-badge" style="background: #ff00ff;">VIP ROOM</div>
+                <div class="image-plate"><img src="assets/gameiconImg_189.png" class="game-icon-img"></div>
+                <button class="play-now" style="background: #ff00ff;">PLAY NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='ludo_vip.html'">
-            <div class="image-plate"><img src="assets/gameiconImg_923.png" class="game-icon-img"></div>
-            <button class="play-now">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='7updown.html'">
+                <div class="image-plate"><img src="assets/gameiconImg_128.png" class="game-icon-img"></div>
+                <button class="play-now">PLAY NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='Matches.html'">
-            <div class="new-badge">NEW</div>
-            <div class="image-plate"><img src="assets/gameiconImg_100000.png" class="game-icon-img"></div>
-            <button class="play-now" style="background: #ff8c00;">BET NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='ZooRouletteVIP.html'">
+                <div class="image-plate"><img src="assets/gameiconImg_123.png" class="game-icon-img"></div>
+                <button class="play-now">PLAY NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='matka.html'">
-            <div class="hot-badge" style="background: #ff0000;">LIVE</div>
-            <div class="card-img-plate plate-matka"><div class="c-icon icon-matka">🏺</div></div>
-            <h4 style="color: #ff6666;">Kalyan Matka</h4>
-            <button class="play-now" style="background: #ff3333;">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='car_casino.html'">
+                <div class="image-plate"><img src="assets/gameiconImg_140.png" class="game-icon-img"></div>
+                <button class="play-now">PLAY NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='mines.html'">
-            <div class="new-badge">NEW</div>
-            <div class="card-img-plate plate-mns"><div class="c-icon icon-mns">💣💎</div></div>
-            <h4>Mines</h4>
-            <button class="play-now">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='ludo_vip.html'">
+                <div class="image-plate"><img src="assets/gameiconImg_923.png" class="game-icon-img"></div>
+                <button class="play-now">PLAY NOW</button>
+            </div>
 
-        <div class="game-card" onclick="window.location.href='VIP.html'">
-            <div class="hot-badge" style="background: #ff00ff;">SLOTS VIP</div>
-            <div class="image-plate"><img src="assets/gameiconImg_903.png" class="game-icon-img"></div>
-            <button class="play-now" style="background: #ff00ff;">PLAY NOW</button>
-        </div>
+            <div class="game-card" onclick="window.location.href='Matches.html'">
+                <div class="new-badge">NEW</div>
+                <div class="image-plate"><img src="assets/gameiconImg_100000.png" class="game-icon-img"></div>
+                <button class="play-now" style="background: #ff8c00;">BET NOW</button>
+            </div>
 
+            <div class="game-card" onclick="window.location.href='matka.html'">
+                <div class="hot-badge" style="background: #ff0000;">LIVE</div>
+                <div class="card-img-plate plate-matka"><div class="c-icon icon-matka">🏺</div></div>
+                <h4 style="color: #ff6666;">Kalyan Matka</h4>
+                <button class="play-now" style="background: #ff3333;">PLAY NOW</button>
+            </div>
+
+            <div class="game-card" onclick="window.location.href='mines.html'">
+                <div class="new-badge">NEW</div>
+                <div class="card-img-plate plate-mns"><div class="c-icon icon-mns">💣💎</div></div>
+                <h4>Mines</h4>
+                <button class="play-now">PLAY NOW</button>
+            </div>
+
+            <div class="game-card" onclick="window.location.href='VIP.html'">
+                <div class="hot-badge" style="background: #ff00ff;">SLOTS VIP</div>
+                <div class="image-plate"><img src="assets/gameiconImg_903.png" class="game-icon-img"></div>
+                <button class="play-now" style="background: #ff00ff;">PLAY NOW</button>
+            </div>
+
+        </div>
     </div>
-    
     <div id="jackpot-toast">
         <div style="font-size: 30px;">🎰</div>
         <div>
@@ -281,12 +314,13 @@
             document.getElementById('player-id-display').innerText = "ID: " + (data.playerId || "KP" + phone.slice(-4));
             const total = (parseFloat(data.balance||0) + parseFloat(data.winning_balance||0) + parseFloat(data.bonus_balance||0));
             document.getElementById('balance').innerText = total.toLocaleString('en-IN', {minimumFractionDigits: 2});
-            if(data.profilePic) document.getElementById('user-header-pic').src = data.profilePic;
+            if(data.profilePic) {
+                document.getElementById('user-header-pic').src = data.profilePic;
+            }
         });
 
         function nav(page) { window.location.href = page + ".html"; }
         
-        // 🔥 ADVANCE REFERRAL SHARE FUNCTION 🔥
         function shareReferral() {
             let myReferralLink = window.location.origin + "/index.html?ref=" + phone;
             let shareMessage = `🏆 KALYAN ULTRA VIP CASINO 🏆\nBhai, main yahan Mega IPL aur VIP Matka khel raha hoon. Tu bhi jaldi aaja aur roz lakho jeet!\n\n👉 Join Now: ${myReferralLink}`;
