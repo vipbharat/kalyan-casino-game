@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        :root { --gold: #ffd700; --bg: #0a0a0a; --card: #141414; --green: #00ff88; --red: #ff3333; }
+        :root { --gold: #ffd700; --bg: #0a0a0a; --card: #141414; --green: #00ff88; --red: #ff3333; --blue: #00e5ff; }
         body { background: var(--bg); color: #fff; font-family: 'Arial', sans-serif; margin: 0; padding-bottom: 70px; }
         
         .top-header { background: #000; padding: 15px; text-align: center; border-bottom: 2px solid var(--gold); position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(255,215,0,0.2); }
@@ -142,7 +142,7 @@
                 <div class="search-box"><input type="number" id="searchPhone" placeholder="Search Mobile No..." onkeyup="filterUsers()"></div>
                 <div style="max-height: 60vh; overflow-y: auto;">
                     <table id="p-table">
-                        <thead><tr><th>Mobile No.</th><th>Balance</th><th>Action</th></tr></thead>
+                        <thead><tr><th>Mobile No.</th><th>Total Balance</th><th>Action</th></tr></thead>
                         <tbody id="p-list-body"></tbody>
                     </table>
                 </div>
@@ -204,17 +204,22 @@
 
     // 🔥 3. LOAD DATA (REAL-TIME SYNC) 🔥
     function loadAdminData() {
-        // Load All Users
+        // Load All Users & Calculate Total Balance
         db.ref('users').on('value', snap => {
             document.getElementById('stat-users').innerText = snap.numChildren();
             const body = document.getElementById('p-list-body');
             body.innerHTML = "";
             snap.forEach(p => {
-                const bal = parseFloat(p.val().balance || 0).toFixed(2);
+                const data = p.val();
+                const depBal = parseFloat(data.balance || 0);
+                const winBal = parseFloat(data.winning_balance || 0);
+                const bonBal = parseFloat(data.bonus_balance || 0);
+                const totalBal = (depBal + winBal + bonBal).toFixed(2);
+
                 body.innerHTML += `
                 <tr class="player-row" data-phone="${p.key}">
                     <td style="color:var(--gold); font-weight:bold;">${p.key}</td>
-                    <td style="color:var(--green); font-weight:bold;">₹${bal}</td>
+                    <td style="color:var(--green); font-weight:bold;">₹${totalBal}</td>
                     <td><button class="view-btn" onclick="openModal('${p.key}')">VIEW DATA</button></td>
                 </tr>`;
             });
@@ -267,12 +272,15 @@
         const modalBody = document.getElementById('modal-body');
         modalBody.innerHTML = "<p style='text-align:center;'><i class='fa-solid fa-spinner fa-spin'></i> Loading Full Data...</p>";
         
-        // Fetch User Main Details
         db.ref(`users/${phone}`).once('value', snap => {
             const p = snap.val();
             if(!p) { modalBody.innerHTML = "<p>Data not found!</p>"; return; }
 
-            // Fetch User Transaction History (Last 15 Records)
+            const depBal = parseFloat(p.balance || 0);
+            const winBal = parseFloat(p.winning_balance || 0);
+            const bonBal = parseFloat(p.bonus_balance || 0);
+            const totalBal = (depBal + winBal + bonBal).toFixed(2);
+
             db.ref(`user_history/${phone}`).limitToLast(15).once('value', histSnap => {
                 let historyHtml = "";
                 
@@ -295,9 +303,10 @@
 
                 modalBody.innerHTML = `
                     <div class="detail-row"><span>Mobile Number:</span><span style="font-size:15px; color:var(--gold);">${phone}</span></div>
-                    <div class="detail-row"><span>Main Balance:</span><span style="color:var(--green); font-size:15px;">₹${parseFloat(p.balance || 0).toFixed(2)}</span></div>
-                    <div class="detail-row"><span>Winning Balance:</span><span style="color:var(--gold);">₹${parseFloat(p.winning_balance || 0).toFixed(2)}</span></div>
-                    <div class="detail-row"><span>Bonus Balance:</span><span style="color:var(--blue);">₹${parseFloat(p.bonus_balance || 0).toFixed(2)}</span></div>
+                    <div class="detail-row"><span>TOTAL BALANCE:</span><span style="color:var(--green); font-size:18px; font-weight:900;">₹${totalBal}</span></div>
+                    <div class="detail-row"><span>├ Deposit:</span><span style="color:#fff;">₹${depBal.toFixed(2)}</span></div>
+                    <div class="detail-row"><span>├ Winning:</span><span style="color:var(--gold);">₹${winBal.toFixed(2)}</span></div>
+                    <div class="detail-row"><span>└ Bonus:</span><span style="color:var(--blue);">₹${bonBal.toFixed(2)}</span></div>
                     <div class="detail-row"><span>Password:</span><span style="color:#fff;">${p.password || 'Hidden'}</span></div>
                     <div class="detail-row"><span>Account Status:</span><span style="color:${p.isBanned ? 'var(--red)' : 'var(--green)'}">${p.isBanned ? 'BANNED 🚫' : 'ACTIVE ✅'}</span></div>
                     
@@ -333,10 +342,10 @@
                 db.ref(`user_history/${phone}/${reqKey}`).update({ status: newStatus });
                 
                 if(action === 'Reject') {
-                    // Wapas balance dena
-                    db.ref(`users/${phone}/balance`).transaction((currentBal) => {
+                    // Agar Reject kiya, toh amount Winning Balance me wapas daal do
+                    db.ref(`users/${phone}/winning_balance`).transaction((currentBal) => {
                         return (currentBal || 0) + Number(amount);
-                    }).then(() => alert("✅ Request Rejected! Amount refunded successfully."));
+                    }).then(() => alert("✅ Request Rejected! Amount refunded to player's Winning Balance."));
                 } else {
                     alert("✅ Request Approved successfully!");
                 }
@@ -354,14 +363,13 @@
             if(!snap.exists()){ alert("Player Not Found! Check Mobile Number."); return; }
             let currentBal = parseFloat(snap.val().balance || 0);
             
-            if(type === 'cut' && amt > currentBal) return alert(`Error: Player ke wallet mein sirf ₹${currentBal} hain!`);
+            if(type === 'cut' && amt > currentBal) return alert(`Error: Player ke Deposit wallet mein sirf ₹${currentBal} hain!`);
             
             let newBal = type === 'add' ? currentBal + amt : currentBal - amt;
             db.ref(`users/${phone}/balance`).set(newBal).then(() => {
                 alert(`✅ ₹${amt} Successfully ${type === 'add' ? 'Added' : 'Deducted'}`);
                 document.getElementById('quick-phone').value = ""; document.getElementById('quick-amount').value = "";
                 
-                // Add an admin log entry in history
                 let histRef = db.ref(`user_history/${phone}`).push();
                 histRef.set({
                     amount: amt,
