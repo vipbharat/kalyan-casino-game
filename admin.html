@@ -335,49 +335,122 @@
 
     // 🔥 6. WITHDRAWAL APPROVE/REJECT 🔥
     window.handleWithdraw = function(reqKey, phone, action, amount) {
-        if(confirm(`Are you sure you want to ${action} this payout request?`)) {
+        if(confirm(`Kya aap is request ko ${action} karna chahte hain?`)) {
             let newStatus = action === 'Approve' ? 'Success' : 'Rejected';
             
-            db.ref(`withdraw_requests/${reqKey}`).update({ status: newStatus }).then(() => {
+            if(action === 'Approve') {
+                db.ref(`users/${phone}`).once('value', snap => {
+                    let d = snap.val();
+                    let winBal = parseFloat(d.winning_balance || 0);
+                    let depBal = parseFloat(d.balance || 0);
+                    
+                    if (winBal + depBal < amount) {
+                        alert("⚠️ Error: Player ke account me paryapt balance nahi hai!");
+                        return;
+                    }
+
+                    let nWin = winBal, nDep = depBal, rem = amount;
+                    if(nWin >= rem) { 
+                        nWin -= rem; 
+                    } else { 
+                        rem -= nWin; 
+                        nWin = 0; 
+                        nDep -= rem; 
+                    }
+
+                    db.ref(`users/${phone}`).update({ balance: nDep, winning_balance: nWin }).then(() => {
+                        db.ref(`withdraw_requests/${reqKey}`).update({ status: newStatus });
+                        db.ref(`user_history/${phone}/${reqKey}`).update({ status: newStatus });
+                        alert("✅ Withdraw Approved! Paisa player ke account se CUT gaya hai.");
+                    });
+                });
+            } else {
+                db.ref(`withdraw_requests/${reqKey}`).update({ status: newStatus });
                 db.ref(`user_history/${phone}/${reqKey}`).update({ status: newStatus });
-                
-                if(action === 'Reject') {
-                    // Agar Reject kiya, toh amount Winning Balance me wapas daal do
-                    db.ref(`users/${phone}/winning_balance`).transaction((currentBal) => {
-                        return (currentBal || 0) + Number(amount);
-                    }).then(() => alert("✅ Request Rejected! Amount refunded to player's Winning Balance."));
-                } else {
-                    alert("✅ Request Approved successfully!");
-                }
-            }).catch(err => alert("Error: " + err.message));
+                alert("❌ Withdraw Rejected! Player ka paisa waisa hi safe hai.");
+            }
         }
     }
 
-    // 🔥 7. QUICK WALLET ADD / CUT 🔥
+    // 🔥 7. QUICK WALLET ADD / CUT (100% FIXED) 🔥
     window.quickWallet = function(type) {
-        const phone = document.getElementById('quick-phone').value;
+        const phone = document.getElementById('quick-phone').value.trim();
         const amt = parseFloat(document.getElementById('quick-amount').value);
-        if(!phone || isNaN(amt) || amt <= 0) return alert("Please enter a valid Mobile Number and Amount!");
+        
+        if(!phone || isNaN(amt) || amt <= 0) {
+            return alert("Bhai, kripya sahi Mobile Number aur Amount daalein!");
+        }
         
         db.ref(`users/${phone}`).once('value', snap => {
-            if(!snap.exists()){ alert("Player Not Found! Check Mobile Number."); return; }
-            let currentBal = parseFloat(snap.val().balance || 0);
+            if(!snap.exists()){ 
+                return alert("❌ Player nahi mila! Number dobara check karein."); 
+            }
             
-            if(type === 'cut' && amt > currentBal) return alert(`Error: Player ke Deposit wallet mein sirf ₹${currentBal} hain!`);
+            let d = snap.val();
+            let depBal = parseFloat(d.balance || 0);
+            let winBal = parseFloat(d.winning_balance || 0);
+            let bonBal = parseFloat(d.bonus_balance || 0);
+            let totalBal = depBal + winBal + bonBal;
             
-            let newBal = type === 'add' ? currentBal + amt : currentBal - amt;
-            db.ref(`users/${phone}/balance`).set(newBal).then(() => {
-                alert(`✅ ₹${amt} Successfully ${type === 'add' ? 'Added' : 'Deducted'}`);
-                document.getElementById('quick-phone').value = ""; document.getElementById('quick-amount').value = "";
+            if (type === 'cut') {
+                if (amt > totalBal) {
+                    return alert(`⚠️ Error: Player ke total wallet mein sirf ₹${totalBal.toFixed(2)} hain! Aap isse zyada cut nahi kar sakte.`);
+                }
                 
-                let histRef = db.ref(`user_history/${phone}`).push();
-                histRef.set({
-                    amount: amt,
-                    date: new Date().toLocaleString(),
-                    status: "Success",
-                    type: type === 'add' ? "Admin Bonus" : "Admin Deduction"
-                });
-            });
+                let rem = amt;
+                
+                // Pehle Deposit se cut karo
+                if (depBal >= rem) { 
+                    depBal -= rem; 
+                    rem = 0; 
+                } else { 
+                    rem -= depBal; 
+                    depBal = 0; 
+                }
+                
+                // Phir Winning se cut karo
+                if (rem > 0) {
+                    if (winBal >= rem) { 
+                        winBal -= rem; 
+                        rem = 0; 
+                    } else { 
+                        rem -= winBal; 
+                        winBal = 0; 
+                    }
+                }
+                
+                // Last mein Bonus se cut karo
+                if (rem > 0) {
+                    bonBal -= rem; 
+                }
+
+                db.ref(`users/${phone}`).update({ 
+                    balance: depBal, 
+                    winning_balance: winBal, 
+                    bonus_balance: bonBal 
+                }).then(() => {
+                    alert(`✅ ₹${amt} Successfully DEDUCTED from ${phone}`);
+                    logAdminHistory(phone, amt, 'Admin Deduction');
+                }).catch(e => alert("Error: " + e.message));
+
+            } else if (type === 'add') {
+                db.ref(`users/${phone}/balance`).set(depBal + amt).then(() => {
+                    alert(`✅ ₹${amt} Successfully ADDED to ${phone}`);
+                    logAdminHistory(phone, amt, 'Admin Bonus');
+                }).catch(e => alert("Error: " + e.message));
+            }
+        });
+    }
+
+    function logAdminHistory(phone, amt, typeName) {
+        document.getElementById('quick-phone').value = ""; 
+        document.getElementById('quick-amount').value = "";
+        let histRef = db.ref(`user_history/${phone}`).push();
+        histRef.set({ 
+            amount: amt, 
+            date: new Date().toLocaleString(), 
+            status: "Success", 
+            type: typeName 
         });
     }
 
