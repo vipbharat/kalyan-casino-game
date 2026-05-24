@@ -202,9 +202,8 @@
         }
     }
 
-    // 🔥 3. LOAD DATA (REAL-TIME SYNC) 🔥
+    // 🔥 3. LOAD DATA (REAL-TIME TOTAL BALANCE) 🔥
     function loadAdminData() {
-        // Load All Users & Calculate Total Balance
         db.ref('users').on('value', snap => {
             document.getElementById('stat-users').innerText = snap.numChildren();
             const body = document.getElementById('p-list-body');
@@ -225,7 +224,6 @@
             });
         });
 
-        // Load Pending Withdrawals
         db.ref('withdraw_requests').orderByChild('status').equalTo('Pending').on('value', snap => {
             const list = document.getElementById('new-req-list');
             list.innerHTML = "";
@@ -253,7 +251,6 @@
             });
         });
 
-        // Load Global Settings
         db.ref('admin_settings').once('value', snap => {
             const d = snap.val(); if(!d) return;
             if(d.payment) {
@@ -266,7 +263,7 @@
         });
     }
 
-    // 🔥 4. PLAYER FULL DATA MODAL (WITH HISTORY) 🔥
+    // 🔥 4. PLAYER FULL DATA MODAL 🔥
     window.openModal = function(phone) {
         document.getElementById('playerModal').style.display = 'block';
         const modalBody = document.getElementById('modal-body');
@@ -283,11 +280,9 @@
 
             db.ref(`user_history/${phone}`).limitToLast(15).once('value', histSnap => {
                 let historyHtml = "";
-                
                 if (histSnap.exists()) {
                     let historyArray = [];
                     histSnap.forEach(child => { historyArray.push(child.val()); });
-                    // Reverse array to show latest first
                     historyArray.reverse().forEach(h => {
                         let color = h.status === 'Success' || h.status === 'Approved' ? 'var(--green)' : (h.status === 'Pending' ? 'var(--gold)' : 'var(--red)');
                         historyHtml += `
@@ -324,7 +319,6 @@
     }
     window.closeModal = function() { document.getElementById('playerModal').style.display = 'none'; }
 
-    // 🔥 5. BAN / UNBAN LOGIC 🔥
     window.toggleBan = function(phone, isBanned) {
         if(confirm(`Kya aap is player ko ${isBanned ? 'UNBAN' : 'BAN'} karna chahte hain?`)){
             db.ref(`users/${phone}/isBanned`).set(!isBanned).then(() => { 
@@ -333,7 +327,7 @@
         }
     }
 
-    // 🔥 6. WITHDRAWAL APPROVE/REJECT 🔥
+    // 🔥 5. 3-IN-1 COMBO FOR WITHDRAWAL APPROVE 🔥
     window.handleWithdraw = function(reqKey, phone, action, amount) {
         if(confirm(`Kya aap is request ko ${action} karna chahte hain?`)) {
             let newStatus = action === 'Approve' ? 'Success' : 'Rejected';
@@ -341,38 +335,37 @@
             if(action === 'Approve') {
                 db.ref(`users/${phone}`).once('value', snap => {
                     let d = snap.val();
-                    let winBal = parseFloat(d.winning_balance || 0);
                     let depBal = parseFloat(d.balance || 0);
+                    let winBal = parseFloat(d.winning_balance || 0);
+                    let bonBal = parseFloat(d.bonus_balance || 0);
+                    let totalBal = depBal + winBal + bonBal;
                     
-                    if (winBal + depBal < amount) {
-                        alert("⚠️ Error: Player ke account me paryapt balance nahi hai!");
+                    if (totalBal < amount) {
+                        alert(`⚠️ Error: Player ke total account me sirf ₹${totalBal.toFixed(2)} hain! Approval nahi ho sakta.`);
                         return;
                     }
 
-                    let nWin = winBal, nDep = depBal, rem = amount;
-                    if(nWin >= rem) { 
-                        nWin -= rem; 
-                    } else { 
-                        rem -= nWin; 
-                        nWin = 0; 
-                        nDep -= rem; 
-                    }
+                    // 3-IN-1 CUT LOGIC
+                    let nWin = winBal, nDep = depBal, nBon = bonBal, rem = amount;
+                    if(nWin >= rem) { nWin -= rem; rem = 0; } else { rem -= nWin; nWin = 0; }
+                    if(rem > 0) { if(nDep >= rem) { nDep -= rem; rem = 0; } else { rem -= nDep; nDep = 0; } }
+                    if(rem > 0) { nBon -= rem; }
 
-                    db.ref(`users/${phone}`).update({ balance: nDep, winning_balance: nWin }).then(() => {
+                    db.ref(`users/${phone}`).update({ balance: nDep, winning_balance: nWin, bonus_balance: nBon }).then(() => {
                         db.ref(`withdraw_requests/${reqKey}`).update({ status: newStatus });
                         db.ref(`user_history/${phone}/${reqKey}`).update({ status: newStatus });
-                        alert("✅ Withdraw Approved! Paisa player ke account se CUT gaya hai.");
+                        alert("✅ Withdraw Approved! Paisa 3-in-1 Total Balance se CUT gaya hai.");
                     });
                 });
             } else {
                 db.ref(`withdraw_requests/${reqKey}`).update({ status: newStatus });
                 db.ref(`user_history/${phone}/${reqKey}`).update({ status: newStatus });
-                alert("❌ Withdraw Rejected! Player ka paisa waisa hi safe hai.");
+                alert("❌ Withdraw Rejected! Player ka paisa safe hai.");
             }
         }
     }
 
-    // 🔥 7. QUICK WALLET ADD / CUT (100% FIXED) 🔥
+    // 🔥 6. 3-IN-1 COMBO FOR QUICK WALLET CUT 🔥
     window.quickWallet = function(type) {
         const phone = document.getElementById('quick-phone').value.trim();
         const amt = parseFloat(document.getElementById('quick-amount').value);
@@ -397,39 +390,14 @@
                     return alert(`⚠️ Error: Player ke total wallet mein sirf ₹${totalBal.toFixed(2)} hain! Aap isse zyada cut nahi kar sakte.`);
                 }
                 
-                let rem = amt;
-                
-                // Pehle Deposit se cut karo
-                if (depBal >= rem) { 
-                    depBal -= rem; 
-                    rem = 0; 
-                } else { 
-                    rem -= depBal; 
-                    depBal = 0; 
-                }
-                
-                // Phir Winning se cut karo
-                if (rem > 0) {
-                    if (winBal >= rem) { 
-                        winBal -= rem; 
-                        rem = 0; 
-                    } else { 
-                        rem -= winBal; 
-                        winBal = 0; 
-                    }
-                }
-                
-                // Last mein Bonus se cut karo
-                if (rem > 0) {
-                    bonBal -= rem; 
-                }
+                // 3-IN-1 CUT LOGIC
+                let nWin = winBal, nDep = depBal, nBon = bonBal, rem = amt;
+                if(nWin >= rem) { nWin -= rem; rem = 0; } else { rem -= nWin; nWin = 0; }
+                if(rem > 0) { if(nDep >= rem) { nDep -= rem; rem = 0; } else { rem -= nDep; nDep = 0; } }
+                if(rem > 0) { nBon -= rem; }
 
-                db.ref(`users/${phone}`).update({ 
-                    balance: depBal, 
-                    winning_balance: winBal, 
-                    bonus_balance: bonBal 
-                }).then(() => {
-                    alert(`✅ ₹${amt} Successfully DEDUCTED from ${phone}`);
+                db.ref(`users/${phone}`).update({ balance: nDep, winning_balance: nWin, bonus_balance: nBon }).then(() => {
+                    alert(`✅ ₹${amt} Successfully DEDUCTED from ${phone}'s Total Balance.`);
                     logAdminHistory(phone, amt, 'Admin Deduction');
                 }).catch(e => alert("Error: " + e.message));
 
@@ -446,15 +414,10 @@
         document.getElementById('quick-phone').value = ""; 
         document.getElementById('quick-amount').value = "";
         let histRef = db.ref(`user_history/${phone}`).push();
-        histRef.set({ 
-            amount: amt, 
-            date: new Date().toLocaleString(), 
-            status: "Success", 
-            type: typeName 
-        });
+        histRef.set({ amount: amt, date: new Date().toLocaleString(), status: "Success", type: typeName });
     }
 
-    // 🔥 8. OTHER UTILITIES 🔥
+    // 🔥 7. OTHER UTILITIES 🔥
     window.filterUsers = function() {
         let input = document.getElementById('searchPhone').value.trim();
         document.querySelectorAll('.player-row').forEach(row => { 
