@@ -103,7 +103,7 @@
             width: 100%; height: 100%; 
             object-fit: cover; 
             border-radius: 8px;
-            z-index: 1 !important; /* Update kiya hua z-index */
+            z-index: 1 !important; 
             pointer-events: none; 
             opacity: 0.8; 
             transition: all 0.3s ease-out;
@@ -201,23 +201,18 @@
             <div class="history-bar" id="hr"></div>
             
             <div class="betting-area">
-                <!-- DRAGON BOX -->
                 <div class="bet-box dbx" onclick="pB('dragon')" id="bx-d">
-                    <div class="vortex-container"><div class="vortex"></div></div> <!-- Yahan Bhanwar Add Kiya -->
-                    <img id="dragon-beast" class="beast-img-layer" src="assets/d7d73aec7947f4428719ced9fada482b.jpg" alt="Dragon">
+                    <div class="vortex-container"><div class="vortex"></div></div> <img id="dragon-beast" class="beast-img-layer" src="assets/d7d73aec7947f4428719ced9fada482b.jpg" alt="Dragon">
                     <video class="box-video-hidden" id="vid-box-dragon" src="assets/jom.di.mp4" muted playsinline></video>
                     <div class="box-title">Dragon</div><div class="pa" id="md">₹0</div><div class="mbb" id="mb-d">₹0</div>
                 </div>
                 
-                <!-- TIE BOX -->
                 <div class="bet-box tibx" onclick="pB('tie')" id="bx-ti">
                     <div class="box-title" style="font-size:18px;">Tie</div><div class="pa" id="mti">₹0</div><div class="mbb" id="mb-ti">₹0</div>
                 </div>
                 
-                <!-- TIGER BOX -->
                 <div class="bet-box tbx" onclick="pB('tiger')" id="bx-t">
-                    <div class="vortex-container"><div class="vortex"></div></div> <!-- Yahan Bhanwar Add Kiya -->
-                    <img id="tiger-beast" class="beast-img-layer" src="assets/187c79ef5fc799219b5db2e67a47e755.jpg" alt="Tiger">
+                    <div class="vortex-container"><div class="vortex"></div></div> <img id="tiger-beast" class="beast-img-layer" src="assets/187c79ef5fc799219b5db2e67a47e755.jpg" alt="Tiger">
                     <video class="box-video-hidden" id="vid-box-tiger" src="assets/VID_20260425_134936.mp4" muted playsinline></video>
                     <div class="box-title">Tiger</div><div class="pa" id="mt">₹0</div><div class="mbb" id="mb-t">₹0</div>
                 </div>
@@ -257,8 +252,22 @@
         let lastBeep = -1;
         const chipImgs = { 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
         
-        let localHistory = []; 
+        let globalHistory = []; // Server-based history array
         let isResultProcessing = false; 
+
+        // 🔄 History Render System
+        function renderHistoryBoard() {
+            let hr = $('hr');
+            if(!hr) return;
+            hr.innerHTML = '';
+            globalHistory.forEach((w, index) => {
+                let val = String(w).toLowerCase().trim();
+                let char = val === 'dragon' ? 'D' : (val === 'tiger' ? 'T' : 'Tie');
+                let cls = val === 'dragon' ? 'h-d' : (val === 'tiger' ? 'h-t' : 'h-tie');
+                let isNew = (index === globalHistory.length - 1) ? 'newest-record' : '';
+                hr.innerHTML += `<div class="h-dot ${cls} ${isNew}">${char}</div>`;
+            });
+        }
 
         function enterCasino() { 
             $('start-screen').style.display='none'; $('loading-screen').style.display='flex'; 
@@ -407,35 +416,26 @@
                 document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
             });
 
+            // 🌐 Server-based Data Fetcher
             function fetchInitialHistory() {
                 db.ref('Game/DragonTiger2/History').orderByKey().limitToLast(15).once('value', s => {
                     let h = s.val();
                     if(h) {
-                        let hr = $('hr');
-                        hr.innerHTML = '';
-                        Object.values(h).reverse().forEach(w => {
-                            let val = String(w).toLowerCase().trim();
-                            let char = val === 'dragon' ? 'D' : 'T';
-                            let cls = val === 'dragon' ? 'h-d' : (val === 'tiger' ? 'h-t' : 'h-tie');
-                            hr.innerHTML += `<div class="h-dot ${cls}">${char}</div>`;
-                        });
+                        globalHistory = Object.values(h).map(v => (v.winner || v).toString().toLowerCase().trim());
+                    } else {
+                        globalHistory = [];
                     }
+                    renderHistoryBoard();
                 });
             }
 
+            // 🌐 Server-based Update UI Helper
             window.addNewHistoryDot = function(safeW) {
-                let hr = $('hr');
-                let char = safeW === 'dragon' ? 'D' : 'T';
-                let cls = safeW === 'dragon' ? 'h-d' : (safeW === 'tiger' ? 'h-t' : 'h-tie');
-                
-                let newDot = document.createElement('div');
-                newDot.className = `h-dot ${cls} newest-record`;
-                newDot.innerText = char;
-                hr.appendChild(newDot);
-
-                while(hr.children.length > 15) {
-                    hr.removeChild(hr.firstChild);
+                globalHistory.push(safeW);
+                if(globalHistory.length > 15) {
+                    globalHistory.shift(); 
                 }
+                renderHistoryBoard();
             }
 
             window.pB = (s) => { 
