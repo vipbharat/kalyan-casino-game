@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mega Prediction App - 10 Lakh Grand Prize</title>
+    <style>
+        /* Pure CSS - Bina Internet ke chalega */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background-color: #f0f2f5; display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 400px; background: white; min-height: 100vh; box-shadow: 0 0 10px rgba(0,0,0,0.1); position: relative; overflow-x: hidden; }
+        
+        .screen { display: none; width: 100%; min-height: 100vh; padding-bottom: 20px; }
+        .screen.active { display: block; }
+        
+        /* Header */
+        .header { background-color: #2b2b3d; color: white; padding: 15px; display: flex; align-items: center; font-size: 18px; font-weight: bold; }
+        .back-btn { margin-right: 15px; font-size: 20px; text-decoration: none; color: white; cursor: pointer; border: none; background: transparent; }
+        .center-title { flex: 1; text-align: center; margin-right: 35px; }
+
+        /* Banner & Info */
+        .prize-box { display: flex; text-align: center; padding: 15px 0; border-bottom: 1px solid #eee; }
+        .prize-col { flex: 1; border-right: 1px solid #eee; }
+        .prize-col:last-child { border-right: none; }
+        .prize-val { font-size: 16px; font-weight: bold; color: #1e1e2d; }
+        .prize-label { font-size: 12px; color: #777; margin-top: 5px; }
+        
+        .timer-banner { background-color: #fff9e6; text-align: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .timer-title { color: #d32f2f; font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+        
+        /* Teams Scroller */
+        .teams-container { display: flex; overflow-x: auto; padding: 15px; gap: 10px; border-bottom: 1px solid #eee; }
+        .teams-container::-webkit-scrollbar { display: none; }
+        .team-btn { padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; white-space: nowrap; border: 1px solid #ccc; background: white; color: #555; cursor: pointer; }
+        .team-btn.active { background: #1976d2; color: white; border-color: #1976d2; }
+        .team-btn.create-new { border: 1px dashed #1976d2; color: #1976d2; background: #e3f2fd; }
+        
+        /* Display Cards */
+        .cards-section { text-align: center; padding: 20px 15px; }
+        .cards-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .display-card { width: 60px; height: 90px; border: 1px solid #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; position: relative; font-size: 24px; font-weight: bold; background: #fafafa; }
+        .card-suit { position: absolute; top: 5px; left: 5px; font-size: 12px; }
+        
+        /* Progress */
+        .progress-section { padding: 0 20px 20px; }
+        .progress-stats { display: flex; justify-content: space-between; font-size: 12px; color: #555; font-weight: bold; margin-bottom: 8px; }
+        .progress-bar-bg { width: 100%; height: 8px; background-color: #e0e0e0; border-radius: 10px; }
+        .progress-bar-fill { width: 85%; height: 100%; background-color: #d32f2f; border-radius: 10px; }
+        
+        /* Tabs */
+        .leaderboard-header { display: flex; border-bottom: 1px solid #eee; background: white; border-top: 5px solid #f0f2f5;}
+        .tab { flex: 1; text-align: center; padding: 12px; font-size: 14px; font-weight: bold; color: #aaa; cursor: pointer; }
+        .tab.active { color: #000; border-bottom: 2px solid #000; }
+        
+        /* Tab Contents */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Leaderboard Tab Area */
+        .waiting-state { text-align: center; padding: 40px 20px; color: #666; }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; }
+        .user-info { display: flex; align-items: center; gap: 10px; flex: 2; }
+        .avatar { width: 35px; height: 35px; background: #ddd; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 16px; }
+        .user-details h4 { font-size: 14px; color: #333; }
+        .user-rank { flex: 1; text-align: center; font-size: 13px; font-weight: bold; color: #333; }
+        .view-btn { padding: 5px 12px; background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
+
+        /* Winnings Tab Area */
+        .winnings-list { padding: 10px 0; }
+        .winning-row { display: flex; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #eee; align-items: center; }
+        .winning-row:nth-child(even) { background-color: #fafafa; }
+        .rank-col { font-weight: bold; color: #333; font-size: 14px; }
+        .prize-col-win { font-weight: bold; color: #4CAF50; font-size: 14px; }
+        .entry-back { color: #1976d2; font-size: 12px; background: #e3f2fd; padding: 2px 8px; border-radius: 4px; }
+
+        /* Card Selection Screen */
+        .step-info { background: #fff9e6; text-align: center; padding: 10px; font-size: 13px; color: #555; border-bottom: 1px solid #eee; }
+        .slots-container { display: flex; justify-content: center; gap: 10px; padding: 30px 15px; background: #fafafa; border-bottom: 1px solid #ddd; }
+        .slot { width: 65px; height: 95px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; cursor: pointer; position: relative; }
+        .slot.active { border-color: #1976d2; box-shadow: 0 0 8px rgba(25, 118, 210, 0.3); background: #e3f2fd; }
+        .slot.filled { border: 2px solid #4CAF50; border-style: solid; }
+        .slot-plus { font-size: 24px; color: #ccc; }
+        .slot.active .slot-plus { color: #1976d2; }
+        .card-suit-display { font-size: 14px; position: absolute; top: 5px; left: 8px; }
+        .card-val-display { font-size: 28px; font-weight: bold; }
+        
+        .picker-section { padding: 20px; }
+        .picker-section h3 { font-size: 14px; color: #333; margin-bottom: 10px; }
+        .suit-row { display: flex; gap: 10px; margin-bottom: 25px; }
+        .suit-btn { flex: 1; padding: 15px 0; text-align: center; font-size: 24px; background: white; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; }
+        .suit-btn.selected { border: 2px solid #1976d2; background: #e3f2fd; }
+        .numbers-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 30px; }
+        .num-btn { padding: 12px 0; text-align: center; font-size: 16px; font-weight: bold; background: white; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; }
+        .num-btn.selected { border: 2px solid #1976d2; background: #1976d2; color: white; }
+        
+        .save-btn { width: 100%; padding: 15px; background: #4CAF50; color: white; border: none; font-weight: bold; font-size: 16px; border-radius: 8px; cursor: pointer; opacity: 0.5; pointer-events: none; }
+        .save-btn.ready { opacity: 1; pointer-events: auto; background: #d32f2f; }
+        
+        .text-red { color: #d32f2f; }
+        .text-black { color: #000; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div id="screen-main" class="screen active">
+            <div class="header">
+                <div style="flex:1; text-align:center;">Mega Contest</div>
+            </div>
+
+            <div class="prize-box">
+                <div class="prize-col">
+                    <div class="prize-val">₹99</div>
+                    <div class="prize-label">🎟️ Entry Fee</div>
+                </div>
+                <div class="prize-col">
+                    <div class="prize-val text-red">10 Lakh</div>
+                    <div class="prize-label">💰 1st Prize</div>
+                </div>
+                <div class="prize-col">
+                    <div class="prize-val">50,000</div>
+                    <div class="prize-label">🏆 Winners</div>
+                </div>
+            </div>
+
+            <div class="timer-banner">
+                <div class="timer-title">⏳ Result: Daily Sham 7:30 PM</div>
+                <div style="font-size:12px; color:#555;">Apni 4 cards ki team banayein aur jeetein!</div>
+            </div>
+
+            <div class="teams-container">
+                <div class="team-btn active">Team 1</div>
+                <button class="team-btn create-new" onclick="openSelectionScreen()">+ Create New (₹99)</button>
+            </div>
+
+            <div class="cards-section">
+                <div class="cards-row">
+                    <div class="display-card text-black"><span class="card-suit">♠️</span> A</div>
+                    <div class="display-card text-red"><span class="card-suit">♥️</span> K</div>
+                    <div class="display-card text-black"><span class="card-suit">♣️</span> 7</div>
+                    <div class="display-card text-red"><span class="card-suit">♦️</span> 10</div>
+                </div>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-stats">
+                    <span>85,087 Joined</span>
+                    <span>Total 1,00,000 Slots</span>
+                </div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill"></div></div>
+            </div>
+
+            <div class="leaderboard-header">
+                <div id="tab-btn-leaderboard" class="tab active" onclick="switchTab('leaderboard')">Leaderboard</div>
+                <div id="tab-btn-winnings" class="tab" onclick="switchTab('winnings')">Winnings</div>
+            </div>
+
+            <div id="content-leaderboard" class="tab-content active">
+                <div class="waiting-state">
+                    <h3 style="color:#333; margin-bottom:5px;">🔒 Leaderboard Locked</h3>
+                    <p style="font-size:13px;">Match khatam hone ke baad leaderboard update hoga.</p>
+                </div>
+            </div>
+
+            <div id="content-winnings" class="tab-content">
+                <div class="winnings-list">
+                    <div class="winning-row" style="background:#fff9e6; border-bottom:2px solid #ffe082;">
+                        <div class="rank-col">Rank 1</div>
+                        <div class="prize-col-win text-red" style="font-size:18px;">₹10,00,000</div>
+                    </div>
+                    <div class="winning-row">
+                        <div class="rank-col">Rank 2 - 6</div>
+                        <div class="prize-col-win">₹50,000</div>
+                    </div>
+                    <div class="winning-row">
+                        <div class="rank-col">Rank 7 - 15</div>
+                        <div class="prize-col-win">₹10,000</div>
+                    </div>
+                    <div class="winning-row">
+                        <div class="rank-col">Rank 16 - 30</div>
+                        <div class="prize-col-win">₹500</div>
+                    </div>
+                    <div class="winning-row">
+                        <div class="rank-col">Rank 31 - 50,000</div>
+                        <div class="prize-col-win"><span class="entry-back">₹99 Wapas</span></div>
+                    </div>
+                    <div style="padding: 15px; text-align: center; font-size: 11px; color: #888;">
+                        *Total 50,000 logon ko winning amount milega. Aadhi entry free!
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="screen-selection" class="screen">
+            <div class="header">
+                <button class="back-btn" onclick="closeSelectionScreen()">&#8592;</button>
+                <div class="center-title">Create Your Team</div>
+            </div>
+
+            <div class="step-info">Apni prediction ke <b>4 cards</b> select karein</div>
+
+            <div class="slots-container">
+                <div class="slot active" id="slot-1" onclick="selectSlot(1)"><span class="slot-plus">+</span></div>
+                <div class="slot" id="slot-2" onclick="selectSlot(2)"><span class="slot-plus">+</span></div>
+                <div class="slot" id="slot-3" onclick="selectSlot(3)"><span class="slot-plus">+</span></div>
+                <div class="slot" id="slot-4" onclick="selectSlot(4)"><span class="slot-plus">+</span></div>
+            </div>
+
+            <div class="picker-section">
+                <h3>1. Rang (Suit) chunein:</h3>
+                <div class="suit-row">
+                    <div class="suit-btn text-black" onclick="setSuit('♠️', 'black')">♠️</div>
+                    <div class="suit-btn text-red" onclick="setSuit('♥️', 'red')">♥️</div>
+                    <div class="suit-btn text-black" onclick="setSuit('♣️', 'black')">♣️</div>
+                    <div class="suit-btn text-red" onclick="setSuit('♦️', 'red')">♦️</div>
+                </div>
+
+                <h3>2. Patta (Number) chunein:</h3>
+                <div class="numbers-grid">
+                    <div class="num-btn" onclick="setNumber('A')">A</div>
+                    <div class="num-btn" onclick="setNumber('2')">2</div>
+                    <div class="num-btn" onclick="setNumber('3')">3</div>
+                    <div class="num-btn" onclick="setNumber('4')">4</div>
+                    <div class="num-btn" onclick="setNumber('5')">5</div>
+                    <div class="num-btn" onclick="setNumber('6')">6</div>
+                    <div class="num-btn" onclick="setNumber('7')">7</div>
+                    <div class="num-btn" onclick="setNumber('8')">8</div>
+                    <div class="num-btn" onclick="setNumber('9')">9</div>
+                    <div class="num-btn" onclick="setNumber('10')">10</div>
+                    <div class="num-btn" onclick="setNumber('J')">J</div>
+                    <div class="num-btn" onclick="setNumber('Q')">Q</div>
+                    <div class="num-btn" onclick="setNumber('K')">K</div>
+                </div>
+
+                <button class="save-btn" id="save-team-btn" onclick="saveTeamAndGoBack()">Save Team & Join (₹99)</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Screen Switching ---
+        function openSelectionScreen() {
+            document.getElementById('screen-main').classList.remove('active');
+            document.getElementById('screen-selection').classList.add('active');
+        }
+
+        function closeSelectionScreen() {
+            document.getElementById('screen-selection').classList.remove('active');
+            document.getElementById('screen-main').classList.add('active');
+        }
+
+        function saveTeamAndGoBack() {
+            alert("Payment Page: Pay ₹99 to confirm entry!");
+            closeSelectionScreen();
+        }
+
+        // --- Tabs Logic (Leaderboard vs Winnings) ---
+        function switchTab(tabName) {
+            // Remove active from both buttons
+            document.getElementById('tab-btn-leaderboard').classList.remove('active');
+            document.getElementById('tab-btn-winnings').classList.remove('active');
+            
+            // Remove active from both contents
+            document.getElementById('content-leaderboard').classList.remove('active');
+            document.getElementById('content-winnings').classList.remove('active');
+            
+            // Add active to selected tab
+            document.getElementById('tab-btn-' + tabName).classList.add('active');
+            document.getElementById('content-' + tabName).classList.add('active');
+        }
+
+        // --- Card Selection Logic ---
+        let currentSlot = 1;
+        let selectedSuit = '';
+        let suitColor = '';
+        let selectedNumber = '';
+        let filledSlots = 0;
+
+        function selectSlot(slotNum) {
+            for(let i=1; i<=4; i++) {
+                document.getElementById('slot-'+i).classList.remove('active');
+            }
+            document.getElementById('slot-'+slotNum).classList.add('active');
+            currentSlot = slotNum;
+            resetPickers();
+        }
+
+        function setSuit(suit, color) {
+            selectedSuit = suit;
+            suitColor = color;
+            let suits = document.querySelectorAll('.suit-btn');
+            suits.forEach(btn => btn.classList.remove('selected'));
+            event.target.classList.add('selected');
+            checkAndFillSlot();
+        }
+
+        function setNumber(num) {
+            selectedNumber = num;
+            let nums = document.querySelectorAll('.num-btn');
+            nums.forEach(btn => btn.classList.remove('selected'));
+            event.target.classList.add('selected');
+            checkAndFillSlot();
+        }
+
+        function checkAndFillSlot() {
+            if(selectedSuit !== '' && selectedNumber !== '') {
+                let slot = document.getElementById('slot-'+currentSlot);
+                slot.innerHTML = `
+                    <span class="card-suit-display ${suitColor === 'red' ? 'text-red' : 'text-black'}">${selectedSuit}</span>
+                    <span class="card-val-display ${suitColor === 'red' ? 'text-red' : 'text-black'}">${selectedNumber}</span>
+                `;
+                slot.classList.add('filled');
+                slot.classList.remove('active');
+                checkAllFilled();
+
+                if(filledSlots < 4) {
+                    for(let i=1; i<=4; i++) {
+                        if(!document.getElementById('slot-'+i).classList.contains('filled')) {
+                            selectSlot(i);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        function resetPickers() {
+            selectedSuit = '';
+            selectedNumber = '';
+            document.querySelectorAll('.suit-btn').forEach(btn => btn.classList.remove('selected'));
+            document.querySelectorAll('.num-btn').forEach(btn => btn.classList.remove('selected'));
+        }
+
+        function checkAllFilled() {
+            filledSlots = document.querySelectorAll('.slot.filled').length;
+            let btn = document.getElementById('save-team-btn');
+            if(filledSlots === 4) {
+                btn.classList.add('ready');
+                btn.innerText = "Join Contest (Pay ₹99)";
+            } else {
+                btn.classList.remove('ready');
+                btn.innerText = "Save Team & Join (₹99)";
+            }
+        }
+    </script>
+</body>
+</html>
