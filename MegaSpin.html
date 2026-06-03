@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalyan VIP Mega Spin - Premium % Edition</title>
+    <title>Kalyan VIP Mega Spin - Smart Limit Edition</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
     <style>
         body { font-family: 'Arial Black', Arial, sans-serif; color: #fff; text-align: center; margin: 0; user-select: none; overflow: hidden; background: #050510; }
@@ -50,9 +49,22 @@
         #msg { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: 900; background: rgba(0,0,0,0.9); padding: 20px 40px; border: 3px solid #ffd700; border-radius: 15px; display: none; z-index: 999; white-space: nowrap; box-shadow: 0 0 30px rgba(255,215,0,0.8); text-align: center; }
         .win-popup { pointer-events: none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 3.5rem; font-weight: 900; color: #00ff88; text-shadow: 0 0 20px #00ff88, 0 0 40px #000; z-index: 1000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: rgba(0,0,0,0.8); padding: 10px 30px; border-radius: 20px; border: 3px solid #00ff88; }
         .win-popup.show { transform: translate(-50%, -50%) scale(1); }
+
+        /* 🔥 NETWORK OVERLAY CSS 🔥 */
+        #network-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; }
+        .loading-chakra { width: 60px; height: 60px; border: 6px solid rgba(255, 215, 0, 0.2); border-top-color: #ffd700; border-radius: 50%; animation: spinChakra 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spinChakra { 100% { transform: rotate(360deg); } }
+        .net-text { font-size: 22px; letter-spacing: 2px; text-shadow: 0 2px 4px #000; }
+        .net-sub { font-size: 12px; color: #aaa; margin-top: 5px; }
     </style>
 </head>
 <body>
+
+    <div id="network-overlay">
+        <div class="loading-chakra"></div>
+        <div class="net-text">CONNECTION LOST</div>
+        <div class="net-sub">Waiting for Internet / Server...</div>
+    </div>
 
     <canvas id="bg-canvas"></canvas>
 
@@ -112,8 +124,6 @@
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); 
         const db = firebase.database();
-        
-        const socket = io("https://kalyan-engine.onrender.com");
 
         let userID = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST"; 
         let depBal = 0, winBal = 0, bonBal = 0, totalBal = 0;
@@ -138,6 +148,16 @@
             startBots();
         }
 
+        // 🔥 FIREBASE CONNECTION CHECKER 🔥
+        let connectedRef = db.ref(".info/connected");
+        connectedRef.on("value", (snap) => {
+            if (snap.val() === true) {
+                document.getElementById('network-overlay').style.display = 'none';
+            } else {
+                document.getElementById('network-overlay').style.display = 'flex';
+            }
+        });
+
         function syncWallet() {
             if(userID && userID !== "GUEST") {
                 db.ref(`users/${userID}`).on('value', (snap) => {
@@ -158,6 +178,9 @@
         let canBet=false, rot=0, isSpinning = false; 
         let yBets = {r:0,b:0,g:0,p:0,o:0}; 
         let tBets = {r:0,b:0,g:0,p:0,o:0}; 
+        let currentEndTime = 0;
+        let currentState = '';
+        let isResultProcessing = false;
         
         let colorIdMap = { "#C0392B": "r", "#2980B9": "b", "#27AE60": "g", "#8E44AD": "p", "#D35400": "o" };
 
@@ -315,7 +338,6 @@
             }
         }
 
-        // 🔥 PERCENTAGE CALCULATION ENGINE 🔥
         function checkPayout(prizeIndex, betsSnapshot) {
             try {
                 let wonPrize = pr[prizeIndex];
@@ -324,13 +346,11 @@
                 let finalWinAmt = 0;
 
                 if (wonPrize === "00") {
-                    // Koi Payout Nahi
                 } else if (wonPrize === "-50%") {
                     let totalUserBet = (betsSnapshot.r||0) + (betsSnapshot.b||0) + (betsSnapshot.g||0) + (betsSnapshot.p||0) + (betsSnapshot.o||0);
                     if (totalUserBet > 0) finalWinAmt = totalUserBet * 0.5;
                 } else {
                     if (wonId && (betsSnapshot[wonId]||0) > 0) {
-                        // Extract number from "200%" and divide by 100 for multiplier (e.g., 200% = 2x)
                         let multiplier = parseInt(wonPrize.replace("%", "")) / 100; 
                         finalWinAmt = betsSnapshot[wonId] * multiplier;
                     }
@@ -350,48 +370,75 @@
             } catch (e) { console.error(e); }
         }
 
-        socket.on('MegaSpin_timerUpdate', (data) => {
-            if (data.state === 'betting') {
+        // 🔥 SMART LISTENER: Sirf State Badalne Par Request Jayegi 🔥
+        db.ref('Game/MegaSpin/Status').on('value', (snap) => {
+            let data = snap.val();
+            if(!data) return;
+
+            currentState = data.state;
+            currentEndTime = data.endTime;
+
+            if (currentState === 'betting') {
                 if (isSpinning) { isSpinning = false; startNewRound(); }
-                canBet = true; msg.style.display = "none"; tmr.innerText = data.timer;
-                if (data.timer <= 5) { tmr.style.color = "#F33"; } else { tmr.style.color = "#0f0"; }
+                if (!canBet) {
+                    canBet = true;
+                    isResultProcessing = false;
+                    msg.style.display = "none";
+                }
+            } else if (currentState === 'result' || currentState === 'proc') {
+                if (canBet) {
+                    canBet = false;
+                    msg.innerHTML = "Bets Closed!<br><span style='font-size:18px;color:#ccc'>Spinning...</span>"; 
+                    msg.style.display = "block";
+                }
+
+                if (!isResultProcessing && data.winner !== undefined) {
+                    isResultProcessing = true;
+                    isSpinning = true; 
+                    tmr.innerText = "00";
+                    
+                    let snapshotBets = { ...yBets };
+                    s_spin.currentTime = 0; s_spin.volume = 0.8; s_spin.play().catch(e=>{}); s_spin.loop = true; 
+                    
+                    let prizeIndex = data.winner.winIndex !== undefined ? data.winner.winIndex : data.winner;
+                    if(typeof prizeIndex === 'object') prizeIndex = 1;
+                    if(prizeIndex === undefined) prizeIndex = 1;
+
+                    const sliceAngle = 360 / 32; 
+                    const targetAngle = 270 - ((prizeIndex + 0.5) * sliceAngle);
+                    let currentMod = rot % 360; if (currentMod < 0) currentMod += 360;
+                    let normalizedTarget = targetAngle % 360; if (normalizedTarget < 0) normalizedTarget += 360;
+                    let diff = normalizedTarget - currentMod; if (diff <= 0) diff += 360;
+                    let d = rot + (360 * 5) + diff; 
+                    
+                    document.getElementById('c').style.transition = "transform 7s cubic-bezier(0.1, 0.7, 0.1, 1)";
+                    document.getElementById('c').style.transform = `rotate(${d}deg)`;
+                    
+                    setTimeout(()=>{
+                        s_spin.pause(); s_win.play().catch(e=>{}); 
+                        msg.innerHTML = `Result:<br><span style='color:#0f0;font-size:36px;'>${pr[prizeIndex]}</span>`;
+                        checkPayout(prizeIndex, snapshotBets); 
+                        rot = d; 
+                    }, 7500);
+                }
             }
         });
 
-        socket.on('MegaSpin_result', (data) => {
-            if (canBet && !isSpinning) {
-                canBet = false; isSpinning = true; tmr.innerText = "00";
-                let snapshotBets = { ...yBets };
-                msg.innerHTML="Bets Closed!<br><span style='font-size:18px;color:#ccc'>Spinning...</span>"; msg.style.display="block";
-                
-                s_spin.currentTime = 0; s_spin.volume = 0.8; s_spin.play().catch(e=>{}); s_spin.loop = true; 
-                
-                let prizeIndex = data.winIndex;
-                if(prizeIndex === undefined) prizeIndex = 1;
-                
-                const sliceAngle = 360 / 32; 
-                const targetAngle = 270 - ((prizeIndex + 0.5) * sliceAngle);
-                let currentMod = rot % 360; if (currentMod < 0) currentMod += 360;
-                let normalizedTarget = targetAngle % 360; if (normalizedTarget < 0) normalizedTarget += 360;
-                let diff = normalizedTarget - currentMod; if (diff <= 0) diff += 360;
-                let d = rot + (360 * 5) + diff; 
-                
-                document.getElementById('c').style.transition = "transform 7s cubic-bezier(0.1, 0.7, 0.1, 1)";
-                document.getElementById('c').style.transform = `rotate(${d}deg)`;
-                
-                setTimeout(()=>{
-                    s_spin.pause(); s_win.play().catch(e=>{}); 
-                    msg.innerHTML = `Result:<br><span style='color:#0f0;font-size:36px;'>${pr[prizeIndex]}</span>`;
-                    checkPayout(prizeIndex, snapshotBets); 
-                    rot = d; 
-                }, 7500); 
-            }
-        });
+        // 🔥 LOCAL TIMER ENGINE: Mobile Apne Andar Khud Ginti Chalayega 🔥
+        setInterval(() => {
+            if (currentState === 'betting' && currentEndTime > 0) {
+                let timeLeft = Math.floor((currentEndTime - Date.now()) / 1000);
+                if (timeLeft < 0) timeLeft = 0;
 
-        socket.on('MegaSpin_newRound', () => {
-            if (isSpinning) { isSpinning = false; startNewRound(); }
-            canBet = true;
-        });
+                tmr.innerText = timeLeft; 
+                tmr.style.color = timeLeft <= 5 ? "#F33" : "#0f0";
+            } else if (currentState === 'result' || currentState === 'proc') {
+                tmr.innerText = "00"; 
+                tmr.style.color = "#fff";
+            } else {
+                tmr.innerText = "..."; 
+            }
+        }, 200);
         
         const canvasBg = document.getElementById('bg-canvas'); const ctxBg = canvasBg.getContext('2d');
         canvasBg.width = window.innerWidth; canvasBg.height = window.innerHeight;
