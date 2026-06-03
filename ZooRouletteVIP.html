@@ -7,13 +7,11 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
-    <title>Kalyan VIP Zoo - Master Synced</title>
+    <title>Kalyan VIP Zoo - Pure Firebase Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
@@ -42,7 +40,7 @@
 
         .left-panel { position: absolute; left: 5px; top: 5px; bottom: 5px; width: 65px; display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.6); border: 1px solid #334155; border-radius: 8px; padding: 5px; z-index: 100; }
         .back-btn { font-size: 20px; cursor: pointer; margin-bottom: 10px; filter: drop-shadow(0 2px 2px #000); }
-        .server-status { font-size: 9px; font-weight: bold; color: #39ff14; margin-bottom: 10px; }
+        .server-status { font-size: 9px; font-weight: bold; color: #39ff14; margin-bottom: 10px; text-align: center;}
         .r-title { color: #ffd700; font-size: 9px; font-weight: bold; margin-bottom: 5px; background: #222; width: 100%; text-align: center; border-radius: 4px; }
         .h-list { display: flex; flex-direction: column; gap: 4px; width: 100%; flex: 1; overflow: hidden; align-items: center; }
         .h-item { width: 26px; height: 26px; background: #1e293b; border-radius: 4px; border: 1px solid #00e5ff; display: flex; justify-content: center; align-items: center; padding: 2px; }
@@ -103,8 +101,8 @@
         .placed-chip-img { position: absolute; width: 22px; height: 22px; transition: all 0.35s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.2s; z-index: 100; }
 
         .toast-msg { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0, 229, 255, 0.95); color: #000; padding: 10px 25px; border-radius: 8px; font-weight: 900; z-index: 9999; display: none; }
-        
-        /* 🔥 NETWORK OVERLAY 🔥 */
+
+        /* 🔥 NETWORK OVERLAY CSS 🔥 */
         #network-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: #00e5ff; }
         .loading-chakra { width: 60px; height: 60px; border: 5px solid rgba(0, 229, 255, 0.2); border-top-color: #00e5ff; border-radius: 50%; animation: spinChakra 1s linear infinite; margin-bottom: 20px; }
         @keyframes spinChakra { 100% { transform: rotate(360deg); } }
@@ -112,12 +110,12 @@
         .net-sub { font-size: 12px; color: #aaa; margin-top: 5px; font-weight: bold;}
     </style>
 </head>
-<body>
+<body onclick="initAudio()">
 
     <div id="network-overlay">
         <div class="loading-chakra"></div>
-        <div class="net-text">CONNECTION LOST</div>
-        <div class="net-sub">Waiting for Internet / Server...</div>
+        <div class="net-text">CONNECTING DB</div>
+        <div class="net-sub">Waiting for Firebase Data...</div>
     </div>
 
     <div class="overlay" id="initial-loader">
@@ -138,7 +136,7 @@
 
         <div class="left-panel">
             <div class="back-btn" onclick="history.back()">⬅️</div>
-            <div id="server-status" class="server-status">🔴 On</div>
+            <div id="server-status" class="server-status">🔴 OFF</div>
             <div class="r-title">REC</div>
             <div class="h-list" id="history-list"></div>
         </div>
@@ -304,28 +302,35 @@
         tray.appendChild(m);
     });
 
-    // 🔥 FIREBASE & SOCKET INIT 🔥
+    // 🔥 PURE FIREBASE INIT 🔥
     firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
     const db = firebase.database();
     
-    // Server ka connection
-    const socket = io("https://kalyan-engine.onrender.com"); 
-
-    // 🔥 NETWORK CONNECTION CHECKER 🔥
-    window.addEventListener('offline', () => { $('network-overlay').style.display = 'flex'; });
-    window.addEventListener('online', () => { if(socket.connected) $('network-overlay').style.display = 'none'; });
-    socket.on('disconnect', () => { $('network-overlay').style.display = 'flex'; });
-    socket.on('connect', () => { 
-        if(navigator.onLine) {
-            $('network-overlay').style.display = 'none'; 
-            isBettingOpen = false;
-        }
+    let serverTimeOffset = 0;
+    db.ref(".info/serverTimeOffset").on("value", function(snap) {
+        serverTimeOffset = snap.val() || 0;
     });
+    function getTrueTime() { return Date.now() + serverTimeOffset; }
 
     const currentUserId = localStorage.getItem('userPhone') || "GUEST";
     let userBalance = 0, depB=0, winB=0, bonB=0, isBettingOpen=false;
 
     $('p-id').innerText = "ID: " + (currentUserId==="GUEST" ? "0000" : currentUserId.slice(-4));
+    
+    // CONNECTION CHECKER
+    let connectedRef = db.ref(".info/connected");
+    connectedRef.on("value", (snap) => {
+        if (snap.val() === true) {
+            $('network-overlay').style.display = 'none';
+            $('server-status').innerText = '🟢 LIVE';
+            $('server-status').style.color = '#39ff14';
+        } else {
+            $('network-overlay').style.display = 'flex';
+            $('server-status').innerText = '🔴 OFF';
+            $('server-status').style.color = '#ff3333';
+        }
+    });
+
     if(currentUserId!=="GUEST") {
         db.ref('users/'+currentUserId).on('value', s => {
             let d=s.val()||{}; depB=parseFloat(d.balance||0); winB=parseFloat(d.winning_balance||0); bonB=parseFloat(d.bonus_balance||0);
@@ -349,49 +354,26 @@
     }
 
     db.ref('Game/ZooRoulette/History').once('value', s => { 
-        let r = s.val(); if (r && Array.isArray(r)) { [...r].forEach(w => updHistory(w)); }
+        let r = s.val(); if (r) { Object.values(r).forEach(w => updHistory(w)); }
     });
 
-    // 🔥 MASTER FIX: CLIENT TIMER IS NOW CONTROLLED BY SERVER ONLY 🔥
-    let botInt, lastBeep=-1, currentState = '';
-    
-    socket.on('ZooRoulette_timerUpdate', (data) => {
-        let serverTimer = data.timer;
-        let serverState = data.state;
-        let tmr = $('main-timer');
+    // 🔥 SMART FIREBASE STATE LISTENER 🔥
+    let botInt, lastBeep=-1, currentState = '', currentEndTime = 0;
+    let isResultProcessing = false;
 
-        // Play Beep on 5 seconds left
-        if (serverState === 'betting' && serverTimer <= 5 && serverTimer > 0 && lastBeep !== serverTimer) {
-            playSound('snd-beep', 0.8);
-            lastBeep = serverTimer;
-        }
+    db.ref('Game/ZooRoulette/Status').on('value', (snap) => {
+        let data = snap.val();
+        if(!data) return;
 
-        // Stop betting exactly at 1 second to sync animation smoothly before round starts
-        if (serverState === 'betting' && serverTimer === 1) {
-            isBettingOpen = false;
-            clearInterval(botInt); 
-        }
+        currentState = data.state;
+        currentEndTime = data.endTime;
 
-        // Update visual UI Timer
-        if (serverState === 'betting') {
-            tmr.innerText = serverTimer > 0 ? serverTimer : 0;
-            tmr.style.color = serverTimer <= 5 ? "#ff3333" : "#fff";
-            tmr.style.opacity = '1';
-        } else {
-            tmr.innerText = "STOP";
-            tmr.style.color = "#ff3333";
-        }
-
-        // Handle State Change Events
-        if (currentState !== serverState) {
-            currentState = serverState;
-
-            if (serverState === 'betting') {
-                // ROUND START
+        if (currentState === 'betting') {
+            if (!isBettingOpen) {
                 isBettingOpen = true;
+                isResultProcessing = false;
                 lastBeep = -1;
                 
-                // Reset visual bets
                 betKeys.forEach(k => { 
                     myBets[k]=0; fakePools[k]=0; realPools[k]=0;
                     let e=$(`total-${k}`); if(e) e.innerText="0"; 
@@ -403,25 +385,50 @@
                 triggerBanner('alert-start'); 
                 clearInterval(botInt); 
                 botInt = setInterval(botAction, 150); 
-                
-            } else if (serverState === 'result') {
-                // STOP BETTING & PREPARE SPIN
+            }
+        } else if (currentState === 'result' || currentState === 'proc') {
+            if (isBettingOpen) {
                 isBettingOpen = false;
                 clearInterval(botInt);
                 triggerBanner('alert-stop');
-                setTimeout(() => { tmr.style.opacity = '0'; }, 1000); 
-
-            } else if (serverState === 'waiting') {
-                isBettingOpen = false;
-                clearInterval(botInt);
+                setTimeout(() => { $('main-timer').style.opacity = '0'; }, 1000); 
             }
+            if(!isResultProcessing && data.winner) {
+                isResultProcessing = true;
+                setTimeout(() => runSpin(data.winner), 1000); 
+            }
+        } else if (currentState === 'wait') {
+            isResultProcessing = false;
+            isBettingOpen = false;
+            clearInterval(botInt);
         }
     });
 
-    // 🔴 LISTEN FOR SERVER SPIN RESULT 🔴
-    socket.on('ZooRoulette_result', (data) => {
-        runSpin(data.winner); 
-    });
+    // 🔥 LOCAL SMART TIMER 🔥
+    setInterval(() => {
+        let tmr = $('main-timer');
+
+        if (currentState === 'betting' && currentEndTime > 0) {
+            let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
+            if (timeLeft < 0) timeLeft = 0;
+
+            tmr.innerText = timeLeft;
+            tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#fff";
+            tmr.style.opacity = '1';
+
+            if (timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) {
+                playSound('snd-beep', 0.8);
+                lastBeep = timeLeft;
+            }
+            if(timeLeft === 0) { isBettingOpen = false; clearInterval(botInt); }
+        } else if (currentState === 'result' || currentState === 'proc') {
+            tmr.innerText = "STOP";
+            tmr.style.color = "#ff3333";
+        } else {
+            tmr.innerText = "WAIT";
+            tmr.style.color = "#fff";
+        }
+    }, 200);
 
     // BOTS STEALTH BETTING
     function botAction() {
