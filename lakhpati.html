@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VIP Matka Casino - Smart Secure Edition</title>
+    <title>VIP Matka Casino - Pure Firebase Edition</title>
     
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <!-- 🔥 100% PURE FIREBASE (NO SOCKET.IO) 🔥 -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
@@ -143,7 +144,7 @@
         #network-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; }
         .loading-chakra { width: 60px; height: 60px; border: 6px solid rgba(255, 215, 0, 0.2); border-top-color: #ffd700; border-radius: 50%; animation: spinChakra 1s linear infinite; margin-bottom: 20px; }
         @keyframes spinChakra { 100% { transform: rotate(360deg); } }
-        .net-text { font-size: 22px; letter-spacing: 2px; text-shadow: 0 2px 4px #000; font-weight: 900;}
+        .net-text { font-size: 22px; letter-spacing: 2px; text-shadow: 0 2px 4px #000; font-weight: bold;}
         .net-sub { font-size: 12px; color: #aaa; margin-top: 5px; }
     </style>
 </head>
@@ -151,8 +152,8 @@
 
     <div id="network-overlay">
         <div class="loading-chakra"></div>
-        <div class="net-text">CONNECTION LOST</div>
-        <div class="net-sub">Waiting for Internet / Server...</div>
+        <div class="net-text">CONNECTING DB</div>
+        <div class="net-sub">Waiting for Firebase Data...</div>
     </div>
 
     <div class="header">
@@ -242,6 +243,7 @@
     </div>
 
 <script>
+    // 🔥 FIREBASE INIT 🔥
     var firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     var database = firebase.database();
@@ -251,28 +253,25 @@
     database.ref(".info/serverTimeOffset").on("value", function(snap) {
         serverTimeOffset = snap.val() || 0;
     });
-
-    function getTrueTime() {
-        return new Date().getTime() + serverTimeOffset;
-    }
+    function getTrueTime() { return Date.now() + serverTimeOffset; }
 
     // 🔥 FIREBASE CONNECTION CHECKER 🔥
+    const netUI = document.getElementById('network-overlay');
     let connectedRef = database.ref(".info/connected");
     connectedRef.on("value", (snap) => {
         if (snap.val() === true) {
-            document.getElementById('network-overlay').style.display = 'none';
+            netUI.style.display = 'none';
         } else {
-            document.getElementById('network-overlay').style.display = 'flex';
+            netUI.style.display = 'flex';
         }
     });
 
-    const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+    const phone = localStorage.getItem('userPhone');
     let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
 
-    if (phone && phone !== "Guest" && phone !== "null") {
+    if (phone) {
         database.ref('users/' + phone).on('value', (snap) => {
             const data = snap.val() || {}; 
-            
             document.getElementById('player-id-display').innerText = "ID: " + (data.playerId || "KP" + phone.slice(-4));
             
             depBal = parseFloat(data.balance || 0); 
@@ -312,11 +311,11 @@
 
     let maxAllowed = 4;
     function updateRulesByTime() {
-        // 🔥 YAHAN TRUE SERVER TIME USE KIYA HAI 🔥
-        const now = new Date(getTrueTime());
-        const istTime = new Date(now.getTime() + (now.getTimezoneOffset() + 330) * 60000);
-        const hours = istTime.getHours();
-        const mins = istTime.getMinutes();
+        // Fetch true server time instead of mobile time
+        const trueEpoch = getTrueTime();
+        const istDate = new Date(trueEpoch + (330 * 60000));
+        const hours = istDate.getUTCHours();
+        const mins = istDate.getUTCMinutes();
         const timeVal = hours + (mins / 100);
 
         const allSlots = ['slot-14', 'slot-16', 'slot-18', 'slot-20'];
@@ -391,7 +390,7 @@
 
     function placeBet() {
         let amount = parseInt(document.getElementById('betAmount').value) || 0;
-        if(!phone || phone === "Guest" || phone === "null") return alert("⚠️ Kripya pehle Login karein!");
+        if(!phone) return alert("⚠️ Kripya pehle Login karein!");
         if(userBalance < amount) return alert("⚠️ Wallet mein balance kam hai!");
         if(selectedCards.length === 0) return alert("⚠️ Kripya patte select karein!");
 
