@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>Kalyan VIP - Live Markets</title>
+    <title>Kalyan VIP - Smart & Secure Markets</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Roboto', sans-serif; user-select:none; }
         body { background-color:#0d0518; color:#fff; padding-bottom:80px; }
@@ -54,14 +55,27 @@
         .bet-input { width:100%; padding:16px; margin-bottom:15px; background:#0a0312; border:1px solid #6441A5; color:#ffd700; border-radius:10px; outline:none; font-size: 18px; font-weight: 900; text-align: center; }
         .btn-confirm { background:linear-gradient(180deg, #00ff88, #00b050); color:#000; width:100%; padding:16px; border:none; border-radius:10px; font-weight:900; cursor:pointer; font-size: 17px; text-transform: uppercase; }
         
-        /* 🔥 Nav Bar for Bottom 🔥 */
         .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #160a2c; display: flex; justify-content: space-around; padding: 12px; border-top: 1px solid #3d1b63; z-index: 1100; box-shadow: 0 -5px 15px rgba(0,0,0,0.5); }
         .nav-btn { color: #b39ddb; text-decoration: none; font-weight: bold; font-size: 12px; text-align: center; cursor: pointer; }
         .nav-btn i { font-size: 18px; display: block; margin-bottom: 4px; }
         .nav-btn.active { color: #ffd700; }
+
+        /* 🔥 NETWORK OVERLAY CSS 🔥 */
+        #network-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; }
+        .loading-chakra { width: 60px; height: 60px; border: 6px solid rgba(255, 215, 0, 0.2); border-top-color: #ffd700; border-radius: 50%; animation: spinChakra 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spinChakra { 100% { transform: rotate(360deg); } }
+        .net-text { font-size: 22px; letter-spacing: 2px; text-shadow: 0 2px 4px #000; font-weight: 900;}
+        .net-sub { font-size: 12px; color: #aaa; margin-top: 5px; }
     </style>
 </head>
 <body>
+
+    <div id="network-overlay">
+        <div class="loading-chakra"></div>
+        <div class="net-text">CONNECTION LOST</div>
+        <div class="net-sub">Waiting for Internet / Server...</div>
+    </div>
+
     <header class="header">
         <h1>👑 KALYAN VIP MARKETS</h1>
         <div class="date-box" id="todayDate">Loading...</div>
@@ -114,6 +128,27 @@
         const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
         let activeMarket = null, selectedGameType = "";
         let depBal = 0, winBal = 0, bonBal = 0, totalBal = 0;
+
+        // 🔥 HACK-PROOF SERVER TIME SYNC 🔥
+        let serverTimeOffset = 0;
+        db.ref(".info/serverTimeOffset").on("value", function(snap) {
+            serverTimeOffset = snap.val() || 0;
+        });
+
+        // Ab phone ka nahi, Server ka true time milega
+        function getTrueTime() {
+            return new Date().getTime() + serverTimeOffset;
+        }
+
+        // 🔥 FIREBASE CONNECTION CHECKER 🔥
+        let connectedRef = db.ref(".info/connected");
+        connectedRef.on("value", (snap) => {
+            if (snap.val() === true) {
+                document.getElementById('network-overlay').style.display = 'none';
+            } else {
+                document.getElementById('network-overlay').style.display = 'flex';
+            }
+        });
 
         const markets = {
             "time_day": { name: "TIME BAZAR", open: "01:00 PM", close: "02:00 PM" },
@@ -176,7 +211,9 @@
         function parseTime(timeStr) {
             let [time, modifier] = timeStr.split(' '); let [hours, minutes] = time.split(':');
             hours = parseInt(hours, 10); if (hours === 12) hours = 0; if (modifier === 'PM') hours += 12;
-            let d = new Date(); d.setHours(hours, parseInt(minutes, 10), 0, 0); return d;
+            let d = new Date(getTrueTime()); // Use true server time for reference
+            d.setHours(hours, parseInt(minutes, 10), 0, 0); 
+            return d;
         }
 
         function formatDiff(diff) {
@@ -187,7 +224,8 @@
         }
 
         setInterval(() => {
-            let now = new Date().getTime();
+            // 🔥 YAHAN USE KIYA HAI TRUE SERVER TIME 🔥
+            let now = getTrueTime();
             Object.keys(markets).forEach(id => {
                 let timerElem = document.getElementById('timer_' + id); let cardElem = document.getElementById('card_' + id); let btnElem = document.getElementById('btn_' + id);
                 if(!timerElem) return;
@@ -207,7 +245,7 @@
 
         function openBetModal(id, name, ot, ct) {
             let openTime = parseTime(ot).getTime();
-            let now = new Date().getTime();
+            let now = getTrueTime();
             activeMarket = { id, name, openTime: openTime };
             document.getElementById('modalMarketName').innerText = name;
             let isOpenClosed = now >= openTime; 
@@ -222,7 +260,7 @@
         }
 
         function selectGame(gt) {
-            let now = new Date().getTime();
+            let now = getTrueTime();
             if((gt === 'Jodi Digit' || gt === 'Half Sangam') && now >= activeMarket.openTime) return alert("Time Over!");
             selectedGameType = gt;
             document.getElementById('gameGrid').style.display = 'none';
@@ -253,7 +291,7 @@
             let sess = isJS ? "FULL" : (document.getElementById('radioOpen').checked ? "OPEN" : "CLOSE");
             document.getElementById('confirmBtn').disabled = true;
             db.ref('users/' + userPhone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) }).then(() => {
-                let b = { marketName: activeMarket.name, gameType: selectedGameType, session: sess, bidNumber: num, betAmount: amt, status: "pending", timestamp: Date.now() };
+                let b = { marketName: activeMarket.name, gameType: selectedGameType, session: sess, bidNumber: num, betAmount: amt, status: "pending", timestamp: firebase.database.ServerValue.TIMESTAMP };
                 db.ref('BetHistory/' + userPhone).push(b);
                 alert("Bet Placed!"); 
                 closeBetModal();
