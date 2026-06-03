@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger 2 VIP - Master Edition</title>
+    <title>Dragon Tiger 2 VIP - Smart Limit Edition</title>
+    
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial Black', sans-serif; }
         
+        /* 🔥 FULL NEON BACKGROUND IMAGE 🔥 */
         body { 
             background: #1a0b2e url('assets/360_F_654861640_W8QmNeS82ZhiAZhdd6E7QW43qQQFkKOj.jpg') center/cover no-repeat; 
             overflow: hidden; 
@@ -148,6 +150,7 @@
         #vs-clash-screen { position: absolute; inset: 0; z-index: 3000; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; overflow: hidden; }
         .clash-dragon, .clash-tiger { width: 45%; mix-blend-mode: screen; }
 
+        /* 🔥 NETWORK OVERLAY CSS 🔥 */
         #network-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; }
         .loading-chakra { width: 60px; height: 60px; border: 6px solid rgba(255, 215, 0, 0.2); border-top-color: #ffd700; border-radius: 50%; animation: spinChakra 1s linear infinite; margin-bottom: 20px; }
         @keyframes spinChakra { 100% { transform: rotate(360deg); } }
@@ -350,68 +353,96 @@
             firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
             const db = firebase.database();
             const ph = localStorage.getItem('userPhone') || "GUEST";
-            
-            const socket = io("https://kalyan-engine.onrender.com");
             const netUI = $('network-overlay');
 
-            window.addEventListener('offline', () => { netUI.style.display = 'flex'; });
-            window.addEventListener('online', () => { if(socket.connected) netUI.style.display = 'none'; });
-            
-            socket.on('disconnect', () => { netUI.style.display = 'flex'; });
-            socket.on('connect', () => { 
-                if(navigator.onLine) {
-                    netUI.style.display = 'none'; 
+            // 🔥 HACK-PROOF SERVER TIME SYNC 🔥
+            let serverTimeOffset = 0;
+            db.ref(".info/serverTimeOffset").on("value", function(snap) {
+                serverTimeOffset = snap.val() || 0;
+            });
+            function getTrueTime() { return Date.now() + serverTimeOffset; }
+
+            // 🔥 FIREBASE CONNECTION CHECKER 🔥
+            let connectedRef = db.ref(".info/connected");
+            connectedRef.on("value", (snap) => {
+                if (snap.val() === true) {
+                    netUI.style.display = 'none';
                     iBO = 0; rUI(); $('tmr').innerText = "SYNCING..."; 
-                    fetchInitialHistory(); 
+                    fetchInitialHistory();
+                } else {
+                    netUI.style.display = 'flex';
                 }
             });
 
-            socket.on('DragonTiger2_timerUpdate', (data) => {
-                let tmr = $('tmr'); 
-                if(data.state === 'betting') {
-                    tmr.innerText = data.timer + "s"; 
-                    tmr.style.color = data.timer <= 5 ? "#ff3333" : "#ffd700";
+            // 🔥 SMART LISTENER: Sirf State Badalne Par Request Jayegi 🔥
+            let currentState = '';
+            let currentEndTime = 0;
+
+            db.ref('Game/DragonTiger2/Status').on('value', (snap) => {
+                let data = snap.val();
+                if(!data) return;
+
+                currentState = data.state;
+                currentEndTime = data.endTime;
+
+                if(currentState === 'betting') {
                     if(iBO===0) { 
                         iBO=1; rUI(); 
                         isResultProcessing = false; 
-                        $('alert-start').classList.add('show'); setTimeout(()=>$('alert-start').classList.remove('show'), 1200); 
+                        let aStart = $('alert-start');
+                        if (aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1200); }
                     }
-                    if(data.timer<=5 && data.timer>0 && lastBeep!==data.timer) { pS('snd-beep', 0.8); lastBeep=data.timer; }
-                } else {
-                    tmr.innerText = "STOP!"; tmr.style.color = "#fff";
+                } else if(currentState === 'result' || currentState === 'proc') {
                     if(iBO === 1) {
                         iBO = 0; rUI();
-                        $('alert-stop').classList.add('show'); setTimeout(()=>$('alert-stop').classList.remove('show'), 1200);
-                        $('tmr').innerText = "WAITING...";
+                        let aStop = $('alert-stop');
+                        if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1200); }
                     }
+                    if(!isResultProcessing && data.winner) {
+                        isResultProcessing = true; 
+                        lastBeep = -1; 
+                        setTimeout(() => { 
+                            let vsScreen = $('vs-clash-screen');
+                            if (vsScreen) {
+                                vsScreen.style.display='flex'; 
+                                pS('snd-clash', 1); 
+                                setTimeout(()=>vsScreen.style.display='none', 1000); 
+                            }
+                        }, 1200);
+                        setTimeout(() => sR_Sequence(data.winner), 2400);
+                    }
+                } else if(currentState === 'wait') {
+                    isResultProcessing = false;
                 }
             });
 
-            socket.on('DragonTiger2_result', (data) => {
-                if(isResultProcessing) return; 
-                isResultProcessing = true; 
-                
-                iBO=0; lastBeep=-1; 
-                $('alert-stop').classList.add('show'); setTimeout(()=>$('alert-stop').classList.remove('show'), 1200);
-                
-                setTimeout(() => { 
-                    $('vs-clash-screen').style.display='flex'; 
-                    pS('snd-clash', 1); 
-                    setTimeout(()=>$('vs-clash-screen').style.display='none', 1000); 
-                }, 1200);
+            // 🔥 LOCAL TIMER ENGINE: Mobile Apne Andar Khud Ginti Chalayega 🔥
+            setInterval(() => {
+                let tmr = $('tmr'); 
+                if(!tmr) return;
 
-                setTimeout(() => sR_Sequence(data.winner || 'tie'), 2400);
-            });
+                if (currentState === 'betting' && currentEndTime > 0) {
+                    let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
+                    if (timeLeft < 0) timeLeft = 0;
 
-            socket.on('DragonTiger2_newRound', () => {
-                iBO = 1; isResultProcessing = false; rUI();
-                $('alert-start').classList.add('show'); setTimeout(()=>$('alert-start').classList.remove('show'), 1200); 
-            });
+                    tmr.innerText = timeLeft + "s"; 
+                    tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#ffd700";
+
+                    if(timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) { 
+                        pS('snd-beep', 0.8); lastBeep = timeLeft; 
+                    }
+                } else if (currentState === 'result' || currentState === 'proc') {
+                    tmr.innerText = "STOP!"; tmr.style.color = "#fff";
+                } else {
+                    tmr.innerText = "WAITING..."; tmr.style.color = "#fff";
+                }
+            }, 200);
 
             db.ref('users/'+ph).on('value', s => {
                 let d=s.val()||{}; dB = parseFloat(d.balance||0); wB = parseFloat(d.winning_balance||0); bB = parseFloat(d.bonus_balance||0);
                 tB = Math.max(0, dB+wB+bB);
-                $('bal-bot').innerText = tB.toFixed(2); $('p-id').innerText = ph.slice(-4);
+                let balBot = $('bal-bot'); if(balBot) balBot.innerText = tB.toFixed(2); 
+                let pId = $('p-id'); if(pId) pId.innerText = ph.slice(-4);
                 document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
             });
 
@@ -445,8 +476,11 @@
                 spC(s, chipImgs[cC], $('my-wallet'), false, cC); 
                 myBets[s] += cC;
                 let mbID = 'mb-' + (s === 'tie' ? 'ti' : s.charAt(0));
-                $(mbID).innerText = '₹' + formatMoney(myBets[s]);
-                $(mbID).style.display = 'block';
+                let mbEl = $(mbID);
+                if(mbEl) {
+                    mbEl.innerText = '₹' + formatMoney(myBets[s]);
+                    mbEl.style.display = 'block';
+                }
             };
 
         } catch(e){}
@@ -475,11 +509,13 @@
             else if(safeW === 'tiger') { tIdx = Math.floor(Math.random()*6)+7; dIdx = Math.floor(Math.random()*6); } 
             else { dIdx = Math.floor(Math.random()*13); tIdx = dIdx; } 
 
-            pS('snd-card', 1); $('b-d').style.opacity='0'; 
-            dv = $('d-v'); if(dv) dv.innerHTML = `<div class="black-suit" style="font-size:20px; font-weight:900;">${vals[dIdx]}<br><span style="font-size:30px">♠</span></div>`;
+            pS('snd-card', 1); 
+            let bd = $('b-d'); if(bd) bd.style.opacity='0'; 
+            let dv = $('d-v'); if(dv) dv.innerHTML = `<div class="black-suit" style="font-size:20px; font-weight:900;">${vals[dIdx]}<br><span style="font-size:30px">♠</span></div>`;
             setTimeout(() => {
-                pS('snd-card', 1); $('b-t').style.opacity='0';
-                tv = $('t-v'); if(tv) tv.innerHTML = `<div class="red-suit" style="font-size:20px; font-weight:900;">${vals[tIdx]}<br><span style="font-size:30px">♥</span></div>`;
+                pS('snd-card', 1); 
+                let bt = $('b-t'); if(bt) bt.style.opacity='0';
+                let tv = $('t-v'); if(tv) tv.innerHTML = `<div class="red-suit" style="font-size:20px; font-weight:900;">${vals[tIdx]}<br><span style="font-size:30px">♥</span></div>`;
                 
                 setTimeout(() => {
                     let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
@@ -492,8 +528,7 @@
                         let dbImg = $('dragon-beast'); if(dbImg) dbImg.classList.add('roaring');
                         if(vidDragon) { vidDragon.muted = false; vidDragon.play().catch(()=>{}); }
                     } else if(safeW === 'tiger') {
-                        let tbImg = $('tiger-beast'); if(tbImg) tbImg.classList.remove('roaring');
-                        tbImg.classList.add('roaring');
+                        let tbImg = $('tiger-beast'); if(tbImg) { tbImg.classList.remove('roaring'); tbImg.classList.add('roaring'); }
                         if(vidTiger) { vidTiger.muted = false; vidTiger.play().catch(()=>{}); }
                     }
                     
