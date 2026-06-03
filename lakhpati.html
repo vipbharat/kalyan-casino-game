@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VIP Matka Casino - Pro Edition</title>
+    <title>VIP Matka Casino - Smart Secure Edition</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -48,7 +48,7 @@
             font-size: 12px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
-        /* 🔥 NEW WALLET HEADER (Attached to Dashboard Logic) 🔥 */
+        /* WALLET HEADER */
         .wallet-header {
             background: rgba(0,0,0,0.8); padding: 10px 15px; border-bottom: 2px solid var(--gold);
             display: flex; justify-content: space-between; align-items: center; z-index: 9;
@@ -138,9 +138,22 @@
         .tab-btn.active { background: var(--gold); color: black; }
         .tab-content { flex: 1; padding: 15px; overflow-y: auto; display: none; }
         .tab-content.active { display: block; }
+
+        /* NETWORK OVERLAY CSS */
+        #network-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; }
+        .loading-chakra { width: 60px; height: 60px; border: 6px solid rgba(255, 215, 0, 0.2); border-top-color: #ffd700; border-radius: 50%; animation: spinChakra 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spinChakra { 100% { transform: rotate(360deg); } }
+        .net-text { font-size: 22px; letter-spacing: 2px; text-shadow: 0 2px 4px #000; font-weight: 900;}
+        .net-sub { font-size: 12px; color: #aaa; margin-top: 5px; }
     </style>
 </head>
 <body>
+
+    <div id="network-overlay">
+        <div class="loading-chakra"></div>
+        <div class="net-text">CONNECTION LOST</div>
+        <div class="net-sub">Waiting for Internet / Server...</div>
+    </div>
 
     <div class="header">
         <a href="dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i></a>
@@ -233,18 +246,35 @@
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     var database = firebase.database();
 
-    // 🔥 DASHBOARD SYNC LOGIC 🔥
-    const phone = localStorage.getItem('userPhone');
+    // 🔥 HACK-PROOF SERVER TIME SYNC 🔥
+    let serverTimeOffset = 0;
+    database.ref(".info/serverTimeOffset").on("value", function(snap) {
+        serverTimeOffset = snap.val() || 0;
+    });
+
+    function getTrueTime() {
+        return new Date().getTime() + serverTimeOffset;
+    }
+
+    // 🔥 FIREBASE CONNECTION CHECKER 🔥
+    let connectedRef = database.ref(".info/connected");
+    connectedRef.on("value", (snap) => {
+        if (snap.val() === true) {
+            document.getElementById('network-overlay').style.display = 'none';
+        } else {
+            document.getElementById('network-overlay').style.display = 'flex';
+        }
+    });
+
+    const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
     let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
 
-    if (phone) {
+    if (phone && phone !== "Guest" && phone !== "null") {
         database.ref('users/' + phone).on('value', (snap) => {
             const data = snap.val() || {}; 
             
-            // Player ID set karne ka Dashboard wala code
             document.getElementById('player-id-display').innerText = "ID: " + (data.playerId || "KP" + phone.slice(-4));
             
-            // Balance set karne ka Dashboard wala code
             depBal = parseFloat(data.balance || 0); 
             winBal = parseFloat(data.winning_balance || 0); 
             bonBal = parseFloat(data.bonus_balance || 0);
@@ -282,7 +312,8 @@
 
     let maxAllowed = 4;
     function updateRulesByTime() {
-        const now = new Date();
+        // 🔥 YAHAN TRUE SERVER TIME USE KIYA HAI 🔥
+        const now = new Date(getTrueTime());
         const istTime = new Date(now.getTime() + (now.getTimezoneOffset() + 330) * 60000);
         const hours = istTime.getHours();
         const mins = istTime.getMinutes();
@@ -360,7 +391,7 @@
 
     function placeBet() {
         let amount = parseInt(document.getElementById('betAmount').value) || 0;
-        if(!phone) return alert("⚠️ Kripya pehle Login karein!");
+        if(!phone || phone === "Guest" || phone === "null") return alert("⚠️ Kripya pehle Login karein!");
         if(userBalance < amount) return alert("⚠️ Wallet mein balance kam hai!");
         if(selectedCards.length === 0) return alert("⚠️ Kripya patte select karein!");
 
