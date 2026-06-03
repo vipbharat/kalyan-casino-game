@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crash VIP Pro - Secure Client Mode</title>
+    <title>Crash VIP Pro - Smart Limit Edition</title>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
@@ -41,15 +41,28 @@
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
         #win-popup { position: absolute; top: 35%; z-index: 200; background: var(--neon); color: #000; padding: 15px 45px; border-radius: 40px; font-weight: 900; font-size: 30px; display: none; box-shadow: 0 0 50px var(--neon); border: 4px solid #fff; animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes pop { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
+
+        /* 🔥 NETWORK OVERLAY CSS 🔥 */
+        #network-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; }
+        .loading-chakra { width: 60px; height: 60px; border: 6px solid rgba(255, 215, 0, 0.2); border-top-color: #ffd700; border-radius: 50%; animation: spinChakra 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spinChakra { 100% { transform: rotate(360deg); } }
+        .net-text { font-size: 22px; letter-spacing: 2px; text-shadow: 0 2px 4px #000; }
+        .net-sub { font-size: 12px; color: #aaa; margin-top: 5px; }
     </style>
 </head>
 <body onclick="initAudio()">
+
+    <div id="network-overlay">
+        <div class="loading-chakra"></div>
+        <div class="net-text">CONNECTION LOST</div>
+        <div class="net-sub">Waiting for Internet / Server...</div>
+    </div>
 
     <audio id="sndFly" src="https://assets.mixkit.co/active_storage/sfx/1569/1569-preview.mp3" loop></audio>
     <audio id="sndBlast" src="https://assets.mixkit.co/active_storage/sfx/1702/1702-preview.mp3"></audio>
 
     <div class="header">
-        <div style="font-weight: 900; font-size: 20px; letter-spacing: 1px;">CRASH <span style="color:var(--neon)">VIP Pro</span></div>
+        <div style="font-weight: 900; font-size: 20px; letter-spacing: 1px; cursor: pointer;" onclick="window.history.back()">⬅️ CRASH <span style="color:var(--neon)">VIP</span></div>
         <div class="wallet">₹<span id="balance">0.00</span></div>
     </div>
 
@@ -85,7 +98,17 @@
     const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone');
+    const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST";
+
+    // 🔥 FIREBASE CONNECTION CHECKER 🔥
+    let connectedRef = db.ref(".info/connected");
+    connectedRef.on("value", (snap) => {
+        if (snap.val() === true) {
+            document.getElementById('network-overlay').style.display = 'none';
+        } else {
+            document.getElementById('network-overlay').style.display = 'flex';
+        }
+    });
 
     let audioReady = false;
     const sFly = document.getElementById('sndFly');
@@ -127,53 +150,79 @@
         bar.innerHTML = "";
         crashHistory.forEach(val => {
             let col = val < 2 ? "#ff3333" : (val < 10 ? "#00ff88" : "#ffd700");
-            bar.innerHTML += `<div class="hist-item" style="color:${col}; border: 1px solid ${col};">${val.toFixed(2)}x</div>`;
+            bar.innerHTML += `<div class="hist-item" style="color:${col}; border: 1px solid ${col};">${parseFloat(val).toFixed(2)}x</div>`;
         });
     }
-    renderHistory();
 
-    let gameState = "WAITING", lastState = "";
+    // Server History Load
+    db.ref('Game/Crash/History').orderByKey().limitToLast(15).on('value', snap => {
+        let hist = snap.val();
+        if(hist) {
+            crashHistory = Object.values(hist);
+            renderHistory();
+        }
+    });
+
+    let gameState = "WAITING";
     let currMult = 1.00, crashPoint = 1.00;
-    let flightStart = 0, waitEnd = 0;
+    let flightStart = 0, currentEndTime = 0;
+    let isResultProcessing = false;
 
     const mainBtn = document.getElementById('mainBtn');
     const multLabel = document.getElementById('multText');
     const statusLabel = document.getElementById('statusLabel');
 
-    // 🔥 LISTENING TO MASTER SERVER 🔥
-    db.ref('game_loop').on('value', snap => {
+    // 🔥 SMART LISTENER: MASTER SERVER SE DIRECT SYNC 🔥
+    db.ref('Game/Crash/Status').on('value', snap => {
         const d = snap.val(); if(!d) return;
-        gameState = d.state;
 
-        if(gameState !== lastState) {
-            if(gameState === "WAITING") {
-                waitEnd = d.waitEndTime; currMult = 1.00; isCashed = false;
+        currentEndTime = d.endTime;
+        
+        if (d.state === 'betting') {
+            if (gameState !== 'WAITING') {
+                gameState = "WAITING";
+                currMult = 1.00; isCashed = false; isBetted = false;
                 document.getElementById('win-popup').style.display = "none";
                 sFly.pause(); sBlast.pause();
                 particles = []; 
+                isResultProcessing = false;
                 
-                if(!isBetted) { mainBtn.innerText = "PLACE BET ₹" + selectedBet; mainBtn.className = "action-btn btn-bet"; }
-                else { mainBtn.innerText = "WAITING FOR ROUND"; mainBtn.className = "action-btn btn-lock"; }
-                
-            } else if(gameState === "FLYING") {
-                flightStart = d.startTime;
+                mainBtn.innerText = "PLACE BET ₹" + selectedBet; 
+                mainBtn.className = "action-btn btn-bet";
+            }
+        } 
+        else if (d.state === 'proc' || d.state === 'result') {
+            if (gameState === 'WAITING' || gameState === 'proc') {
+                gameState = "FLYING";
+                flightStart = Date.now(); // Local start time
                 if(audioReady) { sFly.currentTime = 0; sFly.play().catch(()=>{}); }
-                if(isBetted && !isCashed) { mainBtn.innerText = "CASH OUT"; mainBtn.className = "action-btn btn-cashout"; }
-                else { mainBtn.innerText = "ROUND IN PROGRESS"; mainBtn.className = "action-btn btn-lock"; }
-
-            } else if(gameState === "CRASHED") {
-                crashPoint = d.crashMultiplier; sFly.pause();
                 
-                crashHistory.unshift(crashPoint);
-                if(crashHistory.length > 15) crashHistory.pop();
-                renderHistory();
+                if(isBetted && !isCashed) { 
+                    mainBtn.innerText = "CASH OUT"; mainBtn.className = "action-btn btn-cashout"; 
+                } else { 
+                    mainBtn.innerText = "ROUND IN PROGRESS"; mainBtn.className = "action-btn btn-lock"; 
+                }
+            }
 
+            if(d.state === 'result' && !isResultProcessing) {
+                isResultProcessing = true;
+                gameState = "CRASHED";
+                crashPoint = d.winner || 1.00; 
+                sFly.pause();
                 if(audioReady) { sBlast.currentTime = 0; sBlast.play().catch(()=>{}); }
-                if(isBetted && !isCashed) { mainBtn.innerText = "YOU LOST"; isBetted = false; }
-                else { mainBtn.innerText = "CRASHED"; }
+
+                if(isBetted && !isCashed) { 
+                    mainBtn.innerText = "YOU LOST"; isBetted = false; 
+                } else if(isCashed) {
+                    mainBtn.innerText = "CASHED OUT";
+                } else {
+                    mainBtn.innerText = "CRASHED"; 
+                }
                 mainBtn.className = "action-btn btn-lock";
             }
-            lastState = gameState;
+        } else if (d.state === 'wait') {
+            gameState = "WAITING_NEXT";
+            mainBtn.innerText = "PREPARING NEXT ROUND..."; mainBtn.className = "action-btn btn-lock";
         }
     });
 
@@ -189,8 +238,8 @@
             db.ref('users/'+phone).update({ balance: nDep, winning_balance: nWin }).then(() => {
                 isBetted = true;
                 mainBtn.innerText = "WAITING FOR ROUND"; mainBtn.className = "action-btn btn-lock";
-                // Bet bhej di server ko calculation ke liye!
-                db.ref('current_bets/'+phone).set({ amount: selectedBet });
+                // Bet placed in Firebase
+                db.ref(`Game/Crash/Bets/${phone}`).set({ amount: selectedBet });
             });
 
         } else if(gameState === "FLYING" && isBetted && !isCashed) {
@@ -216,8 +265,9 @@
 
     function draw() {
         ctx.clearRect(0,0,cw,ch);
-        if(gameState === "WAITING") {
-            let left = Math.max(0, (waitEnd - Date.now())/1000);
+        
+        if(gameState === "WAITING" || gameState === "WAITING_NEXT") {
+            let left = Math.max(0, (currentEndTime - Date.now())/1000);
             statusLabel.innerText = "NEXT ROUND: " + left.toFixed(1) + "s";
             statusLabel.style.color = "var(--neon)";
             multLabel.innerText = "1.00x"; multLabel.style.color = "#fff";
@@ -226,7 +276,8 @@
             statusLabel.innerText = "FLYING!";
             statusLabel.style.color = "#fff";
             let elapsed = Date.now() - flightStart;
-            currMult = Math.pow(Math.E, 0.00006 * elapsed);
+            // E curve for realistic crash graph
+            currMult = Math.pow(Math.E, 0.00006 * elapsed); 
             multLabel.innerText = currMult.toFixed(2) + "x";
             multLabel.style.color = (currMult > 2) ? (currMult > 5 ? "#ff3333" : "#ffd700") : "var(--neon)";
             
@@ -235,8 +286,8 @@
         } else if(gameState === "CRASHED") {
             statusLabel.innerText = "FLEW AWAY!";
             statusLabel.style.color = "var(--red)";
-            multLabel.innerText = crashPoint.toFixed(2) + "x"; multLabel.style.color = "var(--red)";
-            renderRocket(Math.log(crashPoint)/0.00006, false);
+            multLabel.innerText = parseFloat(crashPoint).toFixed(2) + "x"; multLabel.style.color = "var(--red)";
+            renderRocket(Math.log(parseFloat(crashPoint))/0.00006, false);
         }
         requestAnimationFrame(draw);
     }
