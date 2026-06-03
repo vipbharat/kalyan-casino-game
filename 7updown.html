@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>7 Up Down - Luxury VIP Pro</title>
+    <title>7 Up Down - Smart Limit VIP</title>
     
+    <!-- 🔥 SIRF FIREBASE HAI, SOCKET.IO HATA DIYA GAYA HAI 🔥 -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
     <style>
         :root { --gold: #d4af37; --blue: #00e5ff; --pink: #ff007f; --green: #00ff88; }
@@ -220,7 +220,6 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     
-    const socket = io("https://kalyan-engine.onrender.com");
     let userID = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST";
     
     let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0; 
@@ -234,6 +233,10 @@
     let isBettingOpen = false, isResultProcessing = false;
     let botSimulationInterval, lastBeep = -1;
     let localHistory = [];
+
+    // 🔥 SMART LOCAL TIMER VARIABLES 🔥
+    let currentEndTime = 0;
+    let currentState = '';
 
     const pips = { 1:[5], 2:[3,7], 3:[3,5,7], 4:[1,3,7,9], 5:[1,3,5,7,9], 6:[1,3,4,6,7,9] };
     const faceOrder = ['front', 'right', 'back', 'left', 'top', 'bottom'];
@@ -328,14 +331,18 @@
         document.getElementById('live-users').innerText = `● ${baseCount} LIVE`;
     }, 3500);
 
+    // 🔥 FIREBASE CONNECTION CHECKER 🔥
     window.addEventListener('offline', () => { document.getElementById('network-overlay').style.display = 'flex'; });
-    window.addEventListener('online', () => { if(socket.connected) document.getElementById('network-overlay').style.display = 'none'; });
-    socket.on('disconnect', () => { document.getElementById('network-overlay').style.display = 'flex'; });
-    socket.on('connect', () => { 
-        if(navigator.onLine) {
-            document.getElementById('network-overlay').style.display = 'none'; 
+    
+    let connectedRef = db.ref(".info/connected");
+    connectedRef.on("value", (snap) => {
+        if (snap.val() === true) {
+            document.getElementById('network-overlay').style.display = 'none';
             isBettingOpen = false;
+            resetTable();
             fetchInitialHistory();
+        } else {
+            document.getElementById('network-overlay').style.display = 'flex';
         }
     });
 
@@ -386,9 +393,15 @@
         document.getElementById('history-row').innerHTML = hHtml;
     }
 
-    socket.on('7UpDown_timerUpdate', (data) => {
-        const timerEl = document.getElementById('timer');
-        if(data.state === 'betting') {
+    // 🔥 SMART LISTENER: Sirf State Badalne Par Request Jayegi 🔥
+    db.ref('Game/7UpDown/Status').on('value', (snap) => {
+        let data = snap.val();
+        if(!data) return;
+
+        currentState = data.state;
+        currentEndTime = data.endTime;
+
+        if(currentState === 'betting') {
             if(!isBettingOpen) {
                 isBettingOpen = true;
                 isResultProcessing = false;
@@ -401,54 +414,55 @@
                 // 🔥 FAST BOT BETTING (200ms) 🔥
                 clearInterval(botSimulationInterval); botSimulationInterval = setInterval(botBetAction, 200);
             }
-            timerEl.innerText = data.timer + "s";
-            if(data.timer <= 5) {
-                timerEl.style.color = '#ff007f';
-                if(data.timer > 0 && lastBeep !== data.timer) { playSound('snd-beep', 0.8); lastBeep = data.timer; }
-            } else {
-                timerEl.style.color = '#fff'; lastBeep = -1;
-            }
-        } else {
-            timerEl.innerText = "STOP";
-            timerEl.style.color = '#fff';
+        } else if(currentState === 'result' || currentState === 'proc') {
             if(isBettingOpen) {
                 isBettingOpen = false;
                 clearInterval(botSimulationInterval);
                 let aStop = document.getElementById('alert-stop');
                 aStop.style.display = 'block'; setTimeout(() => aStop.style.display = 'none', 1000);
             }
-        }
-    });
-
-    socket.on('7UpDown_result', (data) => {
-        if(isResultProcessing) return;
-        isResultProcessing = true; lastBeep = -1;
-        
-        let winId = getSafeRecord(data.winner).id; 
-        let v1 = data.v1;
-        let v2 = data.v2;
-
-        if(v1 !== undefined && v2 !== undefined) {
-            let sum = v1 + v2;
-            if(sum < 7) winId = 'low';
-            else if(sum > 7) winId = 'high';
-            else winId = 'tie';
-        } else {
-            if(winId === 'low') {
-                do { v1 = Math.floor(Math.random()*6)+1; v2 = Math.floor(Math.random()*6)+1; } while(v1+v2 >= 7);
-            } else if(winId === 'high') {
-                do { v1 = Math.floor(Math.random()*6)+1; v2 = Math.floor(Math.random()*6)+1; } while(v1+v2 <= 7);
-            } else {
-                let pairs = [[1,6], [2,5], [3,4], [4,3], [5,2], [6,1]];
-                let p = pairs[Math.floor(Math.random()*pairs.length)];
-                v1 = p[0]; v2 = p[1];
+            if(!isResultProcessing && data.winner) {
+                isResultProcessing = true; 
+                lastBeep = -1;
+                
+                let winId = getSafeRecord(data.winner).id; 
+                let v1, v2;
+                // Generate matching dice numbers locally
+                if(winId === 'low') {
+                    do { v1 = Math.floor(Math.random()*6)+1; v2 = Math.floor(Math.random()*6)+1; } while(v1+v2 >= 7);
+                } else if(winId === 'high') {
+                    do { v1 = Math.floor(Math.random()*6)+1; v2 = Math.floor(Math.random()*6)+1; } while(v1+v2 <= 7);
+                } else {
+                    let pairs = [[1,6], [2,5], [3,4], [4,3], [5,2], [6,1]];
+                    let p = pairs[Math.floor(Math.random()*pairs.length)];
+                    v1 = p[0]; v2 = p[1];
+                }
+                
+                startRoll(v1, v2, winId);
             }
         }
-        
-        startRoll(v1, v2, winId);
     });
 
-    socket.on('7UpDown_newRound', () => { isResultProcessing = false; });
+    // 🔥 LOCAL TIMER ENGINE: Mobile Apne Andar Khud Ginti Chalayega 🔥
+    setInterval(() => {
+        if (currentState === 'betting' && currentEndTime > 0) {
+            let timeLeft = Math.floor((currentEndTime - Date.now()) / 1000);
+            if (timeLeft < 0) timeLeft = 0;
+
+            let tmr = document.getElementById('timer'); 
+            tmr.innerText = timeLeft + "s"; 
+            tmr.style.color = timeLeft <= 5 ? "#ff007f" : "#fff";
+
+            if(timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) { 
+                playSound('snd-beep', 0.8); lastBeep = timeLeft; 
+            }
+        } else if (currentState === 'result' || currentState === 'proc') {
+            document.getElementById('timer').innerText = "STOP"; 
+            document.getElementById('timer').style.color = '#fff';
+        } else {
+            document.getElementById('timer').innerText = "WAIT"; 
+        }
+    }, 200);
 
     db.ref('Game/7UpDown/Bets').on('value', snap => {
         let allB = snap.val() || {};
@@ -648,19 +662,19 @@
     function botBetAction() {
         if(!isBettingOpen) return;
         botsList.forEach((bot, i) => {
-            if(Math.random() < 0.6) { // Probability doubled for more chips
+            if(Math.random() < 0.6) { 
                 
                 let randSide = Math.random();
                 let target = 'low';
-                if(randSide < 0.45) target = 'low';       // 45% chance
-                else if(randSide < 0.90) target = 'high'; // 45% chance
-                else target = 'tie';                      // Only 10% chance for Tie (7)
+                if(randSide < 0.45) target = 'low';       
+                else if(randSide < 0.90) target = 'high'; 
+                else target = 'tie';                      
                 
                 let chipData = [10, 50, 100, 500, 1000];
                 if(target === 'tie') {
-                    chipData = [10, 50]; // Limit Tie to small chips
+                    chipData = [10, 50]; 
                 } else {
-                    if(Math.random() > 0.8) chipData.push(5000); // Sometimes heavy drop on Up/Down
+                    if(Math.random() > 0.8) chipData.push(5000); 
                 }
                 
                 const amt = chipData[Math.floor(Math.random()*chipData.length)];
