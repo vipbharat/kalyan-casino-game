@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Andar Bahar 2 - Luxury Pro VIP</title>
+    <title>Andar Bahar 2 - Smart Limit VIP</title>
+    
+    <!-- 🔥 SIRF FIREBASE HAI, SOCKET.IO HATA DIYA GAYA HAI 🔥 -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; user-select: none; }
 
@@ -115,7 +117,6 @@
         .bet-payout { font-size: 11px; color: #ccc; margin-bottom: 6px;}
         .pool-text { font-size: 13px; color: white; background: rgba(0,0,0,0.85); padding: 4px 10px; border-radius: 6px; display: inline-block; border: 1px solid rgba(255,255,255,0.2);}
         
-        /* 🔥 Pade hue amount box (No K format) 🔥 */
         .placed-bet {
             position: absolute; top: -10px; right: -10px; background: #d4af37; color: black;
             border-radius: 10px; padding: 2px 8px; min-width: 28px; height: 24px; font-size: 11px; font-weight: 900;
@@ -141,8 +142,6 @@
         /* Bots area */
         .live-players { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; background: rgba(0,0,0,0.4); padding: 6px; width: 100%; border-top: 1px solid #d4af37; }
         .player { text-align: center; display: flex; flex-direction: column; align-items: center; }
-        
-        /* 🔥 DRAGON TIGER WALE AVATAR 🔥 */
         .p-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1.5px solid #d4af37; background: #222;}
         .p-id { font-size: 9px; color: #ccc; margin-top: 3px; font-weight: bold;}
         .p-bal { font-size: 10px; color: #00ff88; font-weight: bold;}
@@ -303,8 +302,6 @@
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST";
 
-        const socket = io("https://kalyan-engine.onrender.com");
-
         const cardSuits = ["S", "H", "D", "C"];
         const cardValues = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
         const chipImgs = { 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
@@ -318,6 +315,10 @@
         let currentJoker = { val: 'A', suit: 'S' }; 
         let localHistory = []; 
         let isResultProcessing = false; 
+
+        // 🔥 SMART LOCAL TIMER VARIABLES 🔥
+        let currentEndTime = 0;
+        let currentState = '';
         
         let audioUnlocked = false;
         function initAudio() {
@@ -332,7 +333,6 @@
             try { let snd = $(id); if(snd) { let cl=snd.cloneNode(); cl.volume=vol; cl.play().catch(()=>{}); } } catch(e){}
         }
 
-        // 🔥 DRAGON TIGER AVATAR LIST 🔥
         let botsList = [];
         const avs = ['Avatar0.png', 'Avatar2.png', 'Avatar3.png', 'Avatar4.png', 'Avatar5.png', 'Avatar6.png', 'Avatar7.png', 'Avatar9.png', 'Avatar11.png'];
         for(let i=0; i<5; i++) {
@@ -346,7 +346,6 @@
         function renderBotsUI() {
             let h = ""; 
             botsList.forEach((b, i) => {
-                // 🔥 K FORMAT REMOVED (Full Number Display) 🔥
                 let displayBal = b.bal;
                 h += `<div class="player" id="bot-${i}"><img class="p-avatar" src="assets/${b.avatar}"><div class="p-id">ID_${b.id}</div><div class="p-bal">₹${displayBal}</div></div>`;
             });
@@ -440,7 +439,6 @@
             
             let display = $(`bet-amt-${side}`);
             display.style.display = 'flex'; 
-            // 🔥 FULL NUMBER IN BET BOX 🔥
             display.innerText = myBets[side]; 
             
             spC(side, currentChipSrc, 'my-wallet');
@@ -460,7 +458,6 @@
 
             let display = $(`sb-${rangeKey}`);
             display.style.display = 'flex'; 
-            // 🔥 FULL NUMBER IN BET BOX 🔥
             display.innerText = mySideBets[rangeKey];
             
             db.ref(`Game/AndarBahar2/SideBets/${phone}/${rangeKey}`).set(firebase.database.ServerValue.increment(currentChip));
@@ -532,17 +529,32 @@
             $('record-board').innerHTML = hHtml;
         }
 
-        socket.on('connect', () => { fetchInitialHistory(); });
+        // 🔥 FIREBASE CONNECTION CHECKER 🔥
+        let connectedRef = db.ref(".info/connected");
+        connectedRef.on("value", (snap) => {
+            if (snap.val() === true) {
+                $('network-overlay').style.display = 'none';
+                isBettingOpen = false;
+                fetchInitialHistory();
+            } else {
+                $('network-overlay').style.display = 'flex';
+            }
+        });
 
-        window.addEventListener('offline', () => { $('network-overlay').style.display = 'flex'; });
-        window.addEventListener('online', () => { if(socket.connected) $('network-overlay').style.display = 'none'; });
-        socket.on('disconnect', () => { $('network-overlay').style.display = 'flex'; });
+        // 🔥 SMART LISTENER: Sirf State Badalne Par Request Jayegi 🔥
+        db.ref('Game/AndarBahar2/Status').on('value', (snap) => {
+            let data = snap.val();
+            if(!data) return;
 
-        socket.on('AndarBahar2_timerUpdate', (data) => {
+            currentState = data.state;
+            currentEndTime = data.endTime;
+
             let msg = $('status-msg');
-            if(data.state === 'betting') {
+
+            if(currentState === 'betting') {
                 if(!isBettingOpen) {
                     isBettingOpen = true; animationActive = false; 
+                    isResultProcessing = false;
                     $('bx-andar').classList.remove('win-glow'); $('bx-bahar').classList.remove('win-glow');
                     document.querySelectorAll('.side-bet-box').forEach(b => b.classList.remove('side-win-glow'));
                     $('track-andar').innerHTML = '<span class="track-label">ANDAR</span>';
@@ -563,35 +575,46 @@
                     $('joker-spot').innerHTML = '';
                     $('joker-spot').appendChild(createCard(currentJoker.val, currentJoker.suit));
                 }
-                msg.innerText = `PLACE BETS: ${data.timer}s`;
-                if(data.timer <= 5) {
-                    msg.style.color = '#ff3333';
-                    if(data.timer > 0 && lastBeep !== data.timer) { playSound('snd-beep', 0.8); lastBeep = data.timer; }
-                } else {
-                    msg.style.color = '#00ff88'; lastBeep = -1;
-                }
-            } else {
-                msg.innerText = "STOP BETTING!"; msg.style.color = '#fff';
+            } else if(currentState === 'result' || currentState === 'proc') {
                 if(isBettingOpen) {
                     isBettingOpen = false; clearInterval(botInterval);
                     let aStop = $('alert-stop'); 
                     aStop.style.display = 'block'; 
                     setTimeout(() => aStop.style.display = 'none', 1000);
                 }
+                
+                if(!isResultProcessing && data.winner) {
+                    isResultProcessing = true; lastBeep = -1;
+                    $('status-msg').innerText = "DEALING CARDS..."; $('status-msg').style.color = '#d4af37';
+                    setTimeout(() => showAnimation(data.winner, currentJoker.val), 800);
+                }
+            } else if(currentState === 'wait') {
+                isResultProcessing = false;
             }
         });
 
-        socket.on('AndarBahar2_result', (data) => {
-            if(isResultProcessing) return; 
-            isResultProcessing = true; lastBeep = -1;
-            
-            $('status-msg').innerText = "DEALING CARDS..."; $('status-msg').style.color = '#d4af37';
-            setTimeout(() => showAnimation(data.winner || 'andar', currentJoker.val), 800);
-        });
+        // 🔥 LOCAL TIMER ENGINE: Mobile Apne Andar Khud Ginti Chalayega 🔥
+        setInterval(() => {
+            let msg = $('status-msg');
+            if (currentState === 'betting' && currentEndTime > 0) {
+                let timeLeft = Math.floor((currentEndTime - Date.now()) / 1000);
+                if (timeLeft < 0) timeLeft = 0;
 
-        socket.on('AndarBahar2_newRound', () => {
-            isResultProcessing = false; 
-        });
+                msg.innerText = `PLACE BETS: ${timeLeft}s`;
+                if(timeLeft <= 5) {
+                    msg.style.color = '#ff3333';
+                    if(timeLeft > 0 && lastBeep !== timeLeft) { playSound('snd-beep', 0.8); lastBeep = timeLeft; }
+                } else {
+                    msg.style.color = '#00ff88'; lastBeep = -1;
+                }
+            } else if (currentState === 'result' || currentState === 'proc') {
+                if(!isResultProcessing) {
+                    msg.innerText = "STOP BETTING!"; msg.style.color = '#fff';
+                }
+            } else {
+                msg.innerText = "WAITING FOR NEXT ROUND..."; msg.style.color = '#fff';
+            }
+        }, 200);
 
         db.ref('Game/AndarBahar2/Bets').on('value', snap => {
             let allB = snap.val() || {}; realPool = {andar:0, bahar:0};
@@ -655,7 +678,9 @@
                     
                     calculatePayouts(win, steps);
                     
-                    setTimeout(() => { $('status-msg').innerText = "WAITING FOR NEXT ROUND..."; }, 3000);
+                    setTimeout(() => { 
+                        if(currentState !== 'betting') $('status-msg').innerText = "WAITING FOR NEXT ROUND..."; 
+                    }, 3000);
                     return;
                 }
                 await new Promise(r => setTimeout(r, 600)); 
