@@ -359,30 +359,41 @@
                 }
             });
 
-            // 🔥 SMART LISTENER: Sirf State Badalne Par Request Jayegi 🔥
+            // 🔥 FIREBASE STATE LISTENER (100% BUG-FREE MASTER LATCH) 🔥
             let currentState = '';
             let currentEndTime = 0;
+            let roundProcessed = false; 
+            let lastState = ''; 
 
             db.ref('Game/DragonTiger/Status').on('value', (snap) => {
                 let data = snap.val();
                 if(!data) return;
 
+                // 🛡️ Loop Crashing ko rokne wala shield 🛡️
+                if (data.state === lastState) return; 
+                lastState = data.state;
+
                 currentState = data.state;
                 currentEndTime = data.endTime;
 
+                // 1️⃣ BETTING STATE (Darwaza khulega, board saaf hoga)
                 if(currentState === 'betting') {
-                    if(iBO===0) { 
-                        iBO=1; rUI(); 
-                        isResultProcessing = false; 
+                    if(iBO === 0) { 
+                        iBO = 1; 
+                        roundProcessed = false; 
+                        rUI(); 
                         $('alert-start').classList.add('show'); setTimeout(()=>$('alert-start').classList.remove('show'), 1200); 
                     }
-                } else if(currentState === 'result' || currentState === 'proc') {
+                } 
+                // 2️⃣ RESULT STATE (Darwaza turant band hoga, patta khulega)
+                else if(currentState === 'result' || currentState === 'proc') {
                     if(iBO === 1) {
-                        iBO = 0; rUI();
+                        iBO = 0; 
                         $('alert-stop').classList.add('show'); setTimeout(()=>$('alert-stop').classList.remove('show'), 1200);
                     }
-                    if(!isResultProcessing && data.winner) {
-                        isResultProcessing = true; 
+                    
+                    if(!roundProcessed && data.winner) {
+                        roundProcessed = true; 
                         lastBeep = -1; 
                         setTimeout(() => { 
                             $('vs-clash-screen').style.display='flex'; 
@@ -391,12 +402,15 @@
                         }, 1200);
                         setTimeout(() => sR_Sequence(data.winner), 2400);
                     }
-                } else if(currentState === 'wait') {
+                } 
+                // 3️⃣ WAIT STATE (Darwaza band rahega, patta dikhta rahega)
+                else if(currentState === 'wait' || currentState === 'stop') {
+                    iBO = 0; 
                     isResultProcessing = false;
                 }
             });
 
-            // 🔥 LOCAL TIMER ENGINE: Mobile Apne Andar Khud Ginti Chalayega 🔥
+            // 🔥 LOCAL TIMER ENGINE 🔥
             setInterval(() => {
                 if (currentState === 'betting' && currentEndTime > 0) {
                     let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
@@ -444,7 +458,13 @@
             }
 
             window.pB = (s) => { 
-                if(!iBO || tB < cC) return; 
+                // 👇🔥 THE MASTER BETTING LOCK 🔥👇
+                if (currentState !== 'betting') return; 
+                let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
+                if (timeLeft <= 0) return; 
+                if (!iBO || tB < cC) return; 
+                // 👆🔥 LOCK KHATAM 🔥👆
+
                 let nD=dB, nW=wB, rm=cC;
                 if(nD>=rm) nD-=rm; else { rm-=nD; nD=0; nW-=rm; }
                 db.ref('users/'+ph).update({balance: Math.max(0,nD), winning_balance: Math.max(0,nW)});
@@ -553,15 +573,8 @@
                             }, 50);
                             setTimeout(()=>c.remove(), 1000);
                         }
-
-                        let wa=0;
-                        if(safeW==='dragon') wa = myBets.dragon * 2;
-                        else if(safeW==='tiger') wa = myBets.tiger * 2;
-                        else if(safeW==='tie') wa = myBets.tie * 9;
                         
-                        if(wa > 0 && ph !== "GUEST") {
-                            db.ref('users/'+ph+'/winning_balance').set(wB + wa);
-                        }
+                        // 🔥 Yahan se double profit code nikal diya gaya hai! Ab sirf Backend balance badhayega 🔥
 
                     }, 800);
                 }, 1000);
