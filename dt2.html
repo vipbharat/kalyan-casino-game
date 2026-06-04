@@ -342,33 +342,37 @@
                 }
             });
 
-            // 🔥 PURE FIREBASE STATE LISTENER 🔥
+            // 🔥 FIREBASE STATE LISTENER (UPDATED FOR STABILITY) 🔥
             let currentState = '';
             let currentEndTime = 0;
+            let lastState = ''; // Ye hai naya Master Lock variable
 
             db.ref('Game/DragonTiger2/Status').on('value', (snap) => {
                 let data = snap.val();
                 if(!data) return;
 
+                // 🛡️ Bouncer: Sirf State Badalne Par Entry Dega 🛡️
+                if (data.state === lastState) return; 
+                lastState = data.state;
+
                 currentState = data.state;
                 currentEndTime = data.endTime;
 
                 if(currentState === 'betting') {
-                    if(iBO===0) { 
-                        iBO=1; rUI(); 
-                        isResultProcessing = false; 
-                        let aStart = $('alert-start');
-                        if (aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1200); }
-                    }
-                } else if(currentState === 'result' || currentState === 'proc') {
-                    if(iBO === 1) {
-                        iBO = 0; rUI();
-                        let aStop = $('alert-stop');
-                        if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1200); }
-                    }
+                    iBO=1; 
+                    rUI(); 
+                    isResultProcessing = false; 
+                    let aStart = $('alert-start');
+                    if (aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1200); }
+                } 
+                else if(currentState === 'result' || currentState === 'proc') {
+                    iBO = 0; // Bet band
+                    let aStop = $('alert-stop');
+                    if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1200); }
+                    
                     if(!isResultProcessing && data.winner) {
                         isResultProcessing = true; 
-                        lastBeep = -1; 
+                        lastBeep = -1;
                         setTimeout(() => { 
                             let vsScreen = $('vs-clash-screen');
                             if (vsScreen) {
@@ -379,9 +383,12 @@
                         }, 1200);
                         setTimeout(() => sR_Sequence(data.winner), 2400);
                     }
-                } else if(currentState === 'wait' || currentState === 'stop') {
-                    iBO = 0; // 🔥 WAITING MEIN DARWAZA BAND 🔥
+                } 
+                else if(currentState === 'wait' || currentState === 'stop') {
+                    iBO = 0; 
                     isResultProcessing = false;
+                    // 🔥 Waiting mode aate hi force clear 🔥
+                    rUI(); 
                 }
             });
 
