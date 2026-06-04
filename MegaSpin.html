@@ -38,12 +38,13 @@
         .t-amt { background: rgba(255,255,255,0.2); padding: 3px 6px; border-radius: 4px; font-size: 11px; margin-top: 4px; color: #fff; width: 100%; border: 1px solid rgba(255,255,255,0.3);}
         .y-amt { background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 6px; font-size: 12px; margin-top: 4px; color: #00ff88; border: 1px solid #00ff88; width: 100%;}
 
-        .chip-rack { position: fixed; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, #000, #1a1a1a); display: flex; justify-content: space-evenly; align-items: center; padding: 10px 5px 15px 5px; border-top: 3px solid #ffd700; z-index: 1100; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); }
-        .chip-img { width: 44px; height: 44px; cursor: pointer; transition: 0.3s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); flex-shrink: 0; }
-        .chip-img.active { transform: translateY(-6px) scale(1.15); filter: drop-shadow(0 0 10px #ffd700); }
+        /* 🔥 HARDWARE ACCELERATION ADDED HERE 🔥 */
+        .chip-rack { position: fixed; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, #000, #1a1a1a); display: flex; justify-content: space-evenly; align-items: center; padding: 10px 5px 15px 5px; border-top: 3px solid #ffd700; z-index: 1100; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); transform: translateZ(0); -webkit-transform: translateZ(0); }
+        .chip-img { width: 44px; height: 44px; cursor: pointer; transition: 0.3s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); flex-shrink: 0; transform: translateZ(0); backface-visibility: hidden; }
+        .chip-img.active { transform: translateZ(0) translateY(-6px) scale(1.15); filter: drop-shadow(0 0 10px #ffd700); }
         .chip-img.locked { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
 
-        .chip-visual { position: absolute; width: 26px; height: 26px; z-index: 50; transition: all 0.4s ease-out; filter: drop-shadow(2px 2px 5px rgba(0,0,0,0.8)); pointer-events: none; }
+        .chip-visual { position: absolute; width: 26px; height: 26px; z-index: 50; transition: all 0.4s ease-out; filter: drop-shadow(2px 2px 5px rgba(0,0,0,0.8)); pointer-events: none; transform: translateZ(0); }
         .win-anim-chip { transition: all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 999 !important; filter: drop-shadow(0 0 10px #ffd700); }
 
         #msg { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: 900; background: rgba(0,0,0,0.9); padding: 20px 40px; border: 3px solid #ffd700; border-radius: 15px; display: none; z-index: 999; white-space: nowrap; box-shadow: 0 0 30px rgba(255,215,0,0.8); text-align: center; }
@@ -108,6 +109,8 @@
         </div>
     </div>
     
+    <div id="chip-layer" style="position: absolute; inset: 0; pointer-events: none; z-index: 1050; overflow: hidden;"></div>
+
     <div class="chip-rack" id="my-wallet">
         <img src="assets/10_0.png" class="chip-img" data-val="10" onclick="setChip(10, this)">
         <img src="assets/50_0.png" class="chip-img" data-val="50" onclick="setChip(50, this)">
@@ -237,7 +240,8 @@
                 chip.style.top = (Math.random() * (window.innerHeight/2)) + 'px'; 
             }
             
-            document.body.appendChild(chip);
+            // 🔥 FIXED: Direct body mein phekne ke bajaye apne dibbe (chip-layer) mein phek raha hai 🔥
+            document.getElementById('chip-layer').appendChild(chip);
             
             setTimeout(() => {
                 chip.style.left = (rect.left + 10 + Math.random() * (rect.width - 40)) + 'px';
@@ -318,7 +322,9 @@
                     chip.src = chipImgs[100]; 
                     chip.style.left = (wRect.left + wRect.width/2 - 13) + 'px';
                     chip.style.top = (wRect.top + wRect.height/2 - 13) + 'px';
-                    document.body.appendChild(chip);
+                    
+                    // 🔥 FIXED: Direct body mein phekne ke bajaye apne dibbe mein 🔥
+                    document.getElementById('chip-layer').appendChild(chip);
 
                     setTimeout(() => {
                         let isMe = Math.random() > 0.4;
