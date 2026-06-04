@@ -342,37 +342,41 @@
                 }
             });
 
-            // 🔥 FIREBASE STATE LISTENER (UPDATED FOR STABILITY) 🔥
+            // 🔥 FIREBASE STATE LISTENER (100% FIXED) 🔥
             let currentState = '';
             let currentEndTime = 0;
-            let lastState = ''; // Ye hai naya Master Lock variable
+            let roundProcessed = false; 
 
             db.ref('Game/DragonTiger2/Status').on('value', (snap) => {
                 let data = snap.val();
                 if(!data) return;
 
-                // 🛡️ Bouncer: Sirf State Badalne Par Entry Dega 🛡️
-                if (data.state === lastState) return; 
-                lastState = data.state;
-
                 currentState = data.state;
                 currentEndTime = data.endTime;
 
+                // 1️⃣ BETTING STATE
                 if(currentState === 'betting') {
-                    iBO=1; 
-                    rUI(); 
-                    isResultProcessing = false; 
-                    let aStart = $('alert-start');
-                    if (aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1200); }
+                    if(iBO === 0) { 
+                        iBO = 1; 
+                        roundProcessed = false; // Naye round ke liye unlock
+                        rUI(); // 🔥 BOARD SIRF BETTING START HONE PAR SAAF HOGA 🔥
+                        let aStart = $('alert-start');
+                        if (aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1200); }
+                    }
                 } 
+                // 2️⃣ RESULT STATE
                 else if(currentState === 'result' || currentState === 'proc') {
-                    iBO = 0; // Bet band
-                    let aStop = $('alert-stop');
-                    if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1200); }
+                    if(iBO === 1) {
+                        iBO = 0; // Bet turant band
+                        let aStop = $('alert-stop');
+                        if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1200); }
+                    }
                     
-                    if(!isResultProcessing && data.winner) {
-                        isResultProcessing = true; 
+                    // 🔥 JAISE HI WINNER AAYEGA, ANIMATION CHALEGI (EK BAAR) 🔥
+                    if(!roundProcessed && data.winner) {
+                        roundProcessed = true; 
                         lastBeep = -1;
+                        
                         setTimeout(() => { 
                             let vsScreen = $('vs-clash-screen');
                             if (vsScreen) {
@@ -384,11 +388,10 @@
                         setTimeout(() => sR_Sequence(data.winner), 2400);
                     }
                 } 
+                // 3️⃣ WAIT STATE
                 else if(currentState === 'wait' || currentState === 'stop') {
                     iBO = 0; 
-                    isResultProcessing = false;
-                    // 🔥 Waiting mode aate hi force clear 🔥
-                    rUI(); 
+                    // 🔥 YAHAN SE rUI() HATA DIYA HAI! Ab wait time mein board clear nahi hoga, jeetne wala patta ekdum clear dikhega 🔥
                 }
             });
 
