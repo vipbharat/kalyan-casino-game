@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger 2 VIP - Strict Lock Edition</title>
+    <title>Dragon Tiger 2 VIP - Strict Lock & Auto Wake</title>
     
-    <!-- Firebase & Socket.io Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -50,7 +49,7 @@
         .crd-val { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 2px; background: #fff; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 20px; line-height: 1.2;}
         .red-suit { color: red; } .black-suit { color: black; }
         
-        .timer-badge { position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%); background: #600; color: #ffd700; padding: 3px 20px; border-radius: 15px; border: 1.5px solid #ffd700; font-size: 14px; font-weight: 900; z-index: 500; display: none; }
+        .timer-badge { position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%); background: #600; color: #ffd700; padding: 3px 20px; border-radius: 15px; border: 1.5px solid #ffd700; font-size: 14px; font-weight: 900; z-index: 500; display: none; white-space: nowrap;}
         
         .history-bar { height: 35px; display: flex; align-items: center; justify-content: flex-start; gap: 5px; padding: 0 15px; background: rgba(0,0,0,0.5); overflow: hidden; border-top: 2px solid #4a317c; position: relative; z-index: 30;}
         .h-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); flex-shrink: 0; }
@@ -184,7 +183,6 @@
             <div class="history-bar" id="hr"></div>
             
             <div class="betting-area">
-                <!-- 🔥 BET LOCK SHIELD 🔥 -->
                 <div id="bet-lock-overlay"><span>STOP BETTING</span></div>
 
                 <div class="bet-box dbx" onclick="pB('dragon')" id="bx-d">
@@ -235,7 +233,16 @@
 
     <script>
         // ==========================================
-        // 1. UI SETUP (MANDATORY TO RUN FIRST)
+        // 🔥 AUTO-WAKE ENGINE FOR RENDER 🔥
+        // ==========================================
+        function wakeUpServer() {
+            fetch("https://kalyan-engine.onrender.com/").catch(e => {});
+        }
+        wakeUpServer(); // Wake server immediately on load
+        setInterval(wakeUpServer, 180000); // Keep pinging every 3 minutes
+
+        // ==========================================
+        // 1. UI SETUP
         // ==========================================
         const $ = i => document.getElementById(i);
         let iBO = 0, cC = 50, tB = 0, dB=0, wB=0, bB=0;
@@ -302,7 +309,7 @@
         } catch (error) {}
 
         // ==========================================
-        // 3. STRICT FIREBASE LOGIC & LOCKING
+        // 3. STRICT FIREBASE LOGIC & SLEEP DETECTION
         // ==========================================
         try {
             firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
@@ -340,7 +347,7 @@
                 if(currentState === 'betting') {
                     if(iBO === 0) { 
                         iBO = 1; roundProcessed = false; rUI(); 
-                        let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'none'; // REMOVE LOCK
+                        let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'none';
                         let aStart = $('alert-start');
                         if (aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1200); }
                     }
@@ -348,15 +355,14 @@
                 else if(currentState === 'result' || currentState === 'proc') {
                     if(iBO === 1) {
                         iBO = 0; 
-                        let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex'; // APPLY LOCK
+                        let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex'; 
                         let aStop = $('alert-stop');
                         if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1200); }
                     }
                     
-                    // 🔥 CARDS OPENING ANIMATION (STRICTLY LOCKED) 🔥
                     if(!roundProcessed && data.winner) {
                         roundProcessed = true; lastBeep = -1;
-                        iBO = 0; // Double ensure lock
+                        iBO = 0; 
                         let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex';
                         
                         setTimeout(() => { 
@@ -372,25 +378,34 @@
                 }
             });
 
-            // 🔥 TIMER ENGINE WITH PRE-LOCK (1 SECOND BEFORE) 🔥
+            // 🔥 TIMER ENGINE WITH SERVER SLEEP DETECTOR 🔥
             setInterval(() => {
                 let tmr = $('tmr'); if(!tmr) return;
                 
                 if (currentState === 'betting' && currentEndTime > 0) {
                     let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
-                    if (timeLeft < 0) timeLeft = 0;
                     
-                    // PRE-LOCK UI 1 SECOND BEFORE TO PREVENT LAG BETS
-                    if (timeLeft <= 1 && iBO === 1) {
-                        iBO = 0; 
+                    // 🚨 SERVER SLEEP DETECTED (Timer gaya minus me!) 🚨
+                    if (timeLeft < -2) {
+                        iBO = 0;
                         let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex';
-                        tmr.style.display = 'block'; tmr.innerText = "STOP!"; tmr.style.color = "#fff";
-                    }
-
-                    if (iBO === 1) {
                         tmr.style.display = 'block'; 
-                        tmr.innerText = timeLeft + "s"; tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#ffd700";
-                        if(timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) { pS('snd-beep', 0.8); lastBeep = timeLeft; }
+                        tmr.innerText = "WAKING SERVER..."; 
+                        tmr.style.color = "#ff9800";
+                        wakeUpServer(); // Force wake
+                    } 
+                    // NORMAL TIMER OPERATION
+                    else if (timeLeft >= 0) {
+                        if (timeLeft <= 1 && iBO === 1) {
+                            iBO = 0; 
+                            let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex';
+                            tmr.style.display = 'block'; tmr.innerText = "STOP!"; tmr.style.color = "#fff";
+                        }
+                        if (iBO === 1) {
+                            tmr.style.display = 'block'; 
+                            tmr.innerText = timeLeft + "s"; tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#ffd700";
+                            if(timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) { pS('snd-beep', 0.8); lastBeep = timeLeft; }
+                        }
                     }
                 } else if (currentState === 'result' || currentState === 'proc') {
                     tmr.style.display = 'block'; 
@@ -424,13 +439,13 @@
 
             // 🔥 STRICT BET PLACEMENT GUARD 🔥
             window.pB = (s) => { 
-                if (iBO === 0) return; // 1. Super Strict Flag Check
-                if (currentState !== 'betting') return; // 2. Firebase State Check
+                if (iBO === 0) return; 
+                if (currentState !== 'betting') return; 
                 
                 let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
-                if (timeLeft <= 1) return; // 3. No bets in last 1 second
+                if (timeLeft <= 1) return; 
 
-                if (tB < cC) return; // 4. Balance check
+                if (tB < cC) return; 
 
                 let nD=dB, nW=wB, rm=cC;
                 if(nD>=rm) nD-=rm; else { rm-=nD; nD=0; nW-=rm; }
