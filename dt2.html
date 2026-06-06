@@ -219,17 +219,16 @@
     </div>
 
     <script>
+        // ==========================================
+        // 1. UI SETUP (MANDATORY TO RUN FIRST)
+        // ==========================================
         const $ = i => document.getElementById(i);
         let iBO = 0, cC = 50, tB = 0, dB=0, wB=0, bB=0;
         let mB = { dragon: 0, tiger: 0, tie: 0 }, myBets = { dragon: 0, tiger: 0, tie: 0 };
         let lastBeep = -1;
         const chipImgs = { 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
-        
         let globalHistory = []; 
         let isResultProcessing = false; 
-
-        // 🔥 1. INITIALIZE SOCKET CONNECTION 🔥
-        const socket = io("https://kalyan-engine.onrender.com");
 
         function renderHistoryBoard() {
             let hr = $('hr');
@@ -244,23 +243,6 @@
             });
         }
 
-        function enterCasino() { 
-            $('start-screen').style.display='none'; $('loading-screen').style.display='flex'; 
-            if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-            
-            try { let v1=$('vid-box-dragon'); v1.play().then(()=>v1.pause()); }catch(e){}
-            try { let v2=$('vid-box-tiger'); v2.play().then(()=>v2.pause()); }catch(e){}
-
-            setTimeout(() => { $('loading-screen').style.display='none'; }, 2000); 
-        }
-
-        function initAudio() { 
-            $('click-catcher').style.display = 'none'; 
-            ['snd-beep','snd-drop','snd-fly','snd-card','snd-clash'].forEach(i => { try{ let s=$(i); s.play().then(()=>s.pause()).catch(()=>{}); }catch(e){} });
-        }
-
-        function pS(i,v) { let s=$(i); if(s) { let cl = s.cloneNode(); cl.volume = v; cl.play().catch(()=>{}); } }
-
         function genPlayers() {
             const avs = ['Avatar0.png', 'Avatar2.png', 'Avatar3.png', 'Avatar4.png', 'Avatar5.png', 'Avatar6.png', 'Avatar7.png', 'Avatar9.png', 'Avatar11.png'];
             let lh = '', rh = '';
@@ -270,84 +252,71 @@
                 lh += `<div class="bot-user" id="bl${i}"><img class="player-icon" src="assets/${avs[Math.floor(Math.random()*avs.length)]}"><div class="player-bal">${rBal1}</div><div class="wl-tag"></div></div>`;
                 rh += `<div class="bot-user" id="br${i}"><img class="player-icon" src="assets/${avs[Math.floor(Math.random()*avs.length)]}"><div class="player-bal">${rBal2}</div><div class="wl-tag"></div></div>`;
             }
-            $('left-players').innerHTML = lh; $('right-players').innerHTML = rh;
+            if($('left-players')) $('left-players').innerHTML = lh; 
+            if($('right-players')) $('right-players').innerHTML = rh;
         }
+        
+        // Execute UI builders immediately!
         genPlayers();
-        setInterval(() => { $('oc-top').innerText = Math.floor(Math.random() * 25) + 220; }, 4000);
+        setInterval(() => { let oc=$('oc-top'); if(oc) oc.innerText = Math.floor(Math.random() * 25) + 220; }, 4000);
 
-        function getPos(el) {
-            let x = 0, y = 0;
-            while(el && el.id !== 'game-mount') { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; }
-            return {x, y};
+        function enterCasino() { 
+            $('start-screen').style.display='none'; $('loading-screen').style.display='flex'; 
+            if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+            try { let v1=$('vid-box-dragon'); v1.play().then(()=>v1.pause()); }catch(e){}
+            try { let v2=$('vid-box-tiger'); v2.play().then(()=>v2.pause()); }catch(e){}
+            setTimeout(() => { $('loading-screen').style.display='none'; }, 2000); 
         }
 
+        function initAudio() { 
+            $('click-catcher').style.display = 'none'; 
+            ['snd-beep','snd-drop','snd-fly','snd-card','snd-clash'].forEach(i => { try{ let s=$(i); s.play().then(()=>s.pause()).catch(()=>{}); }catch(e){} });
+        }
+
+        function pS(i,v) { let s=$(i); if(s) { let cl = s.cloneNode(); cl.volume = v; cl.play().catch(()=>{}); } }
+        function getPos(el) { let x = 0, y = 0; while(el && el.id !== 'game-mount') { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; } return {x, y}; }
         function formatMoney(val) { return val; }
 
-        function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
-            if(!srcEl) return;
-            pS('snd-drop', 0.5);
-            let layer = $('chips-layer'), box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
-            if(!box) return;
-
-            let chip = document.createElement('img');
-            chip.src = imgSrc; chip.className = 'placed-chip';
-            
-            let sPos = getPos(srcEl);
-            let sW = srcEl.offsetWidth || 30, sH = srcEl.offsetHeight || 30;
-            
-            chip.style.left = (sPos.x + sW/2 - 13) + "px";
-            chip.style.top = (sPos.y + sH/2 - 13) + "px";
-            chip.style.transform = "scale(0.3)";
-            layer.appendChild(chip);
-
-            let bPos = getPos(box);
-            let bW = box.offsetWidth, bH = box.offsetHeight;
-            
-            setTimeout(() => {
-                let padX = 15, padY = 15;
-                let randX = padX + Math.random() * (bW - padX*2);
-                let randY = padY + Math.random() * (bH - padY*2);
-                chip.style.left = (bPos.x + randX - 13) + "px";
-                chip.style.top = (bPos.y + randY - 13) + "px";
-                chip.style.transform = "scale(1)";
-            }, 50);
-            
-            chip.setAttribute('data-side', side);
-
-            if(!isSystemAnim && chipVal > 0) {
-                mB[side] += chipVal;
-                $('m' + (side === 'tie' ? 'ti' : side.charAt(0))).innerText = '₹' + formatMoney(mB[side]);
+        // ==========================================
+        // 2. SOCKET INIT (WRAPPED IN SAFETY NET)
+        // ==========================================
+        let socket = null;
+        try {
+            if (typeof io !== 'undefined') {
+                socket = io("https://kalyan-engine.onrender.com", { transports: ['websocket', 'polling'] });
+                socket.on('betError', (data) => console.log("Bet Error:", data.message));
+            } else {
+                console.error("Socket library link was blocked or took too long to load.");
             }
-            if(layer.children.length > 150) layer.firstChild.remove();
-            return chip;
+        } catch (error) {
+            console.error("Socket init error:", error);
         }
 
+        // ==========================================
+        // 3. FIREBASE LOGIC (WRAPPED IN SAFETY NET)
+        // ==========================================
         try {
             firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
             const db = firebase.database();
             const ph = localStorage.getItem('userPhone') || "GUEST";
             const netUI = $('network-overlay');
 
-            // 🔥 SERVER TIME SYNC 🔥
             let serverTimeOffset = 0;
-            db.ref(".info/serverTimeOffset").on("value", function(snap) {
-                serverTimeOffset = snap.val() || 0;
-            });
+            db.ref(".info/serverTimeOffset").on("value", snap => { serverTimeOffset = snap.val() || 0; });
             function getTrueTime() { return Date.now() + serverTimeOffset; }
 
-            // 🔥 FIREBASE CONNECTION CHECKER 🔥
             let connectedRef = db.ref(".info/connected");
             connectedRef.on("value", (snap) => {
                 if (snap.val() === true) {
-                    netUI.style.display = 'none';
-                    iBO = 0; rUI(); $('tmr').innerText = "SYNCING..."; 
+                    if(netUI) netUI.style.display = 'none';
+                    iBO = 0; rUI(); 
+                    if($('tmr')) $('tmr').innerText = "SYNCING..."; 
                     fetchInitialHistory();
                 } else {
-                    netUI.style.display = 'flex';
+                    if(netUI) netUI.style.display = 'flex';
                 }
             });
 
-            // 🔥 FIREBASE STATE LISTENER (100% FIXED) 🔥
             let currentState = '';
             let currentEndTime = 0;
             let roundProcessed = false; 
@@ -359,61 +328,38 @@
                 currentState = data.state;
                 currentEndTime = data.endTime;
 
-                // 1️⃣ BETTING STATE
                 if(currentState === 'betting') {
                     if(iBO === 0) { 
-                        iBO = 1; 
-                        roundProcessed = false; // Naye round ke liye unlock
-                        rUI(); // 🔥 BOARD SIRF BETTING START HONE PAR SAAF HOGA 🔥
+                        iBO = 1; roundProcessed = false; rUI(); 
                         let aStart = $('alert-start');
                         if (aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1200); }
                     }
                 } 
-                // 2️⃣ RESULT STATE
                 else if(currentState === 'result' || currentState === 'proc') {
                     if(iBO === 1) {
-                        iBO = 0; // Bet turant band
+                        iBO = 0; 
                         let aStop = $('alert-stop');
                         if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1200); }
                     }
-                    
-                    // 🔥 JAISE HI WINNER AAYEGA, ANIMATION CHALEGI (EK BAAR) 🔥
                     if(!roundProcessed && data.winner) {
-                        roundProcessed = true; 
-                        lastBeep = -1;
-                        
+                        roundProcessed = true; lastBeep = -1;
                         setTimeout(() => { 
                             let vsScreen = $('vs-clash-screen');
-                            if (vsScreen) {
-                                vsScreen.style.display='flex'; 
-                                pS('snd-clash', 1); 
-                                setTimeout(()=>vsScreen.style.display='none', 1000); 
-                            }
+                            if (vsScreen) { vsScreen.style.display='flex'; pS('snd-clash', 1); setTimeout(()=>vsScreen.style.display='none', 1000); }
                         }, 1200);
                         setTimeout(() => sR_Sequence(data.winner), 2400);
                     }
                 } 
-                // 3️⃣ WAIT STATE
-                else if(currentState === 'wait' || currentState === 'stop') {
-                    iBO = 0; 
-                }
+                else if(currentState === 'wait' || currentState === 'stop') { iBO = 0; }
             });
 
-            // 🔥 LOCAL TIMER ENGINE 🔥
             setInterval(() => {
-                let tmr = $('tmr'); 
-                if(!tmr) return;
-
+                let tmr = $('tmr'); if(!tmr) return;
                 if (currentState === 'betting' && currentEndTime > 0) {
                     let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
                     if (timeLeft < 0) timeLeft = 0;
-
-                    tmr.innerText = timeLeft + "s"; 
-                    tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#ffd700";
-
-                    if(timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) { 
-                        pS('snd-beep', 0.8); lastBeep = timeLeft; 
-                    }
+                    tmr.innerText = timeLeft + "s"; tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#ffd700";
+                    if(timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) { pS('snd-beep', 0.8); lastBeep = timeLeft; }
                 } else if (currentState === 'result' || currentState === 'proc') {
                     tmr.innerText = "STOP!"; tmr.style.color = "#fff";
                 } else {
@@ -421,7 +367,6 @@
                 }
             }, 200);
 
-            // Balance Fetch
             db.ref('users/'+ph).on('value', s => {
                 let d=s.val()||{}; dB = parseFloat(d.balance||0); wB = parseFloat(d.winning_balance||0); bB = parseFloat(d.bonus_balance||0);
                 tB = Math.max(0, dB+wB+bB);
@@ -433,11 +378,7 @@
             function fetchInitialHistory() {
                 db.ref('Game/DragonTiger2/History').orderByKey().limitToLast(15).once('value', s => {
                     let h = s.val();
-                    if(h) {
-                        globalHistory = Object.values(h).map(v => (v.winner || v).toString().toLowerCase().trim());
-                    } else {
-                        globalHistory = [];
-                    }
+                    if(h) { globalHistory = Object.values(h).map(v => (v.winner || v).toString().toLowerCase().trim()); } else { globalHistory = []; }
                     renderHistoryBoard();
                 });
             }
@@ -448,51 +389,62 @@
                 renderHistoryBoard();
             }
 
-            // 🔥 2. NEW SECURE BETTING LOGIC (Socket.io) 🔥
             window.pB = (s) => { 
                 if (currentState !== 'betting') return; 
                 let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
                 if (timeLeft <= 0) return; 
                 if (!iBO || tB < cC) return; 
 
-                // Optimistic Local Balance Deduction (Fast UI feel)
                 let nD=dB, nW=wB, rm=cC;
                 if(nD>=rm) nD-=rm; else { rm-=nD; nD=0; nW-=rm; }
                 db.ref('users/'+ph).update({balance: Math.max(0,nD), winning_balance: Math.max(0,nW)});
                 
-                // ❌ PURANA TARIKA HATA DIYA GAYA HAI
-                // db.ref(`Game/DragonTiger2/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
-
-                // ✅ NAYA TARIKA: SERVER KO MESSAGE BHEJEIN
-                socket.emit('placeBet', {
-                    uid: ph,
-                    gameName: 'DragonTiger2',
-                    option: s,
-                    amount: cC
-                });
+                // SOCKET BETTING LOGIC
+                if (socket) {
+                    socket.emit('placeBet', { uid: ph, gameName: 'DragonTiger2', option: s, amount: cC });
+                } else {
+                    // Fallback to Firebase directly if socket fails
+                    db.ref(`Game/DragonTiger2/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
+                }
                 
-                // UI Animation updates
                 spC(s, chipImgs[cC], $('my-wallet'), false, cC); 
                 myBets[s] += cC;
                 let mbID = 'mb-' + (s === 'tie' ? 'ti' : s.charAt(0));
                 let mbEl = $(mbID);
-                if(mbEl) {
-                    mbEl.innerText = '₹' + formatMoney(myBets[s]);
-                    mbEl.style.display = 'block';
-                }
+                if(mbEl) { mbEl.innerText = '₹' + formatMoney(myBets[s]); mbEl.style.display = 'block'; }
             };
 
-            // 🔥 3. SOCKET LISTENERS FOR REJECTIONS 🔥
-            socket.on('betError', (data) => {
-                // Agar server bet reject kare, toh console me dikhega
-                console.log("BET REJECTED BY SERVER:", data.message);
-                // Note: Balance deduction yahan revert karne ki zarurat nahi hai, 
-                // kiyuki Firebase ka listener (users/+ph) automatically asli balance wapis la dega.
-            });
-
-        } catch(e){}
+        } catch(e) { console.error("Firebase init error:", e); }
 
         window.sC = (el) => { if(el.classList.contains('locked')) return; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); cC=parseInt(el.dataset.value); };
+
+        function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
+            if(!srcEl) return;
+            pS('snd-drop', 0.5);
+            let layer = $('chips-layer'), box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
+            if(!box) return;
+
+            let chip = document.createElement('img'); chip.src = imgSrc; chip.className = 'placed-chip';
+            let sPos = getPos(srcEl); let sW = srcEl.offsetWidth || 30, sH = srcEl.offsetHeight || 30;
+            chip.style.left = (sPos.x + sW/2 - 13) + "px"; chip.style.top = (sPos.y + sH/2 - 13) + "px";
+            chip.style.transform = "scale(0.3)"; layer.appendChild(chip);
+
+            let bPos = getPos(box); let bW = box.offsetWidth, bH = box.offsetHeight;
+            setTimeout(() => {
+                let padX = 15, padY = 15; let randX = padX + Math.random() * (bW - padX*2); let randY = padY + Math.random() * (bH - padY*2);
+                chip.style.left = (bPos.x + randX - 13) + "px"; chip.style.top = (bPos.y + randY - 13) + "px";
+                chip.style.transform = "scale(1)";
+            }, 50);
+            
+            chip.setAttribute('data-side', side);
+            if(!isSystemAnim && chipVal > 0) {
+                mB[side] += chipVal;
+                let mText = $('m' + (side === 'tie' ? 'ti' : side.charAt(0)));
+                if(mText) mText.innerText = '₹' + formatMoney(mB[side]);
+            }
+            if(layer.children.length > 150) layer.firstChild.remove();
+            return chip;
+        }
 
         setInterval(() => { 
             if(iBO) { 
@@ -509,8 +461,7 @@
 
         function sR_Sequence(w) {
             const vals = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-            let dIdx, tIdx;
-            let safeW = w ? w.toString().toLowerCase().trim() : 'tie';
+            let dIdx, tIdx; let safeW = w ? w.toString().toLowerCase().trim() : 'tie';
 
             if(safeW === 'dragon') { dIdx = Math.floor(Math.random()*6)+7; tIdx = Math.floor(Math.random()*6); } 
             else if(safeW === 'tiger') { tIdx = Math.floor(Math.random()*6)+7; dIdx = Math.floor(Math.random()*6); } 
@@ -528,9 +479,7 @@
                     let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
                     if(winBox) winBox.classList.add('gw');
                     
-                    let vidDragon = $('vid-box-dragon');
-                    let vidTiger = $('vid-box-tiger');
-
+                    let vidDragon = $('vid-box-dragon'); let vidTiger = $('vid-box-tiger');
                     if(safeW === 'dragon') {
                         let dbImg = $('dragon-beast'); if(dbImg) dbImg.classList.add('roaring');
                         if(vidDragon) { vidDragon.muted = false; vidDragon.play().catch(()=>{}); }
@@ -541,9 +490,7 @@
                     
                     if(window.addNewHistoryDot) { window.addNewHistoryDot(safeW); }
                     
-                    let dealerBox = $('tmr'); 
-                    let dPos = getPos(dealerBox);
-                    
+                    let dealerBox = $('tmr'); let dPos = getPos(dealerBox);
                     document.querySelectorAll('.placed-chip').forEach(c => {
                         if(c.getAttribute('data-side') !== safeW) {
                             c.style.left = (dPos.x + dealerBox.offsetWidth/2 - 13) + "px";
@@ -555,8 +502,7 @@
                     document.querySelectorAll('.bot-user').forEach(bot => {
                         let tag = bot.querySelector('.wl-tag');
                         if(tag) {
-                            let isWin = Math.random() > 0.5; 
-                            let amtNum = (Math.floor(Math.random() * 90) + 10) * 100; 
+                            let isWin = Math.random() > 0.5; let amtNum = (Math.floor(Math.random() * 90) + 10) * 100; 
                             tag.innerText = isWin ? '+' + amtNum : '-' + amtNum;
                             tag.className = 'wl-tag ' + (isWin ? 'show-win' : 'show-lose');
                         }
@@ -566,26 +512,14 @@
                         pS('snd-fly', 1);
                         if(winBox) {
                             let wPos = getPos(winBox);
-                            
                             for(let i=0; i<15; i++) {
                                 let c = document.createElement('img'); c.src = "assets/100_0.png"; c.className = 'placed-chip';
-                                c.style.left = (wPos.x + winBox.offsetWidth/2 - 13) + "px"; 
-                                c.style.top = (wPos.y + winBox.offsetHeight/2 - 13) + "px";
-                                let layer = $('chips-layer');
-                                if(layer) layer.appendChild(c);
-                                
+                                c.style.left = (wPos.x + winBox.offsetWidth/2 - 13) + "px"; c.style.top = (wPos.y + winBox.offsetHeight/2 - 13) + "px";
+                                let layer = $('chips-layer'); if(layer) layer.appendChild(c);
                                 setTimeout(() => { 
                                     let r = Math.random(), target;
-                                    if(r < 0.2) target = $('my-wallet');
-                                    else if(r < 0.4) target = $('top-online');
-                                    else if(r < 0.7) target = $('bl'+Math.floor(Math.random()*5));
-                                    else target = $('br'+Math.floor(Math.random()*5));
-                                    
-                                    if(target) {
-                                        let tPos = getPos(target);
-                                        c.style.left = (tPos.x + target.offsetWidth/2 - 13) + "px"; 
-                                        c.style.top = (tPos.y + target.offsetHeight/2 - 13) + "px"; 
-                                    }
+                                    if(r < 0.2) target = $('my-wallet'); else if(r < 0.4) target = $('top-online'); else if(r < 0.7) target = $('bl'+Math.floor(Math.random()*5)); else target = $('br'+Math.floor(Math.random()*5));
+                                    if(target) { let tPos = getPos(target); c.style.left = (tPos.x + target.offsetWidth/2 - 13) + "px"; c.style.top = (tPos.y + target.offsetHeight/2 - 13) + "px"; }
                                     c.style.opacity='0';
                                 }, 50);
                                 setTimeout(()=>c.remove(), 1000);
@@ -597,31 +531,20 @@
         }
 
         function rUI() {
-            let layer = $('chips-layer');
-            if(layer) layer.innerHTML = '';
-            
-            mB = { dragon: 0, tiger: 0, tie: 0 }; 
-            myBets = { dragon: 0, tiger: 0, tie: 0 }; 
-            
+            let layer = $('chips-layer'); if(layer) layer.innerHTML = '';
+            mB = { dragon: 0, tiger: 0, tie: 0 }; myBets = { dragon: 0, tiger: 0, tie: 0 }; 
             let dbImg = $('dragon-beast'); if(dbImg) dbImg.classList.remove('roaring');
             let tbImg = $('tiger-beast'); if(tbImg) tbImg.classList.remove('roaring');
 
             try { let v=$('vid-box-dragon'); if(v) { v.pause(); v.currentTime=0; v.muted=true; } } catch(e){}
             try { let v=$('vid-box-tiger'); if(v) { v.pause(); v.currentTime=0; v.muted=true; } } catch(e){}
 
-            ['d','t','ti'].forEach(s => {
-                let m = $('m'+s); if(m) m.innerText = '₹0';
-                let mb = $('mb-'+s); if(mb) { mb.innerText = 'MY BET: ₹0'; mb.style.display = 'none'; }
-            });
-
+            ['d','t','ti'].forEach(s => { let m = $('m'+s); if(m) m.innerText = '₹0'; let mb = $('mb-'+s); if(mb) { mb.innerText = 'MY BET: ₹0'; mb.style.display = 'none'; } });
             document.querySelectorAll('.wl-tag').forEach(t => { t.className = 'wl-tag'; });
             ['bx-d','bx-t','bx-ti'].forEach(i => { let b = $(i); if(b) b.classList.remove('gw'); });
             
-            let dv = $('d-v'); if(dv) dv.innerHTML = '';
-            let tv = $('t-v'); if(tv) tv.innerHTML = '';
-            let bd = $('b-d'); if(bd) bd.style.opacity='1';
-            let bt = $('b-t'); if(bt) bt.style.opacity='1';
-            
+            let dv = $('d-v'); if(dv) dv.innerHTML = ''; let tv = $('t-v'); if(tv) tv.innerHTML = '';
+            let bd = $('b-d'); if(bd) bd.style.opacity='1'; let bt = $('b-t'); if(bt) bt.style.opacity='1';
             document.querySelectorAll('.newest-record').forEach(el => el.classList.remove('newest-record'));
         }
     </script>
