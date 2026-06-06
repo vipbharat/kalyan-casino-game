@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger 2 VIP - Strict Lock & Auto Wake</title>
+    <title>Dragon Tiger 2 VIP - Pure Firebase Edition</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial Black', sans-serif; }
@@ -48,8 +47,7 @@
         .cbk { position: absolute; inset: 0; background: #222 url('https://deckofcardsapi.com/static/img/back.png') center/cover; border-radius: 2px; z-index: 10; backface-visibility: hidden; transition: 0.3s; }
         .crd-val { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 2px; background: #fff; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 20px; line-height: 1.2;}
         .red-suit { color: red; } .black-suit { color: black; }
-        
-        .timer-badge { position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%); background: #600; color: #ffd700; padding: 3px 20px; border-radius: 15px; border: 1.5px solid #ffd700; font-size: 14px; font-weight: 900; z-index: 500; display: none; white-space: nowrap;}
+        .timer-badge { position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%); background: #600; color: #ffd700; padding: 3px 20px; border-radius: 15px; border: 1.5px solid #ffd700; font-size: 14px; font-weight: 900; z-index: 500; }
         
         .history-bar { height: 35px; display: flex; align-items: center; justify-content: flex-start; gap: 5px; padding: 0 15px; background: rgba(0,0,0,0.5); overflow: hidden; border-top: 2px solid #4a317c; position: relative; z-index: 30;}
         .h-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); flex-shrink: 0; }
@@ -59,17 +57,6 @@
 
         .betting-area { flex: 1.2; display: flex; padding: 10px; gap: 10px; position: relative; z-index: 50; }
         
-        /* 🔥 THE BET LOCK SHIELD CSS 🔥 */
-        #bet-lock-overlay { 
-            position: absolute; inset: 0; z-index: 200; display: none; 
-            background: rgba(0,0,0,0.6); border-radius: 8px; cursor: not-allowed; 
-            justify-content: center; align-items: center; 
-        }
-        #bet-lock-overlay span { 
-            background: #ff3333; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: 900; border: 2px solid white; animation: blink 1s infinite; box-shadow: 0 0 10px #ff3333; 
-        }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
         .bet-box { 
             flex: 1; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; cursor: pointer; 
             box-shadow: inset 0 0 20px rgba(0,0,0,0.5); transition: 0.2s; overflow: hidden; 
@@ -174,7 +161,7 @@
                     <div class="crd" id="c-d"><div class="cbk" id="b-d"></div><div id="d-v" class="crd-val"></div></div>
                     <img src="assets/VS.png" style="width:40px;" alt="VS">
                     <div class="crd" id="c-t"><div class="cbk" id="b-t"></div><div id="t-v" class="crd-val"></div></div>
-                    <div class="timer-badge" id="tmr"></div>
+                    <div class="timer-badge" id="tmr">WAITING...</div>
                 </div>
 
                 <video class="flying-beast" id="beast-right" src="assets/VID_20260426_202810_2.mp4" autoplay loop muted playsinline></video>
@@ -183,8 +170,6 @@
             <div class="history-bar" id="hr"></div>
             
             <div class="betting-area">
-                <div id="bet-lock-overlay"><span>STOP BETTING</span></div>
-
                 <div class="bet-box dbx" onclick="pB('dragon')" id="bx-d">
                     <div class="vortex-container"><div class="vortex"></div></div>
                     <img id="dragon-beast" class="beast-img-layer" src="assets/d7d73aec7947f4428719ced9fada482b.jpg" alt="Dragon">
@@ -232,23 +217,12 @@
     </div>
 
     <script>
-        // ==========================================
-        // 🔥 AUTO-WAKE ENGINE FOR RENDER 🔥
-        // ==========================================
-        function wakeUpServer() {
-            fetch("https://kalyan-engine.onrender.com/").catch(e => {});
-        }
-        wakeUpServer(); // Wake server immediately on load
-        setInterval(wakeUpServer, 180000); // Keep pinging every 3 minutes
-
-        // ==========================================
-        // 1. UI SETUP
-        // ==========================================
         const $ = i => document.getElementById(i);
         let iBO = 0, cC = 50, tB = 0, dB=0, wB=0, bB=0;
         let mB = { dragon: 0, tiger: 0, tie: 0 }, myBets = { dragon: 0, tiger: 0, tie: 0 };
         let lastBeep = -1;
         const chipImgs = { 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
+        
         let globalHistory = []; 
         let isResultProcessing = false; 
 
@@ -265,27 +239,13 @@
             });
         }
 
-        function genPlayers() {
-            const avs = ['Avatar0.png', 'Avatar2.png', 'Avatar3.png', 'Avatar4.png', 'Avatar5.png', 'Avatar6.png', 'Avatar7.png', 'Avatar9.png', 'Avatar11.png'];
-            let lh = '', rh = '';
-            for(let i=0; i<5; i++) {
-                let rBal1 = (Math.floor(Math.random()*50)+20) * 1000; 
-                let rBal2 = (Math.floor(Math.random()*50)+20) * 1000;
-                lh += `<div class="bot-user" id="bl${i}"><img class="player-icon" src="assets/${avs[Math.floor(Math.random()*avs.length)]}"><div class="player-bal">${rBal1}</div><div class="wl-tag"></div></div>`;
-                rh += `<div class="bot-user" id="br${i}"><img class="player-icon" src="assets/${avs[Math.floor(Math.random()*avs.length)]}"><div class="player-bal">${rBal2}</div><div class="wl-tag"></div></div>`;
-            }
-            if($('left-players')) $('left-players').innerHTML = lh; 
-            if($('right-players')) $('right-players').innerHTML = rh;
-        }
-        
-        genPlayers();
-        setInterval(() => { let oc=$('oc-top'); if(oc) oc.innerText = Math.floor(Math.random() * 25) + 220; }, 4000);
-
         function enterCasino() { 
             $('start-screen').style.display='none'; $('loading-screen').style.display='flex'; 
             if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+            
             try { let v1=$('vid-box-dragon'); v1.play().then(()=>v1.pause()); }catch(e){}
             try { let v2=$('vid-box-tiger'); v2.play().then(()=>v2.pause()); }catch(e){}
+
             setTimeout(() => { $('loading-screen').style.display='none'; }, 2000); 
         }
 
@@ -295,22 +255,68 @@
         }
 
         function pS(i,v) { let s=$(i); if(s) { let cl = s.cloneNode(); cl.volume = v; cl.play().catch(()=>{}); } }
-        function getPos(el) { let x = 0, y = 0; while(el && el.id !== 'game-mount') { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; } return {x, y}; }
+
+        function genPlayers() {
+            const avs = ['Avatar0.png', 'Avatar2.png', 'Avatar3.png', 'Avatar4.png', 'Avatar5.png', 'Avatar6.png', 'Avatar7.png', 'Avatar9.png', 'Avatar11.png'];
+            let lh = '', rh = '';
+            for(let i=0; i<5; i++) {
+                let rBal1 = (Math.floor(Math.random()*50)+20) * 1000; 
+                let rBal2 = (Math.floor(Math.random()*50)+20) * 1000;
+                lh += `<div class="bot-user" id="bl${i}"><img class="player-icon" src="assets/${avs[Math.floor(Math.random()*avs.length)]}"><div class="player-bal">${rBal1}</div><div class="wl-tag"></div></div>`;
+                rh += `<div class="bot-user" id="br${i}"><img class="player-icon" src="assets/${avs[Math.floor(Math.random()*avs.length)]}"><div class="player-bal">${rBal2}</div><div class="wl-tag"></div></div>`;
+            }
+            $('left-players').innerHTML = lh; $('right-players').innerHTML = rh;
+        }
+        genPlayers();
+        setInterval(() => { $('oc-top').innerText = Math.floor(Math.random() * 25) + 220; }, 4000);
+
+        function getPos(el) {
+            let x = 0, y = 0;
+            while(el && el.id !== 'game-mount') { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; }
+            return {x, y};
+        }
+
         function formatMoney(val) { return val; }
 
-        // ==========================================
-        // 2. SOCKET INIT 
-        // ==========================================
-        let socket = null;
-        try {
-            if (typeof io !== 'undefined') {
-                socket = io("https://kalyan-engine.onrender.com", { transports: ['websocket', 'polling'] });
-            } 
-        } catch (error) {}
+        function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
+            if(!srcEl) return;
+            pS('snd-drop', 0.5);
+            let layer = $('chips-layer'), box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
+            if(!box) return;
 
-        // ==========================================
-        // 3. STRICT FIREBASE LOGIC & SLEEP DETECTION
-        // ==========================================
+            let chip = document.createElement('img');
+            chip.src = imgSrc; chip.className = 'placed-chip';
+            
+            let sPos = getPos(srcEl);
+            let sW = srcEl.offsetWidth || 30, sH = srcEl.offsetHeight || 30;
+            
+            chip.style.left = (sPos.x + sW/2 - 13) + "px";
+            chip.style.top = (sPos.y + sH/2 - 13) + "px";
+            chip.style.transform = "scale(0.3)";
+            layer.appendChild(chip);
+
+            let bPos = getPos(box);
+            let bW = box.offsetWidth, bH = box.offsetHeight;
+            
+            setTimeout(() => {
+                let padX = 15, padY = 15;
+                let randX = padX + Math.random() * (bW - padX*2);
+                let randY = padY + Math.random() * (bH - padY*2);
+                chip.style.left = (bPos.x + randX - 13) + "px";
+                chip.style.top = (bPos.y + randY - 13) + "px";
+                chip.style.transform = "scale(1)";
+            }, 50);
+            
+            chip.setAttribute('data-side', side);
+
+            if(!isSystemAnim && chipVal > 0) {
+                mB[side] += chipVal;
+                $('m' + (side === 'tie' ? 'ti' : side.charAt(0))).innerText = '₹' + formatMoney(mB[side]);
+            }
+            if(layer.children.length > 150) layer.firstChild.remove();
+            return chip;
+        }
+
         try {
             firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
             const db = firebase.database();
@@ -318,18 +324,19 @@
             const netUI = $('network-overlay');
 
             let serverTimeOffset = 0;
-            db.ref(".info/serverTimeOffset").on("value", snap => { serverTimeOffset = snap.val() || 0; });
+            db.ref(".info/serverTimeOffset").on("value", function(snap) {
+                serverTimeOffset = snap.val() || 0;
+            });
             function getTrueTime() { return Date.now() + serverTimeOffset; }
 
             let connectedRef = db.ref(".info/connected");
             connectedRef.on("value", (snap) => {
                 if (snap.val() === true) {
-                    if(netUI) netUI.style.display = 'none';
-                    iBO = 0; rUI(); 
-                    if($('tmr')) { $('tmr').style.display = 'block'; $('tmr').innerText = "SYNCING..."; }
+                    netUI.style.display = 'none';
+                    iBO = 0; rUI(); $('tmr').innerText = "SYNCING..."; 
                     fetchInitialHistory();
                 } else {
-                    if(netUI) netUI.style.display = 'flex';
+                    netUI.style.display = 'flex';
                 }
             });
 
@@ -344,77 +351,68 @@
                 currentState = data.state;
                 currentEndTime = data.endTime;
 
+                // 1️⃣ BETTING STATE
                 if(currentState === 'betting') {
                     if(iBO === 0) { 
-                        iBO = 1; roundProcessed = false; rUI(); 
-                        let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'none';
+                        iBO = 1; 
+                        roundProcessed = false; 
+                        rUI(); 
                         let aStart = $('alert-start');
                         if (aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1200); }
                     }
                 } 
+                // 2️⃣ RESULT STATE
                 else if(currentState === 'result' || currentState === 'proc') {
                     if(iBO === 1) {
                         iBO = 0; 
-                        let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex'; 
                         let aStop = $('alert-stop');
                         if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1200); }
                     }
                     
                     if(!roundProcessed && data.winner) {
-                        roundProcessed = true; lastBeep = -1;
-                        iBO = 0; 
-                        let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex';
+                        roundProcessed = true; 
+                        lastBeep = -1;
                         
                         setTimeout(() => { 
                             let vsScreen = $('vs-clash-screen');
-                            if (vsScreen) { vsScreen.style.display='flex'; pS('snd-clash', 1); setTimeout(()=>vsScreen.style.display='none', 1000); }
+                            if (vsScreen) {
+                                vsScreen.style.display='flex'; 
+                                pS('snd-clash', 1); 
+                                setTimeout(()=>vsScreen.style.display='none', 1000); 
+                            }
                         }, 1200);
                         setTimeout(() => sR_Sequence(data.winner), 2400);
                     }
                 } 
-                else if(currentState === 'wait' || currentState === 'stop') { 
+                // 3️⃣ WAIT STATE
+                else if(currentState === 'wait' || currentState === 'stop') {
                     iBO = 0; 
-                    let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex';
                 }
             });
 
-            // 🔥 TIMER ENGINE WITH SERVER SLEEP DETECTOR 🔥
+            // 🔥 LOCAL TIMER ENGINE 🔥
             setInterval(() => {
-                let tmr = $('tmr'); if(!tmr) return;
-                
+                let tmr = $('tmr'); 
+                if(!tmr) return;
+
                 if (currentState === 'betting' && currentEndTime > 0) {
                     let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
-                    
-                    // 🚨 SERVER SLEEP DETECTED (Timer gaya minus me!) 🚨
-                    if (timeLeft < -2) {
-                        iBO = 0;
-                        let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex';
-                        tmr.style.display = 'block'; 
-                        tmr.innerText = "WAKING SERVER..."; 
-                        tmr.style.color = "#ff9800";
-                        wakeUpServer(); // Force wake
-                    } 
-                    // NORMAL TIMER OPERATION
-                    else if (timeLeft >= 0) {
-                        if (timeLeft <= 1 && iBO === 1) {
-                            iBO = 0; 
-                            let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex';
-                            tmr.style.display = 'block'; tmr.innerText = "STOP!"; tmr.style.color = "#fff";
-                        }
-                        if (iBO === 1) {
-                            tmr.style.display = 'block'; 
-                            tmr.innerText = timeLeft + "s"; tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#ffd700";
-                            if(timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) { pS('snd-beep', 0.8); lastBeep = timeLeft; }
-                        }
+                    if (timeLeft < 0) timeLeft = 0;
+
+                    tmr.innerText = timeLeft + "s"; 
+                    tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#ffd700";
+
+                    if(timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) { 
+                        pS('snd-beep', 0.8); lastBeep = timeLeft; 
                     }
                 } else if (currentState === 'result' || currentState === 'proc') {
-                    tmr.style.display = 'block'; 
                     tmr.innerText = "STOP!"; tmr.style.color = "#fff";
                 } else {
-                    tmr.style.display = 'none'; 
+                    tmr.innerText = "WAITING..."; tmr.style.color = "#fff";
                 }
             }, 200);
 
+            // Balance Fetch
             db.ref('users/'+ph).on('value', s => {
                 let d=s.val()||{}; dB = parseFloat(d.balance||0); wB = parseFloat(d.winning_balance||0); bB = parseFloat(d.bonus_balance||0);
                 tB = Math.max(0, dB+wB+bB);
@@ -426,7 +424,11 @@
             function fetchInitialHistory() {
                 db.ref('Game/DragonTiger2/History').orderByKey().limitToLast(15).once('value', s => {
                     let h = s.val();
-                    if(h) { globalHistory = Object.values(h).map(v => (v.winner || v).toString().toLowerCase().trim()); } else { globalHistory = []; }
+                    if(h) {
+                        globalHistory = Object.values(h).map(v => (v.winner || v).toString().toLowerCase().trim());
+                    } else {
+                        globalHistory = [];
+                    }
                     renderHistoryBoard();
                 });
             }
@@ -437,64 +439,34 @@
                 renderHistoryBoard();
             }
 
-            // 🔥 STRICT BET PLACEMENT GUARD 🔥
             window.pB = (s) => { 
-                if (iBO === 0) return; 
                 if (currentState !== 'betting') return; 
-                
                 let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
+                
+                // 🔥 STRICT LOCAL BUG FIX: Timer 1s ya usse kam hone par click lock
                 if (timeLeft <= 1) return; 
-
-                if (tB < cC) return; 
+                if (!iBO || tB < cC) return; 
 
                 let nD=dB, nW=wB, rm=cC;
                 if(nD>=rm) nD-=rm; else { rm-=nD; nD=0; nW-=rm; }
                 db.ref('users/'+ph).update({balance: Math.max(0,nD), winning_balance: Math.max(0,nW)});
                 
-                if (socket) {
-                    socket.emit('placeBet', { uid: ph, gameName: 'DragonTiger2', option: s, amount: cC });
-                } else {
-                    db.ref(`Game/DragonTiger2/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
-                }
+                // 🔥 BACK TO PURE FIREBASE FIRE
+                db.ref(`Game/DragonTiger2/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
                 
                 spC(s, chipImgs[cC], $('my-wallet'), false, cC); 
                 myBets[s] += cC;
                 let mbID = 'mb-' + (s === 'tie' ? 'ti' : s.charAt(0));
                 let mbEl = $(mbID);
-                if(mbEl) { mbEl.innerText = '₹' + formatMoney(myBets[s]); mbEl.style.display = 'block'; }
+                if(mbEl) {
+                    mbEl.innerText = '₹' + formatMoney(myBets[s]);
+                    mbEl.style.display = 'block';
+                }
             };
 
-        } catch(e) {}
+        } catch(e){}
 
         window.sC = (el) => { if(el.classList.contains('locked')) return; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); cC=parseInt(el.dataset.value); };
-
-        function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
-            if(!srcEl) return;
-            pS('snd-drop', 0.5);
-            let layer = $('chips-layer'), box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
-            if(!box) return;
-
-            let chip = document.createElement('img'); chip.src = imgSrc; chip.className = 'placed-chip';
-            let sPos = getPos(srcEl); let sW = srcEl.offsetWidth || 30, sH = srcEl.offsetHeight || 30;
-            chip.style.left = (sPos.x + sW/2 - 13) + "px"; chip.style.top = (sPos.y + sH/2 - 13) + "px";
-            chip.style.transform = "scale(0.3)"; layer.appendChild(chip);
-
-            let bPos = getPos(box); let bW = box.offsetWidth, bH = box.offsetHeight;
-            setTimeout(() => {
-                let padX = 15, padY = 15; let randX = padX + Math.random() * (bW - padX*2); let randY = padY + Math.random() * (bH - padY*2);
-                chip.style.left = (bPos.x + randX - 13) + "px"; chip.style.top = (bPos.y + randY - 13) + "px";
-                chip.style.transform = "scale(1)";
-            }, 50);
-            
-            chip.setAttribute('data-side', side);
-            if(!isSystemAnim && chipVal > 0) {
-                mB[side] += chipVal;
-                let mText = $('m' + (side === 'tie' ? 'ti' : side.charAt(0)));
-                if(mText) mText.innerText = '₹' + formatMoney(mB[side]);
-            }
-            if(layer.children.length > 150) layer.firstChild.remove();
-            return chip;
-        }
 
         setInterval(() => { 
             if(iBO) { 
@@ -511,7 +483,8 @@
 
         function sR_Sequence(w) {
             const vals = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-            let dIdx, tIdx; let safeW = w ? w.toString().toLowerCase().trim() : 'tie';
+            let dIdx, tIdx;
+            let safeW = w ? w.toString().toLowerCase().trim() : 'tie';
 
             if(safeW === 'dragon') { dIdx = Math.floor(Math.random()*6)+7; tIdx = Math.floor(Math.random()*6); } 
             else if(safeW === 'tiger') { tIdx = Math.floor(Math.random()*6)+7; dIdx = Math.floor(Math.random()*6); } 
@@ -529,7 +502,9 @@
                     let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
                     if(winBox) winBox.classList.add('gw');
                     
-                    let vidDragon = $('vid-box-dragon'); let vidTiger = $('vid-box-tiger');
+                    let vidDragon = $('vid-box-dragon');
+                    let vidTiger = $('vid-box-tiger');
+
                     if(safeW === 'dragon') {
                         let dbImg = $('dragon-beast'); if(dbImg) dbImg.classList.add('roaring');
                         if(vidDragon) { vidDragon.muted = false; vidDragon.play().catch(()=>{}); }
@@ -540,7 +515,9 @@
                     
                     if(window.addNewHistoryDot) { window.addNewHistoryDot(safeW); }
                     
-                    let dealerBox = $('tmr'); let dPos = getPos(dealerBox);
+                    let dealerBox = $('tmr'); 
+                    let dPos = getPos(dealerBox);
+                    
                     document.querySelectorAll('.placed-chip').forEach(c => {
                         if(c.getAttribute('data-side') !== safeW) {
                             c.style.left = (dPos.x + dealerBox.offsetWidth/2 - 13) + "px";
@@ -552,7 +529,8 @@
                     document.querySelectorAll('.bot-user').forEach(bot => {
                         let tag = bot.querySelector('.wl-tag');
                         if(tag) {
-                            let isWin = Math.random() > 0.5; let amtNum = (Math.floor(Math.random() * 90) + 10) * 100; 
+                            let isWin = Math.random() > 0.5; 
+                            let amtNum = (Math.floor(Math.random() * 90) + 10) * 100; 
                             tag.innerText = isWin ? '+' + amtNum : '-' + amtNum;
                             tag.className = 'wl-tag ' + (isWin ? 'show-win' : 'show-lose');
                         }
@@ -562,14 +540,26 @@
                         pS('snd-fly', 1);
                         if(winBox) {
                             let wPos = getPos(winBox);
+                            
                             for(let i=0; i<15; i++) {
                                 let c = document.createElement('img'); c.src = "assets/100_0.png"; c.className = 'placed-chip';
-                                c.style.left = (wPos.x + winBox.offsetWidth/2 - 13) + "px"; c.style.top = (wPos.y + winBox.offsetHeight/2 - 13) + "px";
-                                let layer = $('chips-layer'); if(layer) layer.appendChild(c);
+                                c.style.left = (wPos.x + winBox.offsetWidth/2 - 13) + "px"; 
+                                c.style.top = (wPos.y + winBox.offsetHeight/2 - 13) + "px";
+                                let layer = $('chips-layer');
+                                if(layer) layer.appendChild(c);
+                                
                                 setTimeout(() => { 
                                     let r = Math.random(), target;
-                                    if(r < 0.2) target = $('my-wallet'); else if(r < 0.4) target = $('top-online'); else if(r < 0.7) target = $('bl'+Math.floor(Math.random()*5)); else target = $('br'+Math.floor(Math.random()*5));
-                                    if(target) { let tPos = getPos(target); c.style.left = (tPos.x + target.offsetWidth/2 - 13) + "px"; c.style.top = (tPos.y + target.offsetHeight/2 - 13) + "px"; }
+                                    if(r < 0.2) target = $('my-wallet');
+                                    else if(r < 0.4) target = $('top-online');
+                                    else if(r < 0.7) target = $('bl'+Math.floor(Math.random()*5));
+                                    else target = $('br'+Math.floor(Math.random()*5));
+                                    
+                                    if(target) {
+                                        let tPos = getPos(target);
+                                        c.style.left = (tPos.x + target.offsetWidth/2 - 13) + "px"; 
+                                        c.style.top = (tPos.y + target.offsetHeight/2 - 13) + "px"; 
+                                    }
                                     c.style.opacity='0';
                                 }, 50);
                                 setTimeout(()=>c.remove(), 1000);
@@ -581,20 +571,31 @@
         }
 
         function rUI() {
-            let layer = $('chips-layer'); if(layer) layer.innerHTML = '';
-            mB = { dragon: 0, tiger: 0, tie: 0 }; myBets = { dragon: 0, tiger: 0, tie: 0 }; 
+            let layer = $('chips-layer');
+            if(layer) layer.innerHTML = '';
+            
+            mB = { dragon: 0, tiger: 0, tie: 0 }; 
+            myBets = { dragon: 0, tiger: 0, tie: 0 }; 
+            
             let dbImg = $('dragon-beast'); if(dbImg) dbImg.classList.remove('roaring');
             let tbImg = $('tiger-beast'); if(tbImg) tbImg.classList.remove('roaring');
 
             try { let v=$('vid-box-dragon'); if(v) { v.pause(); v.currentTime=0; v.muted=true; } } catch(e){}
             try { let v=$('vid-box-tiger'); if(v) { v.pause(); v.currentTime=0; v.muted=true; } } catch(e){}
 
-            ['d','t','ti'].forEach(s => { let m = $('m'+s); if(m) m.innerText = '₹0'; let mb = $('mb-'+s); if(mb) { mb.innerText = 'MY BET: ₹0'; mb.style.display = 'none'; } });
+            ['d','t','ti'].forEach(s => {
+                let m = $('m'+s); if(m) m.innerText = '₹0';
+                let mb = $('mb-'+s); if(mb) { mb.innerText = 'MY BET: ₹0'; mb.style.display = 'none'; }
+            });
+
             document.querySelectorAll('.wl-tag').forEach(t => { t.className = 'wl-tag'; });
             ['bx-d','bx-t','bx-ti'].forEach(i => { let b = $(i); if(b) b.classList.remove('gw'); });
             
-            let dv = $('d-v'); if(dv) dv.innerHTML = ''; let tv = $('t-v'); if(tv) tv.innerHTML = '';
-            let bd = $('b-d'); if(bd) bd.style.opacity='1'; let bt = $('b-t'); if(bt) bt.style.opacity='1';
+            let dv = $('d-v'); if(dv) dv.innerHTML = '';
+            let tv = $('t-v'); if(tv) tv.innerHTML = '';
+            let bd = $('b-d'); if(bd) bd.style.opacity='1';
+            let bt = $('b-t'); if(bt) bt.style.opacity='1';
+            
             document.querySelectorAll('.newest-record').forEach(el => el.classList.remove('newest-record'));
         }
     </script>
