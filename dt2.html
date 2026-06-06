@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger 2 VIP - Secure Socket Edition</title>
+    <title>Dragon Tiger 2 VIP - Strict Lock Edition</title>
     
+    <!-- Firebase & Socket.io Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -49,8 +50,7 @@
         .crd-val { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 2px; background: #fff; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 20px; line-height: 1.2;}
         .red-suit { color: red; } .black-suit { color: black; }
         
-        /* TIMER BADGE STYLING */
-        .timer-badge { position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%); background: #600; color: #ffd700; padding: 3px 20px; border-radius: 15px; border: 1.5px solid #ffd700; font-size: 14px; font-weight: 900; z-index: 500; display: none; /* Initially hidden */ }
+        .timer-badge { position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%); background: #600; color: #ffd700; padding: 3px 20px; border-radius: 15px; border: 1.5px solid #ffd700; font-size: 14px; font-weight: 900; z-index: 500; display: none; }
         
         .history-bar { height: 35px; display: flex; align-items: center; justify-content: flex-start; gap: 5px; padding: 0 15px; background: rgba(0,0,0,0.5); overflow: hidden; border-top: 2px solid #4a317c; position: relative; z-index: 30;}
         .h-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); flex-shrink: 0; }
@@ -60,6 +60,17 @@
 
         .betting-area { flex: 1.2; display: flex; padding: 10px; gap: 10px; position: relative; z-index: 50; }
         
+        /* 🔥 THE BET LOCK SHIELD CSS 🔥 */
+        #bet-lock-overlay { 
+            position: absolute; inset: 0; z-index: 200; display: none; 
+            background: rgba(0,0,0,0.6); border-radius: 8px; cursor: not-allowed; 
+            justify-content: center; align-items: center; 
+        }
+        #bet-lock-overlay span { 
+            background: #ff3333; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: 900; border: 2px solid white; animation: blink 1s infinite; box-shadow: 0 0 10px #ff3333; 
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
         .bet-box { 
             flex: 1; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; cursor: pointer; 
             box-shadow: inset 0 0 20px rgba(0,0,0,0.5); transition: 0.2s; overflow: hidden; 
@@ -173,6 +184,9 @@
             <div class="history-bar" id="hr"></div>
             
             <div class="betting-area">
+                <!-- 🔥 BET LOCK SHIELD 🔥 -->
+                <div id="bet-lock-overlay"><span>STOP BETTING</span></div>
+
                 <div class="bet-box dbx" onclick="pB('dragon')" id="bx-d">
                     <div class="vortex-container"><div class="vortex"></div></div>
                     <img id="dragon-beast" class="beast-img-layer" src="assets/d7d73aec7947f4428719ced9fada482b.jpg" alt="Dragon">
@@ -257,7 +271,6 @@
             if($('right-players')) $('right-players').innerHTML = rh;
         }
         
-        // Execute UI builders immediately!
         genPlayers();
         setInterval(() => { let oc=$('oc-top'); if(oc) oc.innerText = Math.floor(Math.random() * 25) + 220; }, 4000);
 
@@ -279,22 +292,17 @@
         function formatMoney(val) { return val; }
 
         // ==========================================
-        // 2. SOCKET INIT (WRAPPED IN SAFETY NET)
+        // 2. SOCKET INIT 
         // ==========================================
         let socket = null;
         try {
             if (typeof io !== 'undefined') {
                 socket = io("https://kalyan-engine.onrender.com", { transports: ['websocket', 'polling'] });
-                socket.on('betError', (data) => console.log("Bet Error:", data.message));
-            } else {
-                console.error("Socket library link was blocked or took too long to load.");
-            }
-        } catch (error) {
-            console.error("Socket init error:", error);
-        }
+            } 
+        } catch (error) {}
 
         // ==========================================
-        // 3. FIREBASE LOGIC (WRAPPED IN SAFETY NET)
+        // 3. STRICT FIREBASE LOGIC & LOCKING
         // ==========================================
         try {
             firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
@@ -332,6 +340,7 @@
                 if(currentState === 'betting') {
                     if(iBO === 0) { 
                         iBO = 1; roundProcessed = false; rUI(); 
+                        let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'none'; // REMOVE LOCK
                         let aStart = $('alert-start');
                         if (aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1200); }
                     }
@@ -339,11 +348,17 @@
                 else if(currentState === 'result' || currentState === 'proc') {
                     if(iBO === 1) {
                         iBO = 0; 
+                        let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex'; // APPLY LOCK
                         let aStop = $('alert-stop');
                         if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1200); }
                     }
+                    
+                    // 🔥 CARDS OPENING ANIMATION (STRICTLY LOCKED) 🔥
                     if(!roundProcessed && data.winner) {
                         roundProcessed = true; lastBeep = -1;
+                        iBO = 0; // Double ensure lock
+                        let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex';
+                        
                         setTimeout(() => { 
                             let vsScreen = $('vs-clash-screen');
                             if (vsScreen) { vsScreen.style.display='flex'; pS('snd-clash', 1); setTimeout(()=>vsScreen.style.display='none', 1000); }
@@ -351,10 +366,13 @@
                         setTimeout(() => sR_Sequence(data.winner), 2400);
                     }
                 } 
-                else if(currentState === 'wait' || currentState === 'stop') { iBO = 0; }
+                else if(currentState === 'wait' || currentState === 'stop') { 
+                    iBO = 0; 
+                    let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex';
+                }
             });
 
-            // 🔥 TIMER LOGIC UPDATED TO HIDE 'WAITING...' 🔥
+            // 🔥 TIMER ENGINE WITH PRE-LOCK (1 SECOND BEFORE) 🔥
             setInterval(() => {
                 let tmr = $('tmr'); if(!tmr) return;
                 
@@ -362,14 +380,22 @@
                     let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
                     if (timeLeft < 0) timeLeft = 0;
                     
-                    tmr.style.display = 'block'; // Show Timer
-                    tmr.innerText = timeLeft + "s"; tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#ffd700";
-                    if(timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) { pS('snd-beep', 0.8); lastBeep = timeLeft; }
+                    // PRE-LOCK UI 1 SECOND BEFORE TO PREVENT LAG BETS
+                    if (timeLeft <= 1 && iBO === 1) {
+                        iBO = 0; 
+                        let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'flex';
+                        tmr.style.display = 'block'; tmr.innerText = "STOP!"; tmr.style.color = "#fff";
+                    }
+
+                    if (iBO === 1) {
+                        tmr.style.display = 'block'; 
+                        tmr.innerText = timeLeft + "s"; tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#ffd700";
+                        if(timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) { pS('snd-beep', 0.8); lastBeep = timeLeft; }
+                    }
                 } else if (currentState === 'result' || currentState === 'proc') {
-                    tmr.style.display = 'block'; // Show STOP
+                    tmr.style.display = 'block'; 
                     tmr.innerText = "STOP!"; tmr.style.color = "#fff";
                 } else {
-                    // 🔥 MAGIC HAPPENS HERE: HIDE BADGE WHEN WAITING 🔥
                     tmr.style.display = 'none'; 
                 }
             }, 200);
@@ -396,17 +422,20 @@
                 renderHistoryBoard();
             }
 
+            // 🔥 STRICT BET PLACEMENT GUARD 🔥
             window.pB = (s) => { 
-                if (currentState !== 'betting') return; 
+                if (iBO === 0) return; // 1. Super Strict Flag Check
+                if (currentState !== 'betting') return; // 2. Firebase State Check
+                
                 let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
-                if (timeLeft <= 0) return; 
-                if (!iBO || tB < cC) return; 
+                if (timeLeft <= 1) return; // 3. No bets in last 1 second
+
+                if (tB < cC) return; // 4. Balance check
 
                 let nD=dB, nW=wB, rm=cC;
                 if(nD>=rm) nD-=rm; else { rm-=nD; nD=0; nW-=rm; }
                 db.ref('users/'+ph).update({balance: Math.max(0,nD), winning_balance: Math.max(0,nW)});
                 
-                // SOCKET BETTING LOGIC
                 if (socket) {
                     socket.emit('placeBet', { uid: ph, gameName: 'DragonTiger2', option: s, amount: cC });
                 } else {
@@ -420,7 +449,7 @@
                 if(mbEl) { mbEl.innerText = '₹' + formatMoney(myBets[s]); mbEl.style.display = 'block'; }
             };
 
-        } catch(e) { console.error("Firebase init error:", e); }
+        } catch(e) {}
 
         window.sC = (el) => { if(el.classList.contains('locked')) return; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); cC=parseInt(el.dataset.value); };
 
