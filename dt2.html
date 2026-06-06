@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger 2 VIP - Pure Firebase Edition</title>
+    <title>Dragon Tiger 2 VIP - Secure Socket Edition</title>
     
+    <!-- Firebase & Socket.io Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial Black', sans-serif; }
@@ -226,6 +228,9 @@
         let globalHistory = []; 
         let isResultProcessing = false; 
 
+        // 🔥 1. INITIALIZE SOCKET CONNECTION 🔥
+        const socket = io("https://kalyan-engine.onrender.com");
+
         function renderHistoryBoard() {
             let hr = $('hr');
             if(!hr) return;
@@ -391,7 +396,6 @@
                 // 3️⃣ WAIT STATE
                 else if(currentState === 'wait' || currentState === 'stop') {
                     iBO = 0; 
-                    // 🔥 YAHAN SE rUI() HATA DIYA HAI! Ab wait time mein board clear nahi hoga, jeetne wala patta ekdum clear dikhega 🔥
                 }
             });
 
@@ -444,19 +448,30 @@
                 renderHistoryBoard();
             }
 
+            // 🔥 2. NEW SECURE BETTING LOGIC (Socket.io) 🔥
             window.pB = (s) => { 
-                // 👇🔥 THE MASTER LOCK (0 Second par Bet Band) 🔥👇
                 if (currentState !== 'betting') return; 
                 let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
                 if (timeLeft <= 0) return; 
                 if (!iBO || tB < cC) return; 
-                // 👆🔥 LOCK KHATAM 🔥👆
 
+                // Optimistic Local Balance Deduction (Fast UI feel)
                 let nD=dB, nW=wB, rm=cC;
                 if(nD>=rm) nD-=rm; else { rm-=nD; nD=0; nW-=rm; }
                 db.ref('users/'+ph).update({balance: Math.max(0,nD), winning_balance: Math.max(0,nW)});
-                db.ref(`Game/DragonTiger2/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
                 
+                // ❌ PURANA TARIKA HATA DIYA GAYA HAI
+                // db.ref(`Game/DragonTiger2/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
+
+                // ✅ NAYA TARIKA: SERVER KO MESSAGE BHEJEIN
+                socket.emit('placeBet', {
+                    uid: ph,
+                    gameName: 'DragonTiger2',
+                    option: s,
+                    amount: cC
+                });
+                
+                // UI Animation updates
                 spC(s, chipImgs[cC], $('my-wallet'), false, cC); 
                 myBets[s] += cC;
                 let mbID = 'mb-' + (s === 'tie' ? 'ti' : s.charAt(0));
@@ -466,6 +481,14 @@
                     mbEl.style.display = 'block';
                 }
             };
+
+            // 🔥 3. SOCKET LISTENERS FOR REJECTIONS 🔥
+            socket.on('betError', (data) => {
+                // Agar server bet reject kare, toh console me dikhega
+                console.log("BET REJECTED BY SERVER:", data.message);
+                // Note: Balance deduction yahan revert karne ki zarurat nahi hai, 
+                // kiyuki Firebase ka listener (users/+ph) automatically asli balance wapis la dega.
+            });
 
         } catch(e){}
 
