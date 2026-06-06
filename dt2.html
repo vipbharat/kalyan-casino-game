@@ -295,7 +295,7 @@
         function formatMoney(val) { return val; }
 
         // ==========================================
-        // 2. FIREBASE LOGIC (PURE FIREBASE ENGINE)
+        // 2. FIREBASE LOGIC (FORCE-SYNC ENGINE)
         // ==========================================
         try {
             firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
@@ -323,6 +323,7 @@
             let currentEndTime = 0;
             let roundProcessed = false; 
 
+            // 🔥 FORCE-SYNC STATUS UPDATE 🔥
             db.ref('Game/DragonTiger2/Status').on('value', (snap) => {
                 let data = snap.val();
                 if(!data) return;
@@ -330,28 +331,35 @@
                 currentState = data.state;
                 currentEndTime = data.endTime;
 
-                // 🟢 1. BETTING SHURU
-                if(currentState === 'betting') {
+                let betLock = $('bet-lock-overlay');
+                let aStart = $('alert-start');
+                let aStop = $('alert-stop');
+
+                if (currentState === 'betting') {
                     if(iBO === 0) { 
                         iBO = 1; roundProcessed = false; rUI(); 
-                        let betLock = $('bet-lock-overlay'); if(betLock) betLock.style.display = 'none'; // OPEN LOCK
-                        let aStart = $('alert-start');
+                        if(betLock) betLock.style.display = 'none'; // OPEN LOCK
                         if (aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1200); }
                     }
                 } 
-                // 🔴 2. RESULT TIME (LOCK)
-                else if(currentState === 'result' || currentState === 'proc') {
+                else {
+                    // INSTANT LOCK FOR WAIT/RESULT (NO TIMER RELIANCE)
                     if(iBO === 1) {
                         iBO = 0; 
-                        let betLock = $('bet-lock-overlay'); if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'STOP BETTING'; } // CLOSE LOCK
-                        let aStop = $('alert-stop');
-                        if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1200); }
+                        if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = (currentState === 'wait') ? 'WAITING...' : 'STOP BETTING'; }
+                        if(currentState === 'result' || currentState === 'proc') {
+                            if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1200); }
+                        }
+                    } else {
+                        // Already locked, but update text
+                        if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = (currentState === 'wait') ? 'WAITING...' : 'STOP BETTING'; }
                     }
-                    
-                    if(!roundProcessed && data.winner) {
+
+                    // TRIGGER RESULT ANIMATION
+                    if((currentState === 'result' || currentState === 'proc') && !roundProcessed && data.winner) {
                         roundProcessed = true; lastBeep = -1;
                         iBO = 0; 
-                        let betLock = $('bet-lock-overlay'); if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'STOP BETTING'; }
+                        if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'STOP BETTING'; }
                         
                         setTimeout(() => { 
                             let vsScreen = $('vs-clash-screen');
@@ -359,11 +367,6 @@
                         }, 1200);
                         setTimeout(() => sR_Sequence(data.winner), 2400);
                     }
-                } 
-                // 🟡 3. WAITING TIME (LOCK)
-                else if(currentState === 'wait' || currentState === 'stop') { 
-                    iBO = 0; 
-                    let betLock = $('bet-lock-overlay'); if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'WAITING...'; } // CLOSE LOCK
                 }
             });
 
@@ -484,12 +487,11 @@
         // 🔥 BOTS STRICT LOCK LOGIC 🔥
         setInterval(() => { 
             let betLock = $('bet-lock-overlay');
-            // Check: Agar lock shield lagi hai (Waiting/Result time), toh BOTS bhi bet nahi karenge
             if (betLock && betLock.style.display === 'flex') return; 
 
             if(iBO === 0 || currentState !== 'betting') return;
             let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
-            if (timeLeft <= 1) return; // 1 second par BOTS bhi ruk jayenge
+            if (timeLeft <= 1) return; 
 
             let s = Math.random()>0.5 ? 'dragon' : 'tiger'; if(Math.random()>0.9) s='tie';
             let r = Math.random(), srcEl;
