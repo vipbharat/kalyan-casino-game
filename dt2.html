@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger 2 VIP - Fast Action Edition</title>
+    <title>Dragon Tiger 2 VIP - Master Lock Sync</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -57,7 +57,7 @@
 
         .betting-area { flex: 1.2; display: flex; padding: 10px; gap: 10px; position: relative; z-index: 50; }
         
-        /* 🔥 FAST VISUAL LOCK SHIELD CSS 🔥 */
+        /* 🔥 FAST VISUAL LOCK SHIELD 🔥 */
         #bet-lock-overlay { 
             position: absolute; inset: 0; z-index: 200; display: none; 
             background: rgba(0,0,0,0.5); border-radius: 8px; cursor: not-allowed; 
@@ -96,7 +96,7 @@
             80% { transform: scale(1.3) translateY(-15px); z-index: 50; box-shadow: 0 10px 30px #ffd700; border-radius: 12px; } 
             100% { transform: scale(1) translateY(0); z-index: 2; } 
         }
-        .roaring { animation: roarEffect 1.5s ease-in-out forwards; z-index: 50; } /* Fast roar */
+        .roaring { animation: roarEffect 1.2s ease-in-out forwards; z-index: 50; } 
 
         .box-video-hidden { display: none; } 
         .box-title { font-size: 24px; color: #fff; text-shadow: 0 3px 6px #000, 0 0 10px #000; pointer-events: none; position: relative; z-index: 10; font-weight: 900;}
@@ -476,14 +476,10 @@
             return chip;
         }
 
-        // 🔥 BOTS STRICT LOCK LOGIC 🔥
+        // 🔥 BOTS STRICT LOCK LOGIC DURING WAITING 🔥
         setInterval(() => { 
             let betLock = $('bet-lock-overlay');
-            if (betLock && betLock.style.display === 'flex') return; 
-
-            if(iBO === 0 || currentState !== 'betting') return;
-            let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
-            if (timeLeft <= 1) return; 
+            if (iBO === 0 || currentState !== 'betting' || (betLock && betLock.style.display === 'flex')) return;
 
             let s = Math.random()>0.5 ? 'dragon' : 'tiger'; if(Math.random()>0.9) s='tie';
             let r = Math.random(), srcEl;
@@ -495,7 +491,7 @@
             spC(s, chipImgs[randomChipKey], srcEl, false, parseInt(randomChipKey)); 
         }, 250);
 
-        // 🔥 FAST ANIMATION SEQUENCE (Fits in 5 Seconds) 🔥
+        // 🔥 FAST PARALLEL TIMING SEQUENCE (Fits 5 Seconds Perfect Loop) 🔥
         function sR_Sequence(w) {
             const vals = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
             let dIdx, tIdx; let safeW = w ? w.toString().toLowerCase().trim() : 'tie';
@@ -504,76 +500,79 @@
             else if(safeW === 'tiger') { tIdx = Math.floor(Math.random()*6)+7; dIdx = Math.floor(Math.random()*6); } 
             else { dIdx = Math.floor(Math.random()*13); tIdx = dIdx; } 
 
-            // 0.5s: Cards Flip
+            // 0.2s: Reveal Dragon Card
             setTimeout(() => {
                 pS('snd-card', 1); 
                 let bd = $('b-d'); if(bd) bd.style.opacity='0'; 
                 let dv = $('d-v'); if(dv) dv.innerHTML = `<div class="black-suit" style="font-size:20px; font-weight:900;">${vals[dIdx]}<br><span style="font-size:30px">♠</span></div>`;
+            }, 200);
+
+            // 0.6s: Reveal Tiger Card
+            setTimeout(() => {
+                pS('snd-card', 1); 
+                let bt = $('b-t'); if(bt) bt.style.opacity='0';
+                let tv = $('t-v'); if(tv) tv.innerHTML = `<div class="red-suit" style="font-size:20px; font-weight:900;">${vals[tIdx]}<br><span style="font-size:30px">♥</span></div>`;
+            }, 600);
+
+            // 1.2s: Trigger Beast Roar & Box Glow
+            setTimeout(() => {
+                let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
+                if(winBox) winBox.classList.add('gw');
                 
-                setTimeout(() => {
-                    pS('snd-card', 1); 
-                    let bt = $('b-t'); if(bt) bt.style.opacity='0';
-                    let tv = $('t-v'); if(tv) tv.innerHTML = `<div class="red-suit" style="font-size:20px; font-weight:900;">${vals[tIdx]}<br><span style="font-size:30px">♥</span></div>`;
-                    
-                    // 1.5s: Winner Glow & Roar
-                    setTimeout(() => {
-                        let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
-                        if(winBox) winBox.classList.add('gw');
-                        
-                        let vidDragon = $('vid-box-dragon'); let vidTiger = $('vid-box-tiger');
-                        if(safeW === 'dragon') {
-                            let dbImg = $('dragon-beast'); if(dbImg) dbImg.classList.add('roaring');
-                            if(vidDragon) { vidDragon.muted = false; vidDragon.play().catch(()=>{}); }
-                        } else if(safeW === 'tiger') {
-                            let tbImg = $('tiger-beast'); if(tbImg) { tbImg.classList.remove('roaring'); tbImg.classList.add('roaring'); }
-                            if(vidTiger) { vidTiger.muted = false; vidTiger.play().catch(()=>{}); }
-                        }
-                        
-                        if(window.addNewHistoryDot) { window.addNewHistoryDot(safeW); }
-                        
-                        // 2.0s: Losing chips move to dealer
-                        let dealerBox = $('tmr'); let dPos = getPos(dealerBox);
-                        document.querySelectorAll('.placed-chip').forEach(c => {
-                            if(c.getAttribute('data-side') !== safeW) {
-                                c.style.left = (dPos.x + dealerBox.offsetWidth/2 - 13) + "px";
-                                c.style.top = (dPos.y + dealerBox.offsetHeight/2 - 13) + "px";
-                                c.style.opacity = '0';
-                            }
-                        });
+                let vidDragon = $('vid-box-dragon'); let vidTiger = $('vid-box-tiger');
+                if(safeW === 'dragon') {
+                    let dbImg = $('dragon-beast'); if(dbImg) dbImg.classList.add('roaring');
+                    if(vidDragon) { vidDragon.muted = false; vidDragon.play().catch(()=>{}); }
+                } else if(safeW === 'tiger') {
+                    let tbImg = $('tiger-beast'); if(tbImg) { tbImg.classList.remove('roaring'); tbImg.classList.add('roaring'); }
+                    if(vidTiger) { vidTiger.muted = false; vidTiger.play().catch(()=>{}); }
+                }
+                
+                if(window.addNewHistoryDot) { window.addNewHistoryDot(safeW); }
+            }, 1200);
 
-                        // 2.5s: Winning chips fly to players
-                        setTimeout(() => {
-                            pS('snd-fly', 1);
-                            
-                            document.querySelectorAll('.bot-user').forEach(bot => {
-                                let tag = bot.querySelector('.wl-tag');
-                                if(tag) {
-                                    let isWin = Math.random() > 0.5; let amtNum = (Math.floor(Math.random() * 90) + 10) * 100; 
-                                    tag.innerText = isWin ? '+' + amtNum : '-' + amtNum;
-                                    tag.className = 'wl-tag ' + (isWin ? 'show-win' : 'show-lose');
-                                }
-                            });
+            // 2.2s: Suck losing chips towards dealer
+            setTimeout(() => {
+                let dealerBox = $('tmr'); let dPos = getPos(dealerBox);
+                document.querySelectorAll('.placed-chip').forEach(c => {
+                    if(c.getAttribute('data-side') !== safeW) {
+                        c.style.left = (dPos.x + dealerBox.offsetWidth/2 - 13) + "px";
+                        c.style.top = (dPos.y + dealerBox.offsetHeight/2 - 13) + "px";
+                        c.style.opacity = '0';
+                    }
+                });
+            }, 2200);
 
-                            if(winBox) {
-                                let wPos = getPos(winBox);
-                                for(let i=0; i<15; i++) {
-                                    let c = document.createElement('img'); c.src = "assets/100_0.png"; c.className = 'placed-chip';
-                                    c.style.left = (wPos.x + winBox.offsetWidth/2 - 13) + "px"; c.style.top = (wPos.y + winBox.offsetHeight/2 - 13) + "px";
-                                    let layer = $('chips-layer'); if(layer) layer.appendChild(c);
-                                    setTimeout(() => { 
-                                        let r = Math.random(), target;
-                                        if(r < 0.2) target = $('my-wallet'); else if(r < 0.4) target = $('top-online'); else if(r < 0.7) target = $('bl'+Math.floor(Math.random()*5)); else target = $('br'+Math.floor(Math.random()*5));
-                                        if(target) { let tPos = getPos(target); c.style.left = (tPos.x + target.offsetWidth/2 - 13) + "px"; c.style.top = (tPos.y + target.offsetHeight/2 - 13) + "px"; }
-                                        c.style.opacity='0';
-                                    }, 50);
-                                    setTimeout(()=>c.remove(), 1000);
-                                }
-                            }
-                        }, 500); // 2.5s End
+            // 3.0s: Disburse winning chips to victors
+            setTimeout(() => {
+                pS('snd-fly', 1);
+                let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
+                
+                document.querySelectorAll('.bot-user').forEach(bot => {
+                    let tag = bot.querySelector('.wl-tag');
+                    if(tag) {
+                        let isWin = Math.random() > 0.5; let amtNum = (Math.floor(Math.random() * 90) + 10) * 100; 
+                        tag.innerText = isWin ? '+' + amtNum : '-' + amtNum;
+                        tag.className = 'wl-tag ' + (isWin ? 'show-win' : 'show-lose');
+                    }
+                });
 
-                    }, 500); // 1.5s End
-                }, 500); // 1.0s End
-            }, 500); // 0.5s End
+                if(winBox) {
+                    let wPos = getPos(winBox);
+                    for(let i=0; i<15; i++) {
+                        let c = document.createElement('img'); c.src = "assets/100_0.png"; c.className = 'placed-chip';
+                        c.style.left = (wPos.x + winBox.offsetWidth/2 - 13) + "px"; c.style.top = (wPos.y + winBox.offsetHeight/2 - 13) + "px";
+                        let layer = $('chips-layer'); if(layer) layer.appendChild(c);
+                        setTimeout(() => { 
+                            let r = Math.random(), target;
+                            if(r < 0.2) target = $('my-wallet'); else if(r < 0.4) target = $('top-online'); else if(r < 0.7) target = $('bl'+Math.floor(Math.random()*5)); else target = $('br'+Math.floor(Math.random()*5));
+                            if(target) { let tPos = getPos(target); c.style.left = (tPos.x + target.offsetWidth/2 - 13) + "px"; c.style.top = (tPos.y + target.offsetHeight/2 - 13) + "px"; }
+                            c.style.opacity='0';
+                        }, 50);
+                        setTimeout(()=>c.remove(), 900);
+                    }
+                }
+            }, 3000);
         }
 
         function rUI() {
