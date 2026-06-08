@@ -316,12 +316,16 @@
             function getTrueTime() { return Date.now() + serverTimeOffset; }
 
             let connectedRef = db.ref(".info/connected");
+            let isFirstConnect = true;
+
+            // 🔥 FIX: Re-connection se ab timer aur game nahi atkega
             connectedRef.on("value", (snap) => {
                 if (snap.val() === true) {
                     if(netUI) netUI.style.display = 'none';
-                    iBO = 0; rUI(); 
-                    if($('tmr')) { $('tmr').style.display = 'block'; $('tmr').innerText = "SYNCING..."; }
-                    fetchInitialHistory();
+                    if(isFirstConnect) {
+                        fetchInitialHistory();
+                        isFirstConnect = false;
+                    }
                 } else {
                     if(netUI) netUI.style.display = 'flex';
                 }
@@ -342,7 +346,9 @@
                 let aStop = $('alert-stop');
 
                 if (currentState === 'betting') {
-                    if(iBO === 0) { 
+                    let tLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
+                    // Start only if we have time left
+                    if(iBO === 0 && tLeft > 0) { 
                         iBO = 1; roundProcessed = false; rUI(); 
                         if(betLock) betLock.style.display = 'none'; 
                         if (aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1000); }
@@ -364,28 +370,28 @@
                 }
             });
 
+            // 🔥 FIX: Timer logic disconnected from strictly relying on iBO
             setInterval(() => {
                 let tmr = $('tmr'); if(!tmr) return;
                 
                 if (currentState === 'betting' && currentEndTime > 0) {
                     let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
                     
-                    if (timeLeft < -1) {
+                    if (timeLeft < 0) {
                         iBO = 0;
                         let betLock = $('bet-lock-overlay'); if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'WAIT FOR SERVER...'; }
                         tmr.style.display = 'block'; tmr.innerText = "WAIT..."; tmr.style.color = "#ff9800";
                     } 
                     else if (timeLeft >= 0) {
-                        if (timeLeft === 0 && iBO === 1) {
-                            iBO = 0; 
+                        if (timeLeft === 0) {
+                            iBO = 0; // Lock betting at exactly 0
                             let betLock = $('bet-lock-overlay'); if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'STOP BETTING'; }
                             tmr.style.display = 'block'; tmr.innerText = "STOP!"; tmr.style.color = "#fff";
-                        }
-                        
-                        if (iBO === 1) {
+                        } else {
+                            // Update Timer independently
                             tmr.style.display = 'block'; 
                             tmr.innerText = timeLeft + "s"; tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#ffd700";
-                            if(timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) { pS('snd-beep', 0.8); lastBeep = timeLeft; }
+                            if(timeLeft <= 5 && lastBeep !== timeLeft) { pS('snd-beep', 0.8); lastBeep = timeLeft; }
                         }
                     }
                 } else {
@@ -447,11 +453,10 @@
 
         window.sC = (el) => { if(el.classList.contains('locked')) return; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); cC=parseInt(el.dataset.value); };
 
-        // 🔥 ENHANCED CHIP DROP (Bots ke amounts properly Board pe aayenge) 🔥
+        // 🔥 ENHANCED CHIP DROP 🔥
         function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
             if(!srcEl) return;
             
-            // Audio spam ko block karne ke liye (Sirf 30% chips pe awaaz aayegi)
             if(Math.random() > 0.7) pS('snd-drop', 0.4);
             
             let layer = $('chips-layer');
@@ -490,7 +495,6 @@
                 let mText = $(textID);
                 if(mText) { 
                     mText.innerText = '₹' + mB[side];
-                    // Thoda popup effect jab paisa add ho
                     mText.style.transition = '0.1s';
                     mText.style.transform = 'scale(1.2)';
                     setTimeout(() => { mText.style.transform = 'scale(1)'; }, 100);
@@ -502,27 +506,22 @@
         }
 
         // ==========================================
-        // 🔥 100% WORKING BOTS LOGIC 🔥
+        // 🔥 FIX: 100% WORKING BOTS LOGIC 🔥
         // ==========================================
         setInterval(() => { 
-            // Jab tak betting state nahi hai, bots kuch nahi karenge
-            if (iBO !== 1 || currentState !== 'betting') return;
+            // Bot check strictly synced with timer status
+            if (iBO === 0 || currentState !== 'betting') return;
             let betLock = $('bet-lock-overlay');
             if (betLock && betLock.style.display === 'flex') return;
 
-            // Konsi side bet karni hai?
             let s = Math.random() > 0.45 ? 'dragon' : (Math.random() > 0.1 ? 'tiger' : 'tie');
-            
-            // Kis bot ne phekni hai?
             let botPrefix = Math.random() > 0.5 ? 'bl' : 'br';
             let botId = botPrefix + Math.floor(Math.random() * 5);
             let srcEl = $(botId) || $('top-online'); 
             
-            // Konsa chip phekna hai?
             let chipKeys = Object.keys(chipImgs);
             let randomChipKey = chipKeys[Math.floor(Math.random() * chipKeys.length)];
             
-            // Board par drop aur calculate karo
             spC(s, chipImgs[randomChipKey], srcEl, false, parseInt(randomChipKey)); 
         }, 300);
 
