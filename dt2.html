@@ -57,7 +57,6 @@
 
         .betting-area { flex: 1.2; display: flex; padding: 10px; gap: 10px; position: relative; z-index: 50; }
         
-        /* 🔥 FAST VISUAL LOCK SHIELD 🔥 */
         #bet-lock-overlay { 
             position: absolute; inset: 0; z-index: 200; display: none; 
             background: rgba(0,0,0,0.5); border-radius: 8px; cursor: not-allowed; 
@@ -129,7 +128,6 @@
         #vs-clash-screen { position: absolute; inset: 0; z-index: 3000; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; overflow: hidden; }
         .clash-dragon, .clash-tiger { width: 45%; mix-blend-mode: screen; }
 
-        /* 🔥 FIREBASE CONNECTION OVERLAY 🔥 */
         #network-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; }
         .loading-chakra { width: 60px; height: 60px; border: 6px solid rgba(255, 215, 0, 0.2); border-top-color: #ffd700; border-radius: 50%; animation: spinChakra 1s linear infinite; margin-bottom: 20px; }
         @keyframes spinChakra { 100% { transform: rotate(360deg); } }
@@ -246,7 +244,7 @@
         let lastBeep = -1;
         const chipImgs = { 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
         let globalHistory = []; 
-        let isResultProcessing = false; 
+        let roundProcessed = false; 
 
         function renderHistoryBoard() {
             let hr = $('hr');
@@ -273,7 +271,7 @@
             if($('left-players')) $('left-players').innerHTML = lh; 
             if($('right-players')) $('right-players').innerHTML = rh;
         }
-        
+
         genPlayers();
         setInterval(() => { let oc=$('oc-top'); if(oc) oc.innerText = Math.floor(Math.random() * 25) + 220; }, 4000);
 
@@ -290,17 +288,27 @@
             ['snd-beep','snd-drop','snd-fly','snd-card','snd-clash'].forEach(i => { try{ let s=$(i); s.play().then(()=>s.pause()).catch(()=>{}); }catch(e){} });
         }
 
-        function pS(i,v) { let s=$(i); if(s) { let cl = s.cloneNode(); cl.volume = v; cl.play().catch(()=>{}); } }
+        // Memory-leak safe audio player
+        function pS(i,v) { 
+            let s=$(i); 
+            if(s) { 
+                let cl = s.cloneNode(); 
+                cl.volume = v; 
+                cl.play().then(() => {
+                    cl.onended = () => cl.remove(); 
+                }).catch(()=>{}); 
+            } 
+        }
         function getPos(el) { let x = 0, y = 0; while(el && el.id !== 'game-mount') { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; } return {x, y}; }
-        function formatMoney(val) { return val; }
 
         // ==========================================
-        // 2. FIREBASE LOGIC (FAST 2-STEP ENGINE)
+        // 2. FIREBASE LOGIC & PERFECT TIMER SYNC
         // ==========================================
         try {
             firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
             const db = firebase.database();
-            const ph = localStorage.getItem('userPhone') || "GUEST";
+            
+            const ph = localStorage.getItem('userPhone') || "GUEST_1234";
             const netUI = $('network-overlay');
 
             let serverTimeOffset = 0;
@@ -321,9 +329,7 @@
 
             let currentState = '';
             let currentEndTime = 0;
-            let roundProcessed = false; 
 
-            // 🔥 FAST-SYNC STATUS UPDATE 🔥
             db.ref('Game/DragonTiger2/Status').on('value', (snap) => {
                 let data = snap.val();
                 if(!data) return;
@@ -338,30 +344,21 @@
                 if (currentState === 'betting') {
                     if(iBO === 0) { 
                         iBO = 1; roundProcessed = false; rUI(); 
-                        if(betLock) betLock.style.display = 'none'; // OPEN LOCK
+                        if(betLock) betLock.style.display = 'none'; 
                         if (aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1000); }
                     }
                 } 
                 else if (currentState === 'result') {
-                    // INSTANT LOCK FOR 5 SECONDS RESULT PHASE
-                    if(iBO === 1) {
-                        iBO = 0; 
-                        if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'WAITING...'; }
-                        if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1000); }
-                    } else {
-                        if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'WAITING...'; }
-                    }
-
-                    // TRIGGER FAST RESULT ANIMATION (Completes in 4s)
+                    iBO = 0; 
+                    if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'WAITING...'; }
+                    
                     if(!roundProcessed && data.winner) {
+                        if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1000); }
                         roundProcessed = true; lastBeep = -1;
-                        iBO = 0; 
                         
-                        // Start Video Clash Immediately
                         let vsScreen = $('vs-clash-screen');
                         if (vsScreen) { vsScreen.style.display='flex'; pS('snd-clash', 1); setTimeout(()=>vsScreen.style.display='none', 800); }
                         
-                        // Fire cards right after clash
                         setTimeout(() => sR_Sequence(data.winner), 800);
                     }
                 }
@@ -373,19 +370,18 @@
                 if (currentState === 'betting' && currentEndTime > 0) {
                     let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
                     
-                    if (timeLeft < -2) {
+                    if (timeLeft < -1) {
                         iBO = 0;
-                        let betLock = $('bet-lock-overlay'); if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'WAKING SERVER...'; }
-                        tmr.style.display = 'block'; tmr.innerText = "WAKING..."; tmr.style.color = "#ff9800";
-                        wakeUpServer(); 
+                        let betLock = $('bet-lock-overlay'); if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'WAIT FOR SERVER...'; }
+                        tmr.style.display = 'block'; tmr.innerText = "WAIT..."; tmr.style.color = "#ff9800";
                     } 
                     else if (timeLeft >= 0) {
-                        // UI pre-lock exactly at 1s
-                        if (timeLeft <= 1 && iBO === 1) {
+                        if (timeLeft === 0 && iBO === 1) {
                             iBO = 0; 
                             let betLock = $('bet-lock-overlay'); if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'STOP BETTING'; }
                             tmr.style.display = 'block'; tmr.innerText = "STOP!"; tmr.style.color = "#fff";
                         }
+                        
                         if (iBO === 1) {
                             tmr.style.display = 'block'; 
                             tmr.innerText = timeLeft + "s"; tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#ffd700";
@@ -393,9 +389,9 @@
                         }
                     }
                 } else {
-                    tmr.style.display = 'none'; // Hide timer completely during the 5s result phase
+                    tmr.style.display = 'none'; 
                 }
-            }, 200);
+            }, 100);
 
             db.ref('users/'+ph).on('value', s => {
                 let d=s.val()||{}; dB = parseFloat(d.balance||0); wB = parseFloat(d.winning_balance||0); bB = parseFloat(d.bonus_balance||0);
@@ -419,79 +415,118 @@
                 renderHistoryBoard();
             }
 
-            // 🔥 SUPER STRICT BET GUARD 🔥
+            // 🔥 REAL PLAYER BETTING 🔥
             window.pB = (s) => { 
                 let betLock = $('bet-lock-overlay');
                 if (betLock && betLock.style.display === 'flex') return;
-                if (iBO === 0) return; 
-                if (currentState !== 'betting') return; 
+                if (iBO === 0 || currentState !== 'betting') return; 
                 
                 let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
-                if (timeLeft <= 1) return; 
+                if (timeLeft <= 0) return; 
 
-                if (tB < cC) return; 
+                if (tB < cC) { alert('⚠️ Insufficient Balance!'); return; }
 
                 let nD=dB, nW=wB, rm=cC;
                 if(nD>=rm) nD-=rm; else { rm-=nD; nD=0; nW-=rm; }
-                db.ref('users/'+ph).update({balance: Math.max(0,nD), winning_balance: Math.max(0,nW)});
                 
+                dB = nD; wB = nW; tB = dB + wB + bB;
+                let balBot = $('bal-bot'); if(balBot) balBot.innerText = tB.toFixed(2);
+                document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
+
+                db.ref('users/'+ph).update({balance: Math.max(0,nD), winning_balance: Math.max(0,nW)});
                 db.ref(`Game/DragonTiger2/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
                 
                 spC(s, chipImgs[cC], $('my-wallet'), false, cC); 
                 myBets[s] += cC;
                 let mbID = 'mb-' + (s === 'tie' ? 'ti' : s.charAt(0));
                 let mbEl = $(mbID);
-                if(mbEl) { mbEl.innerText = '₹' + formatMoney(myBets[s]); mbEl.style.display = 'block'; }
+                if(mbEl) { mbEl.innerText = '₹' + myBets[s]; mbEl.style.display = 'block'; }
             };
 
         } catch(e) {}
 
         window.sC = (el) => { if(el.classList.contains('locked')) return; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); cC=parseInt(el.dataset.value); };
 
+        // 🔥 ENHANCED CHIP DROP (Bots ke amounts properly Board pe aayenge) 🔥
         function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
             if(!srcEl) return;
-            pS('snd-drop', 0.5);
-            let layer = $('chips-layer'), box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
-            if(!box) return;
+            
+            // Audio spam ko block karne ke liye (Sirf 30% chips pe awaaz aayegi)
+            if(Math.random() > 0.7) pS('snd-drop', 0.4);
+            
+            let layer = $('chips-layer');
+            let box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
+            if(!box || !layer) return;
 
-            let chip = document.createElement('img'); chip.src = imgSrc; chip.className = 'placed-chip';
-            let sPos = getPos(srcEl); let sW = srcEl.offsetWidth || 30, sH = srcEl.offsetHeight || 30;
-            chip.style.left = (sPos.x + sW/2 - 13) + "px"; chip.style.top = (sPos.y + sH/2 - 13) + "px";
-            chip.style.transform = "scale(0.3)"; layer.appendChild(chip);
+            let chip = document.createElement('img'); 
+            chip.src = imgSrc; 
+            chip.className = 'placed-chip';
+            
+            let sPos = getPos(srcEl); 
+            let sW = srcEl.offsetWidth || 30, sH = srcEl.offsetHeight || 30;
+            chip.style.left = (sPos.x + sW/2 - 13) + "px"; 
+            chip.style.top = (sPos.y + sH/2 - 13) + "px";
+            chip.style.transform = "scale(0.3)"; 
+            layer.appendChild(chip);
 
-            let bPos = getPos(box); let bW = box.offsetWidth, bH = box.offsetHeight;
+            let bPos = getPos(box); 
+            let bW = box.offsetWidth, bH = box.offsetHeight;
+            
             setTimeout(() => {
-                let padX = 15, padY = 15; let randX = padX + Math.random() * (bW - padX*2); let randY = padY + Math.random() * (bH - padY*2);
-                chip.style.left = (bPos.x + randX - 13) + "px"; chip.style.top = (bPos.y + randY - 13) + "px";
+                let padX = 15, padY = 15; 
+                let randX = padX + Math.random() * (bW - padX*2); 
+                let randY = padY + Math.random() * (bH - padY*2);
+                chip.style.left = (bPos.x + randX - 13) + "px"; 
+                chip.style.top = (bPos.y + randY - 13) + "px";
                 chip.style.transform = "scale(1)";
             }, 50);
             
             chip.setAttribute('data-side', side);
+            
+            // 🔥 BOARD TEXT UPDATE LOGIC 🔥
             if(!isSystemAnim && chipVal > 0) {
                 mB[side] += chipVal;
-                let mText = $('m' + (side === 'tie' ? 'ti' : side.charAt(0)));
-                if(mText) mText.innerText = '₹' + formatMoney(mB[side]);
+                let textID = 'm' + (side === 'tie' ? 'ti' : side.charAt(0));
+                let mText = $(textID);
+                if(mText) { 
+                    mText.innerText = '₹' + mB[side];
+                    // Thoda popup effect jab paisa add ho
+                    mText.style.transition = '0.1s';
+                    mText.style.transform = 'scale(1.2)';
+                    setTimeout(() => { mText.style.transform = 'scale(1)'; }, 100);
+                }
             }
+            
             if(layer.children.length > 150) layer.firstChild.remove();
             return chip;
         }
 
-        // 🔥 BOTS STRICT LOCK LOGIC DURING WAITING 🔥
+        // ==========================================
+        // 🔥 100% WORKING BOTS LOGIC 🔥
+        // ==========================================
         setInterval(() => { 
+            // Jab tak betting state nahi hai, bots kuch nahi karenge
+            if (iBO !== 1 || currentState !== 'betting') return;
             let betLock = $('bet-lock-overlay');
-            if (iBO === 0 || currentState !== 'betting' || (betLock && betLock.style.display === 'flex')) return;
+            if (betLock && betLock.style.display === 'flex') return;
 
-            let s = Math.random()>0.5 ? 'dragon' : 'tiger'; if(Math.random()>0.9) s='tie';
-            let r = Math.random(), srcEl;
-            if(r < 0.3) srcEl = $('bl'+Math.floor(Math.random()*5));
-            else if(r < 0.6) srcEl = $('br'+Math.floor(Math.random()*5));
-            else srcEl = $('top-online'); 
+            // Konsi side bet karni hai?
+            let s = Math.random() > 0.45 ? 'dragon' : (Math.random() > 0.1 ? 'tiger' : 'tie');
             
-            let randomChipKey = Object.keys(chipImgs)[Math.floor(Math.random() * Object.keys(chipImgs).length)];
+            // Kis bot ne phekni hai?
+            let botPrefix = Math.random() > 0.5 ? 'bl' : 'br';
+            let botId = botPrefix + Math.floor(Math.random() * 5);
+            let srcEl = $(botId) || $('top-online'); 
+            
+            // Konsa chip phekna hai?
+            let chipKeys = Object.keys(chipImgs);
+            let randomChipKey = chipKeys[Math.floor(Math.random() * chipKeys.length)];
+            
+            // Board par drop aur calculate karo
             spC(s, chipImgs[randomChipKey], srcEl, false, parseInt(randomChipKey)); 
-        }, 250);
+        }, 300);
 
-        // 🔥 FAST PARALLEL TIMING SEQUENCE (Fits 5 Seconds Perfect Loop) 🔥
+        // 🔥 FAST PARALLEL TIMING SEQUENCE 🔥
         function sR_Sequence(w) {
             const vals = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
             let dIdx, tIdx; let safeW = w ? w.toString().toLowerCase().trim() : 'tie';
@@ -500,21 +535,18 @@
             else if(safeW === 'tiger') { tIdx = Math.floor(Math.random()*6)+7; dIdx = Math.floor(Math.random()*6); } 
             else { dIdx = Math.floor(Math.random()*13); tIdx = dIdx; } 
 
-            // 0.2s: Reveal Dragon Card
             setTimeout(() => {
                 pS('snd-card', 1); 
                 let bd = $('b-d'); if(bd) bd.style.opacity='0'; 
                 let dv = $('d-v'); if(dv) dv.innerHTML = `<div class="black-suit" style="font-size:20px; font-weight:900;">${vals[dIdx]}<br><span style="font-size:30px">♠</span></div>`;
             }, 200);
 
-            // 0.6s: Reveal Tiger Card
             setTimeout(() => {
                 pS('snd-card', 1); 
                 let bt = $('b-t'); if(bt) bt.style.opacity='0';
                 let tv = $('t-v'); if(tv) tv.innerHTML = `<div class="red-suit" style="font-size:20px; font-weight:900;">${vals[tIdx]}<br><span style="font-size:30px">♥</span></div>`;
             }, 600);
 
-            // 1.2s: Trigger Beast Roar & Box Glow
             setTimeout(() => {
                 let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
                 if(winBox) winBox.classList.add('gw');
@@ -531,7 +563,6 @@
                 if(window.addNewHistoryDot) { window.addNewHistoryDot(safeW); }
             }, 1200);
 
-            // 2.2s: Suck losing chips towards dealer
             setTimeout(() => {
                 let dealerBox = $('tmr'); let dPos = getPos(dealerBox);
                 document.querySelectorAll('.placed-chip').forEach(c => {
@@ -543,7 +574,6 @@
                 });
             }, 2200);
 
-            // 3.0s: Disburse winning chips to victors
             setTimeout(() => {
                 pS('snd-fly', 1);
                 let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
