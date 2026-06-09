@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger 2 VIP - Master UI</title>
+    <title>Dragon Tiger 2 VIP - DIRECT SERVER TIMER & SOUND FIX</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -151,7 +151,7 @@
     </div>
 
     <script>
-        // Server Ping (If hosted on render)
+        // Server Ping
         function wakeUpServer() { fetch("https://kalyan-engine.onrender.com/").catch(e => {}); }
         wakeUpServer(); setInterval(wakeUpServer, 180000); 
 
@@ -159,6 +159,10 @@
         let iBO = 0, cC = 50, tB = 0, dB=0, wB=0, bB=0;
         let mB = { dragon: 0, tiger: 0, tie: 0 }, myBets = { dragon: 0, tiger: 0, tie: 0 };
         let lastBeep = -1;
+        
+        // 🔥 AUDIO FIX: Throttling variable
+        let lastChipSoundTime = 0; 
+        
         const chipImgs = { 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
         let globalHistory = []; let roundProcessed = false; 
 
@@ -218,14 +222,12 @@
 
                 if (data.state === 'betting') {
                     if (data.timer > 0) {
-                        // Round Shuru, sab open
                         if (iBO === 0) { 
                             iBO = 1; roundProcessed = false; rUI(); 
                             if(betLock) betLock.style.display = 'none'; 
                             if(aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1000); }
                         }
                         
-                        // Timer update direct from server
                         if (tmr) {
                             tmr.style.display = 'block'; 
                             tmr.innerText = data.timer + "s";
@@ -233,19 +235,16 @@
                             if(data.timer <= 5 && lastBeep !== data.timer) { pS('snd-beep', 0.8); lastBeep = data.timer; }
                         }
                     } else {
-                        // Betting Band (Timer 0)
                         iBO = 0; 
                         if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'STOP BETTING'; }
                         if(tmr) { tmr.innerText = "STOP!"; tmr.style.color = "#fff"; }
                     }
                 } 
                 else if (data.state === 'result' || data.state === 'processing') {
-                    // Lock hamesha on rahega
                     iBO = 0; 
                     if(betLock && betLock.style.display === 'none') { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'WAITING...'; }
                     
                     if (data.state === 'result') {
-                        // 1. Ek baar animation trigger karo
                         if (data.winner && !roundProcessed) {
                             if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1000); }
                             roundProcessed = true; lastBeep = -1;
@@ -254,7 +253,6 @@
                             setTimeout(() => sR_Sequence(data.winner), 800);
                         }
                         
-                        // 2. Waiting Timer (Show only if time <= 5 and animation is running/done)
                         if(data.timer <= 5 && data.timer > 0 && roundProcessed) {
                             if(tmr) { tmr.style.display = 'block'; tmr.style.color = "#00ff88"; tmr.innerText = "NEXT: " + data.timer + "s"; }
                             if(betLock) betLock.querySelector('span').innerText = 'PREPARING...';
@@ -294,7 +292,15 @@
         window.sC = (el) => { if(el.classList.contains('locked')) return; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); cC=parseInt(el.dataset.value); };
 
         function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
-            if(!srcEl) return; if(Math.random() > 0.7) pS('snd-drop', 0.4);
+            if(!srcEl) return; 
+            
+            // 🔥 AUDIO FIX: CHIPS SOUND THROTTLING 🔥
+            let now = Date.now();
+            if (now - lastChipSoundTime > 120) { 
+                pS('snd-drop', 0.45); 
+                lastChipSoundTime = now; 
+            }
+            
             let layer = $('chips-layer'); let box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0))); if(!box || !layer) return;
             let chip = document.createElement('img'); chip.src = imgSrc; chip.className = 'placed-chip';
             let sPos = getPos(srcEl); let sW = srcEl.offsetWidth || 30, sH = srcEl.offsetHeight || 30;
@@ -302,6 +308,7 @@
             let bPos = getPos(box); let bW = box.offsetWidth, bH = box.offsetHeight;
             setTimeout(() => { let padX = 15, padY = 15; let randX = padX + Math.random() * (bW - padX*2); let randY = padY + Math.random() * (bH - padY*2); chip.style.left = (bPos.x + randX - 13) + "px"; chip.style.top = (bPos.y + randY - 13) + "px"; chip.style.transform = "scale(1)"; }, 50);
             chip.setAttribute('data-side', side);
+            
             if(!isSystemAnim && chipVal > 0) {
                 mB[side] += chipVal; let mText = $('m' + (side === 'tie' ? 'ti' : side.charAt(0)));
                 if(mText) { mText.innerText = '₹' + mB[side]; mText.style.transition = '0.1s'; mText.style.transform = 'scale(1.2)'; setTimeout(() => { mText.style.transform = 'scale(1)'; }, 100); }
@@ -311,7 +318,7 @@
 
         // 🔥 BOTS STRICTLY DEPEND ON iBO 🔥
         setInterval(() => { 
-            if (iBO !== 1) return; // Jaise hi iBO 0 hoga (Server ki taraf se), Bots ruk jayenge
+            if (iBO !== 1) return;
             let s = Math.random() > 0.45 ? 'dragon' : (Math.random() > 0.1 ? 'tiger' : 'tie');
             let botId = (Math.random() > 0.5 ? 'bl' : 'br') + Math.floor(Math.random() * 5);
             let k = Object.keys(chipImgs); let rv = parseInt(k[Math.floor(Math.random() * k.length)]);
