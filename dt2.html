@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger 2 VIP - DIRECT SERVER TIMER & SOUND FIX</title>
+    <title>Dragon Tiger 2 VIP - HEAVY BETTING FIX</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -151,7 +151,6 @@
     </div>
 
     <script>
-        // Server Ping
         function wakeUpServer() { fetch("https://kalyan-engine.onrender.com/").catch(e => {}); }
         wakeUpServer(); setInterval(wakeUpServer, 180000); 
 
@@ -160,7 +159,7 @@
         let mB = { dragon: 0, tiger: 0, tie: 0 }, myBets = { dragon: 0, tiger: 0, tie: 0 };
         let lastBeep = -1;
         
-        // 🔥 AUDIO FIX: Throttling variable
+        // 🔥 AUDIO FIX: Throttling for clean chip sounds
         let lastChipSoundTime = 0; 
         
         const chipImgs = { 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
@@ -201,9 +200,6 @@
         function pS(i,v) { let s=$(i); if(s) { let cl = s.cloneNode(); cl.volume = v; cl.play().then(() => { cl.onended = () => cl.remove(); }).catch(()=>{}); } }
         function getPos(el) { let x = 0, y = 0; while(el && el.id !== 'game-mount') { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; } return {x, y}; }
 
-        // ==========================================
-        // 🔥 DIRECT SERVER-DRIVEN UI LOGIC 🔥
-        // ==========================================
         try {
             firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
             const db = firebase.database(); const ph = localStorage.getItem('userPhone') || "GUEST_1234"; const netUI = $('network-overlay');
@@ -214,10 +210,8 @@
                 else { if(netUI) netUI.style.display = 'flex'; }
             });
 
-            // 🎯 MAIN LISTENER: Server gives exact State and exact Timer
             db.ref('Game/DragonTiger2/Status').on('value', (snap) => {
                 let data = snap.val(); if(!data) return;
-                
                 let tmr = $('tmr'); let betLock = $('bet-lock-overlay'); let aStart = $('alert-start'); let aStop = $('alert-stop');
 
                 if (data.state === 'betting') {
@@ -227,7 +221,6 @@
                             if(betLock) betLock.style.display = 'none'; 
                             if(aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1000); }
                         }
-                        
                         if (tmr) {
                             tmr.style.display = 'block'; 
                             tmr.innerText = data.timer + "s";
@@ -252,7 +245,7 @@
                             let vsScreen = $('vs-clash-screen'); if (vsScreen) { vsScreen.style.display='flex'; pS('snd-clash', 1); setTimeout(()=>vsScreen.style.display='none', 800); }
                             setTimeout(() => sR_Sequence(data.winner), 800);
                         }
-                        
+                        // 5 Second waiting timer dikhana (Server se ab 9 aayega, lekin jab 5 bachega tab display hoga)
                         if(data.timer <= 5 && data.timer > 0 && roundProcessed) {
                             if(tmr) { tmr.style.display = 'block'; tmr.style.color = "#00ff88"; tmr.innerText = "NEXT: " + data.timer + "s"; }
                             if(betLock) betLock.querySelector('span').innerText = 'PREPARING...';
@@ -294,10 +287,10 @@
         function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
             if(!srcEl) return; 
             
-            // 🔥 AUDIO FIX: CHIPS SOUND THROTTLING 🔥
+            // 🔥 AUDIO FIX: Fast but throttled sound for heavy rain
             let now = Date.now();
-            if (now - lastChipSoundTime > 120) { 
-                pS('snd-drop', 0.45); 
+            if (now - lastChipSoundTime > 80) { 
+                pS('snd-drop', 0.35); 
                 lastChipSoundTime = now; 
             }
             
@@ -305,29 +298,39 @@
             let chip = document.createElement('img'); chip.src = imgSrc; chip.className = 'placed-chip';
             let sPos = getPos(srcEl); let sW = srcEl.offsetWidth || 30, sH = srcEl.offsetHeight || 30;
             chip.style.left = (sPos.x + sW/2 - 13) + "px"; chip.style.top = (sPos.y + sH/2 - 13) + "px"; chip.style.transform = "scale(0.3)"; layer.appendChild(chip);
+            
             let bPos = getPos(box); let bW = box.offsetWidth, bH = box.offsetHeight;
-            setTimeout(() => { let padX = 15, padY = 15; let randX = padX + Math.random() * (bW - padX*2); let randY = padY + Math.random() * (bH - padY*2); chip.style.left = (bPos.x + randX - 13) + "px"; chip.style.top = (bPos.y + randY - 13) + "px"; chip.style.transform = "scale(1)"; }, 50);
+            setTimeout(() => { 
+                let padX = 15, padY = 15; let randX = padX + Math.random() * (bW - padX*2); let randY = padY + Math.random() * (bH - padY*2); 
+                chip.style.left = (bPos.x + randX - 13) + "px"; chip.style.top = (bPos.y + randY - 13) + "px"; chip.style.transform = "scale(1)"; 
+            }, 50);
+            
             chip.setAttribute('data-side', side);
             
             if(!isSystemAnim && chipVal > 0) {
                 mB[side] += chipVal; let mText = $('m' + (side === 'tie' ? 'ti' : side.charAt(0)));
                 if(mText) { mText.innerText = '₹' + mB[side]; mText.style.transition = '0.1s'; mText.style.transform = 'scale(1.2)'; setTimeout(() => { mText.style.transform = 'scale(1)'; }, 100); }
             }
-            if(layer.children.length > 150) layer.firstChild.remove(); return chip;
+            // Increase max chips limit to make board look fuller
+            if(layer.children.length > 250) layer.firstChild.remove(); 
+            return chip;
         }
 
-        // 🔥 BOTS STRICTLY DEPEND ON iBO 🔥
+        // 🔥 FIX: CHIPS KI BAARISH (Crowded Feel) 🔥
         setInterval(() => { 
             if (iBO !== 1) return;
-            let s = Math.random() > 0.45 ? 'dragon' : (Math.random() > 0.1 ? 'tiger' : 'tie');
-            let botId = (Math.random() > 0.5 ? 'bl' : 'br') + Math.floor(Math.random() * 5);
-            let k = Object.keys(chipImgs); let rv = parseInt(k[Math.floor(Math.random() * k.length)]);
-            spC(s, chipImgs[rv], $(botId) || $('top-online'), false, rv); 
-        }, 350);
+            
+            // Ek baar me 1 se 3 chips marenge alag alag players taaki board bhara lage
+            let loops = Math.floor(Math.random() * 3) + 1;
+            for(let i=0; i<loops; i++) {
+                let s = Math.random() > 0.45 ? 'dragon' : (Math.random() > 0.1 ? 'tiger' : 'tie');
+                let botId = (Math.random() > 0.5 ? 'bl' : 'br') + Math.floor(Math.random() * 5);
+                let k = Object.keys(chipImgs); 
+                let rv = parseInt(k[Math.floor(Math.random() * k.length)]);
+                spC(s, chipImgs[rv], $(botId) || $('top-online'), false, rv); 
+            }
+        }, 150); // Speed increased from 350ms to 150ms
 
-        // ========================================================
-        // 🔥 CASINO CARD & CHIP ANIMATIONS
-        // ========================================================
         function sR_Sequence(w) {
             const vals = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
             let dIdx, tIdx; let safeW = w ? w.toString().toLowerCase().trim() : 'tie';
