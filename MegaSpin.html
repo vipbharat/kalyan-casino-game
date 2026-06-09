@@ -34,24 +34,25 @@
         .bx:active { transform: scale(0.95); box-shadow: 0 0 15px #fff; }
         .win-glow { transform: scale(1.05); background: rgba(255,255,255,0.4) !important; box-shadow: 0 0 35px #39ff14 !important; border-color: #39ff14 !important; z-index: 50; }
         
-        .bx-text { position: relative; z-index: 10; text-shadow: 1px 1px 2px #000, 0 0 5px #000; display: flex; flex-direction: column; align-items: center;}
-        .t-amt { background: rgba(255,255,255,0.2); padding: 3px 6px; border-radius: 4px; font-size: 11px; margin-top: 4px; color: #fff; width: 100%; border: 1px solid rgba(255,255,255,0.3);}
-        .y-amt { background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 6px; font-size: 12px; margin-top: 4px; color: #00ff88; border: 1px solid #00ff88; width: 100%;}
+        /* 🔥 TEXT VISIBILITY Z-INDEX FIXES 🔥 */
+        .bx-text { position: relative; z-index: 500; text-shadow: 1px 1px 2px #000, 0 0 5px #000; display: flex; flex-direction: column; align-items: center; pointer-events: none; width: 100%;}
+        .t-amt { background: rgba(255,255,255,0.2); padding: 3px 6px; border-radius: 4px; font-size: 11px; margin-top: 4px; color: #fff; width: 90%; border: 1px solid rgba(255,255,255,0.3); z-index: 500; position: relative;}
+        .y-amt { background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 6px; font-size: 12px; margin-top: 4px; color: #00ff88; border: 1px solid #00ff88; width: 90%; z-index: 500; position: relative;}
 
-        /* 🔥 HARDWARE ACCELERATION ADDED HERE 🔥 */
         .chip-rack { position: fixed; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, #000, #1a1a1a); display: flex; justify-content: space-evenly; align-items: center; padding: 10px 5px 15px 5px; border-top: 3px solid #ffd700; z-index: 1100; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); transform: translateZ(0); -webkit-transform: translateZ(0); }
         .chip-img { width: 44px; height: 44px; cursor: pointer; transition: 0.3s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); flex-shrink: 0; transform: translateZ(0); backface-visibility: hidden; }
         .chip-img.active { transform: translateZ(0) translateY(-6px) scale(1.15); filter: drop-shadow(0 0 10px #ffd700); }
         .chip-img.locked { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
 
-        .chip-visual { position: absolute; width: 26px; height: 26px; z-index: 50; transition: all 0.4s ease-out; filter: drop-shadow(2px 2px 5px rgba(0,0,0,0.8)); pointer-events: none; transform: translateZ(0); }
+        /* 🔥 CHIP LAYER FIXED BELOW TEXT 🔥 */
+        #chip-layer { position: absolute; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+        .chip-visual { position: absolute; width: 28px; height: 28px; z-index: 100; transition: all 0.4s ease-out; filter: drop-shadow(2px 2px 5px rgba(0,0,0,0.8)); pointer-events: none; transform: translateZ(0); }
         .win-anim-chip { transition: all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 999 !important; filter: drop-shadow(0 0 10px #ffd700); }
 
         #msg { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: 900; background: rgba(0,0,0,0.9); padding: 20px 40px; border: 3px solid #ffd700; border-radius: 15px; display: none; z-index: 999; white-space: nowrap; box-shadow: 0 0 30px rgba(255,215,0,0.8); text-align: center; }
         .win-popup { pointer-events: none; position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 3.5rem; font-weight: 900; color: #00ff88; text-shadow: 0 0 20px #00ff88, 0 0 40px #000; z-index: 1000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: rgba(0,0,0,0.8); padding: 10px 30px; border-radius: 20px; border: 3px solid #00ff88; }
         .win-popup.show { transform: translate(-50%, -50%) scale(1); }
 
-        /* 🔥 NETWORK OVERLAY CSS 🔥 */
         #network-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; }
         .loading-chakra { width: 60px; height: 60px; border: 6px solid rgba(255, 215, 0, 0.2); border-top-color: #ffd700; border-radius: 50%; animation: spinChakra 1s linear infinite; margin-bottom: 20px; }
         @keyframes spinChakra { 100% { transform: rotate(360deg); } }
@@ -109,7 +110,7 @@
         </div>
     </div>
     
-    <div id="chip-layer" style="position: absolute; inset: 0; pointer-events: none; z-index: 1050; overflow: hidden;"></div>
+    <div id="chip-layer"></div>
 
     <div class="chip-rack" id="my-wallet">
         <img src="assets/10_0.png" class="chip-img" data-val="10" onclick="setChip(10, this)">
@@ -124,6 +125,10 @@
     <div id="msg"></div>
 
     <script>
+        // Server Ping
+        function wakeUpServer() { fetch("https://kalyan-engine.onrender.com/").catch(e => {}); }
+        wakeUpServer(); setInterval(wakeUpServer, 180000); 
+
         const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); 
         const db = firebase.database();
@@ -140,6 +145,18 @@
         const s_spin = new Audio('https://assets.mixkit.co/active_storage/sfx/2042/2042-preview.mp3'); 
         const s_win = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
         const s_coins = new Audio('https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3');
+        const s_beep = new Audio('assets/22d0dc27-b727-42be-ac04-d9182459f976.mp3');
+
+        // 🔥 AUDIO FIX: Throttling for clean chip sounds
+        let lastChipSoundTime = 0; 
+        function playChipSound() {
+            let now = Date.now();
+            if (now - lastChipSoundTime > 80) { 
+                s_bet.currentTime = 0; 
+                s_bet.play().catch(e=>{}); 
+                lastChipSoundTime = now; 
+            }
+        }
         
         let gameStarted = false;
         function startGame() {
@@ -151,7 +168,6 @@
             startBots();
         }
 
-        // 🔥 FIREBASE CONNECTION CHECKER 🔥
         let connectedRef = db.ref(".info/connected");
         connectedRef.on("value", (snap) => {
             if (snap.val() === true) {
@@ -181,24 +197,23 @@
         let canBet=false, rot=0, isSpinning = false; 
         let yBets = {r:0,b:0,g:0,p:0,o:0}; 
         let tBets = {r:0,b:0,g:0,p:0,o:0}; 
-        let currentEndTime = 0;
         let currentState = '';
         let isResultProcessing = false;
+        let lastBeep = -1;
         
         let colorIdMap = { "#C0392B": "r", "#2980B9": "b", "#27AE60": "g", "#8E44AD": "p", "#D35400": "o" };
 
         function setChip(amt, el) {
             if(el.classList.contains('locked')) return;
             currentChip = amt; currentChipSrc = chipImgs[amt];
-            s_bet.currentTime = 0; s_bet.play().catch(e=>{}); 
+            playChipSound();
             document.querySelectorAll('.chip-img').forEach(c => c.classList.remove('active'));
             el.classList.add('active');
         }
 
-        // 🔥 PERCENTAGE (%) BASED WHEEL MATH (ADMIN PROFIT EDITION) 🔥
         const ctx=document.getElementById('c').getContext('2d'), tmr=document.getElementById('t'), msg=document.getElementById('msg');
         const cols=["#C0392B","#2980B9","#27AE60","#8E44AD","#D35400"];
-        const mults=["200%", "200%", "300%", "400%", "500%"]; // Exact fixed payout limit!
+        const mults=["200%", "200%", "300%", "400%", "500%"]; 
         let pr=[], bg=[], tc=[];
         
         for(let i=0;i<32;i++){
@@ -206,9 +221,7 @@
             else if(i===16){ pr.push("-50%"); bg.push("#FFD700"); tc.push("#000"); }
             else{ 
                 let colIdx = (i-1)%5;
-                bg.push(cols[colIdx]); 
-                tc.push("#FFF");
-                pr.push(mults[colIdx]); // Ab har color utna hi dega jitna bahar likha hai!
+                bg.push(cols[colIdx]); tc.push("#FFF"); pr.push(mults[colIdx]); 
             }
         }
         
@@ -221,7 +234,9 @@
             }
         } draw();
 
+        // 🔥 FIX: CHIP SPAWN SPREADING & Z-INDEX 🔥
         function throwChip(c_id, amt, imgSrc, isPlayer, e) {
+            playChipSound();
             let box = document.getElementById('box-'+c_id);
             let rect = box.getBoundingClientRect();
             let chip = document.createElement('img');
@@ -236,27 +251,39 @@
                 chip.style.top = (Math.random() * (window.innerHeight/2)) + 'px'; 
             }
             
-            // 🔥 FIXED: Direct body mein phekne ke bajaye apne dibbe (chip-layer) mein phek raha hai 🔥
             document.getElementById('chip-layer').appendChild(chip);
             
             setTimeout(() => {
-                chip.style.left = (rect.left + 10 + Math.random() * (rect.width - 40)) + 'px';
-                chip.style.top = (rect.top + 10 + Math.random() * (rect.height - 40)) + 'px';
+                // Keep chips inside the box but spread out safely (not overlapping main text much)
+                let randX = 10 + Math.random() * (rect.width - 40);
+                let randY = 10 + Math.random() * (rect.height - 40);
+                chip.style.left = (rect.left + randX) + 'px';
+                chip.style.top = (rect.top + randY) + 'px';
                 chip.style.transform = `scale(1) rotate(${Math.random()*360}deg)`; 
             }, 50);
+
+            if(document.getElementById('chip-layer').children.length > 250) {
+                document.getElementById('chip-layer').firstChild.remove();
+            }
         }
 
+        // 🔥 FIX: BOTS FAST ACTION CHIPS KI BAARISH (Crowded Feel) 🔥
         function startBots() {
             setInterval(() => {
                 if(!canBet) return;
-                let clrs = ['r','b','g','p','o']; 
-                let bAmt = [10, 50, 100, 500, 1000]; 
-                let ranColor = clrs[Math.floor(Math.random() * clrs.length)]; 
-                let ranAmt = bAmt[Math.floor(Math.random() * bAmt.length)];
-                tBets[ranColor] += ranAmt; 
-                document.getElementById('t-'+ranColor).innerText = tBets[ranColor].toLocaleString();
-                throwChip(ranColor, ranAmt, chipImgs[ranAmt], false, null); 
-            }, 300); 
+                let loops = Math.floor(Math.random() * 3) + 1; // 1 to 3 chips per tick
+                for(let i=0; i<loops; i++) {
+                    let clrs = ['r','b','g','p','o']; 
+                    let bAmt = [10, 50, 100, 500, 1000]; 
+                    if(Math.random() > 0.8) bAmt.push(5000); // Rare big chips
+                    
+                    let ranColor = clrs[Math.floor(Math.random() * clrs.length)]; 
+                    let ranAmt = bAmt[Math.floor(Math.random() * bAmt.length)];
+                    tBets[ranColor] += ranAmt; 
+                    document.getElementById('t-'+ranColor).innerText = tBets[ranColor].toLocaleString();
+                    throwChip(ranColor, ranAmt, chipImgs[ranAmt], false, null); 
+                }
+            }, 150); // Fast 150ms Speed
         }
 
         function bet(c, e){
@@ -272,8 +299,6 @@
             }
 
             if(totalBal >= currentChip){ 
-                s_bet.currentTime = 0; s_bet.play().catch(err=>{}); 
-                
                 let remain = currentChip;
                 let newDep = depBal, newWin = winBal;
                 if(newDep >= remain) { newDep -= remain; } else { remain -= newDep; newDep = 0; newWin -= remain; }
@@ -318,8 +343,6 @@
                     chip.src = chipImgs[100]; 
                     chip.style.left = (wRect.left + wRect.width/2 - 13) + 'px';
                     chip.style.top = (wRect.top + wRect.height/2 - 13) + 'px';
-                    
-                    // 🔥 FIXED: Direct body mein phekne ke bajaye apne dibbe mein 🔥
                     document.getElementById('chip-layer').appendChild(chip);
 
                     setTimeout(() => {
@@ -364,7 +387,6 @@
                 }
 
                 if(finalWinAmt > 0 && userID !== "GUEST") {
-                    db.ref(`users/${userID}/winning_balance`).set(firebase.database.ServerValue.increment(finalWinAmt));
                     let p = document.getElementById('win-popup'); 
                     p.innerText = "+₹" + finalWinAmt.toLocaleString(); 
                     p.classList.add('show'); setTimeout(() => p.classList.remove('show'), 3000);
@@ -372,22 +394,35 @@
             } catch (e) { console.error(e); }
         }
 
-        // 🔥 SMART LISTENER: Sirf State Badalne Par Request Jayegi 🔥
+        // ==========================================
+        // 🔥 DIRECT SERVER-DRIVEN TIMER & UI LOGIC 🔥
+        // ==========================================
         db.ref('Game/MegaSpin/Status').on('value', (snap) => {
             let data = snap.val();
             if(!data) return;
 
             currentState = data.state;
-            currentEndTime = data.endTime;
 
             if (currentState === 'betting') {
-                if (isSpinning) { isSpinning = false; startNewRound(); }
-                if (!canBet) {
-                    canBet = true;
-                    isResultProcessing = false;
-                    msg.style.display = "none";
+                if (data.timer > 0) {
+                    if (isSpinning) { isSpinning = false; startNewRound(); }
+                    if (!canBet) {
+                        canBet = true;
+                        isResultProcessing = false;
+                        msg.style.display = "none";
+                    }
+                    
+                    // Show exact server timer
+                    tmr.innerText = data.timer;
+                    tmr.style.color = data.timer <= 5 ? "#F33" : "#0f0";
+                    if(data.timer <= 5 && lastBeep !== data.timer) { s_beep.play().catch(e=>{}); lastBeep = data.timer; }
+                } else {
+                    canBet = false;
+                    tmr.innerText = "00";
+                    tmr.style.color = "#fff";
                 }
-            } else if (currentState === 'result' || currentState === 'proc') {
+            } 
+            else if (currentState === 'result' || currentState === 'processing') {
                 if (canBet) {
                     canBet = false;
                     msg.innerHTML = "Bets Closed!<br><span style='font-size:18px;color:#ccc'>Spinning...</span>"; 
@@ -421,27 +456,16 @@
                         msg.innerHTML = `Result:<br><span style='color:#0f0;font-size:36px;'>${pr[prizeIndex]}</span>`;
                         checkPayout(prizeIndex, snapshotBets); 
                         rot = d; 
-                    }, 7500);
+                    }, 7500); // 7.5 Seconds spin animation
+                }
+                
+                // Show waiting timer explicitly after animation finishes
+                if (isResultProcessing && data.timer <= 4 && data.timer > 0) {
+                    msg.innerHTML = `NEXT ROUND IN: <br><span style='color:#00ff88;font-size:40px;'>${data.timer}s</span>`;
                 }
             }
         });
 
-        // 🔥 LOCAL TIMER ENGINE: Mobile Apne Andar Khud Ginti Chalayega 🔥
-        setInterval(() => {
-            if (currentState === 'betting' && currentEndTime > 0) {
-                let timeLeft = Math.floor((currentEndTime - Date.now()) / 1000);
-                if (timeLeft < 0) timeLeft = 0;
-
-                tmr.innerText = timeLeft; 
-                tmr.style.color = timeLeft <= 5 ? "#F33" : "#0f0";
-            } else if (currentState === 'result' || currentState === 'proc') {
-                tmr.innerText = "00"; 
-                tmr.style.color = "#fff";
-            } else {
-                tmr.innerText = "..."; 
-            }
-        }, 200);
-        
         const canvasBg = document.getElementById('bg-canvas'); const ctxBg = canvasBg.getContext('2d');
         canvasBg.width = window.innerWidth; canvasBg.height = window.innerHeight;
         function animate3D() { ctxBg.fillStyle = 'rgba(5, 5, 15, 0.2)'; ctxBg.fillRect(0, 0, canvasBg.width, canvasBg.height); requestAnimationFrame(animate3D); }
