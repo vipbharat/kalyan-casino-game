@@ -3,110 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dragon Tiger 2 VIP - Master Lock Sync</title>
+    <title>Dragon Tiger 2 VIP - Master UI</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial Black', sans-serif; }
-        
-        body { 
-            background: #1a0b2e url('assets/360_F_654861640_W8QmNeS82ZhiAZhdd6E7QW43qQQFkKOj.jpg') center/cover no-repeat; 
-            overflow: hidden; 
-            width: 100vw; 
-            height: 100vh; 
-            position: relative; 
-            user-select: none; 
-        }
-
-        #game-mount {
-            position: absolute; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.2); 
-            display: flex; justify-content: center; align-items: center; overflow: hidden;
-            z-index: 10;
-        }
-
-        @media screen and (orientation: portrait) {
-            #game-mount { width: 100vh; height: 100vw; transform: rotate(90deg); transform-origin: center; top: calc((100vh - 100vw) / 2); left: calc((100vw - 100vh) / 2); }
-        }
-        
+        body { background: #1a0b2e url('assets/360_F_654861640_W8QmNeS82ZhiAZhdd6E7QW43qQQFkKOj.jpg') center/cover no-repeat; overflow: hidden; width: 100vw; height: 100vh; position: relative; user-select: none; }
+        #game-mount { position: absolute; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.2); display: flex; justify-content: center; align-items: center; overflow: hidden; z-index: 10; }
+        @media screen and (orientation: portrait) { #game-mount { width: 100vh; height: 100vw; transform: rotate(90deg); transform-origin: center; top: calc((100vh - 100vw) / 2); left: calc((100vw - 100vh) / 2); } }
         .back-btn { position: absolute; top: 10px; left: 10px; z-index: 1000; padding: 5px 20px; background: rgba(0,0,0,0.8); border: 2px solid #ffd700; border-radius: 20px; color: #ffd700; font-size: 14px; cursor: pointer; }
         .online-counter { position: absolute; top: 10px; right: 10px; z-index: 1000; padding: 5px 15px; background: rgba(0,0,0,0.8); border: 2px solid #00ff88; border-radius: 20px; color: #00ff88; font-size: 12px; }
-        
         .casino-board { width: 85%; height: 75%; background: rgba(30, 20, 60, 0.75); border: 3px solid #5a419c; border-radius: 12px; display: flex; flex-direction: column; position: relative; z-index: 10; margin-bottom: 50px; overflow: hidden; backdrop-filter: blur(5px); }
-        
         .action-area { flex: 0.9; position: relative; display: flex; justify-content: center; align-items: center; }
         .bg-gif { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.55; pointer-events: none; mix-blend-mode: screen; }
-        
         .flying-beast { position: absolute; bottom: 5%; height: 90%; width: 38%; object-fit: cover; pointer-events: none; z-index: 5; mix-blend-mode: screen; filter: brightness(1.2); }
         #beast-left { left: 0; } #beast-right { right: 0; }
-
         .cards-stage { display: flex; align-items: center; gap: 10px; position: relative; z-index: 20; padding-bottom: 10px;}
         .crd { width: 55px; height: 80px; border-radius: 4px; border: 2px solid #ffd700; background: #fff; position: relative; box-shadow: 0 5px 15px #000; transition: transform 0.3s; transform-style: preserve-3d; }
         .cbk { position: absolute; inset: 0; background: #222 url('https://deckofcardsapi.com/static/img/back.png') center/cover; border-radius: 2px; z-index: 10; backface-visibility: hidden; transition: 0.3s; }
         .crd-val { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 2px; background: #fff; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 20px; line-height: 1.2;}
         .red-suit { color: red; } .black-suit { color: black; }
         .timer-badge { position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%); background: #600; color: #ffd700; padding: 3px 20px; border-radius: 15px; border: 1.5px solid #ffd700; font-size: 14px; font-weight: 900; z-index: 500; display: none; white-space: nowrap;}
-        
         .history-bar { height: 35px; display: flex; align-items: center; justify-content: flex-start; gap: 5px; padding: 0 15px; background: rgba(0,0,0,0.5); overflow: hidden; border-top: 2px solid #4a317c; position: relative; z-index: 30;}
         .h-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); flex-shrink: 0; }
         .h-d { background: #5c4cdb; } .h-t { background: #e68900; } .h-tie { background: #43a047; color: #000; }
         .newest-record { animation: popNew 0.5s ease-out forwards; border: 2px solid #fff; box-shadow: 0 0 8px #fff; }
         @keyframes popNew { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.3); } 100% { transform: scale(1); opacity: 1; } }
-
         .betting-area { flex: 1.2; display: flex; padding: 10px; gap: 10px; position: relative; z-index: 50; }
-        
-        #bet-lock-overlay { 
-            position: absolute; inset: 0; z-index: 200; display: none; 
-            background: rgba(0,0,0,0.5); border-radius: 8px; cursor: not-allowed; 
-            justify-content: center; align-items: center; 
-        }
-        #bet-lock-overlay span { 
-            background: #ff3333; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: 900; border: 2px solid white; animation: blink 1s infinite; box-shadow: 0 0 10px #ff3333; 
-        }
+        #bet-lock-overlay { position: absolute; inset: 0; z-index: 200; display: none; background: rgba(0,0,0,0.5); border-radius: 8px; cursor: not-allowed; justify-content: center; align-items: center; }
+        #bet-lock-overlay span { background: #ff3333; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: 900; border: 2px solid white; animation: blink 1s infinite; box-shadow: 0 0 10px #ff3333; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-        .bet-box { 
-            flex: 1; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; cursor: pointer; 
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5); transition: 0.2s; overflow: hidden; 
-        }
-        
+        .bet-box { flex: 1; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; cursor: pointer; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); transition: 0.2s; overflow: hidden; }
         .dbx { background: rgba(124, 108, 240, 0.4); border: 2px solid #7c6cf0; } 
         .tibx { background: rgba(107, 207, 107, 0.4); border: 2px solid #6bcf6b; } 
         .tbx { background: rgba(240, 163, 60, 0.4); border: 2px solid #f0a33c; }
-
         .vortex-container { position: absolute; inset: 0; border-radius: 8px; overflow: hidden; z-index: 0; pointer-events: none; }
-        .vortex {
-            position: absolute; top: 50%; left: 50%; width: 250%; height: 250%;
-            background: repeating-radial-gradient(circle at center, rgba(0, 150, 255, 0) 0%, rgba(0, 150, 255, 0.4) 10%, rgba(0, 255, 255, 0) 20%), 
-                        conic-gradient(from 0deg, rgba(0, 100, 255, 0.5), rgba(0, 255, 255, 0.9), rgba(0, 100, 255, 0.5), rgba(0, 50, 255, 0.7), rgba(0, 100, 255, 0.5));
-            transform: translate(-50%, -50%);
-            animation: spinVortex 3s ease-in-out infinite alternate; mix-blend-mode: screen; filter: blur(4px) contrast(1.5);
-        }
-
+        .vortex { position: absolute; top: 50%; left: 50%; width: 250%; height: 250%; background: repeating-radial-gradient(circle at center, rgba(0, 150, 255, 0) 0%, rgba(0, 150, 255, 0.4) 10%, rgba(0, 255, 255, 0) 20%), conic-gradient(from 0deg, rgba(0, 100, 255, 0.5), rgba(0, 255, 255, 0.9), rgba(0, 100, 255, 0.5), rgba(0, 50, 255, 0.7), rgba(0, 100, 255, 0.5)); transform: translate(-50%, -50%); animation: spinVortex 3s ease-in-out infinite alternate; mix-blend-mode: screen; filter: blur(4px) contrast(1.5); }
         @keyframes spinVortex { 0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); } 100% { transform: translate(-50%, -50%) rotate(360deg) scale(1.2); } }
-
         .beast-img-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; z-index: 2 !important; pointer-events: none; opacity: 0.8; transition: all 0.3s ease-out; }
-
-        @keyframes roarEffect { 
-            0% { transform: scale(1) translateY(0); z-index: 2; } 
-            20% { transform: scale(1.3) translateY(-15px); z-index: 50; box-shadow: 0 10px 30px #ffd700; border-radius: 12px; } 
-            80% { transform: scale(1.3) translateY(-15px); z-index: 50; box-shadow: 0 10px 30px #ffd700; border-radius: 12px; } 
-            100% { transform: scale(1) translateY(0); z-index: 2; } 
-        }
+        @keyframes roarEffect { 0% { transform: scale(1) translateY(0); z-index: 2; } 20% { transform: scale(1.3) translateY(-15px); z-index: 50; box-shadow: 0 10px 30px #ffd700; border-radius: 12px; } 80% { transform: scale(1.3) translateY(-15px); z-index: 50; box-shadow: 0 10px 30px #ffd700; border-radius: 12px; } 100% { transform: scale(1) translateY(0); z-index: 2; } }
         .roaring { animation: roarEffect 1.2s ease-in-out forwards; z-index: 50; } 
-
         .box-video-hidden { display: none; } 
         .box-title { font-size: 24px; color: #fff; text-shadow: 0 3px 6px #000, 0 0 10px #000; pointer-events: none; position: relative; z-index: 10; font-weight: 900;}
         .pa { position: absolute; bottom: 5px; right: 8px; background: #ffd700; color: #000; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 900; z-index: 10; }
         .mbb { position: absolute; top: 5px; left: 8px; background: #00e5ff; color: #000; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: none; font-weight: 900; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #fff; z-index: 10; }
-        
         .gw { box-shadow: 0 0 25px #39ff14, inset 0 0 20px #fff !important; border-color: #39ff14 !important; transform: scale(1.02); }
-        
         #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 200; overflow: hidden; }
         .placed-chip { position: absolute; width: 26px; height: 26px; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.6)); transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 300; pointer-events: none;}
-        
         .side-panel { width: 75px; display: flex; flex-direction: column; justify-content: space-evenly; background: rgba(0,0,0,0.4); z-index: 80; border-left: 1px solid #ffd700; border-right: 1px solid #ffd700; }
         .bot-user { display: flex; flex-direction: column; align-items: center; position: relative; height: 50px; }
         .player-icon { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid #ffd700; object-fit: cover; background: #222; }
@@ -114,7 +59,6 @@
         .wl-tag { position: absolute; top: 10px; padding: 2px 5px; border-radius: 4px; font-size: 10px; font-weight: 900; background: rgba(0,0,0,0.8); z-index: 100; opacity: 0; pointer-events: none; transition: all 0.5s ease-out; }
         .wl-tag.show-win { color: #39ff14; border: 1px solid #39ff14; transform: translateY(-25px); opacity: 1; }
         .wl-tag.show-lose { color: #ff3333; border: 1px solid #ff3333; transform: translateY(-25px); opacity: 1; }
-        
         .bottom-area { position: absolute; bottom: 8px; width: 95%; height: 60px; display: flex; justify-content: space-between; align-items: stretch; gap: 10px; z-index: 500; }
         .wallet-panel { width: 40%; background: linear-gradient(135deg, #220066, #440099); border-radius: 12px; border: 2px solid #ffd700; display: flex; flex-direction: column; justify-content: center; padding-left: 15px; }
         .w-id { font-size: 9px; color: #aaa; } .w-bal { font-size: 18px; color: #ffd700; }
@@ -122,34 +66,24 @@
         .chip { height: 80%; max-width: 38px; cursor: pointer; transition: 0.2s; }
         .chip.sel { transform: scale(1.2) translateY(-8px); filter: drop-shadow(0 0 10px #ffd700); }
         .chip.locked { opacity: 0.25; filter: grayscale(1); pointer-events: none; }
-        
         .banner-overlay { position: absolute; top: 50%; left: -100vw; transform: translate(-50%, -50%) scale(2.2); width: 60vw; z-index: 2000; pointer-events: none; transition: 0.5s; }
         .banner-overlay.show { left: 50%; }
         #vs-clash-screen { position: absolute; inset: 0; z-index: 3000; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; overflow: hidden; }
         .clash-dragon, .clash-tiger { width: 45%; mix-blend-mode: screen; }
-
         #network-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700; }
         .loading-chakra { width: 60px; height: 60px; border: 6px solid rgba(255, 215, 0, 0.2); border-top-color: #ffd700; border-radius: 50%; animation: spinChakra 1s linear infinite; margin-bottom: 20px; }
         @keyframes spinChakra { 100% { transform: rotate(360deg); } }
         .net-text { font-size: 22px; letter-spacing: 2px; text-shadow: 0 2px 4px #000; }
         .net-sub { font-size: 12px; color: #aaa; margin-top: 5px; }
-
     </style>
 </head>
 <body onclick="initAudio()">
-    
-    <div id="network-overlay">
-        <div class="loading-chakra"></div>
-        <div class="net-text">CONNECTING DB</div>
-        <div class="net-sub">Waiting for Firebase Data...</div>
-    </div>
-
+    <div id="network-overlay"><div class="loading-chakra"></div><div class="net-text">CONNECTING DB</div><div class="net-sub">Waiting for Firebase Data...</div></div>
     <div id="start-screen" onclick="enterCasino()" style="position: fixed; inset: 0; background: #0a0515; z-index: 9999999; display: flex; justify-content: center; align-items: center; color: #ffd700; cursor: pointer;"><h1>TAP TO PLAY (DT-2)</h1></div>
     <div id="loading-screen" style="position: fixed; inset: 0; background: #000; z-index: 9999998; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700;"><p>DOWNLOADING ASSETS...</p></div>
 
     <div id="game-mount">
         <div id="click-catcher" onclick="initAudio()" style="position: absolute; inset: 0; z-index: 999;"></div>
-        
         <audio id="snd-beep" src="assets/22d0dc27-b727-42be-ac04-d9182459f976.mp3" preload="auto"></audio>
         <audio id="snd-drop" src="assets/c9c7036e-1502-4e98-9b70-b8fec24836e4.mp3" preload="auto"></audio>
         <audio id="snd-fly" src="assets/7ba0aedc-0356-404d-9c4a-c34acec66469.mp3" preload="auto"></audio>
@@ -158,40 +92,32 @@
 
         <div class="back-btn" onclick="window.history.back()">HOME</div>
         <div class="online-counter" id="top-online">🟢 <span id="oc-top">310</span> ONLINE</div>
-
         <div class="side-panel" id="left-players"></div>
 
         <div class="casino-board">
             <div class="action-area">
                 <video src="assets/1000055374.mp4" class="bg-gif" autoplay loop muted playsinline></video>
                 <video class="flying-beast" id="beast-left" src="assets/VID_20260425_134936_4.mp4" autoplay loop muted playsinline></video>
-
                 <div class="cards-stage">
                     <div class="crd" id="c-d"><div class="cbk" id="b-d"></div><div id="d-v" class="crd-val"></div></div>
                     <img src="assets/VS.png" style="width:40px;" alt="VS">
                     <div class="crd" id="c-t"><div class="cbk" id="b-t"></div><div id="t-v" class="crd-val"></div></div>
                     <div class="timer-badge" id="tmr"></div>
                 </div>
-
                 <video class="flying-beast" id="beast-right" src="assets/VID_20260426_202810_2.mp4" autoplay loop muted playsinline></video>
             </div>
-            
             <div class="history-bar" id="hr"></div>
-            
             <div class="betting-area">
                 <div id="bet-lock-overlay"><span>WAITING...</span></div>
-
                 <div class="bet-box dbx" onclick="pB('dragon')" id="bx-d">
                     <div class="vortex-container"><div class="vortex"></div></div>
                     <img id="dragon-beast" class="beast-img-layer" src="assets/d7d73aec7947f4428719ced9fada482b.jpg" alt="Dragon">
                     <video class="box-video-hidden" id="vid-box-dragon" src="assets/jom.di.mp4" muted playsinline></video>
                     <div class="box-title">Dragon</div><div class="pa" id="md">₹0</div><div class="mbb" id="mb-d">₹0</div>
                 </div>
-                
                 <div class="bet-box tibx" onclick="pB('tie')" id="bx-ti">
                     <div class="box-title" style="font-size:18px;">Tie</div><div class="pa" id="mti">₹0</div><div class="mbb" id="mb-ti">₹0</div>
                 </div>
-                
                 <div class="bet-box tbx" onclick="pB('tiger')" id="bx-t">
                     <div class="vortex-container"><div class="vortex"></div></div>
                     <img id="tiger-beast" class="beast-img-layer" src="assets/187c79ef5fc799219b5db2e67a47e755.jpg" alt="Tiger">
@@ -200,10 +126,8 @@
                 </div>
             </div>
         </div>
-
         <div class="side-panel" id="right-players"></div>
         <div id="chips-layer"></div>
-
         <div class="bottom-area">
             <div class="wallet-panel" id="my-wallet">
                 <div class="w-id">ID: <span id="p-id">...</span></div>
@@ -218,7 +142,6 @@
                 <img src="assets/10000_0.png" class="chip" data-value="10000" onclick="sC(this)">
             </div>
         </div>
-
         <div id="vs-clash-screen">
             <video class="clash-dragon" src="assets/VID_20260425_134936_4.mp4" autoplay muted></video>
             <video class="clash-tiger" src="assets/VID_20260426_202810_2.mp4" autoplay muted></video>
@@ -228,28 +151,19 @@
     </div>
 
     <script>
-        // ==========================================
-        // 🔥 AUTO-WAKE ENGINE FOR RENDER 🔥
-        // ==========================================
+        // Server Ping (If hosted on render)
         function wakeUpServer() { fetch("https://kalyan-engine.onrender.com/").catch(e => {}); }
-        wakeUpServer(); 
-        setInterval(wakeUpServer, 180000); 
+        wakeUpServer(); setInterval(wakeUpServer, 180000); 
 
-        // ==========================================
-        // 1. UI SETUP
-        // ==========================================
         const $ = i => document.getElementById(i);
         let iBO = 0, cC = 50, tB = 0, dB=0, wB=0, bB=0;
         let mB = { dragon: 0, tiger: 0, tie: 0 }, myBets = { dragon: 0, tiger: 0, tie: 0 };
         let lastBeep = -1;
         const chipImgs = { 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
-        let globalHistory = []; 
-        let roundProcessed = false; 
+        let globalHistory = []; let roundProcessed = false; 
 
         function renderHistoryBoard() {
-            let hr = $('hr');
-            if(!hr) return;
-            hr.innerHTML = '';
+            let hr = $('hr'); if(!hr) return; hr.innerHTML = '';
             globalHistory.forEach((w, index) => {
                 let val = String(w).toLowerCase().trim();
                 let char = val === 'dragon' ? 'D' : (val === 'tiger' ? 'T' : 'Tie');
@@ -263,362 +177,206 @@
             const avs = ['Avatar0.png', 'Avatar2.png', 'Avatar3.png', 'Avatar4.png', 'Avatar5.png', 'Avatar6.png', 'Avatar7.png', 'Avatar9.png', 'Avatar11.png'];
             let lh = '', rh = '';
             for(let i=0; i<5; i++) {
-                let rBal1 = (Math.floor(Math.random()*50)+20) * 1000; 
-                let rBal2 = (Math.floor(Math.random()*50)+20) * 1000;
+                let rBal1 = (Math.floor(Math.random()*50)+20) * 1000; let rBal2 = (Math.floor(Math.random()*50)+20) * 1000;
                 lh += `<div class="bot-user" id="bl${i}"><img class="player-icon" src="assets/${avs[Math.floor(Math.random()*avs.length)]}"><div class="player-bal">${rBal1}</div><div class="wl-tag"></div></div>`;
                 rh += `<div class="bot-user" id="br${i}"><img class="player-icon" src="assets/${avs[Math.floor(Math.random()*avs.length)]}"><div class="player-bal">${rBal2}</div><div class="wl-tag"></div></div>`;
             }
-            if($('left-players')) $('left-players').innerHTML = lh; 
-            if($('right-players')) $('right-players').innerHTML = rh;
+            if($('left-players')) $('left-players').innerHTML = lh; if($('right-players')) $('right-players').innerHTML = rh;
         }
-
-        genPlayers();
-        setInterval(() => { let oc=$('oc-top'); if(oc) oc.innerText = Math.floor(Math.random() * 25) + 220; }, 4000);
+        genPlayers(); setInterval(() => { let oc=$('oc-top'); if(oc) oc.innerText = Math.floor(Math.random() * 25) + 220; }, 4000);
 
         function enterCasino() { 
             $('start-screen').style.display='none'; $('loading-screen').style.display='flex'; 
             if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-            try { let v1=$('vid-box-dragon'); v1.play().then(()=>v1.pause()); }catch(e){}
-            try { let v2=$('vid-box-tiger'); v2.play().then(()=>v2.pause()); }catch(e){}
+            try { $('vid-box-dragon').play().then(()=>$('vid-box-dragon').pause()); }catch(e){}
+            try { $('vid-box-tiger').play().then(()=>$('vid-box-tiger').pause()); }catch(e){}
             setTimeout(() => { $('loading-screen').style.display='none'; }, 2000); 
         }
 
-        function initAudio() { 
-            $('click-catcher').style.display = 'none'; 
-            ['snd-beep','snd-drop','snd-fly','snd-card','snd-clash'].forEach(i => { try{ let s=$(i); s.play().then(()=>s.pause()).catch(()=>{}); }catch(e){} });
-        }
-
-        // Memory-leak safe audio player
-        function pS(i,v) { 
-            let s=$(i); 
-            if(s) { 
-                let cl = s.cloneNode(); 
-                cl.volume = v; 
-                cl.play().then(() => {
-                    cl.onended = () => cl.remove(); 
-                }).catch(()=>{}); 
-            } 
-        }
+        function initAudio() { $('click-catcher').style.display = 'none'; ['snd-beep','snd-drop','snd-fly','snd-card','snd-clash'].forEach(i => { try{ $(i).play().then(()=>$(i).pause()).catch(()=>{}); }catch(e){} }); }
+        function pS(i,v) { let s=$(i); if(s) { let cl = s.cloneNode(); cl.volume = v; cl.play().then(() => { cl.onended = () => cl.remove(); }).catch(()=>{}); } }
         function getPos(el) { let x = 0, y = 0; while(el && el.id !== 'game-mount') { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; } return {x, y}; }
 
         // ==========================================
-        // 2. FIREBASE LOGIC & PERFECT TIMER SYNC
+        // 🔥 DIRECT SERVER-DRIVEN UI LOGIC 🔥
         // ==========================================
         try {
             firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
-            const db = firebase.database();
-            
-            const ph = localStorage.getItem('userPhone') || "GUEST_1234";
-            const netUI = $('network-overlay');
+            const db = firebase.database(); const ph = localStorage.getItem('userPhone') || "GUEST_1234"; const netUI = $('network-overlay');
 
-            let serverTimeOffset = 0;
-            db.ref(".info/serverTimeOffset").on("value", snap => { serverTimeOffset = snap.val() || 0; });
-            function getTrueTime() { return Date.now() + serverTimeOffset; }
-
-            let connectedRef = db.ref(".info/connected");
-            let isFirstConnect = true;
-
-            // 🔥 FIX: Re-connection se ab timer aur game nahi atkega
+            let connectedRef = db.ref(".info/connected"); let isFirstConnect = true;
             connectedRef.on("value", (snap) => {
-                if (snap.val() === true) {
-                    if(netUI) netUI.style.display = 'none';
-                    if(isFirstConnect) {
-                        fetchInitialHistory();
-                        isFirstConnect = false;
-                    }
-                } else {
-                    if(netUI) netUI.style.display = 'flex';
-                }
+                if (snap.val() === true) { if(netUI) netUI.style.display = 'none'; if(isFirstConnect) { fetchInitialHistory(); isFirstConnect = false; } } 
+                else { if(netUI) netUI.style.display = 'flex'; }
             });
 
-            let currentState = '';
-            let currentEndTime = 0;
-
+            // 🎯 MAIN LISTENER: Server gives exact State and exact Timer
             db.ref('Game/DragonTiger2/Status').on('value', (snap) => {
-                let data = snap.val();
-                if(!data) return;
+                let data = snap.val(); if(!data) return;
+                
+                let tmr = $('tmr'); let betLock = $('bet-lock-overlay'); let aStart = $('alert-start'); let aStop = $('alert-stop');
 
-                currentState = data.state;
-                currentEndTime = data.endTime;
-
-                let betLock = $('bet-lock-overlay');
-                let aStart = $('alert-start');
-                let aStop = $('alert-stop');
-
-                if (currentState === 'betting') {
-                    let tLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
-                    // Start only if we have time left
-                    if(iBO === 0 && tLeft > 0) { 
-                        iBO = 1; roundProcessed = false; rUI(); 
-                        if(betLock) betLock.style.display = 'none'; 
-                        if (aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1000); }
+                if (data.state === 'betting') {
+                    if (data.timer > 0) {
+                        // Round Shuru, sab open
+                        if (iBO === 0) { 
+                            iBO = 1; roundProcessed = false; rUI(); 
+                            if(betLock) betLock.style.display = 'none'; 
+                            if(aStart) { aStart.classList.add('show'); setTimeout(()=>aStart.classList.remove('show'), 1000); }
+                        }
+                        
+                        // Timer update direct from server
+                        if (tmr) {
+                            tmr.style.display = 'block'; 
+                            tmr.innerText = data.timer + "s";
+                            tmr.style.color = data.timer <= 5 ? "#ff3333" : "#ffd700";
+                            if(data.timer <= 5 && lastBeep !== data.timer) { pS('snd-beep', 0.8); lastBeep = data.timer; }
+                        }
+                    } else {
+                        // Betting Band (Timer 0)
+                        iBO = 0; 
+                        if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'STOP BETTING'; }
+                        if(tmr) { tmr.innerText = "STOP!"; tmr.style.color = "#fff"; }
                     }
                 } 
-                else if (currentState === 'result') {
+                else if (data.state === 'result' || data.state === 'processing') {
+                    // Lock hamesha on rahega
                     iBO = 0; 
-                    if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'WAITING...'; }
+                    if(betLock && betLock.style.display === 'none') { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'WAITING...'; }
                     
-                    if(!roundProcessed && data.winner) {
-                        if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1000); }
-                        roundProcessed = true; lastBeep = -1;
+                    if (data.state === 'result') {
+                        // 1. Ek baar animation trigger karo
+                        if (data.winner && !roundProcessed) {
+                            if (aStop) { aStop.classList.add('show'); setTimeout(()=>aStop.classList.remove('show'), 1000); }
+                            roundProcessed = true; lastBeep = -1;
+                            
+                            let vsScreen = $('vs-clash-screen'); if (vsScreen) { vsScreen.style.display='flex'; pS('snd-clash', 1); setTimeout(()=>vsScreen.style.display='none', 800); }
+                            setTimeout(() => sR_Sequence(data.winner), 800);
+                        }
                         
-                        let vsScreen = $('vs-clash-screen');
-                        if (vsScreen) { vsScreen.style.display='flex'; pS('snd-clash', 1); setTimeout(()=>vsScreen.style.display='none', 800); }
-                        
-                        setTimeout(() => sR_Sequence(data.winner), 800);
-                    }
-                }
-            });
-
-            // 🔥 FIX: Timer logic disconnected from strictly relying on iBO
-            setInterval(() => {
-                let tmr = $('tmr'); if(!tmr) return;
-                
-                if (currentState === 'betting' && currentEndTime > 0) {
-                    let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
-                    
-                    if (timeLeft < 0) {
-                        iBO = 0;
-                        let betLock = $('bet-lock-overlay'); if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'WAIT FOR SERVER...'; }
-                        tmr.style.display = 'block'; tmr.innerText = "WAIT..."; tmr.style.color = "#ff9800";
-                    } 
-                    else if (timeLeft >= 0) {
-                        if (timeLeft === 0) {
-                            iBO = 0; // Lock betting at exactly 0
-                            let betLock = $('bet-lock-overlay'); if(betLock) { betLock.style.display = 'flex'; betLock.querySelector('span').innerText = 'STOP BETTING'; }
-                            tmr.style.display = 'block'; tmr.innerText = "STOP!"; tmr.style.color = "#fff";
+                        // 2. Waiting Timer (Show only if time <= 5 and animation is running/done)
+                        if(data.timer <= 5 && data.timer > 0 && roundProcessed) {
+                            if(tmr) { tmr.style.display = 'block'; tmr.style.color = "#00ff88"; tmr.innerText = "NEXT: " + data.timer + "s"; }
+                            if(betLock) betLock.querySelector('span').innerText = 'PREPARING...';
                         } else {
-                            // Update Timer independently
-                            tmr.style.display = 'block'; 
-                            tmr.innerText = timeLeft + "s"; tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#ffd700";
-                            if(timeLeft <= 5 && lastBeep !== timeLeft) { pS('snd-beep', 0.8); lastBeep = timeLeft; }
+                            if(tmr) tmr.style.display = 'none';
                         }
                     }
-                } else {
-                    tmr.style.display = 'none'; 
                 }
-            }, 100);
+            });
 
             db.ref('users/'+ph).on('value', s => {
-                let d=s.val()||{}; dB = parseFloat(d.balance||0); wB = parseFloat(d.winning_balance||0); bB = parseFloat(d.bonus_balance||0);
-                tB = Math.max(0, dB+wB+bB);
-                let balBot = $('bal-bot'); if(balBot) balBot.innerText = tB.toFixed(2); 
-                let pId = $('p-id'); if(pId) pId.innerText = ph.slice(-4);
+                let d=s.val()||{}; dB = parseFloat(d.balance||0); wB = parseFloat(d.winning_balance||0); bB = parseFloat(d.bonus_balance||0); tB = Math.max(0, dB+wB+bB);
+                let balBot = $('bal-bot'); if(balBot) balBot.innerText = tB.toFixed(2); let pId = $('p-id'); if(pId) pId.innerText = ph.slice(-4);
                 document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
             });
 
-            function fetchInitialHistory() {
-                db.ref('Game/DragonTiger2/History').orderByKey().limitToLast(15).once('value', s => {
-                    let h = s.val();
-                    if(h) { globalHistory = Object.values(h).map(v => (v.winner || v).toString().toLowerCase().trim()); } else { globalHistory = []; }
-                    renderHistoryBoard();
-                });
-            }
+            function fetchInitialHistory() { db.ref('Game/DragonTiger2/History').orderByKey().limitToLast(15).once('value', s => { let h = s.val(); if(h) { globalHistory = Object.values(h).map(v => (v.winner || v).toString().toLowerCase().trim()); } else { globalHistory = []; } renderHistoryBoard(); }); }
+            window.addNewHistoryDot = function(safeW) { globalHistory.push(safeW); if(globalHistory.length > 15) { globalHistory.shift(); } renderHistoryBoard(); }
 
-            window.addNewHistoryDot = function(safeW) {
-                globalHistory.push(safeW);
-                if(globalHistory.length > 15) { globalHistory.shift(); }
-                renderHistoryBoard();
-            }
-
-            // 🔥 REAL PLAYER BETTING 🔥
             window.pB = (s) => { 
-                let betLock = $('bet-lock-overlay');
-                if (betLock && betLock.style.display === 'flex') return;
-                if (iBO === 0 || currentState !== 'betting') return; 
+                if (iBO === 0) return; 
+                let betLock = $('bet-lock-overlay'); if (betLock && betLock.style.display === 'flex') return;
                 
-                let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
-                if (timeLeft <= 0) return; 
-
                 if (tB < cC) { alert('⚠️ Insufficient Balance!'); return; }
-
-                let nD=dB, nW=wB, rm=cC;
-                if(nD>=rm) nD-=rm; else { rm-=nD; nD=0; nW-=rm; }
-                
-                dB = nD; wB = nW; tB = dB + wB + bB;
-                let balBot = $('bal-bot'); if(balBot) balBot.innerText = tB.toFixed(2);
+                let nD=dB, nW=wB, rm=cC; if(nD>=rm) nD-=rm; else { rm-=nD; nD=0; nW-=rm; }
+                dB = nD; wB = nW; tB = dB + wB + bB; $('bal-bot').innerText = tB.toFixed(2);
                 document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
-
-                db.ref('users/'+ph).update({balance: Math.max(0,nD), winning_balance: Math.max(0,nW)});
+                
+                db.ref('users/'+ph).update({balance: Math.max(0,nD), winning_balance: Math.max(0,nW)}); 
                 db.ref(`Game/DragonTiger2/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
                 
                 spC(s, chipImgs[cC], $('my-wallet'), false, cC); 
-                myBets[s] += cC;
-                let mbID = 'mb-' + (s === 'tie' ? 'ti' : s.charAt(0));
-                let mbEl = $(mbID);
-                if(mbEl) { mbEl.innerText = '₹' + myBets[s]; mbEl.style.display = 'block'; }
+                myBets[s] += cC; let mbEl = $('mb-' + (s === 'tie' ? 'ti' : s.charAt(0))); if(mbEl) { mbEl.innerText = '₹' + myBets[s]; mbEl.style.display = 'block'; }
             };
-
         } catch(e) {}
 
         window.sC = (el) => { if(el.classList.contains('locked')) return; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); cC=parseInt(el.dataset.value); };
 
-        // 🔥 ENHANCED CHIP DROP 🔥
         function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
-            if(!srcEl) return;
-            
-            if(Math.random() > 0.7) pS('snd-drop', 0.4);
-            
-            let layer = $('chips-layer');
-            let box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
-            if(!box || !layer) return;
-
-            let chip = document.createElement('img'); 
-            chip.src = imgSrc; 
-            chip.className = 'placed-chip';
-            
-            let sPos = getPos(srcEl); 
-            let sW = srcEl.offsetWidth || 30, sH = srcEl.offsetHeight || 30;
-            chip.style.left = (sPos.x + sW/2 - 13) + "px"; 
-            chip.style.top = (sPos.y + sH/2 - 13) + "px";
-            chip.style.transform = "scale(0.3)"; 
-            layer.appendChild(chip);
-
-            let bPos = getPos(box); 
-            let bW = box.offsetWidth, bH = box.offsetHeight;
-            
-            setTimeout(() => {
-                let padX = 15, padY = 15; 
-                let randX = padX + Math.random() * (bW - padX*2); 
-                let randY = padY + Math.random() * (bH - padY*2);
-                chip.style.left = (bPos.x + randX - 13) + "px"; 
-                chip.style.top = (bPos.y + randY - 13) + "px";
-                chip.style.transform = "scale(1)";
-            }, 50);
-            
+            if(!srcEl) return; if(Math.random() > 0.7) pS('snd-drop', 0.4);
+            let layer = $('chips-layer'); let box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0))); if(!box || !layer) return;
+            let chip = document.createElement('img'); chip.src = imgSrc; chip.className = 'placed-chip';
+            let sPos = getPos(srcEl); let sW = srcEl.offsetWidth || 30, sH = srcEl.offsetHeight || 30;
+            chip.style.left = (sPos.x + sW/2 - 13) + "px"; chip.style.top = (sPos.y + sH/2 - 13) + "px"; chip.style.transform = "scale(0.3)"; layer.appendChild(chip);
+            let bPos = getPos(box); let bW = box.offsetWidth, bH = box.offsetHeight;
+            setTimeout(() => { let padX = 15, padY = 15; let randX = padX + Math.random() * (bW - padX*2); let randY = padY + Math.random() * (bH - padY*2); chip.style.left = (bPos.x + randX - 13) + "px"; chip.style.top = (bPos.y + randY - 13) + "px"; chip.style.transform = "scale(1)"; }, 50);
             chip.setAttribute('data-side', side);
-            
-            // 🔥 BOARD TEXT UPDATE LOGIC 🔥
             if(!isSystemAnim && chipVal > 0) {
-                mB[side] += chipVal;
-                let textID = 'm' + (side === 'tie' ? 'ti' : side.charAt(0));
-                let mText = $(textID);
-                if(mText) { 
-                    mText.innerText = '₹' + mB[side];
-                    mText.style.transition = '0.1s';
-                    mText.style.transform = 'scale(1.2)';
-                    setTimeout(() => { mText.style.transform = 'scale(1)'; }, 100);
-                }
+                mB[side] += chipVal; let mText = $('m' + (side === 'tie' ? 'ti' : side.charAt(0)));
+                if(mText) { mText.innerText = '₹' + mB[side]; mText.style.transition = '0.1s'; mText.style.transform = 'scale(1.2)'; setTimeout(() => { mText.style.transform = 'scale(1)'; }, 100); }
             }
-            
-            if(layer.children.length > 150) layer.firstChild.remove();
-            return chip;
+            if(layer.children.length > 150) layer.firstChild.remove(); return chip;
         }
 
-        // ==========================================
-        // 🔥 FIX: 100% WORKING BOTS LOGIC 🔥
-        // ==========================================
+        // 🔥 BOTS STRICTLY DEPEND ON iBO 🔥
         setInterval(() => { 
-            // Bot check strictly synced with timer status
-            if (iBO === 0 || currentState !== 'betting') return;
-            let betLock = $('bet-lock-overlay');
-            if (betLock && betLock.style.display === 'flex') return;
-
+            if (iBO !== 1) return; // Jaise hi iBO 0 hoga (Server ki taraf se), Bots ruk jayenge
             let s = Math.random() > 0.45 ? 'dragon' : (Math.random() > 0.1 ? 'tiger' : 'tie');
-            let botPrefix = Math.random() > 0.5 ? 'bl' : 'br';
-            let botId = botPrefix + Math.floor(Math.random() * 5);
-            let srcEl = $(botId) || $('top-online'); 
-            
-            let chipKeys = Object.keys(chipImgs);
-            let randomChipKey = chipKeys[Math.floor(Math.random() * chipKeys.length)];
-            
-            spC(s, chipImgs[randomChipKey], srcEl, false, parseInt(randomChipKey)); 
-        }, 300);
+            let botId = (Math.random() > 0.5 ? 'bl' : 'br') + Math.floor(Math.random() * 5);
+            let k = Object.keys(chipImgs); let rv = parseInt(k[Math.floor(Math.random() * k.length)]);
+            spC(s, chipImgs[rv], $(botId) || $('top-online'), false, rv); 
+        }, 350);
 
-        // 🔥 FAST PARALLEL TIMING SEQUENCE 🔥
+        // ========================================================
+        // 🔥 CASINO CARD & CHIP ANIMATIONS
+        // ========================================================
         function sR_Sequence(w) {
             const vals = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
             let dIdx, tIdx; let safeW = w ? w.toString().toLowerCase().trim() : 'tie';
-
             if(safeW === 'dragon') { dIdx = Math.floor(Math.random()*6)+7; tIdx = Math.floor(Math.random()*6); } 
             else if(safeW === 'tiger') { tIdx = Math.floor(Math.random()*6)+7; dIdx = Math.floor(Math.random()*6); } 
             else { dIdx = Math.floor(Math.random()*13); tIdx = dIdx; } 
 
-            setTimeout(() => {
-                pS('snd-card', 1); 
-                let bd = $('b-d'); if(bd) bd.style.opacity='0'; 
-                let dv = $('d-v'); if(dv) dv.innerHTML = `<div class="black-suit" style="font-size:20px; font-weight:900;">${vals[dIdx]}<br><span style="font-size:30px">♠</span></div>`;
-            }, 200);
+            setTimeout(() => { pS('snd-card', 1); $('b-d').style.opacity='0'; $('d-v').innerHTML = `<div class="black-suit" style="font-size:20px; font-weight:900;">${vals[dIdx]}<br><span style="font-size:30px">♠</span></div>`; }, 200);
+            setTimeout(() => { pS('snd-card', 1); $('b-t').style.opacity='0'; $('t-v').innerHTML = `<div class="red-suit" style="font-size:20px; font-weight:900;">${vals[tIdx]}<br><span style="font-size:30px">♥</span></div>`; }, 800);
 
             setTimeout(() => {
-                pS('snd-card', 1); 
-                let bt = $('b-t'); if(bt) bt.style.opacity='0';
-                let tv = $('t-v'); if(tv) tv.innerHTML = `<div class="red-suit" style="font-size:20px; font-weight:900;">${vals[tIdx]}<br><span style="font-size:30px">♥</span></div>`;
-            }, 600);
+                let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti'))); if(winBox) winBox.classList.add('gw');
+                if(safeW === 'dragon') { $('dragon-beast').classList.add('roaring'); if($('vid-box-dragon')) { $('vid-box-dragon').muted = false; $('vid-box-dragon').play().catch(()=>{}); } } 
+                else if(safeW === 'tiger') { $('tiger-beast').classList.add('roaring'); if($('vid-box-tiger')) { $('vid-box-tiger').muted = false; $('vid-box-tiger').play().catch(()=>{}); } }
+                addNewHistoryDot(safeW);
+            }, 1400);
 
             setTimeout(() => {
-                let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
-                if(winBox) winBox.classList.add('gw');
-                
-                let vidDragon = $('vid-box-dragon'); let vidTiger = $('vid-box-tiger');
-                if(safeW === 'dragon') {
-                    let dbImg = $('dragon-beast'); if(dbImg) dbImg.classList.add('roaring');
-                    if(vidDragon) { vidDragon.muted = false; vidDragon.play().catch(()=>{}); }
-                } else if(safeW === 'tiger') {
-                    let tbImg = $('tiger-beast'); if(tbImg) { tbImg.classList.remove('roaring'); tbImg.classList.add('roaring'); }
-                    if(vidTiger) { vidTiger.muted = false; vidTiger.play().catch(()=>{}); }
-                }
-                
-                if(window.addNewHistoryDot) { window.addNewHistoryDot(safeW); }
-            }, 1200);
-
-            setTimeout(() => {
-                let dealerBox = $('tmr'); let dPos = getPos(dealerBox);
+                let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti'))); let wPos = getPos(winBox);
                 document.querySelectorAll('.placed-chip').forEach(c => {
-                    if(c.getAttribute('data-side') !== safeW) {
-                        c.style.left = (dPos.x + dealerBox.offsetWidth/2 - 13) + "px";
-                        c.style.top = (dPos.y + dealerBox.offsetHeight/2 - 13) + "px";
-                        c.style.opacity = '0';
-                    }
+                    c.style.left = (wPos.x + winBox.offsetWidth/2 - 13) + "px"; c.style.top = (wPos.y + winBox.offsetHeight/2 - 13) + "px";
+                    if(c.getAttribute('data-side') !== safeW) c.style.opacity = '0'; 
                 });
-            }, 2200);
+            }, 2300);
 
             setTimeout(() => {
-                pS('snd-fly', 1);
-                let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
-                
+                pS('snd-fly', 1); let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
                 document.querySelectorAll('.bot-user').forEach(bot => {
                     let tag = bot.querySelector('.wl-tag');
-                    if(tag) {
-                        let isWin = Math.random() > 0.5; let amtNum = (Math.floor(Math.random() * 90) + 10) * 100; 
-                        tag.innerText = isWin ? '+' + amtNum : '-' + amtNum;
-                        tag.className = 'wl-tag ' + (isWin ? 'show-win' : 'show-lose');
-                    }
+                    if(tag) { let isWin = Math.random() > 0.5; let amtNum = (Math.floor(Math.random() * 90) + 10) * 100; tag.innerText = isWin ? '+' + amtNum : '-' + amtNum; tag.className = 'wl-tag ' + (isWin ? 'show-win' : 'show-lose'); }
                 });
-
                 if(winBox) {
                     let wPos = getPos(winBox);
                     for(let i=0; i<15; i++) {
                         let c = document.createElement('img'); c.src = "assets/100_0.png"; c.className = 'placed-chip';
-                        c.style.left = (wPos.x + winBox.offsetWidth/2 - 13) + "px"; c.style.top = (wPos.y + winBox.offsetHeight/2 - 13) + "px";
-                        let layer = $('chips-layer'); if(layer) layer.appendChild(c);
+                        c.style.left = (wPos.x + winBox.offsetWidth/2 - 13) + "px"; c.style.top = (wPos.y + winBox.offsetHeight/2 - 13) + "px"; $('chips-layer').appendChild(c);
                         setTimeout(() => { 
                             let r = Math.random(), target;
                             if(r < 0.2) target = $('my-wallet'); else if(r < 0.4) target = $('top-online'); else if(r < 0.7) target = $('bl'+Math.floor(Math.random()*5)); else target = $('br'+Math.floor(Math.random()*5));
-                            if(target) { let tPos = getPos(target); c.style.left = (tPos.x + target.offsetWidth/2 - 13) + "px"; c.style.top = (tPos.y + target.offsetHeight/2 - 13) + "px"; }
-                            c.style.opacity='0';
-                        }, 50);
-                        setTimeout(()=>c.remove(), 900);
+                            if(target) { let tPos = getPos(target); c.style.left = (tPos.x + target.offsetWidth/2 - 13) + "px"; c.style.top = (tPos.y + target.offsetHeight/2 - 13) + "px"; } c.style.opacity='0';
+                        }, 50); setTimeout(()=>c.remove(), 900);
                     }
                 }
-            }, 3000);
+            }, 3200);
         }
 
         function rUI() {
             let layer = $('chips-layer'); if(layer) layer.innerHTML = '';
             mB = { dragon: 0, tiger: 0, tie: 0 }; myBets = { dragon: 0, tiger: 0, tie: 0 }; 
-            let dbImg = $('dragon-beast'); if(dbImg) dbImg.classList.remove('roaring');
-            let tbImg = $('tiger-beast'); if(tbImg) tbImg.classList.remove('roaring');
-
-            try { let v=$('vid-box-dragon'); if(v) { v.pause(); v.currentTime=0; v.muted=true; } } catch(e){}
-            try { let v=$('vid-box-tiger'); if(v) { v.pause(); v.currentTime=0; v.muted=true; } } catch(e){}
-
+            $('dragon-beast').classList.remove('roaring'); $('tiger-beast').classList.remove('roaring');
+            try { $('vid-box-dragon').pause(); $('vid-box-dragon').currentTime=0; $('vid-box-dragon').muted=true; } catch(e){}
+            try { $('vid-box-tiger').pause(); $('vid-box-tiger').currentTime=0; $('vid-box-tiger').muted=true; } catch(e){}
             ['d','t','ti'].forEach(s => { let m = $('m'+s); if(m) m.innerText = '₹0'; let mb = $('mb-'+s); if(mb) { mb.innerText = 'MY BET: ₹0'; mb.style.display = 'none'; } });
             document.querySelectorAll('.wl-tag').forEach(t => { t.className = 'wl-tag'; });
-            ['bx-d','bx-t','bx-ti'].forEach(i => { let b = $(i); if(b) b.classList.remove('gw'); });
-            
-            let dv = $('d-v'); if(dv) dv.innerHTML = ''; let tv = $('t-v'); if(tv) tv.innerHTML = '';
-            let bd = $('b-d'); if(bd) bd.style.opacity='1'; let bt = $('b-t'); if(bt) bt.style.opacity='1';
+            ['bx-d','bx-t','bx-ti'].forEach(i => { $(i).classList.remove('gw'); });
+            $('d-v').innerHTML = ''; $('t-v').innerHTML = ''; $('b-d').style.opacity='1'; $('b-t').style.opacity='1';
             document.querySelectorAll('.newest-record').forEach(el => el.classList.remove('newest-record'));
         }
     </script>
