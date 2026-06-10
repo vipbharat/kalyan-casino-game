@@ -106,6 +106,7 @@
             z-index: 10;
         }
 
+        /* 🔥 TEXT VISIBILITY OVER CHIPS 🔥 */
         .text-layer { position: relative; z-index: 500; width: 100%; pointer-events: none;}
         .bet-title { font-size: 22px; font-weight: 900; letter-spacing: 1px; margin-bottom: 2px; text-shadow: 0 0 5px #000;}
         .bet-payout { font-size: 11px; color: #ccc; margin-bottom: 6px;}
@@ -297,7 +298,6 @@
         let localHistory = []; 
         let isResultProcessing = false; 
 
-        // 🔥 AUDIO THROTTLING
         let audioUnlocked = false;
         let lastChipSoundTime = 0;
         
@@ -378,6 +378,7 @@
             if(layer.children.length > 250) layer.firstChild.remove();
         }
 
+        // 🔥 INSTANT COUNTING FIXES 🔥
         window.placeBet = function(side) {
             if(!isBettingOpen) return;
             if(totalBal < currentChip) return;
@@ -387,6 +388,9 @@
             db.ref('users/'+phone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
             
             myBets[side] += currentChip;
+            realPool[side] += currentChip; // Instant update local pool variable
+            updatePoolUI(); // Render immediately
+            
             db.ref(`Game/AndarBahar2/Bets/${phone}/${side}`).set(firebase.database.ServerValue.increment(currentChip));
             
             let display = $(`bet-amt-${side}`); display.style.display = 'flex'; display.innerText = myBets[side]; 
@@ -406,11 +410,12 @@
             mySideBets[rangeKey] += currentChip;
 
             let display = $(`sb-${rangeKey}`); display.style.display = 'flex'; display.innerText = mySideBets[rangeKey];
+            
             db.ref(`Game/AndarBahar2/SideBets/${phone}/${rangeKey}`).set(firebase.database.ServerValue.increment(currentChip));
             playChipSound();
         };
 
-        // 🔥 FAST CROWDED BOTS LOGIC 🔥
+        // 🔥 FAST CROWDED BOTS ACTION 🔥
         setInterval(() => {
             if(!isBettingOpen) return;
             let loops = Math.floor(Math.random() * 3) + 1;
@@ -423,7 +428,8 @@
                         if(bot.bal >= amt) {
                             bot.bal -= amt; 
                             spC(s, chipImgs[amt], 'bot-'+idx);
-                            botPool[s] += amt; updatePoolUI();
+                            botPool[s] += amt; 
+                            updatePoolUI(); // Continuous live counting for bots too
                             playChipSound();
                         }
                     }
@@ -458,10 +464,7 @@
         function fetchInitialHistory() {
             db.ref('Game/AndarBahar2/History').orderByKey().limitToLast(10).once('value', snap => {
                 let hist = snap.val();
-                if(hist) { 
-                    localHistory = Array.isArray(hist) ? hist : Object.values(hist); 
-                    renderHistory(); 
-                }
+                if(hist) { localHistory = Array.isArray(hist) ? hist : Object.values(hist); renderHistory(); }
             });
         }
 
@@ -479,7 +482,7 @@
         }
 
         // ==========================================
-        // 🔥 DIRECT SERVER-DRIVEN UI & JOKER LOGIC 🔥
+        // 🔥 DIRECT SERVER-DRIVEN UI LOGIC 🔥
         // ==========================================
         let connectedRef = db.ref(".info/connected");
         connectedRef.on("value", (snap) => {
@@ -491,7 +494,6 @@
             let data = snap.val(); if(!data) return;
             let msg = $('status-msg');
 
-            // 🔥 SERVER SE AAYA JOKER SYNC KARO
             if(data.joker) {
                 currentJoker = data.joker;
                 $('joker-spot').innerHTML = ''; 
@@ -512,7 +514,7 @@
 
                         let aStart = $('alert-start'); aStart.style.display = 'block'; setTimeout(() => aStart.style.display = 'none', 1000);
 
-                        myBets = {andar:0, bahar:0}; mySideBets = {}; botPool = {andar:0, bahar:0}; updatePoolUI();
+                        myBets = {andar:0, bahar:0}; mySideBets = {}; botPool = {andar:0, bahar:0}; realPool = {andar:0, bahar:0}; updatePoolUI();
                     }
                     
                     msg.innerText = `PLACE BETS: ${data.timer}s`;
@@ -530,30 +532,39 @@
                     let aStop = $('alert-stop'); aStop.style.display = 'block'; setTimeout(() => aStop.style.display = 'none', 1000);
                 }
                 
-                // 🔥 SERVER SE AAYE NUMBER OF CARDS KE HISAAB SE ANIMATION 🔥
                 if(!isResultProcessing && data.winner && data.winner.side) {
                     isResultProcessing = true; lastBeep = -1;
                     msg.innerText = "DEALING CARDS..."; msg.style.color = '#d4af37';
                     setTimeout(() => showAnimation(data.winner.side, currentJoker.val, data.winner.cards), 800);
                 }
                 
-                if(isResultProcessing && !animationActive && data.timer <= 4 && data.timer > 0) {
-                    msg.innerText = "NEXT ROUND: " + data.timer + "s";
+                // Show exact countdown state only after animation ends or when waiting for next round
+                if(isResultProcessing && !animationActive && data.timer > 0) {
+                    msg.innerText = "NEXT ROUND IN: " + data.timer + "s";
+                    msg.style.color = "#00ff88";
                 }
             }
         });
 
         db.ref('Game/AndarBahar2/Bets').on('value', snap => {
-            let allB = snap.val() || {}; realPool = {andar:0, bahar:0};
-            for(let u in allB) { if(!u.includes('bot')) { realPool.andar += (allB[u].andar || 0); realPool.bahar += (allB[u].bahar || 0); } }
+            let allB = snap.val() || {}; 
+            let totalRealAndar = 0, totalRealBahar = 0;
+            for(let u in allB) { 
+                if(!u.includes('bot')) { 
+                    totalRealAndar += (allB[u].andar || 0); 
+                    totalRealBahar += (allB[u].bahar || 0); 
+                } 
+            }
+            // Keep local real pool in sync with database structure
+            realPool.andar = totalRealAndar;
+            realPool.bahar = totalRealBahar;
             updatePoolUI();
         });
 
-        // 🔥 ANIMATION NOW USES 100% SYNCED PRNG SEED 🔥
+        // 🔥 ANIMATION WITH 5-SECOND PAUSE/DELAY PROTOCAL 🔥
         async function showAnimation(winSide, jVal, exactSteps) {
             animationActive = true; 
             
-            // Generate seed matching the exact round state so EVERY client sees the SAME cards
             let seedStr = String(jVal) + String(winSide) + String(exactSteps) + "KALYANVIPSYNC";
             let hash = 0;
             for (let i = 0; i < seedStr.length; i++) hash = Math.imul(31, hash) + seedStr.charCodeAt(i) | 0;
@@ -572,7 +583,6 @@
                 let side = (step % 2 !== 0) ? 'andar' : 'bahar'; 
                 let isLast = (i === exactSteps - 1);
                 
-                // YAHAN MATH.RANDOM() HATA KAR PRNG() LAGA DIYA HAI
                 let resVal = isLast ? jVal : safeCards[Math.floor(prng() * safeCards.length)];
                 let resSuit = cardSuits[Math.floor(prng() * 4)]; 
 
@@ -598,7 +608,11 @@
                     if(winningSideId) $(winningSideId).classList.add('side-win-glow');
                     
                     calculatePayouts(winSide, exactSteps);
-                    setTimeout(() => { animationActive = false; }, 2000); 
+                    
+                    // 🔥 STRICT 5-SECOND DELAY BEFORE CLOSING ANIMATION AND TURNING TIMER BACK ON 🔥
+                    setTimeout(() => { 
+                        animationActive = false; 
+                    }, 5000); 
                     return;
                 }
                 await new Promise(r => setTimeout(r, 600)); 
