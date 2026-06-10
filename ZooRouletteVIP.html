@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
-    <title>Kalyan VIP Zoo - Pure Firebase Edition</title>
+    <title>Kalyan VIP Zoo - Server Timer Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -90,19 +90,20 @@
         .bet-btn img { max-width: 75%; max-height: 70%; object-fit: contain; filter: drop-shadow(0 4px 5px #000); transform: translateY(-5%) scale(1.12); }
         .btn-icon-emoji { font-size: 38px; filter: drop-shadow(0 3px 4px #000); transform: translateY(-5%); }
 
-        .btn-multi { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); color: #ffd700; font-size: 14px; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; z-index: 5; pointer-events: none; }
-        .pool-text { position: absolute; top: 4px; right: 8px; font-size: 14px; color: #fff; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; z-index: 10; pointer-events: none; }
-        .my-bet-text { position: absolute; top: 4px; left: 8px; font-size: 14px; color: #39ff14; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; display: none; z-index: 10; pointer-events: none; }
+        /* 🔥 TEXT Z-INDEX FIXES 🔥 */
+        .btn-multi { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); color: #ffd700; font-size: 14px; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; z-index: 500; pointer-events: none; }
+        .pool-text { position: absolute; top: 4px; right: 8px; font-size: 14px; color: #fff; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; z-index: 500; pointer-events: none; }
+        .my-bet-text { position: absolute; top: 4px; left: 8px; font-size: 14px; color: #39ff14; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; display: none; z-index: 500; pointer-events: none; }
 
         .center-png-box { grid-area: 1 / 3 / span 2 / span 1; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.4); border: 2px solid #00e5ff; border-radius: 6px; box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.4); pointer-events: none; overflow: hidden; width: 100%; height: 100%; }
         .huge-timer { z-index: 10; font-size: clamp(35px, 6vw, 60px); font-weight: 900; color: #fff; text-shadow: 0 0 15px #ff007f, 0 0 5px #ff007f, 2px 2px 5px #000; transition: opacity 0.2s; pointer-events: none; font-variant-numeric: tabular-nums; text-align: center; width: 100%; }
 
-        #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 500; }
-        .placed-chip-img { position: absolute; width: 22px; height: 22px; transition: all 0.35s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.2s; z-index: 100; }
+        #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 200; overflow: hidden;}
+        /* 🔥 CHIP Z-INDEX CONTROL 🔥 */
+        .placed-chip-img { position: absolute; width: 24px; height: 24px; transition: all 0.35s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.2s; z-index: 100; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.8)); pointer-events: none;}
 
         .toast-msg { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0, 229, 255, 0.95); color: #000; padding: 10px 25px; border-radius: 8px; font-weight: 900; z-index: 9999; display: none; }
 
-        /* 🔥 NETWORK OVERLAY CSS 🔥 */
         #network-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 99999999; display: none; flex-direction: column; justify-content: center; align-items: center; color: #00e5ff; }
         .loading-chakra { width: 60px; height: 60px; border: 5px solid rgba(0, 229, 255, 0.2); border-top-color: #00e5ff; border-radius: 50%; animation: spinChakra 1s linear infinite; margin-bottom: 20px; }
         @keyframes spinChakra { 100% { transform: rotate(360deg); } }
@@ -167,7 +168,10 @@
     <audio id="snd-fly" src="assets/7ba0aedc-0356-404d-9c4a-c34acec66469.mp3" preload="auto"></audio>
 
 <script>
-    // PRELOADER
+    // Server Ping
+    function wakeUpServer() { fetch("https://kalyan-engine.onrender.com/").catch(e => {}); }
+    wakeUpServer(); setInterval(wakeUpServer, 180000); 
+
     const assetsToLoad = [
         "assets/monkey.png.png", "assets/rabbit.png.png", "assets/parrot.png.png", "assets/dove.png.png",
         "assets/lion.png.png", "assets/elephant.png.png", "assets/peacock.png.png", "assets/eagle.png.png",
@@ -205,6 +209,16 @@
         ['soundSpin','soundWin','snd-beep','snd-drop','snd-fly'].forEach(id => {
             let a = $(id); if(a) a.play().then(()=>a.pause()).catch(()=>{});
         });
+    }
+
+    // 🔥 AUDIO THROTTLING (Smooth Chips Sound) 🔥
+    let lastChipSoundTime = 0;
+    function playChipSound() {
+        let now = Date.now();
+        if (now - lastChipSoundTime > 80) {
+            playSound('snd-drop', 0.35);
+            lastChipSoundTime = now;
+        }
     }
 
     function showToast(msg) {
@@ -302,22 +316,14 @@
         tray.appendChild(m);
     });
 
-    // 🔥 PURE FIREBASE INIT 🔥
     firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
     const db = firebase.database();
     
-    let serverTimeOffset = 0;
-    db.ref(".info/serverTimeOffset").on("value", function(snap) {
-        serverTimeOffset = snap.val() || 0;
-    });
-    function getTrueTime() { return Date.now() + serverTimeOffset; }
-
     const currentUserId = localStorage.getItem('userPhone') || "GUEST";
     let userBalance = 0, depB=0, winB=0, bonB=0, isBettingOpen=false;
 
     $('p-id').innerText = "ID: " + (currentUserId==="GUEST" ? "0000" : currentUserId.slice(-4));
     
-    // CONNECTION CHECKER
     let connectedRef = db.ref(".info/connected");
     connectedRef.on("value", (snap) => {
         if (snap.val() === true) {
@@ -357,84 +363,76 @@
         let r = s.val(); if (r) { Object.values(r).forEach(w => updHistory(w)); }
     });
 
-    // 🔥 SMART FIREBASE STATE LISTENER 🔥
-    let botInt, lastBeep=-1, currentState = '', currentEndTime = 0;
+    // ==========================================
+    // 🔥 DIRECT SERVER-DRIVEN UI LOGIC 🔥
+    // ==========================================
+    let botInt, lastBeep=-1;
     let isResultProcessing = false;
 
     db.ref('Game/ZooRoulette/Status').on('value', (snap) => {
         let data = snap.val();
         if(!data) return;
 
-        currentState = data.state;
-        currentEndTime = data.endTime;
+        let tmr = $('main-timer');
 
-        if (currentState === 'betting') {
-            if (!isBettingOpen) {
-                isBettingOpen = true;
-                isResultProcessing = false;
-                lastBeep = -1;
+        if (data.state === 'betting') {
+            if (data.timer > 0) {
+                if (!isBettingOpen) {
+                    isBettingOpen = true;
+                    isResultProcessing = false;
+                    lastBeep = -1;
+                    
+                    betKeys.forEach(k => { 
+                        myBets[k]=0; fakePools[k]=0; realPools[k]=0;
+                        let e=$(`total-${k}`); if(e) e.innerText="0"; 
+                        let mb=$(`mybet-${k}`); if(mb) { mb.style.display='none'; mb.innerText="0"; }
+                    });
+                    document.querySelectorAll('.winning, .active').forEach(e=>e.classList.remove('winning','active'));
+                    $('chips-layer').innerHTML = ''; 
+
+                    triggerBanner('alert-start'); 
+                    tmr.style.opacity = '1';
+                }
                 
-                betKeys.forEach(k => { 
-                    myBets[k]=0; fakePools[k]=0; realPools[k]=0;
-                    let e=$(`total-${k}`); if(e) e.innerText="0"; 
-                    let mb=$(`mybet-${k}`); if(mb) { mb.style.display='none'; mb.innerText="0"; }
-                });
-                document.querySelectorAll('.winning, .active').forEach(e=>e.classList.remove('winning','active'));
-                $('chips-layer').innerHTML = ''; 
-
-                triggerBanner('alert-start'); 
-                clearInterval(botInt); 
-                botInt = setInterval(botAction, 150); 
+                // 🔥 DIRECT SERVER TIMER 🔥
+                tmr.innerText = data.timer;
+                tmr.style.color = data.timer <= 5 ? "#ff3333" : "#fff";
+                if (data.timer <= 5 && lastBeep !== data.timer) { playSound('snd-beep', 0.8); lastBeep = data.timer; }
+            } else {
+                isBettingOpen = false;
+                tmr.innerText = "STOP";
+                tmr.style.color = "#ff3333";
             }
-        } else if (currentState === 'result' || currentState === 'proc') {
+        } 
+        else if (data.state === 'result' || data.state === 'processing') {
             if (isBettingOpen) {
                 isBettingOpen = false;
-                clearInterval(botInt);
                 triggerBanner('alert-stop');
-                setTimeout(() => { $('main-timer').style.opacity = '0'; }, 1000); 
+                setTimeout(() => { tmr.style.opacity = '0'; }, 1000); 
             }
-            if(!isResultProcessing && data.winner) {
+            if (!isResultProcessing && data.winner) {
                 isResultProcessing = true;
-                setTimeout(() => runSpin(data.winner), 1000); 
+                setTimeout(() => runSpin(data.winner), 500); 
             }
-        } else if (currentState === 'wait') {
-            isResultProcessing = false;
-            isBettingOpen = false;
-            clearInterval(botInt);
+            
+            if (data.timer <= 5 && data.timer > 0 && isResultProcessing) {
+                tmr.style.opacity = '1';
+                tmr.innerText = data.timer;
+                tmr.style.color = "#00ff88";
+            }
         }
     });
 
-    // 🔥 LOCAL SMART TIMER 🔥
     setInterval(() => {
-        let tmr = $('main-timer');
+        $('online-count').innerText = Math.floor(Math.random() * 50) + 200;
+    }, 4000);
 
-        if (currentState === 'betting' && currentEndTime > 0) {
-            let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
-            if (timeLeft < 0) timeLeft = 0;
-
-            tmr.innerText = timeLeft;
-            tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#fff";
-            tmr.style.opacity = '1';
-
-            if (timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) {
-                playSound('snd-beep', 0.8);
-                lastBeep = timeLeft;
-            }
-            if(timeLeft === 0) { isBettingOpen = false; clearInterval(botInt); }
-        } else if (currentState === 'result' || currentState === 'proc') {
-            tmr.innerText = "STOP";
-            tmr.style.color = "#ff3333";
-        } else {
-            tmr.innerText = "WAIT";
-            tmr.style.color = "#fff";
-        }
-    }, 200);
-
-    // BOTS STEALTH BETTING
-    function botAction() {
+    // 🔥 CROWDED BOTS LOGIC 🔥
+    setInterval(() => {
         if(!isBettingOpen) return;
-        let count = Math.floor(Math.random()*5)+4; 
-        for(let i=0; i<count; i++) {
+        
+        let loops = Math.floor(Math.random() * 3) + 1; // Multiple chips per tick
+        for(let i=0; i<loops; i++) {
             let k = betKeys[Math.floor(Math.random()*betKeys.length)];
             if(Math.random() > 0.6) k = Math.random() > 0.5 ? 'ANIMALS' : 'BIRDS'; 
             
@@ -451,23 +449,28 @@
             f.style.left = (sP.x+20+Math.random()*20)+'px'; f.style.top = (sP.y+10+Math.random()*10)+'px';
             $('chips-layer').appendChild(f);
             
-            if(Math.random() > 0.85) playSound('snd-drop', 0.05);
+            playChipSound();
             
             let tP = getPos($('btn-'+k));
-            if(tP) {
+            let btnBox = $('btn-'+k);
+            if(tP && btnBox) {
                 setTimeout(() => {
                     f.style.opacity = '1'; 
-                    f.style.left = (tP.x+10+Math.random()*40)+'px'; f.style.top = (tP.y+10+Math.random()*30)+'px';
-                    setTimeout(() => { f.style.opacity='0'; setTimeout(()=>f.remove(),200); }, 250);
+                    // Spreading chips safely inside the box
+                    f.style.left = (tP.x + 15 + Math.random() * (btnBox.offsetWidth - 45)) + 'px'; 
+                    f.style.top = (tP.y + 15 + Math.random() * (btnBox.offsetHeight - 45)) + 'px';
+                    
+                    if($('chips-layer').children.length > 250) {
+                        $('chips-layer').firstChild.remove();
+                    }
                 }, 20 + (i*10));
             }
         }
-    }
+    }, 150); // 150ms Speed
 
-    // ANIMATE THE BOARD
     function runSpin(win) {
         let stop = trackElements.findIndex(e=>e.id===win);
-        let curr=0, steps=0, total=(trackElements.length*2)+stop, speed=50;
+        let curr=0, steps=0, total=(trackElements.length*2)+stop, speed=40;
         
         playSound('soundSpin', 0.8); 
 
@@ -519,7 +522,7 @@
 
             if (totalWin > 0) {
                 showToast(`🎉 WOOOHOO! Aap jeete ₹${Math.floor(totalWin)}`);
-                db.ref(`users/${currentUserId}/winning_balance`).set(firebase.database.ServerValue.increment(totalWin));
+                // Backend is actually paying via server.js, just toast here
             }
         }
         
@@ -573,7 +576,7 @@
             }
         }
 
-        playSound('snd-drop', 1.0); 
+        playChipSound(); 
         
         let nD=depB, nW=winB, rm=selectedChipVal;
         if(nD>=rm) nD-=rm; else { rm-=nD; nD=0; nW-=rm; }
@@ -594,10 +597,12 @@
         f.className='placed-chip-img'; f.src=selectedChipSrc;
         f.style.left=(wP.x+50)+'px'; f.style.top=(wP.y+20)+'px';
         $('chips-layer').appendChild(f);
+        
         let tP = getPos(el);
         setTimeout(() => {
-            f.style.left=(tP.x+20)+'px'; f.style.top=(tP.y+20)+'px';
-            setTimeout(()=> { f.style.opacity='0'; setTimeout(()=>f.remove(),200); }, 300);
+            // Text Overlap Prevention (Chips restricted to inner padding)
+            f.style.left = (tP.x + 15 + Math.random() * (el.offsetWidth - 45)) + 'px'; 
+            f.style.top = (tP.y + 15 + Math.random() * (el.offsetHeight - 45)) + 'px';
         }, 50);
     };
 </script>
