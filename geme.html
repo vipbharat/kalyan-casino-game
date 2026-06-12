@@ -79,7 +79,11 @@
         .box-video-hidden { display: none; } 
 
         .box-title { font-size: 24px; color: #fff; text-shadow: 0 3px 6px #000, 0 0 10px #000; pointer-events: none; position: relative; z-index: 10; font-weight: 900;}
-        .pa { position: absolute; bottom: 5px; right: 8px; background: #ffd700; color: #000; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 900; z-index: 10; }
+        
+        /* 🔥 LIVE COUNTING UI 🔥 */
+        .pa { position: absolute; bottom: 5px; right: 8px; background: rgba(0,0,0,0.8); color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 900; z-index: 10; border: 1.5px solid rgba(255,255,255,0.3); transition: all 0.1s;}
+        .pool-flash { color: #00ff88 !important; border-color: #00ff88 !important; transform: scale(1.2); box-shadow: 0 0 10px #00ff88;}
+        
         .mbb { position: absolute; top: 5px; left: 8px; background: #00e5ff; color: #000; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: none; font-weight: 900; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #fff; z-index: 10; }
         .gw { box-shadow: 0 0 25px #39ff14, inset 0 0 20px #fff !important; border-color: #39ff14 !important; transform: scale(1.02); }
         
@@ -201,9 +205,15 @@
     </div>
 
     <script>
+        const pathRef = window.location.pathname.includes('DragonTiger2') ? 'DragonTiger2' : 'DragonTiger';
+        function wakeUpServer() { fetch("https://kalyan-engine.onrender.com/").catch(e => {}); }
+        wakeUpServer(); setInterval(wakeUpServer, 180000); 
+
         const $ = i => document.getElementById(i);
         let iBO = 0, cC = 10, tB = 0, dB=0, wB=0, bB=0;
-        let mB = { dragon: 0, tiger: 0, tie: 0 }, myBets = { dragon: 0, tiger: 0, tie: 0 };
+        let myBets = { dragon: 0, tiger: 0, tie: 0 };
+        let realPool = { dragon: 0, tiger: 0, tie: 0 };
+        let botPool = { dragon: 0, tiger: 0, tie: 0 };
         let lastBeep = -1;
         const chipImgs = { 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png", 10000: "assets/10000_0.png" };
         
@@ -225,19 +235,22 @@
         function enterCasino() { 
             $('start-screen').style.display='none'; $('loading-screen').style.display='flex'; 
             if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-            
             try { let v1=$('vid-box-dragon'); v1.play().then(()=>v1.pause()); }catch(e){}
             try { let v2=$('vid-box-tiger'); v2.play().then(()=>v2.pause()); }catch(e){}
-
             setTimeout(() => { $('loading-screen').style.display='none'; }, 2000); 
         }
 
+        let audioUnlocked = false; let lastChipSoundTime = 0;
         function initAudio() { 
-            $('click-catcher').style.display = 'none'; 
-            ['snd-beep','snd-drop','snd-fly','snd-card','snd-clash'].forEach(i => { try{ let s=$(i); s.play().then(()=>s.pause()).catch(()=>{}); }catch(e){} });
+            if(!audioUnlocked) {
+                $('click-catcher').style.display = 'none'; 
+                ['snd-beep','snd-drop','snd-fly','snd-card','snd-clash'].forEach(i => { try{ let s=$(i); s.play().then(()=>s.pause()).catch(()=>{}); }catch(e){} });
+                audioUnlocked = true;
+            }
         }
 
-        function pS(i,v) { let s=$(i); if(s) { let cl = s.cloneNode(); cl.volume = v; cl.play().catch(()=>{}); } }
+        function pS(i,v) { if(!audioUnlocked) return; let s=$(i); if(s) { let cl = s.cloneNode(); cl.volume = v; cl.play().catch(()=>{}); } }
+        function playChipSound() { let now = Date.now(); if (now - lastChipSoundTime > 80) { pS('snd-drop', 0.5); lastChipSoundTime = now; } }
 
         function genPlayers() {
             const avs = ['Avatar0.png', 'Avatar2.png', 'Avatar3.png', 'Avatar4.png', 'Avatar5.png', 'Avatar6.png', 'Avatar7.png', 'Avatar9.png', 'Avatar11.png'];
@@ -259,44 +272,40 @@
             return {x, y};
         }
 
-        function formatMoney(val) { return val; }
+        function flashPool(side) {
+            let pb = $('m' + (side === 'tie' ? 'ti' : side.charAt(0)));
+            if(pb) { pb.classList.add('pool-flash'); setTimeout(() => pb.classList.remove('pool-flash'), 100); }
+        }
+
+        function updatePoolUI() {
+            $('md').innerText = '₹' + (realPool.dragon + botPool.dragon);
+            $('mt').innerText = '₹' + (realPool.tiger + botPool.tiger);
+            $('mti').innerText = '₹' + (realPool.tie + botPool.tie);
+        }
 
         function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
             if(!srcEl) return;
-            pS('snd-drop', 0.5);
+            
             let layer = $('chips-layer'), box = $('bx-' + (side === 'tie' ? 'ti' : side.charAt(0)));
             if(!box) return;
 
             let chip = document.createElement('img');
             chip.src = imgSrc; chip.className = 'placed-chip';
             
-            let sPos = getPos(srcEl);
-            let sW = srcEl.offsetWidth || 30, sH = srcEl.offsetHeight || 30;
-            
-            chip.style.left = (sPos.x + sW/2 - 13) + "px";
-            chip.style.top = (sPos.y + sH/2 - 13) + "px";
-            chip.style.transform = "scale(0.3)";
+            let sPos = getPos(srcEl); let sW = srcEl.offsetWidth || 30, sH = srcEl.offsetHeight || 30;
+            chip.style.left = (sPos.x + sW/2 - 13) + "px"; chip.style.top = (sPos.y + sH/2 - 13) + "px"; chip.style.transform = "scale(0.3)";
             layer.appendChild(chip);
 
-            let bPos = getPos(box);
-            let bW = box.offsetWidth, bH = box.offsetHeight;
-            
+            let bPos = getPos(box); let bW = box.offsetWidth, bH = box.offsetHeight;
             setTimeout(() => {
                 let padX = 15, padY = 15;
-                let randX = padX + Math.random() * (bW - padX*2);
-                let randY = padY + Math.random() * (bH - padY*2);
-                chip.style.left = (bPos.x + randX - 13) + "px";
-                chip.style.top = (bPos.y + randY - 13) + "px";
-                chip.style.transform = "scale(1)";
+                let randX = padX + Math.random() * (bW - padX*2); let randY = padY + Math.random() * (bH - padY*2);
+                chip.style.left = (bPos.x + randX - 13) + "px"; chip.style.top = (bPos.y + randY - 13) + "px"; chip.style.transform = "scale(1)";
             }, 50);
-            
             chip.setAttribute('data-side', side);
 
-            if(!isSystemAnim && chipVal > 0) {
-                mB[side] += chipVal;
-                $('m' + (side === 'tie' ? 'ti' : side.charAt(0))).innerText = '₹' + formatMoney(mB[side]);
-            }
-            if(layer.children.length > 150) layer.firstChild.remove();
+            if(!isSystemAnim && chipVal > 0) { playChipSound(); }
+            if(layer.children.length > 250) layer.firstChild.remove();
             return chip;
         }
 
@@ -306,85 +315,52 @@
             const ph = localStorage.getItem('userPhone') || "GUEST";
             const netUI = $('network-overlay');
 
-            let serverTimeOffset = 0;
-            db.ref(".info/serverTimeOffset").on("value", function(snap) {
-                serverTimeOffset = snap.val() || 0;
-            });
-            function getTrueTime() { return Date.now() + serverTimeOffset; }
-
             let connectedRef = db.ref(".info/connected");
             connectedRef.on("value", (snap) => {
                 if (snap.val() === true) {
                     netUI.style.display = 'none';
                     iBO = 0; rUI(); $('tmr').innerText = "SYNCING..."; 
                     fetchInitialHistory();
-                } else {
-                    netUI.style.display = 'flex';
-                }
+                } else { netUI.style.display = 'flex'; }
             });
 
-            // 🔥 FIREBASE STATE LISTENER (100% UNLOCKED AND STABLE) 🔥
             let currentState = '';
             let currentEndTime = 0;
             let roundProcessed = false; 
 
-            db.ref('Game/DragonTiger/Status').on('value', (snap) => {
-                let data = snap.val();
-                if(!data) return;
+            // 🔥 MASTER STATUS SYNC 🔥
+            db.ref(`Game/${pathRef}/Status`).on('value', (snap) => {
+                let data = snap.val(); if(!data) return;
 
                 currentState = data.state;
-                currentEndTime = data.endTime;
+                let t = data.timer;
 
-                // 1️⃣ BETTING STATE (Unlock and allow betting)
                 if(currentState === 'betting') {
-                    if(iBO === 0) { 
-                        iBO = 1; 
-                        roundProcessed = false; 
-                        rUI(); 
-                        $('alert-start').classList.add('show'); setTimeout(()=>$('alert-start').classList.remove('show'), 1200); 
-                    }
+                    if(t > 0) {
+                        if(iBO === 0) { 
+                            iBO = 1; roundProcessed = false; rUI(); 
+                            $('alert-start').classList.add('show'); setTimeout(()=>$('alert-start').classList.remove('show'), 1200); 
+                        }
+                        $('tmr').innerText = t + "s";
+                        $('tmr').style.color = t <= 5 ? "#ff3333" : "#ffd700";
+                        if(t <= 5 && lastBeep !== t) { pS('snd-beep', 0.8); lastBeep = t; }
+                    } else { iBO = 0; $('tmr').innerText = "STOP!"; $('tmr').style.color = "#fff"; }
                 } 
-                // 2️⃣ RESULT STATE (Close betting, open card ONCE)
-                else if(currentState === 'result' || currentState === 'proc') {
+                else if(currentState === 'result' || currentState === 'processing') {
                     if(iBO === 1) {
                         iBO = 0; 
                         $('alert-stop').classList.add('show'); setTimeout(()=>$('alert-stop').classList.remove('show'), 1200);
                     }
                     
                     if(!roundProcessed && data.winner !== undefined && data.winner !== '') {
-                        roundProcessed = true; 
-                        lastBeep = -1; 
+                        roundProcessed = true; lastBeep = -1; 
                         setTimeout(() => { 
                             $('vs-clash-screen').style.display='flex'; pS('snd-clash', 1); setTimeout(()=>$('vs-clash-screen').style.display='none', 1000); 
-                        }, 1200);
-                        setTimeout(() => sR_Sequence(data.winner), 2400);
+                        }, 500);
+                        setTimeout(() => sR_Sequence(data.winner), 1600);
                     }
-                } 
-                // 3️⃣ WAIT STATE (Keep locked, do NOT clear screen)
-                else if(currentState === 'wait' || currentState === 'stop') {
-                    iBO = 0; 
                 }
             });
-
-            // 🔥 LOCAL TIMER ENGINE 🔥
-            setInterval(() => {
-                if (currentState === 'betting' && currentEndTime > 0) {
-                    let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
-                    if (timeLeft < 0) timeLeft = 0;
-
-                    let tmr = $('tmr'); 
-                    tmr.innerText = timeLeft + "s"; 
-                    tmr.style.color = timeLeft <= 5 ? "#ff3333" : "#ffd700";
-
-                    if(timeLeft <= 5 && timeLeft > 0 && lastBeep !== timeLeft) { 
-                        pS('snd-beep', 0.8); lastBeep = timeLeft; 
-                    }
-                } else if (currentState === 'result' || currentState === 'proc') {
-                    $('tmr').innerText = "STOP!"; $('tmr').style.color = "#fff";
-                } else {
-                    $('tmr').innerText = "WAITING..."; $('tmr').style.color = "#fff";
-                }
-            }, 200);
 
             db.ref('users/'+ph).on('value', s => {
                 let d=s.val()||{}; dB = parseFloat(d.balance||0); wB = parseFloat(d.winning_balance||0); bB = parseFloat(d.bonus_balance||0);
@@ -393,69 +369,92 @@
                 document.querySelectorAll('.chip').forEach(c => parseInt(c.dataset.value)>tB ? c.classList.add('locked') : c.classList.remove('locked'));
             });
 
+            db.ref(`Game/${pathRef}/Bets`).on('value', snap => {
+                let allB = snap.val() || {}; 
+                let tD = 0, tT = 0, tTi = 0;
+                for(let u in allB) { 
+                    if(!u.includes('bot')) { 
+                        tD += Number(allB[u].dragon || 0); tT += Number(allB[u].tiger || 0); tTi += Number(allB[u].tie || 0); 
+                    } 
+                }
+                realPool.dragon = tD; realPool.tiger = tT; realPool.tie = tTi; updatePoolUI();
+            });
+
             function fetchInitialHistory() {
-                db.ref('Game/DragonTiger/History').orderByKey().limitToLast(15).once('value', s => {
+                db.ref(`Game/${pathRef}/History`).orderByKey().limitToLast(15).once('value', s => {
                     let h = s.val();
-                    if(h) {
-                        globalHistory = Object.values(h).map(v => (v.winner || v).toString().toLowerCase().trim());
-                    } else {
-                        globalHistory = [];
-                    }
+                    if(h) { globalHistory = Object.values(h).map(v => (v.winner || v).toString().toLowerCase().trim()); } else { globalHistory = []; }
                     renderHistoryBoard();
                 });
             }
 
             window.addNewHistoryDot = function(safeW) {
                 globalHistory.push(safeW);
-                if(globalHistory.length > 15) {
-                    globalHistory.shift(); 
-                }
+                if(globalHistory.length > 15) { globalHistory.shift(); }
                 renderHistoryBoard();
             }
 
+            // 🔥 INSTANT COUNTING FIX 🔥
             window.pB = (s) => { 
-                if (currentState !== 'betting') return; 
-                let timeLeft = Math.floor((currentEndTime - getTrueTime()) / 1000);
-                if (timeLeft <= 0) return; 
-                if (!iBO || tB < cC) return; 
+                if (currentState !== 'betting' || !iBO || tB < cC) return; 
 
                 let nD=dB, nW=wB, rm=cC;
                 if(nD>=rm) nD-=rm; else { rm-=nD; nD=0; nW-=rm; }
                 db.ref('users/'+ph).update({balance: Math.max(0,nD), winning_balance: Math.max(0,nW)});
-                db.ref(`Game/DragonTiger/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
                 
-                spC(s, chipImgs[cC], $('my-wallet'), false, cC); 
                 myBets[s] += cC;
+                realPool[s] += cC; // Live Override
+                updatePoolUI(); flashPool(s);
+                
+                db.ref(`Game/${pathRef}/Bets/${ph}/${s}`).set(firebase.database.ServerValue.increment(cC));
+                
                 let mbID = 'mb-' + (s === 'tie' ? 'ti' : s.charAt(0));
                 $(mbID).innerText = '₹' + formatMoney(myBets[s]);
                 $(mbID).style.display = 'block';
+                
+                spC(s, chipImgs[cC], $('my-wallet'), false, cC); 
             };
 
         } catch(e){}
 
         window.sC = (el) => { if(el.classList.contains('locked')) return; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); cC=parseInt(el.dataset.value); };
 
+        // 🔥 BOT COUNTING FIX 🔥
         setInterval(() => { 
             if(iBO) { 
-                let s = Math.random()>0.5 ? 'dragon' : 'tiger'; if(Math.random()>0.9) s='tie';
-                let r = Math.random(), srcEl;
-                if(r < 0.3) srcEl = $('bl'+Math.floor(Math.random()*5));
-                else if(r < 0.6) srcEl = $('br'+Math.floor(Math.random()*5));
-                else srcEl = $('top-online'); 
-                
-                let randomChipKey = Object.keys(chipImgs)[Math.floor(Math.random() * Object.keys(chipImgs).length)];
-                spC(s, chipImgs[randomChipKey], srcEl, false, parseInt(randomChipKey)); 
+                let loops = Math.floor(Math.random() * 3) + 1;
+                for(let i=0; i<loops; i++) {
+                    if(Math.random() < 0.3) {
+                        let s = Math.random()>0.5 ? 'dragon' : 'tiger'; if(Math.random()>0.9) s='tie';
+                        let r = Math.random(), srcEl;
+                        if(r < 0.3) srcEl = $('bl'+Math.floor(Math.random()*5));
+                        else if(r < 0.6) srcEl = $('br'+Math.floor(Math.random()*5));
+                        else srcEl = $('top-online'); 
+                        
+                        let randomChipKey = Object.keys(chipImgs)[Math.floor(Math.random() * Object.keys(chipImgs).length)];
+                        botPool[s] += parseInt(randomChipKey);
+                        updatePoolUI(); flashPool(s);
+                        spC(s, chipImgs[randomChipKey], srcEl, false, parseInt(randomChipKey)); 
+                    }
+                }
             } 
-        }, 250);
+        }, 200);
 
+        // 🔥 PRNG SYNCED CARD GENERATOR 🔥
         function sR_Sequence(w) {
             const vals = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-            let dIdx, tIdx;
             let safeW = w ? w.toString().toLowerCase().trim() : 'tie';
 
-            if(safeW === 'dragon') { dIdx = Math.floor(Math.random()*6)+7; tIdx = Math.floor(Math.random()*6); } 
-            else if(safeW === 'tiger') { tIdx = Math.floor(Math.random()*6)+7; dIdx = Math.floor(Math.random()*6); } 
-            else { dIdx = Math.floor(Math.random()*13); tIdx = dIdx; } 
+            // Server-Synced Seed
+            let seedStr = safeW + "DRAGONTIGER_SYNC";
+            let hash = 0; for (let i = 0; i < seedStr.length; i++) hash = Math.imul(31, hash) + seedStr.charCodeAt(i) | 0;
+            let a = hash ^ 0xDEADBEEF;
+            let prng = function() { let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+
+            let dIdx, tIdx;
+            if(safeW === 'dragon') { dIdx = Math.floor(prng()*6)+7; tIdx = Math.floor(prng()*6); } 
+            else if(safeW === 'tiger') { tIdx = Math.floor(prng()*6)+7; dIdx = Math.floor(prng()*6); } 
+            else { dIdx = Math.floor(prng()*13); tIdx = dIdx; } 
 
             pS('snd-card', 1); $('b-d').style.opacity='0'; 
             $('d-v').innerHTML = `<div class="black-suit" style="font-size:20px; font-weight:900;">${vals[dIdx]}<br><span style="font-size:30px">♠</span></div>`;
@@ -467,8 +466,7 @@
                     let winBox = $('bx-' + (safeW==='dragon'?'d':(safeW==='tiger'?'t':'ti')));
                     if(winBox) winBox.classList.add('gw');
                     
-                    let vidDragon = $('vid-box-dragon');
-                    let vidTiger = $('vid-box-tiger');
+                    let vidDragon = $('vid-box-dragon'); let vidTiger = $('vid-box-tiger');
 
                     if(safeW === 'dragon') {
                         let dbImg = $('dragon-beast'); if(dbImg) dbImg.classList.add('roaring');
@@ -478,12 +476,9 @@
                         if(vidTiger) { vidTiger.muted = false; vidTiger.play().catch(()=>{}); }
                     }
                     
-                    if(window.addNewHistoryDot) {
-                        window.addNewHistoryDot(safeW);
-                    }
+                    if(window.addNewHistoryDot) { window.addNewHistoryDot(safeW); }
                     
-                    let dealerBox = $('tmr'); 
-                    let dPos = getPos(dealerBox);
+                    let dealerBox = $('tmr'); let dPos = getPos(dealerBox);
                     
                     document.querySelectorAll('.placed-chip').forEach(c => {
                         if(c.getAttribute('data-side') !== safeW) {
@@ -495,10 +490,8 @@
 
                     document.querySelectorAll('.bot-user').forEach(bot => {
                         let tag = bot.querySelector('.wl-tag');
-                        let isWin = Math.random() > 0.5; 
-                        let amtNum = (Math.floor(Math.random() * 90) + 10) * 100; 
-                        tag.innerText = isWin ? '+' + amtNum : '-' + amtNum;
-                        tag.className = 'wl-tag ' + (isWin ? 'show-win' : 'show-lose');
+                        let isWin = Math.random() > 0.5; let amtNum = (Math.floor(Math.random() * 90) + 10) * 100; 
+                        tag.innerText = isWin ? '+' + amtNum : '-' + amtNum; tag.className = 'wl-tag ' + (isWin ? 'show-win' : 'show-lose');
                     });
 
                     setTimeout(() => {
@@ -507,22 +500,14 @@
                         
                         for(let i=0; i<15; i++) {
                             let c = document.createElement('img'); c.src = "assets/100_0.png"; c.className = 'placed-chip';
-                            c.style.left = (wPos.x + winBox.offsetWidth/2 - 13) + "px"; 
-                            c.style.top = (wPos.y + winBox.offsetHeight/2 - 13) + "px";
+                            c.style.left = (wPos.x + winBox.offsetWidth/2 - 13) + "px"; c.style.top = (wPos.y + winBox.offsetHeight/2 - 13) + "px";
                             $('chips-layer').appendChild(c);
                             
                             setTimeout(() => { 
                                 let r = Math.random(), target;
-                                if(r < 0.2) target = $('my-wallet');
-                                else if(r < 0.4) target = $('top-online');
-                                else if(r < 0.7) target = $('bl'+Math.floor(Math.random()*5));
-                                else target = $('br'+Math.floor(Math.random()*5));
+                                if(r < 0.2) target = $('my-wallet'); else if(r < 0.4) target = $('top-online'); else if(r < 0.7) target = $('bl'+Math.floor(Math.random()*5)); else target = $('br'+Math.floor(Math.random()*5));
                                 
-                                if(target) {
-                                    let tPos = getPos(target);
-                                    c.style.left = (tPos.x + target.offsetWidth/2 - 13) + "px"; 
-                                    c.style.top = (tPos.y + target.offsetHeight/2 - 13) + "px"; 
-                                }
+                                if(target) { let tPos = getPos(target); c.style.left = (tPos.x + target.offsetWidth/2 - 13) + "px"; c.style.top = (tPos.y + target.offsetHeight/2 - 13) + "px"; }
                                 c.style.opacity='0';
                             }, 50);
                             setTimeout(()=>c.remove(), 1000);
@@ -534,8 +519,10 @@
 
         function rUI() {
             $('chips-layer').innerHTML = '';
-            mB = { dragon: 0, tiger: 0, tie: 0 }; 
             myBets = { dragon: 0, tiger: 0, tie: 0 }; 
+            realPool = { dragon: 0, tiger: 0, tie: 0 };
+            botPool = { dragon: 0, tiger: 0, tie: 0 };
+            updatePoolUI();
             
             let dbImg = $('dragon-beast'); if(dbImg) dbImg.classList.remove('roaring');
             let tbImg = $('tiger-beast'); if(tbImg) tbImg.classList.remove('roaring');
@@ -544,8 +531,7 @@
             try { let v=$('vid-box-tiger'); if(v) { v.pause(); v.currentTime=0; v.muted=true; } } catch(e){}
 
             ['d','t','ti'].forEach(s => {
-                $('m'+s).innerText = '₹0';
-                $('mb-'+s).innerText = 'MY BET: ₹0';
+                $('mb-'+s).innerText = '₹0';
                 $('mb-'+s).style.display = 'none'; 
             });
 
