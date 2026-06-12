@@ -32,10 +32,11 @@
         .back-btn { position: absolute; top: 10px; left: 10px; z-index: 1000; padding: 5px 20px; background: rgba(0,0,0,0.8); border: 2px solid #ffd700; border-radius: 20px; color: #ffd700; font-size: 14px; cursor: pointer; }
         .online-counter { position: absolute; top: 10px; right: 10px; z-index: 1000; padding: 5px 15px; background: rgba(0,0,0,0.8); border: 2px solid #00ff88; border-radius: 20px; color: #00ff88; font-size: 12px; }
         
-        .casino-board { width: 85%; height: 75%; background: rgba(30, 20, 60, 0.75); border: 3px solid #5a419c; border-radius: 12px; display: flex; flex-direction: column; position: relative; margin-bottom: 50px; overflow: hidden; }
+        /* 🔥 Overflow hidden hata diya gaya hai taki chips bahar wallet tak ud sakein 🔥 */
+        .casino-board { width: 85%; height: 75%; background: rgba(30, 20, 60, 0.75); border: 3px solid #5a419c; border-radius: 12px; display: flex; flex-direction: column; position: relative; margin-bottom: 50px; backdrop-filter: blur(5px); }
         
-        .action-area { flex: 0.9; position: relative; display: flex; justify-content: center; align-items: center; }
-        .bg-gif { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.55; pointer-events: none; mix-blend-mode: screen; }
+        .action-area { flex: 0.9; position: relative; display: flex; justify-content: center; align-items: center; border-radius: 10px 10px 0 0; overflow: hidden;}
+        .bg-gif { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.55; pointer-events: none; mix-blend-mode: screen; border-radius: 10px 10px 0 0; }
         .flying-beast { position: absolute; bottom: 5%; height: 90%; width: 38%; object-fit: cover; pointer-events: none; z-index: 5; mix-blend-mode: screen; filter: brightness(1.2); }
         #beast-left { left: 0; } #beast-right { right: 0; }
 
@@ -81,7 +82,6 @@
 
         .box-title { font-size: 24px; color: #fff; text-shadow: 0 3px 6px #000, 0 0 10px #000; pointer-events: none; position: relative; z-index: 10; font-weight: 900;}
         
-        /* 🔥 TEXT VISIBILITY SUPER FIX 🔥 */
         .text-layer { position: relative; z-index: 500; width: 100%; height: 100%; pointer-events: none;}
         
         .pa { position: absolute; bottom: 5px; right: 8px; background: rgba(0,0,0,0.9); color: #00ff88; font-size: 12px; padding: 4px 8px; border-radius: 4px; font-weight: 900; z-index: 500; border: 1.5px solid #00ff88; transition: all 0.1s; box-shadow: 0 2px 5px rgba(0,0,0,0.8);}
@@ -91,8 +91,8 @@
         
         .gw { box-shadow: 0 0 25px #39ff14, inset 0 0 20px #fff !important; border-color: #39ff14 !important; transform: scale(1.02); }
         
-        /* 🔥 CHIPS LAYER PUSHED BELOW TEXT 🔥 */
-        #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+        /* 🔥 CHIPS LAYER OVERFLOW VISIBLE 🔥 */
+        #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 50; overflow: visible; }
         .placed-chip { position: absolute; width: 26px; height: 26px; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.6)); transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1); z-index: 50; pointer-events: none;}
         
         .side-panel { width: 75px; display: flex; flex-direction: column; justify-content: space-evenly; background: rgba(0,0,0,0.4); z-index: 80; border-left: 1px solid #ffd700; border-right: 1px solid #ffd700; }
@@ -160,7 +160,6 @@
             
             <div class="history-bar" id="hr"></div>
             
-            <!-- 🔥 CHIPS LAYER MOVED INSIDE BOARD SO TEXT CAN BE ON TOP 🔥 -->
             <div id="chips-layer"></div>
 
             <div class="betting-area">
@@ -303,7 +302,17 @@
             $('mti').innerText = '₹' + (realPool.tie + botPool.tie);
         }
 
-        // 🔥 PERFECTED POSITIONING LOGIC FOR CHIPS INSIDE BOARD 🔥
+        // 🔥 PERFECT MATH: OMIT TRANSFORM ERRORS 🔥
+        function getPos(el) {
+            let x = 0, y = 0;
+            while(el && el.id !== 'game-mount' && el.tagName !== 'BODY') {
+                x += el.offsetLeft; 
+                y += el.offsetTop; 
+                el = el.offsetParent;
+            }
+            return {x, y};
+        }
+
         function spC(side, imgSrc, srcEl, isSystemAnim = false, chipVal = 0) {
             if(!srcEl) return;
             
@@ -313,12 +322,12 @@
             let chip = document.createElement('img');
             chip.src = imgSrc; chip.className = 'placed-chip';
             
-            let boardR = $('c-board').getBoundingClientRect();
-            let srcR = srcEl.getBoundingClientRect();
-            let boxR = box.getBoundingClientRect();
+            let boardP = getPos($('c-board'));
+            let srcP = getPos(srcEl);
+            let boxP = getPos(box);
 
-            let startX = srcR.left - boardR.left + srcR.width/2 - 13;
-            let startY = srcR.top - boardR.top + srcR.height/2 - 13;
+            let startX = srcP.x - boardP.x + (srcEl.offsetWidth/2) - 13;
+            let startY = srcP.y - boardP.y + (srcEl.offsetHeight/2) - 13;
             
             chip.style.left = startX + "px";
             chip.style.top = startY + "px";
@@ -327,11 +336,11 @@
 
             setTimeout(() => {
                 let padX = 15, padY = 15;
-                let randX = padX + Math.random() * (boxR.width - padX*2);
-                let randY = padY + Math.random() * (boxR.height - padY*2);
+                let randX = padX + Math.random() * (box.offsetWidth - padX*2);
+                let randY = padY + Math.random() * (box.offsetHeight - padY*2);
                 
-                let targetX = boxR.left - boardR.left + randX - 13;
-                let targetY = boxR.top - boardR.top + randY - 13;
+                let targetX = boxP.x - boardP.x + randX - 13;
+                let targetY = boxP.y - boardP.y + randY - 13;
 
                 chip.style.left = targetX + "px";
                 chip.style.top = targetY + "px";
@@ -363,7 +372,6 @@
             let currentState = '';
             let roundProcessed = false; 
 
-            // 🔥 MASTER STATUS SYNC 🔥
             db.ref(`Game/${pathRef}/Status`).on('value', (snap) => {
                 let data = snap.val(); if(!data) return;
 
@@ -429,7 +437,6 @@
                 renderHistoryBoard();
             }
 
-            // 🔥 INSTANT LIVE COUNTING FIX 🔥
             window.pB = (s) => { 
                 if (currentState !== 'betting' || !iBO || tB < cC) return; 
 
@@ -454,10 +461,9 @@
 
         window.sC = (el) => { if(el.classList.contains('locked')) return; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); cC=parseInt(el.dataset.value); };
 
-        // 🔥 FASTER BOTS (120ms TICK) 🔥
         setInterval(() => { 
             if(iBO) { 
-                let loops = Math.floor(Math.random() * 4) + 2; // Extra speed!
+                let loops = Math.floor(Math.random() * 4) + 2; 
                 for(let i=0; i<loops; i++) {
                     if(Math.random() < 0.35) {
                         let s = Math.random()>0.5 ? 'dragon' : 'tiger'; if(Math.random()>0.9) s='tie';
@@ -475,12 +481,10 @@
             } 
         }, 120);
 
-        // 🔥 PRNG SYNCED CARD GENERATOR 🔥
         function sR_Sequence(w) {
             const vals = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
             let safeW = w ? w.toString().toLowerCase().trim() : 'tie';
 
-            // Server-Synced Seed
             let seedStr = safeW + "DRAGONTIGER_SYNC";
             let hash = 0; for (let i = 0; i < seedStr.length; i++) hash = Math.imul(31, hash) + seedStr.charCodeAt(i) | 0;
             let a = hash ^ 0xDEADBEEF;
@@ -513,13 +517,13 @@
                     
                     if(window.addNewHistoryDot) { window.addNewHistoryDot(safeW); }
                     
-                    let boardR = $('c-board').getBoundingClientRect();
-                    let dealerBox = $('tmr'); let dR = dealerBox.getBoundingClientRect();
+                    let boardP = getPos($('c-board'));
+                    let dealerBox = $('tmr'); let dP = getPos(dealerBox);
                     
                     document.querySelectorAll('.placed-chip').forEach(c => {
                         if(c.getAttribute('data-side') !== safeW) {
-                            c.style.left = (dR.left - boardR.left + dR.width/2 - 13) + "px";
-                            c.style.top = (dR.top - boardR.top + dR.height/2 - 13) + "px";
+                            c.style.left = (dP.x - boardP.x + dealerBox.offsetWidth/2 - 13) + "px";
+                            c.style.top = (dP.y - boardP.y + dealerBox.offsetHeight/2 - 13) + "px";
                             c.style.opacity = '0';
                         }
                     });
@@ -530,15 +534,14 @@
                         tag.innerText = isWin ? '+' + amtNum : '-' + amtNum; tag.className = 'wl-tag ' + (isWin ? 'show-win' : 'show-lose');
                     });
 
-                    // 🔥 WINNING CHIPS FLY CALCULATION FIX 🔥
                     setTimeout(() => {
                         pS('snd-fly', 1);
-                        let wR = winBox.getBoundingClientRect();
+                        let wP = getPos(winBox);
                         
                         for(let i=0; i<15; i++) {
                             let c = document.createElement('img'); c.src = "assets/100_0.png"; c.className = 'placed-chip';
-                            c.style.left = (wR.left - boardR.left + wR.width/2 - 13) + "px"; 
-                            c.style.top = (wR.top - boardR.top + wR.height/2 - 13) + "px";
+                            c.style.left = (wP.x - boardP.x + winBox.offsetWidth/2 - 13) + "px"; 
+                            c.style.top = (wP.y - boardP.y + winBox.offsetHeight/2 - 13) + "px";
                             $('chips-layer').appendChild(c);
                             
                             setTimeout(() => { 
@@ -546,9 +549,9 @@
                                 if(r < 0.2) target = $('my-wallet'); else if(r < 0.4) target = $('top-online'); else if(r < 0.7) target = $('bl'+Math.floor(Math.random()*5)); else target = $('br'+Math.floor(Math.random()*5));
                                 
                                 if(target) { 
-                                    let tR = target.getBoundingClientRect(); 
-                                    c.style.left = (tR.left - boardR.left + tR.width/2 - 13) + "px"; 
-                                    c.style.top = (tR.top - boardR.top + tR.height/2 - 13) + "px"; 
+                                    let tP = getPos(target); 
+                                    c.style.left = (tP.x - boardP.x + target.offsetWidth/2 - 13) + "px"; 
+                                    c.style.top = (tP.y - boardP.y + target.offsetHeight/2 - 13) + "px"; 
                                 }
                                 c.style.opacity='0';
                             }, 50);
