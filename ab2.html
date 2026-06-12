@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Andar Bahar 2 - Smart Limit VIP</title>
+    <title>Andar Bahar VIP</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
@@ -36,9 +36,6 @@
         .game-alert { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; width: 70%; max-width: 250px; display: none; pointer-events: none; }
         .game-alert img { width: 100%; height: auto; filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); }
         
-        .newest-record { animation: popNew 0.5s ease-out forwards; border: 2px solid #fff; box-shadow: 0 0 8px #fff; }
-        @keyframes popNew { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.3); } 100% { transform: scale(1); opacity: 1; } }
-
         .dealer-area {
             height: 25%; background: rgba(42, 19, 53, 0.6);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -76,7 +73,7 @@
             margin-right: -25px; flex-shrink: 0; position: relative;
             background: #ffffff; border: 1px solid #ccc;
             display: flex; justify-content: center; align-items: center;
-            font-size: 22px; font-weight: 900; color: black; letter-spacing: -1px;
+            font-size: 22px; font-weight: 900; color: black; letter-spacing: -1px; transition: 0.3s ease;
         }
         .playing-card:last-child { margin-right: 5px; box-shadow: 2px 2px 6px rgba(0,0,0,0.6); }
         #joker-spot .playing-card { width: 100%; height: 100%; margin: 0; border-radius: 6px; font-size: 28px; box-shadow: 0 0 15px rgba(255,215,0,0.5);}
@@ -92,26 +89,17 @@
         .bet-btn.andar { border-color: #4db8ff; color: #4db8ff; box-shadow: inset 0 0 15px rgba(77, 184, 255, 0.3);}
         .bet-btn.bahar { border-color: #ff4d94; color: #ff4d94; box-shadow: inset 0 0 15px rgba(255, 77, 148, 0.3);}
         
-        .win-glow {
-            box-shadow: 0 0 25px #00ff88, inset 0 0 15px rgba(0, 255, 136, 0.4) !important;
-            border-color: #00ff88 !important;
-            transform: scale(1.05);
-            z-index: 10;
-        }
-        .side-win-glow {
-            box-shadow: 0 0 15px #00ff88 !important;
-            border-color: #00ff88 !important;
-            background: rgba(0, 255, 136, 0.3) !important;
-            transform: scale(1.05);
-            z-index: 10;
-        }
+        .win-glow { box-shadow: 0 0 25px #00ff88, inset 0 0 15px rgba(0, 255, 136, 0.4) !important; border-color: #00ff88 !important; transform: scale(1.05); z-index: 10; }
+        .side-win-glow { box-shadow: 0 0 15px #00ff88 !important; border-color: #00ff88 !important; background: rgba(0, 255, 136, 0.3) !important; transform: scale(1.05); z-index: 10; }
 
-        /* 🔥 TEXT VISIBILITY OVER CHIPS 🔥 */
         .text-layer { position: relative; z-index: 500; width: 100%; pointer-events: none;}
         .bet-title { font-size: 22px; font-weight: 900; letter-spacing: 1px; margin-bottom: 2px; text-shadow: 0 0 5px #000;}
         .bet-payout { font-size: 11px; color: #ccc; margin-bottom: 6px;}
-        .pool-text { font-size: 13px; color: white; background: rgba(0,0,0,0.85); padding: 4px 10px; border-radius: 6px; display: inline-block; border: 1px solid rgba(255,255,255,0.2);}
         
+        /* 🔥 LIVE COUNTING BOX UI 🔥 */
+        .pool-text { font-size: 14px; color: white; background: rgba(0,0,0,0.85); padding: 4px 12px; border-radius: 6px; display: inline-block; border: 1.5px solid rgba(255,255,255,0.4); font-weight: 900; transition: all 0.1s;}
+        .pool-flash { color: #00ff88 !important; border-color: #00ff88 !important; transform: scale(1.15); box-shadow: 0 0 10px #00ff88;}
+
         .placed-bet {
             position: absolute; top: -10px; right: -10px; background: #d4af37; color: black;
             border-radius: 10px; padding: 2px 8px; min-width: 28px; height: 24px; font-size: 11px; font-weight: 900;
@@ -149,7 +137,6 @@
         .loading-chakra { width: 60px; height: 60px; border: 6px solid rgba(255, 215, 0, 0.2); border-top-color: #ffd700; border-radius: 50%; animation: spinChakra 1s linear infinite; margin-bottom: 20px; }
         @keyframes spinChakra { 100% { transform: rotate(360deg); } }
         .net-text { font-size: 22px; letter-spacing: 2px; text-shadow: 0 2px 4px #000; }
-        .net-sub { font-size: 12px; color: #aaa; margin-top: 5px; }
     </style>
 </head>
 <body onclick="initAudio()">
@@ -160,7 +147,7 @@
         <div class="net-sub">Waiting for Internet / Server...</div>
     </div>
 
-    <div id="start-screen" onclick="enterCasino()" style="position: fixed; inset: 0; background: #0a0515; z-index: 9999999; display: flex; justify-content: center; align-items: center; color: #ffd700; cursor: pointer;"><h1>TAP TO PLAY (AB2)</h1></div>
+    <div id="start-screen" onclick="enterCasino()" style="position: fixed; inset: 0; background: #0a0515; z-index: 9999999; display: flex; justify-content: center; align-items: center; color: #ffd700; cursor: pointer;"><h1>TAP TO PLAY</h1></div>
     <div id="loading-screen" style="position: fixed; inset: 0; background: #000; z-index: 9999998; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700;"><p>DOWNLOADING ASSETS...</p></div>
 
     <audio id="coinSnd" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
@@ -172,7 +159,7 @@
         <div class="top-nav">
             <div style="display: flex; align-items: center;">
                 <div class="back-btn" onclick="window.history.back()">⬅️</div>
-                <div class="room-title">AB 2 VIP</div>
+                <div class="room-title" id="dyn-room">AB VIP</div>
                 <div class="history-row" id="record-board"></div>
             </div>
             <div class="online-status" id="live-users">● 345 LIVE</div>
@@ -180,8 +167,8 @@
 
         <div id="win-popup" class="win-popup">+₹0</div>
 
-        <div id="alert-start" class="game-alert"><img src="assets/start-logo-261-5745.png" alt="Start Betting"></div>
-        <div id="alert-stop" class="game-alert"><img src="assets/stop-2-5754.gif" alt="Stop Betting"></div>
+        <div id="alert-start" class="game-alert"><img src="assets/start-logo-261-5745.png"></div>
+        <div id="alert-stop" class="game-alert"><img src="assets/stop-2-5754.gif"></div>
 
         <div class="dealer-area">
             <div id="joker-spot">JOKER</div>
@@ -201,7 +188,7 @@
                     <div class="text-layer">
                         <div class="bet-title">ANDAR</div>
                         <div class="bet-payout">1.95x Payout</div>
-                        <div class="pool-text">Pool: ₹<span id="p-andar">0</span></div>
+                        <div class="pool-text" id="pool-box-andar">₹<span id="p-andar">0</span></div>
                     </div>
                     <div class="placed-bet" id="bet-amt-andar">0</div>
                 </div>
@@ -209,7 +196,7 @@
                     <div class="text-layer">
                         <div class="bet-title">BAHAR</div>
                         <div class="bet-payout">2.0x Payout</div>
-                        <div class="pool-text">Pool: ₹<span id="p-bahar">0</span></div>
+                        <div class="pool-text" id="pool-box-bahar">₹<span id="p-bahar">0</span></div>
                     </div>
                     <div class="placed-bet" id="bet-amt-bahar">0</div>
                 </div>
@@ -218,35 +205,35 @@
             <div style="font-size: 11px; color: #d4af37; margin-bottom: 4px; font-weight: 900; letter-spacing: 1px;">SIDE BETS: TOTAL CARDS</div>
             
             <div class="side-bets">
-                <div class="side-bet-box" id="box-s1_5" onclick="placeSideBet('s1_5', 2)">
+                <div class="side-bet-box" id="box-s1_5" onclick="placeSideBet('s1_5')">
                     <div class="sb-range">1 - 5</div><div class="sb-payout">2x</div>
                     <div class="sb-placed" id="sb-s1_5">0</div>
                 </div>
-                <div class="side-bet-box" id="box-s6_10" onclick="placeSideBet('s6_10', 3)">
+                <div class="side-bet-box" id="box-s6_10" onclick="placeSideBet('s6_10')">
                     <div class="sb-range">6 - 10</div><div class="sb-payout">3x</div>
                     <div class="sb-placed" id="sb-s6_10">0</div>
                 </div>
-                <div class="side-bet-box" id="box-s11_15" onclick="placeSideBet('s11_15', 4)">
+                <div class="side-bet-box" id="box-s11_15" onclick="placeSideBet('s11_15')">
                     <div class="sb-range">11 - 15</div><div class="sb-payout">4x</div>
                     <div class="sb-placed" id="sb-s11_15">0</div>
                 </div>
-                <div class="side-bet-box" id="box-s16_25" onclick="placeSideBet('s16_25', 3.5)">
+                <div class="side-bet-box" id="box-s16_25" onclick="placeSideBet('s16_25')">
                     <div class="sb-range">16 - 25</div><div class="sb-payout">3.5x</div>
                     <div class="sb-placed" id="sb-s16_25">0</div>
                 </div>
-                <div class="side-bet-box" id="box-s26_30" onclick="placeSideBet('s26_30', 12)">
+                <div class="side-bet-box" id="box-s26_30" onclick="placeSideBet('s26_30')">
                     <div class="sb-range">26 - 30</div><div class="sb-payout">12x</div>
                     <div class="sb-placed" id="sb-s26_30">0</div>
                 </div>
-                <div class="side-bet-box" id="box-s31_35" onclick="placeSideBet('s31_35', 20)">
+                <div class="side-bet-box" id="box-s31_35" onclick="placeSideBet('s31_35')">
                     <div class="sb-range">31 - 35</div><div class="sb-payout">20x</div>
                     <div class="sb-placed" id="sb-s31_35">0</div>
                 </div>
-                <div class="side-bet-box" id="box-s36_40" onclick="placeSideBet('s36_40', 45)">
+                <div class="side-bet-box" id="box-s36_40" onclick="placeSideBet('s36_40')">
                     <div class="sb-range">36 - 40</div><div class="sb-payout">45x</div>
                     <div class="sb-placed" id="sb-s36_40">0</div>
                 </div>
-                <div class="side-bet-box" id="box-s41_plus" onclick="placeSideBet('s41_plus', 100)">
+                <div class="side-bet-box" id="box-s41_plus" onclick="placeSideBet('s41_plus')">
                     <div class="sb-range">41+</div><div class="sb-payout">100x</div>
                     <div class="sb-placed" id="sb-s41_plus">0</div>
                 </div>
@@ -269,6 +256,10 @@
     </div>
 
     <script>
+        // Automatic DB Path (Works for both AB and AB2 based on folder)
+        const pathRef = window.location.pathname.includes('AndarBahar2') ? 'AndarBahar2' : 'AndarBahar';
+        if(pathRef === 'AndarBahar2') $('dyn-room').innerText = 'AB 2 VIP';
+
         function wakeUpServer() { fetch("https://kalyan-engine.onrender.com/").catch(e => {}); }
         wakeUpServer(); setInterval(wakeUpServer, 180000); 
 
@@ -298,34 +289,18 @@
         let localHistory = []; 
         let isResultProcessing = false; 
 
-        let audioUnlocked = false;
-        let lastChipSoundTime = 0;
-        
+        let audioUnlocked = false; let lastChipSoundTime = 0;
         function initAudio() {
-            if(!audioUnlocked) {
-                ['coinSnd','cardSnd','snd-beep'].forEach(i => { try{ let s=$(i); s.play().then(()=>s.pause()).catch(()=>{}); }catch(e){} });
-                audioUnlocked = true;
-            }
+            if(!audioUnlocked) { ['coinSnd','cardSnd','snd-beep'].forEach(i => { try{ let s=$(i); s.play().then(()=>s.pause()).catch(()=>{}); }catch(e){} }); audioUnlocked = true; }
         }
-
         function playSound(id, vol=1.0) {
             if(!audioUnlocked) return;
             try { let snd = $(id); if(snd) { let cl=snd.cloneNode(); cl.volume=vol; cl.play().catch(()=>{}); } } catch(e){}
         }
+        function playChipSound() { let now = Date.now(); if (now - lastChipSoundTime > 80) { playSound('coinSnd', 0.35); lastChipSoundTime = now; } }
 
-        function playChipSound() {
-            let now = Date.now();
-            if (now - lastChipSoundTime > 80) {
-                playSound('coinSnd', 0.35);
-                lastChipSoundTime = now;
-            }
-        }
-
-        let botsList = [];
-        const avs = ['Avatar0.png', 'Avatar2.png', 'Avatar3.png', 'Avatar4.png', 'Avatar5.png', 'Avatar6.png', 'Avatar7.png', 'Avatar9.png', 'Avatar11.png'];
-        for(let i=0; i<5; i++) {
-            botsList.push({ id: Math.floor(1000+Math.random()*9000), bal: Math.floor(20000+Math.random()*50000), avatar: avs[Math.floor(Math.random()*avs.length)] });
-        }
+        let botsList = []; const avs = ['Avatar0.png', 'Avatar2.png', 'Avatar3.png', 'Avatar4.png', 'Avatar5.png', 'Avatar6.png', 'Avatar7.png', 'Avatar9.png', 'Avatar11.png'];
+        for(let i=0; i<5; i++) botsList.push({ id: Math.floor(1000+Math.random()*9000), bal: Math.floor(20000+Math.random()*50000), avatar: avs[Math.floor(Math.random()*avs.length)] });
         
         function renderBotsUI() {
             let h = ""; botsList.forEach((b, i) => { h += `<div class="player" id="bot-${i}"><img class="p-avatar" src="assets/${b.avatar}"><div class="p-id">ID_${b.id}</div><div class="p-bal">₹${b.bal}</div></div>`; });
@@ -333,9 +308,7 @@
         }
         renderBotsUI();
         setInterval(() => { botsList.forEach(b => { b.bal += Math.floor(Math.random() * 8000) - 3000; if(b.bal > 150000) b.bal = 90000; if(b.bal < 10000) b.bal = 30000; }); renderBotsUI(); }, 3000); 
-
-        let baseCount = 345;
-        setInterval(() => { baseCount += Math.floor(Math.random() * 8) - 4; if(baseCount < 300) baseCount = 330; $('live-users').innerText = `● ${baseCount} LIVE`; }, 3500);
+        let baseCount = 345; setInterval(() => { baseCount += Math.floor(Math.random() * 8) - 4; if(baseCount < 300) baseCount = 330; $('live-users').innerText = `● ${baseCount} LIVE`; }, 3500);
 
         if(phone) {
             db.ref('users/'+phone).on('value', s => { 
@@ -345,9 +318,13 @@
                 $('balance').innerText = totalBal.toFixed(2); 
                 document.querySelectorAll('.chip-img').forEach(c => { if(parseInt(c.dataset.val) > totalBal) c.classList.add('locked'); else c.classList.remove('locked'); });
             });
-            db.ref(`Game/AndarBahar2/Bets/${phone}`).once('value', snap => {
+            db.ref(`Game/${pathRef}/Bets/${phone}`).once('value', snap => {
                 let saved = snap.val();
                 if(saved) { setTimeout(() => { ['andar','bahar'].forEach(side => { let val = saved[side]; if(val > 0) { myBets[side] = val; let d = $(`bet-amt-${side}`); d.style.display='flex'; d.innerText=val; } }); }, 500); }
+            });
+            db.ref(`Game/${pathRef}/SideBets/${phone}`).once('value', snap => {
+                let saved = snap.val();
+                if(saved) { setTimeout(() => { Object.keys(saved).forEach(k => { let val = saved[k]; if(val > 0) { mySideBets[k] = val; let d = $(`sb-${k}`); if(d) { d.style.display='flex'; d.innerText=val; } } }); }, 500); }
             });
         }
 
@@ -359,7 +336,7 @@
         };
 
         function spC(side, imgSrc, srcId) {
-            let layer = $('chips-layer'), box = $('bx-' + side);
+            let layer = $('chips-layer'), box = $('bx-' + side) || $('box-' + side);
             if(!box || !layer) return;
 
             let chip = document.createElement('img'); chip.className = 'chip-visual'; chip.src = imgSrc;
@@ -370,15 +347,20 @@
             layer.appendChild(chip);
 
             setTimeout(() => {
-                let randX = 20 + Math.random() * (bR.width - 60);
-                let randY = 40 + Math.random() * (bR.height - 80);
+                let randX = 10 + Math.random() * (bR.width - 40);
+                let randY = 10 + Math.random() * (bR.height - 40);
                 chip.style.left = (bR.left - mR.left + randX) + "px"; chip.style.top = (bR.top - mR.top + randY) + "px"; chip.style.transform = "scale(1)";
             }, 50);
 
             if(layer.children.length > 250) layer.firstChild.remove();
         }
 
-        // 🔥 INSTANT COUNTING FIXES 🔥
+        function flashPool(side) {
+            let pb = $('pool-box-' + side);
+            if(pb) { pb.classList.add('pool-flash'); setTimeout(() => pb.classList.remove('pool-flash'), 100); }
+        }
+
+        // 🔥 INSTANT COUNTING OVERRIDE 🔥
         window.placeBet = function(side) {
             if(!isBettingOpen) return;
             if(totalBal < currentChip) return;
@@ -388,17 +370,16 @@
             db.ref('users/'+phone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
             
             myBets[side] += currentChip;
-            realPool[side] += currentChip; // Instant update local pool variable
-            updatePoolUI(); // Render immediately
+            realPool[side] += currentChip; // Live Override
+            updatePoolUI(); flashPool(side);
             
-            db.ref(`Game/AndarBahar2/Bets/${phone}/${side}`).set(firebase.database.ServerValue.increment(currentChip));
+            db.ref(`Game/${pathRef}/Bets/${phone}/${side}`).set(firebase.database.ServerValue.increment(currentChip));
             
             let display = $(`bet-amt-${side}`); display.style.display = 'flex'; display.innerText = myBets[side]; 
-            
             spC(side, currentChipSrc, 'my-wallet'); playChipSound();
         };
 
-        window.placeSideBet = function(rangeKey, payout) {
+        window.placeSideBet = function(rangeKey) {
             if(!isBettingOpen) return;
             if(totalBal < currentChip) return;
 
@@ -410,12 +391,10 @@
             mySideBets[rangeKey] += currentChip;
 
             let display = $(`sb-${rangeKey}`); display.style.display = 'flex'; display.innerText = mySideBets[rangeKey];
-            
-            db.ref(`Game/AndarBahar2/SideBets/${phone}/${rangeKey}`).set(firebase.database.ServerValue.increment(currentChip));
-            playChipSound();
+            db.ref(`Game/${pathRef}/SideBets/${phone}/${rangeKey}`).set(firebase.database.ServerValue.increment(currentChip));
+            spC(rangeKey, currentChipSrc, 'my-wallet'); playChipSound();
         };
 
-        // 🔥 FAST CROWDED BOTS ACTION 🔥
         setInterval(() => {
             if(!isBettingOpen) return;
             let loops = Math.floor(Math.random() * 3) + 1;
@@ -427,10 +406,9 @@
                         let amt = parseInt(cKeys[Math.floor(Math.random() * 5)]);
                         if(bot.bal >= amt) {
                             bot.bal -= amt; 
-                            spC(s, chipImgs[amt], 'bot-'+idx);
-                            botPool[s] += amt; 
-                            updatePoolUI(); // Continuous live counting for bots too
-                            playChipSound();
+                            botPool[s] += amt; // Live Override
+                            updatePoolUI(); flashPool(s);
+                            spC(s, chipImgs[amt], 'bot-'+idx); playChipSound();
                         }
                     }
                 });
@@ -462,7 +440,7 @@
         }
 
         function fetchInitialHistory() {
-            db.ref('Game/AndarBahar2/History').orderByKey().limitToLast(10).once('value', snap => {
+            db.ref(`Game/${pathRef}/History`).orderByKey().limitToLast(10).once('value', snap => {
                 let hist = snap.val();
                 if(hist) { localHistory = Array.isArray(hist) ? hist : Object.values(hist); renderHistory(); }
             });
@@ -481,16 +459,13 @@
             $('record-board').innerHTML = hHtml;
         }
 
-        // ==========================================
-        // 🔥 DIRECT SERVER-DRIVEN UI LOGIC 🔥
-        // ==========================================
         let connectedRef = db.ref(".info/connected");
         connectedRef.on("value", (snap) => {
             if (snap.val() === true) { $('network-overlay').style.display = 'none'; isBettingOpen = false; fetchInitialHistory(); } 
             else { $('network-overlay').style.display = 'flex'; }
         });
 
-        db.ref('Game/AndarBahar2/Status').on('value', (snap) => {
+        db.ref(`Game/${pathRef}/Status`).on('value', (snap) => {
             let data = snap.val(); if(!data) return;
             let msg = $('status-msg');
 
@@ -502,8 +477,11 @@
 
             if(data.state === 'betting') {
                 if (data.timer > 0) {
+                    // IF ANIMATION IS STILL RUNNING, DO NOT CLEAR THE BOARD YET!
+                    if(animationActive) return;
+
                     if(!isBettingOpen) {
-                        isBettingOpen = true; animationActive = false; isResultProcessing = false; lastBeep = -1;
+                        isBettingOpen = true; isResultProcessing = false; lastBeep = -1;
                         $('bx-andar').classList.remove('win-glow'); $('bx-bahar').classList.remove('win-glow');
                         document.querySelectorAll('.side-bet-box').forEach(b => b.classList.remove('side-win-glow'));
                         $('track-andar').innerHTML = '<span class="track-label">ANDAR</span>';
@@ -535,10 +513,10 @@
                 if(!isResultProcessing && data.winner && data.winner.side) {
                     isResultProcessing = true; lastBeep = -1;
                     msg.innerText = "DEALING CARDS..."; msg.style.color = '#d4af37';
-                    setTimeout(() => showAnimation(data.winner.side, currentJoker.val, data.winner.cards), 800);
+                    // Start dealing cards
+                    setTimeout(() => showAnimation(data.winner.side, currentJoker.val, data.winner.cards, data.timer), 800);
                 }
                 
-                // Show exact countdown state only after animation ends or when waiting for next round
                 if(isResultProcessing && !animationActive && data.timer > 0) {
                     msg.innerText = "NEXT ROUND IN: " + data.timer + "s";
                     msg.style.color = "#00ff88";
@@ -546,23 +524,22 @@
             }
         });
 
-        db.ref('Game/AndarBahar2/Bets').on('value', snap => {
+        db.ref(`Game/${pathRef}/Bets`).on('value', snap => {
             let allB = snap.val() || {}; 
             let totalRealAndar = 0, totalRealBahar = 0;
             for(let u in allB) { 
                 if(!u.includes('bot')) { 
-                    totalRealAndar += (allB[u].andar || 0); 
-                    totalRealBahar += (allB[u].bahar || 0); 
+                    totalRealAndar += Number(allB[u].andar || 0); 
+                    totalRealBahar += Number(allB[u].bahar || 0); 
                 } 
             }
-            // Keep local real pool in sync with database structure
             realPool.andar = totalRealAndar;
             realPool.bahar = totalRealBahar;
             updatePoolUI();
         });
 
-        // 🔥 ANIMATION WITH 5-SECOND PAUSE/DELAY PROTOCAL 🔥
-        async function showAnimation(winSide, jVal, exactSteps) {
+        // 🔥 SLOW CARDS + JOKER MATCH HIGHLIGHT + 6 SECOND WAIT 🔥
+        async function showAnimation(winSide, jVal, exactSteps, serverTimerLeft) {
             animationActive = true; 
             
             let seedStr = String(jVal) + String(winSide) + String(exactSteps) + "KALYANVIPSYNC";
@@ -576,9 +553,21 @@
 
             let safeCards = cardValues.filter(v => v != jVal);
             
+            // Patte slow aayenge. Har patte ke beech 800ms ka time.
+            let cardDelay = 800; 
+            
+            // Agar player background se wapas aaya ho aur time kam bacha ho
+            let requiredTime = exactSteps * 800;
+            let availableTimeMs = (serverTimerLeft - 5) * 1000;
+            if (availableTimeMs > 0 && availableTimeMs < requiredTime) {
+                cardDelay = availableTimeMs / exactSteps;
+                if(cardDelay < 150) cardDelay = 150; // Super fast catchup
+            }
+
             let step = 0;
             for (let i = 0; i < exactSteps; i++) {
-                if(!animationActive) return; 
+                if(!isResultProcessing) return; // safeguard
+                
                 step++;
                 let side = (step % 2 !== 0) ? 'andar' : 'bahar'; 
                 let isLast = (i === exactSteps - 1);
@@ -586,10 +575,19 @@
                 let resVal = isLast ? jVal : safeCards[Math.floor(prng() * safeCards.length)];
                 let resSuit = cardSuits[Math.floor(prng() * 4)]; 
 
-                let track = $('track-'+side); track.appendChild(createCard(resVal, resSuit)); track.scrollLeft = track.scrollWidth; 
+                let track = $('track-'+side); 
+                let newCard = createCard(resVal, resSuit);
+                track.appendChild(newCard); 
+                track.scrollLeft = track.scrollWidth; 
                 playSound('cardSnd', 1.0); 
 
                 if(isLast) {
+                    // 🔥 JOKER MATCH HIGHLIGHT 🔥
+                    newCard.style.boxShadow = "0 0 20px #00ff88, inset 0 0 10px #00ff88";
+                    newCard.style.border = "2px solid #00ff88";
+                    newCard.style.transform = "scale(1.15)";
+                    newCard.style.zIndex = "100";
+
                     $('status-msg').innerText = `${winSide.toUpperCase()} WINS!`;
                     $(winSide === 'andar' ? 'bx-andar' : 'bx-bahar').classList.add('win-glow');
                     
@@ -609,13 +607,14 @@
                     
                     calculatePayouts(winSide, exactSteps);
                     
-                    // 🔥 STRICT 5-SECOND DELAY BEFORE CLOSING ANIMATION AND TURNING TIMER BACK ON 🔥
+                    // 🔥 STRICT WAIT TIME BEFORE RESTART 🔥
                     setTimeout(() => { 
                         animationActive = false; 
-                    }, 5000); 
+                    }, 6000); 
+                    
                     return;
                 }
-                await new Promise(r => setTimeout(r, 600)); 
+                await new Promise(r => setTimeout(r, cardDelay)); 
             }
         }
 
