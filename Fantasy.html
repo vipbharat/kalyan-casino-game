@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bharat VIP Fantasy - Match & Win</title>
+    <title>Bharat VIP Fantasy - Live TV Screen</title>
     
     <!-- 🔥 FIREBASE SDKS 🔥 -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -18,7 +18,7 @@
         .screen { display: none; width: 100%; min-height: 100vh; padding-bottom: 20px; }
         .screen.active { display: block; }
         
-        /* Header with Connected Wallet */
+        /* Header */
         .header { background-color: #1a1a2e; color: white; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; font-size: 16px; font-weight: bold; border-bottom: 2px solid #ffd700; }
         .back-btn { font-size: 20px; text-decoration: none; color: white; cursor: pointer; border: none; background: transparent; padding-right: 15px; }
         
@@ -26,7 +26,7 @@
         .wallet-box { background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(0,0,0,0.8)); border: 1.5px solid #ffd700; border-radius: 20px; padding: 4px 12px; font-size: 14px; color: #00ff88; display: flex; align-items: center; gap: 5px; box-shadow: inset 0 0 10px rgba(255,215,0,0.2); }
         .wallet-box span { font-weight: 900; }
 
-        /* Banner & Info */
+        /* Banner */
         .prize-box { display: flex; text-align: center; padding: 15px 0; border-bottom: 1px solid #eee; }
         .prize-col { flex: 1; border-right: 1px solid #eee; }
         .prize-col:last-child { border-right: none; }
@@ -41,13 +41,20 @@
         .teams-container::-webkit-scrollbar { display: none; }
         .team-btn { padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; white-space: nowrap; border: 1px solid #ccc; background: white; color: #555; cursor: pointer; }
         .team-btn.active { background: #1976d2; color: white; border-color: #1976d2; }
-        .team-btn.create-new { border: 1px dashed #1976d2; color: #1976d2; background: #e3f2fd; }
+        .team-btn.create-new { border: 1px dashed #1976d2; color: #1976d2; background: #e3f2fd; transition: 0.3s; }
+        .team-btn.locked { background: #ccc; color: #666; border-color: #ccc; pointer-events: none; }
         
         /* Display Cards */
         .cards-section { text-align: center; padding: 20px 15px; }
         .cards-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
         .display-card { width: 60px; height: 90px; border: 1px solid #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; position: relative; font-size: 24px; font-weight: bold; background: #fafafa; }
         .card-suit { position: absolute; top: 5px; left: 5px; font-size: 12px; }
+        
+        /* Progress */
+        .progress-section { padding: 0 20px 20px; }
+        .progress-stats { display: flex; justify-content: space-between; font-size: 12px; color: #555; font-weight: bold; margin-bottom: 8px; }
+        .progress-bar-bg { width: 100%; height: 8px; background-color: #e0e0e0; border-radius: 10px; overflow: hidden; }
+        .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #ff9800, #d32f2f); border-radius: 10px; transition: width 0.5s ease; }
         
         /* Tabs */
         .leaderboard-header { display: flex; border-bottom: 1px solid #eee; background: white; border-top: 5px solid #f0f2f5;}
@@ -56,7 +63,7 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* Winnings Tab Area */
+        /* Winnings List */
         .winnings-list { padding: 10px 0; }
         .winning-row { display: flex; justify-content: space-between; padding: 15px 15px; border-bottom: 1px solid #eee; align-items: center; }
         .winning-row:nth-child(even) { background-color: #fafafa; }
@@ -64,7 +71,9 @@
         .prize-col-win { font-weight: bold; color: #4CAF50; font-size: 14px; text-align: right; flex: 1; }
         .entry-back { color: #1976d2; font-size: 12px; background: #e3f2fd; padding: 4px 8px; border-radius: 4px; display: inline-block;}
 
-        /* Card Selection Screen */
+        @keyframes fadeInRow { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Selection Screen */
         .step-info { background: #fff9e6; text-align: center; padding: 10px; font-size: 13px; color: #555; border-bottom: 1px solid #eee; }
         .slots-container { display: flex; justify-content: center; gap: 10px; padding: 30px 15px; background: #fafafa; border-bottom: 1px solid #ddd; }
         .slot { width: 65px; height: 95px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; cursor: pointer; position: relative; }
@@ -94,7 +103,6 @@
 <body>
 
     <div class="app-container">
-        
         <!-- ================= SCREEN 1: MAIN HOME ================= -->
         <div id="screen-main" class="screen active">
             
@@ -114,49 +122,70 @@
                     <div class="prize-label">🎟️ Entry Fee</div>
                 </div>
                 <div class="prize-col">
-                    <div class="prize-val text-red">10 Lakh</div>
+                    <div class="prize-val text-red">20 Lakh</div>
                     <div class="prize-label">💰 1st Prize</div>
                 </div>
             </div>
 
             <div class="timer-banner">
-                <div class="timer-title">⏳ Result: Daily Sham 7:30 PM</div>
-                <div style="font-size:12px; color:#555;">No Points! Sirf Patte match karo aur jeeto.</div>
+                <div class="timer-title">⏳ Contest Lock: 7:00 PM</div>
+                <div style="font-size:12px; color:#555;">Slots tezi se bhar rahe hain. Jaldi join karein!</div>
             </div>
 
             <div class="teams-container" id="my-teams-list">
                 <button class="team-btn create-new" onclick="openSelectionScreen()">+ Create New (₹99)</button>
             </div>
 
-            <!-- Demo Result Cards -->
-            <div class="cards-section">
-                <div style="font-size:12px; color:#777; margin-bottom:5px; font-weight:bold;">YESTERDAY'S RESULT</div>
-                <div class="cards-row">
-                    <div class="display-card text-black"><span class="card-suit">♠️</span> A</div>
-                    <div class="display-card text-red"><span class="card-suit">♥️</span> K</div>
-                    <div class="display-card text-black"><span class="card-suit">♣️</span> 7</div>
-                    <div class="display-card text-red"><span class="card-suit">♦️</span> 10</div>
+            <div class="progress-section">
+                <div class="progress-stats">
+                    <span id="joined-count" style="color: #d32f2f;">Loading...</span>
+                    <span>Total 1,00,000</span>
                 </div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" id="dynamic-bar"></div></div>
             </div>
 
             <div class="leaderboard-header">
-                <div id="tab-btn-winnings" class="tab active" onclick="switchTab('winnings')">Prize Chart</div>
-                <div id="tab-btn-leaderboard" class="tab" onclick="switchTab('leaderboard')">Live Results</div>
+                <div id="tab-btn-leaderboard" class="tab active" onclick="switchTab('leaderboard')">Live Leaderboard</div>
+                <div id="tab-btn-winnings" class="tab" onclick="switchTab('winnings')">Prize Chart</div>
             </div>
 
-            <!-- NAYA WINNINGS STRUCTURE (NO POINTS, ONLY MATCHES) -->
-            <div id="content-winnings" class="tab-content active">
+            <!-- LEADERBOARD & SERVER RESULT TAB (TV SCREEN MODE) -->
+            <div id="content-leaderboard" class="tab-content active">
+                
+                <div id="pre-match-leaderboard">
+                    <div style="padding: 10px 15px; font-size: 12px; color: #555; background: #fff9e6; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                        <span>🟢 Live Joining... (Lock at 7:00 PM)</span>
+                        <i class="fa-solid fa-spinner fa-spin" style="color:#d32f2f;"></i>
+                    </div>
+                    <div id="live-joiners-list" style="max-height: 250px; overflow-y: hidden;">
+                        <!-- JS generated fake joining UI hype goes here -->
+                    </div>
+                </div>
+
+                <div id="post-match-leaderboard" style="display:none; text-align: center; padding: 40px 20px; color: #666;">
+                    <h3 style="color:#d32f2f; margin-bottom:5px;">🔒 Contest Closed!</h3>
+                    <p style="font-size:13px; margin-bottom:15px;" id="server-status-text">Intezaar karein, Server Result generate kar raha hai...</p>
+                    
+                    <!-- YAHAN SERVER KA ASLI RESULT DIKHEGA -->
+                    <div id="server-live-result" style="display: none;">
+                        <div style="font-size:12px; color:#d32f2f; margin-bottom:5px; font-weight:bold;">🏆 TODAY'S OFFICIAL RESULT 🏆</div>
+                        <div class="cards-row" id="result-cards-box" style="margin-bottom:0;">
+                            <!-- Server se aane wale patte yahan aayenge -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PRIZE CHART -->
+            <div id="content-winnings" class="tab-content">
                 <div class="winnings-list">
-                    <!-- Charo Patte Exact Match -->
                     <div class="winning-row" style="background:#fff9e6; border-bottom:2px solid #ffe082;">
                         <div class="rank-col">
                             <span style="font-size:16px;">🥇</span> 4 Cards Match <br>
                             <span style="font-size:10px; color:#666; font-weight:normal;">Suit aur Number dono same</span>
                         </div>
-                        <div class="prize-col-win text-red" style="font-size:18px;">₹10,00,000</div>
+                        <div class="prize-col-win text-red" style="font-size:18px;">₹20,00,000</div>
                     </div>
-                    
-                    <!-- Teen Patte Exact Match -->
                     <div class="winning-row">
                         <div class="rank-col">
                             <span style="font-size:14px;">🥈</span> 3 Cards Match <br>
@@ -164,8 +193,6 @@
                         </div>
                         <div class="prize-col-win">₹50,000</div>
                     </div>
-
-                    <!-- Do Patte Exact Match -->
                     <div class="winning-row">
                         <div class="rank-col">
                             <span style="font-size:14px;">🥉</span> 2 Cards Match <br>
@@ -173,17 +200,13 @@
                         </div>
                         <div class="prize-col-win">₹1,000</div>
                     </div>
-
-                    <!-- Sirf Number Match (Special) -->
                     <div class="winning-row" style="background:#f3e5f5;">
                         <div class="rank-col">
                             <span style="font-size:14px;">🌟</span> Only Numbers Match <br>
                             <span style="font-size:10px; color:#666; font-weight:normal;">Charo patton ke sirf Number same (Suit alag)</span>
                         </div>
-                        <div class="prize-col-win" style="color:#8e24aa;">₹10,00,000</div>
+                        <div class="prize-col-win" style="color:#8e24aa;">₹10,000</div>
                     </div>
-
-                    <!-- Ek Patta Exact Match -->
                     <div class="winning-row">
                         <div class="rank-col">
                             <span style="font-size:14px;">🏅</span> 1 Card Match <br>
@@ -191,15 +214,6 @@
                         </div>
                         <div class="prize-col-win"><span class="entry-back">₹99 Wapas</span></div>
                     </div>
-
-                </div>
-            </div>
-
-            <!-- RESULT TAB -->
-            <div id="content-leaderboard" class="tab-content">
-                <div style="text-align: center; padding: 40px 20px; color: #666;">
-                    <h3 style="color:#333; margin-bottom:5px;">🔒 Results Locked</h3>
-                    <p style="font-size:13px;">Match khatam hone ke baad aapke matching cards yahan dikhenge.</p>
                 </div>
             </div>
 
@@ -207,7 +221,6 @@
 
         <!-- ================= SCREEN 2: CARD SELECTION ================= -->
         <div id="screen-selection" class="screen">
-            
             <div class="header">
                 <div style="display:flex; align-items:center;">
                     <button class="back-btn" onclick="closeSelectionScreen()">&#8592;</button>
@@ -217,16 +230,13 @@
                     🪙 ₹<span id="header-wallet-2">0.00</span>
                 </div>
             </div>
-
             <div class="step-info">Apni prediction ke <b>4 cards</b> select karein</div>
-
             <div class="slots-container">
                 <div class="slot active" id="slot-1" onclick="selectSlot(1)"><span class="slot-plus">+</span></div>
                 <div class="slot" id="slot-2" onclick="selectSlot(2)"><span class="slot-plus">+</span></div>
                 <div class="slot" id="slot-3" onclick="selectSlot(3)"><span class="slot-plus">+</span></div>
                 <div class="slot" id="slot-4" onclick="selectSlot(4)"><span class="slot-plus">+</span></div>
             </div>
-
             <div class="picker-section">
                 <h3>1. Rang (Suit) chunein:</h3>
                 <div class="suit-row">
@@ -235,7 +245,6 @@
                     <div class="suit-btn text-black" onclick="setSuit('♣️', 'black', this)">♣️</div>
                     <div class="suit-btn text-red" onclick="setSuit('♦️', 'red', this)">♦️</div>
                 </div>
-
                 <h3>2. Patta (Number) chunein:</h3>
                 <div class="numbers-grid">
                     <div class="num-btn" onclick="setNumber('A', this)">A</div>
@@ -252,14 +261,12 @@
                     <div class="num-btn" onclick="setNumber('Q', this)">Q</div>
                     <div class="num-btn" onclick="setNumber('K', this)">K</div>
                 </div>
-
                 <button class="save-btn" id="save-team-btn" onclick="saveTeamAndDeduct()">Select 4 Cards to Join</button>
             </div>
         </div>
 
     </div>
 
-    <!-- 🔥 FIREBASE & INTERACTIVITY SCRIPT 🔥 -->
     <script>
         // --- FIREBASE INITIALIZATION ---
         const firebaseConfig = {
@@ -267,64 +274,143 @@
             databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
             projectId: "kalyan-casino"
         };
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.database();
         const phone = localStorage.getItem('userPhone') || "Guest";
 
-        // --- WALLET VARIABLES ---
+        // --- WALLET FETCHING ---
         let dB = 0; let wB = 0; let bB = 0; let tB = 0; 
         const entryFee = 99; 
         let totalJoinedTeams = 0;
 
-        // --- REALTIME BALANCE FETCHER ---
         if(phone !== "Guest") {
             db.ref('users/' + phone).on('value', (snap) => {
                 const data = snap.val() || {};
-                dB = parseFloat(data.balance || 0);
-                wB = parseFloat(data.winning_balance || 0);
-                bB = parseFloat(data.bonus_balance || 0);
-                tB = dB + wB + bB;
-                updateWalletUI();
+                dB = parseFloat(data.balance || 0); wB = parseFloat(data.winning_balance || 0); bB = parseFloat(data.bonus_balance || 0);
+                tB = dB + wB + bB; updateWalletUI();
             });
         }
-
         function updateWalletUI() {
             document.getElementById('header-wallet-1').innerText = tB.toFixed(2);
             document.getElementById('header-wallet-2').innerText = tB.toFixed(2);
         }
 
-        // --- SAVE TEAM & DEDUCT ₹99 ---
+        // ==========================================
+        // 📡 TV SCREEN LOGIC: SERVER LISTENER
+        // ==========================================
+        // Ye function lagatar Database (Server) ko dekhta rahega ki result aaya ya nahi
+        db.ref('Game/MegaFantasy/LiveResult').on('value', (snap) => {
+            let resultData = snap.val();
+            // Agar result server ne declare kar diya hai
+            if(resultData && resultData.status === "declared") {
+                document.getElementById('server-status-text').innerText = "✅ Result aa chuka hai! Winners ke wallet update ho gaye hain.";
+                let resultBox = document.getElementById('server-live-result');
+                let cardsBox = document.getElementById('result-cards-box');
+                
+                // Server se aayi huyi array ko cards me convert karna (eg: [{suit: '♠️', color: 'black', num: 'A'}, ...])
+                let cardsHTML = '';
+                resultData.cards.forEach(c => {
+                    cardsHTML += `
+                        <div class="display-card ${c.color === 'red' ? 'text-red' : 'text-black'}">
+                            <span class="card-suit">${c.suit}</span> ${c.num}
+                        </div>`;
+                });
+                cardsBox.innerHTML = cardsHTML;
+                resultBox.style.display = 'block';
+            }
+        });
+
+        // --- PROGRESS & LOCK LOGIC ---
+        function initLiveSystem() {
+            const totalSlots = 100000;
+            let now = new Date();
+            let targetTime = new Date();
+            targetTime.setHours(19, 0, 0, 0); // Lock exactly at 7:00 PM
+
+            if (now >= targetTime) {
+                // TV Screen: Lock System immediately
+                document.getElementById('joined-count').innerText = "1,00,000 Joined (Contest Locked)";
+                document.getElementById('dynamic-bar').style.width = "100%";
+                document.getElementById('dynamic-bar').style.background = "#d32f2f";
+                
+                document.getElementById('pre-match-leaderboard').style.display = 'none';
+                document.getElementById('post-match-leaderboard').style.display = 'block';
+
+                let createBtn = document.querySelector('.create-new');
+                createBtn.innerText = "🔒 Contest Closed";
+                createBtn.classList.add('locked');
+                createBtn.onclick = (e) => { e.preventDefault(); alert("Contest is locked by the Server!"); };
+            } else {
+                // Fake UI filling for visual hype (Only before 7 PM)
+                let msPassed = now.getHours() * 3600000 + now.getMinutes() * 60000 + now.getSeconds() * 1000;
+                let totalMs = 19 * 3600000; 
+                let percentage = Math.max(0.6, msPassed / totalMs);
+                let currentJoined = Math.floor(totalSlots * percentage);
+                updateBar(currentJoined);
+
+                setInterval(() => {
+                    let checkNow = new Date();
+                    if (checkNow < targetTime && currentJoined < totalSlots) {
+                        currentJoined += Math.floor(Math.random() * 5) + 2;
+                        if(currentJoined > totalSlots) currentJoined = totalSlots;
+                        updateBar(currentJoined);
+                    } else if (checkNow >= targetTime) {
+                        location.reload(); 
+                    }
+                }, 3000);
+
+                function addFakeJoiner() {
+                    let names = ["Rahul", "Amit", "Priya", "Vikram", "Sneha", "Rohan", "Kabir", "Pooja", "Arjun", "Neha"];
+                    let list = document.getElementById('live-joiners-list');
+                    if(!list) return;
+                    let row = document.createElement('div');
+                    row.style.padding = "10px 15px"; row.style.borderBottom = "1px solid #eee"; row.style.display = "flex"; row.style.justifyContent = "space-between"; row.style.fontSize = "13px"; row.style.fontWeight = "bold"; row.style.animation = "fadeInRow 0.5s ease";
+                    row.innerHTML = `<span style="color:#333;">👤 ${names[Math.floor(Math.random()*names.length)]}****</span> <span style="color:#1976d2;">Joined</span>`;
+                    list.prepend(row);
+                    if(list.children.length > 6) list.removeChild(list.lastChild);
+                }
+                setInterval(addFakeJoiner, 2500);
+            }
+
+            function updateBar(count) {
+                document.getElementById('joined-count').innerText = count.toLocaleString('en-IN') + " Joined / 1 Lakh Slots";
+                document.getElementById('dynamic-bar').style.width = ((count / totalSlots) * 100) + "%";
+            }
+        }
+        window.onload = initLiveSystem;
+
+        // --- SUBMIT TEAM TO SERVER ---
+        // Ye sirf permission leta hai aur Data bhejta hai.
         function saveTeamAndDeduct() {
-            if (phone === "Guest") {
-                alert("⚠️ Please Login from Dashboard to play Mega Contest!");
-                return;
-            }
+            let targetTime = new Date(); targetTime.setHours(19, 0, 0, 0);
+            if(new Date() >= targetTime) { alert("❌ Entry Closed by Server!"); return; }
+            if (phone === "Guest") { alert("⚠️ Please Login from Dashboard!"); return; }
+            if (tB < entryFee) { alert("❌ Insufficient Balance in Wallet."); return; }
 
-            if (tB < entryFee) {
-                alert("❌ Insufficient Balance! Aapke wallet mein ₹99 nahi hain. Kripya Dashboard se deposit karein.");
-                return;
-            }
-
+            // Deduct Logic
             let nD = dB, nW = wB, rm = entryFee;
-            if (nD >= rm) {
-                nD -= rm; 
-            } else { 
-                rm -= nD; nD = 0; nW -= rm; 
+            if (nD >= rm) { nD -= rm; } else { rm -= nD; nD = 0; nW -= rm; }
+
+            // Send Bet to Server (TV Screen transmitting data)
+            let selectedCardsData = [];
+            for(let i=1; i<=4; i++) {
+                let slot = document.getElementById('slot-'+i);
+                selectedCardsData.push({
+                    suit: slot.querySelector('.card-suit-display').innerText,
+                    number: slot.querySelector('.card-val-display').innerText
+                });
             }
 
             db.ref('users/' + phone).update({
-                balance: Math.max(0, nD),
-                winning_balance: Math.max(0, nW)
+                balance: Math.max(0, nD), winning_balance: Math.max(0, nW)
             }).then(() => {
                 let teamId = "Team_" + Date.now();
                 db.ref(`Game/MegaFantasy/Bets/${phone}/${teamId}`).set({
                     amount: entryFee,
+                    cards: selectedCardsData,
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
-
-                alert("✅ Payment Successful! ₹99 deducted from Wallet. Aapki Team join ho chuki hai!");
+                alert("✅ Team Submitted to Server!");
                 
                 totalJoinedTeams++;
                 let teamList = document.getElementById('my-teams-list');
@@ -333,106 +419,78 @@
                 newTeamBtn.className = 'team-btn ' + (totalJoinedTeams === 1 ? 'active' : '');
                 newTeamBtn.innerText = 'Team ' + totalJoinedTeams;
                 teamList.insertBefore(newTeamBtn, createBtn);
-
                 closeSelectionScreen();
-            }).catch((err) => {
-                alert("⚠️ Network Error! Paise nahi kate. Kripya dobara try karein.");
-            });
+            }).catch(() => { alert("⚠️ Connection Error!"); });
         }
 
-        // --- UI & CARD SELECTION LOGIC ---
+        // --- UI TOGGLES ---
         function openSelectionScreen() {
+            let targetTime = new Date(); targetTime.setHours(19, 0, 0, 0);
+            if(new Date() >= targetTime) { alert("🔒 Contest locked by Server!"); return; }
             document.getElementById('screen-main').classList.remove('active');
             document.getElementById('screen-selection').classList.add('active');
-            if(tB < entryFee) {
-                alert("⚠️ Low Balance! Team save karne ke liye Dashboard mein ₹99 add karein.");
-            }
         }
-
         function closeSelectionScreen() {
             document.getElementById('screen-selection').classList.remove('active');
             document.getElementById('screen-main').classList.add('active');
             resetAllSlots();
         }
-
         function switchTab(tabName) {
             document.getElementById('tab-btn-winnings').classList.remove('active');
             document.getElementById('tab-btn-leaderboard').classList.remove('active');
             document.getElementById('content-winnings').classList.remove('active');
             document.getElementById('content-leaderboard').classList.remove('active');
-            
             document.getElementById('tab-btn-' + tabName).classList.add('active');
             document.getElementById('content-' + tabName).classList.add('active');
         }
 
-        let currentSlot = 1;
-        let selectedSuit = ''; let suitColor = ''; let selectedNumber = '';
-        let filledSlots = 0;
-
+        // --- CARD PICKER LOGIC ---
+        let currentSlot = 1; let selectedSuit = ''; let suitColor = ''; let selectedNumber = ''; let filledSlots = 0;
         function selectSlot(slotNum) {
             for(let i=1; i<=4; i++) document.getElementById('slot-'+i).classList.remove('active');
             document.getElementById('slot-'+slotNum).classList.add('active');
-            currentSlot = slotNum;
-            resetPickers();
+            currentSlot = slotNum; resetPickers();
         }
-
         function setSuit(suit, color, btnElement) {
             selectedSuit = suit; suitColor = color;
             document.querySelectorAll('.suit-btn').forEach(btn => btn.classList.remove('selected'));
-            btnElement.classList.add('selected'); 
-            checkAndFillSlot();
+            btnElement.classList.add('selected'); checkAndFillSlot();
         }
-
         function setNumber(num, btnElement) {
             selectedNumber = num;
             document.querySelectorAll('.num-btn').forEach(btn => btn.classList.remove('selected'));
-            btnElement.classList.add('selected');
-            checkAndFillSlot();
+            btnElement.classList.add('selected'); checkAndFillSlot();
         }
-
         function checkAndFillSlot() {
             if(selectedSuit !== '' && selectedNumber !== '') {
                 let slot = document.getElementById('slot-'+currentSlot);
                 slot.innerHTML = `<span class="card-suit-display ${suitColor === 'red' ? 'text-red' : 'text-black'}">${selectedSuit}</span><span class="card-val-display ${suitColor === 'red' ? 'text-red' : 'text-black'}">${selectedNumber}</span>`;
                 slot.classList.add('filled'); slot.classList.remove('active');
                 checkAllFilled();
-
                 if(filledSlots < 4) {
                     for(let i=1; i<=4; i++) {
-                        if(!document.getElementById('slot-'+i).classList.contains('filled')) {
-                            selectSlot(i); break;
-                        }
+                        if(!document.getElementById('slot-'+i).classList.contains('filled')) { selectSlot(i); break; }
                     }
                 }
             }
         }
-
         function resetPickers() {
             selectedSuit = ''; selectedNumber = '';
             document.querySelectorAll('.suit-btn').forEach(btn => btn.classList.remove('selected'));
             document.querySelectorAll('.num-btn').forEach(btn => btn.classList.remove('selected'));
         }
-
         function checkAllFilled() {
             filledSlots = document.querySelectorAll('.slot.filled').length;
             let btn = document.getElementById('save-team-btn');
-            if(filledSlots === 4) {
-                btn.classList.add('ready');
-                btn.innerText = "Pay ₹99 & Join Contest";
-            } else {
-                btn.classList.remove('ready');
-                btn.innerText = "Select 4 Cards to Join";
-            }
+            if(filledSlots === 4) { btn.classList.add('ready'); btn.innerText = "Pay ₹99 & Join Contest"; } 
+            else { btn.classList.remove('ready'); btn.innerText = "Select 4 Cards to Join"; }
         }
-
         function resetAllSlots() {
             for(let i=1; i<=4; i++) {
                 let slot = document.getElementById('slot-'+i);
-                slot.innerHTML = '<span class="slot-plus">+</span>';
-                slot.className = 'slot' + (i===1 ? ' active' : '');
+                slot.innerHTML = '<span class="slot-plus">+</span>'; slot.className = 'slot' + (i===1 ? ' active' : '');
             }
-            currentSlot = 1; filledSlots = 0;
-            resetPickers(); checkAllFilled();
+            currentSlot = 1; filledSlots = 0; resetPickers(); checkAllFilled();
         }
     </script>
 </body>
