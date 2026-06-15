@@ -8,6 +8,7 @@
     <!-- 🔥 FIREBASE SDKS 🔥 -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
         /* Pure CSS */
@@ -76,8 +77,6 @@
         .prize-col-win { font-weight: bold; color: #4CAF50; font-size: 14px; text-align: right; flex: 1; }
         .entry-back { color: #1976d2; font-size: 12px; background: #e3f2fd; padding: 4px 8px; border-radius: 4px; display: inline-block;}
 
-        @keyframes fadeInRow { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
         /* Selection Screen */
         .step-info { background: #fff9e6; text-align: center; padding: 10px; font-size: 13px; color: #555; border-bottom: 1px solid #eee; }
         .slots-container { display: flex; justify-content: center; gap: 10px; padding: 30px 15px; background: #fafafa; border-bottom: 1px solid #ddd; }
@@ -132,9 +131,9 @@
                 </div>
             </div>
 
-            <!-- CLEAN BANNER (No faltu text) -->
+            <!-- CLEAN BANNER -->
             <div class="timer-banner">
-                <div class="timer-title">Result: Daily Sham 7:30 PM</div>
+                <div class="timer-title">⏳ Contest Lock: 7:00 PM</div>
             </div>
 
             <div class="teams-container" id="my-teams-list">
@@ -150,23 +149,21 @@
             </div>
 
             <div class="leaderboard-header">
-                <div id="tab-btn-leaderboard" class="tab active" onclick="switchTab('leaderboard')">Live Leaderboard</div>
+                <div id="tab-btn-leaderboard" class="tab active" onclick="switchTab('leaderboard')">Leaderboard</div>
                 <div id="tab-btn-winnings" class="tab" onclick="switchTab('winnings')">Rules</div>
             </div>
 
             <!-- LEADERBOARD & SERVER RESULT TAB -->
             <div id="content-leaderboard" class="tab-content active">
                 
-                <div id="pre-match-leaderboard">
-                    <div style="padding: 10px 15px; font-size: 12px; color: #555; background: #fff9e6; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-                        <span>🟢 Live Joining... (Lock at 7:00 PM)</span>
-                        <i class="fa-solid fa-spinner fa-spin" style="color:#d32f2f;"></i>
-                    </div>
-                    <div id="live-joiners-list" style="max-height: 250px; overflow-y: hidden;">
-                        <!-- 4-Digit ID UI goes here -->
-                    </div>
+                <!-- DREAM11 STYLE HIDDEN LEADERBOARD (Before 7:00 PM) -->
+                <div id="pre-match-leaderboard" style="text-align: center; padding: 40px 20px; color: #666;">
+                    <i class="fa-solid fa-users-slash" style="font-size: 30px; color: #ccc; margin-bottom: 10px;"></i>
+                    <h3 style="color:#333; margin-bottom:5px;">Leaderboard Hidden</h3>
+                    <p style="font-size:13px;">Sabhi players ki teams aur unke patte contest lock hone ke baad (7:00 PM) dikhai denge.</p>
                 </div>
 
+                <!-- RESULT SHOWCASE (After 7:00 PM) -->
                 <div id="post-match-leaderboard" style="display:none; text-align: center; padding: 20px; color: #666;">
                     <h3 style="color:#d32f2f; margin-bottom:5px;">🔒 Contest Closed!</h3>
                     <p style="font-size:13px; margin-bottom:15px;" id="server-status-text">Intezaar karein, Server Result generate kar raha hai...</p>
@@ -327,8 +324,7 @@
                 cardsBox.innerHTML = cardsHTML;
 
                 // 2. 🤖 GENERATE BOT WINNERS (Rank 1 & 2) 🤖
-                // Taki players ko lage kisi ne jeeta hai
-                let bot1Id = Math.floor(1000 + Math.random() * 9000); // 4 Digit ID
+                let bot1Id = Math.floor(1000 + Math.random() * 9000); 
                 let bot2Id = Math.floor(1000 + Math.random() * 9000); 
 
                 // Rank 1 ke cards ekdum same result wale honge (4 Match)
@@ -340,7 +336,7 @@
                 // Rank 2 ke cards (3 sahi, 1 galat)
                 let bot2Cards = [...resultData.cards]; 
                 let suits = ["♠️", "♥️", "♣️", "♦️"];
-                let wrongSuit = suits.find(s => s !== bot2Cards[3].suit) || "♠️"; // Ek galat suit le liya
+                let wrongSuit = suits.find(s => s !== bot2Cards[3].suit) || "♠️"; 
                 bot2Cards[3] = {suit: wrongSuit, num: "2", color: (wrongSuit === "♥️" || wrongSuit === "♦️") ? "red" : "black"};
                 let rank2CardsHTML = bot2Cards.map(c => `
                     <div class="mini-card ${c.color === 'red' ? 'text-red' : 'text-black'}">
@@ -375,14 +371,11 @@
             const totalSlots = 100000;
             let now = new Date();
             let lockTime = new Date();
-            lockTime.setHours(19, 0, 0, 0); // Join karne ka lock 7:00 PM
+            lockTime.setHours(19, 0, 0, 0); // Lock 7:00 PM
             
-            let resultTime = new Date();
-            resultTime.setHours(19, 30, 0, 0); // Result time 7:30 PM
-
             if (now >= lockTime) {
                 // TV Screen: 7 PM ke baad Lock
-                document.getElementById('joined-count').innerText = "1,00,000 Joined (Contest Locked)";
+                document.getElementById('joined-count').innerText = "1,00,000 Joined (Contest Full)";
                 document.getElementById('dynamic-bar').style.width = "100%";
                 document.getElementById('dynamic-bar').style.background = "#d32f2f";
                 
@@ -414,19 +407,6 @@
                         location.reload(); 
                     }
                 }, 3000);
-
-                // 4-DIGIT ID JOINING TICKER (No Cards Visible)
-                function addFakeJoiner() {
-                    let randomId = Math.floor(1000 + Math.random() * 9000); // Ex: 4592
-                    let list = document.getElementById('live-joiners-list');
-                    if(!list) return;
-                    let row = document.createElement('div');
-                    row.style.padding = "10px 15px"; row.style.borderBottom = "1px solid #eee"; row.style.display = "flex"; row.style.justifyContent = "space-between"; row.style.fontSize = "13px"; row.style.fontWeight = "bold"; row.style.animation = "fadeInRow 0.5s ease";
-                    row.innerHTML = `<span style="color:#333;">👤 ID: ${randomId}</span> <span style="color:#1976d2;">Joined</span>`;
-                    list.prepend(row);
-                    if(list.children.length > 6) list.removeChild(list.lastChild);
-                }
-                setInterval(addFakeJoiner, 2500);
             }
 
             function updateBar(count) {
