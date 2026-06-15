@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bharat VIP Fantasy - Live TV Screen</title>
+    <title>Bharat VIP Fantasy - Pro Version</title>
     
     <!-- 🔥 FIREBASE SDKS 🔥 -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -33,8 +33,8 @@
         .prize-val { font-size: 16px; font-weight: bold; color: #1e1e2d; }
         .prize-label { font-size: 12px; color: #777; margin-top: 5px; }
         
-        .timer-banner { background-color: #fff9e6; text-align: center; padding: 10px; border-bottom: 1px solid #eee; }
-        .timer-title { color: #d32f2f; font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+        .timer-banner { background-color: #fff9e6; text-align: center; padding: 12px; border-bottom: 1px solid #eee; }
+        .timer-title { color: #d32f2f; font-size: 15px; font-weight: bold; }
         
         /* Teams Scroller */
         .teams-container { display: flex; overflow-x: auto; padding: 15px; gap: 10px; border-bottom: 1px solid #eee; }
@@ -50,6 +50,11 @@
         .display-card { width: 60px; height: 90px; border: 1px solid #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; position: relative; font-size: 24px; font-weight: bold; background: #fafafa; }
         .card-suit { position: absolute; top: 5px; left: 5px; font-size: 12px; }
         
+        /* Mini Cards for Leaderboard */
+        .mini-card { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 35px; height: 50px; border: 1px solid #ccc; border-radius: 4px; background: white; font-weight: bold; margin-right: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+        .mini-card .s { font-size: 10px; }
+        .mini-card .n { font-size: 16px; margin-top: -2px;}
+
         /* Progress */
         .progress-section { padding: 0 20px 20px; }
         .progress-stats { display: flex; justify-content: space-between; font-size: 12px; color: #555; font-weight: bold; margin-bottom: 8px; }
@@ -127,9 +132,9 @@
                 </div>
             </div>
 
+            <!-- CLEAN BANNER (No faltu text) -->
             <div class="timer-banner">
-                <div class="timer-title">⏳ Contest Lock: 7:00 PM</div>
-                <div style="font-size:12px; color:#555;">Slots tezi se bhar rahe hain. Jaldi join karein!</div>
+                <div class="timer-title">Result: Daily Sham 7:30 PM</div>
             </div>
 
             <div class="teams-container" id="my-teams-list">
@@ -146,10 +151,10 @@
 
             <div class="leaderboard-header">
                 <div id="tab-btn-leaderboard" class="tab active" onclick="switchTab('leaderboard')">Live Leaderboard</div>
-                <div id="tab-btn-winnings" class="tab" onclick="switchTab('winnings')">Prize Chart</div>
+                <div id="tab-btn-winnings" class="tab" onclick="switchTab('winnings')">Rules</div>
             </div>
 
-            <!-- LEADERBOARD & SERVER RESULT TAB (TV SCREEN MODE) -->
+            <!-- LEADERBOARD & SERVER RESULT TAB -->
             <div id="content-leaderboard" class="tab-content active">
                 
                 <div id="pre-match-leaderboard">
@@ -158,25 +163,30 @@
                         <i class="fa-solid fa-spinner fa-spin" style="color:#d32f2f;"></i>
                     </div>
                     <div id="live-joiners-list" style="max-height: 250px; overflow-y: hidden;">
-                        <!-- JS generated fake joining UI hype goes here -->
+                        <!-- 4-Digit ID UI goes here -->
                     </div>
                 </div>
 
-                <div id="post-match-leaderboard" style="display:none; text-align: center; padding: 40px 20px; color: #666;">
+                <div id="post-match-leaderboard" style="display:none; text-align: center; padding: 20px; color: #666;">
                     <h3 style="color:#d32f2f; margin-bottom:5px;">🔒 Contest Closed!</h3>
                     <p style="font-size:13px; margin-bottom:15px;" id="server-status-text">Intezaar karein, Server Result generate kar raha hai...</p>
                     
                     <!-- YAHAN SERVER KA ASLI RESULT DIKHEGA -->
-                    <div id="server-live-result" style="display: none;">
-                        <div style="font-size:12px; color:#d32f2f; margin-bottom:5px; font-weight:bold;">🏆 TODAY'S OFFICIAL RESULT 🏆</div>
-                        <div class="cards-row" id="result-cards-box" style="margin-bottom:0;">
+                    <div id="server-live-result" style="display: none; text-align: center;">
+                        <div style="font-size:14px; color:#d32f2f; margin-bottom:10px; font-weight:bold;">🏆 TODAY'S OFFICIAL RESULT 🏆</div>
+                        <div class="cards-row" id="result-cards-box" style="margin-bottom:20px;">
                             <!-- Server se aane wale patte yahan aayenge -->
+                        </div>
+
+                        <!-- 🤖 BOT WINNERS LEADERBOARD (Dream11 Style Full Open) 🤖 -->
+                        <div id="bot-winners-list" style="text-align: left;">
+                            <!-- JS generate karega -->
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- PRIZE CHART -->
+            <!-- PRIZE CHART / RULES -->
             <div id="content-winnings" class="tab-content">
                 <div class="winnings-list">
                     <div class="winning-row" style="background:#fff9e6; border-bottom:2px solid #ffe082;">
@@ -296,18 +306,17 @@
         }
 
         // ==========================================
-        // 📡 TV SCREEN LOGIC: SERVER LISTENER
+        // 📡 TV SCREEN LOGIC: SERVER LISTENER & BOT WINNERS
         // ==========================================
-        // Ye function lagatar Database (Server) ko dekhta rahega ki result aaya ya nahi
         db.ref('Game/MegaFantasy/LiveResult').on('value', (snap) => {
             let resultData = snap.val();
-            // Agar result server ne declare kar diya hai
+            
             if(resultData && resultData.status === "declared") {
-                document.getElementById('server-status-text').innerText = "✅ Result aa chuka hai! Winners ke wallet update ho gaye hain.";
+                document.getElementById('server-status-text').innerText = "✅ Result aachuka hai!";
                 let resultBox = document.getElementById('server-live-result');
                 let cardsBox = document.getElementById('result-cards-box');
                 
-                // Server se aayi huyi array ko cards me convert karna (eg: [{suit: '♠️', color: 'black', num: 'A'}, ...])
+                // 1. Official Result Cards Show Karna
                 let cardsHTML = '';
                 resultData.cards.forEach(c => {
                     cardsHTML += `
@@ -316,6 +325,47 @@
                         </div>`;
                 });
                 cardsBox.innerHTML = cardsHTML;
+
+                // 2. 🤖 GENERATE BOT WINNERS (Rank 1 & 2) 🤖
+                // Taki players ko lage kisi ne jeeta hai
+                let bot1Id = Math.floor(1000 + Math.random() * 9000); // 4 Digit ID
+                let bot2Id = Math.floor(1000 + Math.random() * 9000); 
+
+                // Rank 1 ke cards ekdum same result wale honge (4 Match)
+                let rank1CardsHTML = resultData.cards.map(c => `
+                    <div class="mini-card ${c.color === 'red' ? 'text-red' : 'text-black'}">
+                        <div class="s">${c.suit}</div><div class="n">${c.num}</div>
+                    </div>`).join('');
+
+                // Rank 2 ke cards (3 sahi, 1 galat)
+                let bot2Cards = [...resultData.cards]; 
+                let suits = ["♠️", "♥️", "♣️", "♦️"];
+                let wrongSuit = suits.find(s => s !== bot2Cards[3].suit) || "♠️"; // Ek galat suit le liya
+                bot2Cards[3] = {suit: wrongSuit, num: "2", color: (wrongSuit === "♥️" || wrongSuit === "♦️") ? "red" : "black"};
+                let rank2CardsHTML = bot2Cards.map(c => `
+                    <div class="mini-card ${c.color === 'red' ? 'text-red' : 'text-black'}">
+                        <div class="s">${c.suit}</div><div class="n">${c.num}</div>
+                    </div>`).join('');
+
+                // Winners Leaderboard UI
+                let winnersHTML = `
+                    <div style="background: #fff9e6; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ffe082;">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 8px;">
+                            <span style="color:#333;">🥇 Rank 1 (ID: ${bot1Id})</span>
+                            <span style="color: #d32f2f; font-size:16px;">₹20,00,000</span>
+                        </div>
+                        <div style="display:flex; justify-content:flex-start;">${rank1CardsHTML}</div>
+                    </div>
+                    <div style="background: #fafafa; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 8px;">
+                            <span style="color:#555;">🥈 Rank 2 (ID: ${bot2Id})</span>
+                            <span style="color: #4CAF50; font-size:15px;">₹50,000</span>
+                        </div>
+                        <div style="display:flex; justify-content:flex-start;">${rank2CardsHTML}</div>
+                    </div>
+                `;
+                
+                document.getElementById('bot-winners-list').innerHTML = winnersHTML;
                 resultBox.style.display = 'block';
             }
         });
@@ -324,11 +374,14 @@
         function initLiveSystem() {
             const totalSlots = 100000;
             let now = new Date();
-            let targetTime = new Date();
-            targetTime.setHours(19, 0, 0, 0); // Lock exactly at 7:00 PM
+            let lockTime = new Date();
+            lockTime.setHours(19, 0, 0, 0); // Join karne ka lock 7:00 PM
+            
+            let resultTime = new Date();
+            resultTime.setHours(19, 30, 0, 0); // Result time 7:30 PM
 
-            if (now >= targetTime) {
-                // TV Screen: Lock System immediately
+            if (now >= lockTime) {
+                // TV Screen: 7 PM ke baad Lock
                 document.getElementById('joined-count').innerText = "1,00,000 Joined (Contest Locked)";
                 document.getElementById('dynamic-bar').style.width = "100%";
                 document.getElementById('dynamic-bar').style.background = "#d32f2f";
@@ -337,11 +390,14 @@
                 document.getElementById('post-match-leaderboard').style.display = 'block';
 
                 let createBtn = document.querySelector('.create-new');
-                createBtn.innerText = "🔒 Contest Closed";
+                createBtn.innerText = "🔒 Contest Full";
                 createBtn.classList.add('locked');
-                createBtn.onclick = (e) => { e.preventDefault(); alert("Contest is locked by the Server!"); };
+                createBtn.onclick = (e) => { 
+                    e.preventDefault(); 
+                    alert("Contest Full. Next contest 8:30 PM ke bad join Karen."); 
+                };
             } else {
-                // Fake UI filling for visual hype (Only before 7 PM)
+                // Fake UI filling for visual hype (Before 7 PM)
                 let msPassed = now.getHours() * 3600000 + now.getMinutes() * 60000 + now.getSeconds() * 1000;
                 let totalMs = 19 * 3600000; 
                 let percentage = Math.max(0.6, msPassed / totalMs);
@@ -350,22 +406,23 @@
 
                 setInterval(() => {
                     let checkNow = new Date();
-                    if (checkNow < targetTime && currentJoined < totalSlots) {
+                    if (checkNow < lockTime && currentJoined < totalSlots) {
                         currentJoined += Math.floor(Math.random() * 5) + 2;
                         if(currentJoined > totalSlots) currentJoined = totalSlots;
                         updateBar(currentJoined);
-                    } else if (checkNow >= targetTime) {
+                    } else if (checkNow >= lockTime) {
                         location.reload(); 
                     }
                 }, 3000);
 
+                // 4-DIGIT ID JOINING TICKER (No Cards Visible)
                 function addFakeJoiner() {
-                    let names = ["Rahul", "Amit", "Priya", "Vikram", "Sneha", "Rohan", "Kabir", "Pooja", "Arjun", "Neha"];
+                    let randomId = Math.floor(1000 + Math.random() * 9000); // Ex: 4592
                     let list = document.getElementById('live-joiners-list');
                     if(!list) return;
                     let row = document.createElement('div');
                     row.style.padding = "10px 15px"; row.style.borderBottom = "1px solid #eee"; row.style.display = "flex"; row.style.justifyContent = "space-between"; row.style.fontSize = "13px"; row.style.fontWeight = "bold"; row.style.animation = "fadeInRow 0.5s ease";
-                    row.innerHTML = `<span style="color:#333;">👤 ${names[Math.floor(Math.random()*names.length)]}****</span> <span style="color:#1976d2;">Joined</span>`;
+                    row.innerHTML = `<span style="color:#333;">👤 ID: ${randomId}</span> <span style="color:#1976d2;">Joined</span>`;
                     list.prepend(row);
                     if(list.children.length > 6) list.removeChild(list.lastChild);
                 }
@@ -380,24 +437,25 @@
         window.onload = initLiveSystem;
 
         // --- SUBMIT TEAM TO SERVER ---
-        // Ye sirf permission leta hai aur Data bhejta hai.
         function saveTeamAndDeduct() {
-            let targetTime = new Date(); targetTime.setHours(19, 0, 0, 0);
-            if(new Date() >= targetTime) { alert("❌ Entry Closed by Server!"); return; }
+            let lockTime = new Date(); lockTime.setHours(19, 0, 0, 0);
+            if(new Date() >= lockTime) { 
+                alert("Contest Full. Next contest 8:30 PM ke bad join Karen."); 
+                return; 
+            }
             if (phone === "Guest") { alert("⚠️ Please Login from Dashboard!"); return; }
             if (tB < entryFee) { alert("❌ Insufficient Balance in Wallet."); return; }
 
-            // Deduct Logic
             let nD = dB, nW = wB, rm = entryFee;
             if (nD >= rm) { nD -= rm; } else { rm -= nD; nD = 0; nW -= rm; }
 
-            // Send Bet to Server (TV Screen transmitting data)
             let selectedCardsData = [];
             for(let i=1; i<=4; i++) {
                 let slot = document.getElementById('slot-'+i);
                 selectedCardsData.push({
                     suit: slot.querySelector('.card-suit-display').innerText,
-                    number: slot.querySelector('.card-val-display').innerText
+                    number: slot.querySelector('.card-val-display').innerText,
+                    color: slot.querySelector('.card-val-display').classList.contains('text-red') ? 'red' : 'black'
                 });
             }
 
@@ -410,7 +468,7 @@
                     cards: selectedCardsData,
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
-                alert("✅ Team Submitted to Server!");
+                alert("✅ Team Submitted successfully!");
                 
                 totalJoinedTeams++;
                 let teamList = document.getElementById('my-teams-list');
@@ -425,8 +483,11 @@
 
         // --- UI TOGGLES ---
         function openSelectionScreen() {
-            let targetTime = new Date(); targetTime.setHours(19, 0, 0, 0);
-            if(new Date() >= targetTime) { alert("🔒 Contest locked by Server!"); return; }
+            let lockTime = new Date(); lockTime.setHours(19, 0, 0, 0);
+            if(new Date() >= lockTime) { 
+                alert("Contest Full. Next contest 8:30 PM ke bad join Karen."); 
+                return; 
+            }
             document.getElementById('screen-main').classList.remove('active');
             document.getElementById('screen-selection').classList.add('active');
         }
