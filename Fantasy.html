@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bharat VIP Fantasy - Pro Version</title>
     
+    <!-- 🔥 FIREBASE SDKS 🔥 -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -97,7 +98,7 @@
         .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.8s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
         
         .flip-card.open .flip-card-inner { transform: rotateY(180deg); }
-        .flip-card.instant .flip-card-inner { transition: none; transform: rotateY(180deg); } /* No animation on refresh */
+        .flip-card.instant .flip-card-inner { transition: none; transform: rotateY(180deg); } 
         
         .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
         .flip-card-front { background: linear-gradient(135deg, #1a1a2e, #0f0f13); border: 2px solid #ffd700; color: #ffd700; font-size: 30px; font-weight: bold; }
@@ -133,11 +134,18 @@
         
         .text-red { color: #d32f2f; }
         .text-black { color: #000; }
+
+        /* 🔥 NEW: My Team Modal CSS 🔥 */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-box { background: white; width: 100%; max-width: 320px; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: fadeInRow 0.3s ease; }
+        .modal-box h3 { color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .modal-close-btn { background: #d32f2f; color: white; border: none; padding: 10px 30px; font-size: 14px; font-weight: bold; border-radius: 20px; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="app-container">
+        <!-- ================= SCREEN 1: MAIN HOME ================= -->
         <div id="screen-main" class="screen active">
             
             <div class="header">
@@ -179,19 +187,32 @@
 
             <div class="leaderboard-header">
                 <div id="tab-btn-leaderboard" class="tab active" onclick="switchTab('leaderboard')">Live Leaderboard</div>
-                <div id="tab-btn-winnings" class="tab" onclick="switchTab('winnings')">Rules</div>
+                <div id="tab-btn-winnings" class="tab" onclick="switchTab('winnings')">Rules & Results</div>
             </div>
 
+            <!-- LEADERBOARD TAB -->
             <div id="content-leaderboard" class="tab-content active">
                 
+                <!-- PRE-MATCH: PLAYERS VISIBLE BUT CARDS HIDDEN (?) -->
                 <div id="pre-match-leaderboard" style="padding: 10px; background: #f0f2f5;">
                     <div style="padding: 8px 10px; font-size: 12px; color: #d32f2f; background: #fff9e6; border-radius: 6px; margin-bottom: 10px; text-align: center; font-weight: bold; border: 1px dashed #d32f2f;">
                         🔒 Sabhi patte (cards) result aane tak hide rahenge.
                     </div>
-                    <div id="live-joiners-list">
+                    
+                    <!-- 🔥 NEW: Scrollable Long Leaderboard Box 🔥 -->
+                    <div style="background: white; border-radius: 8px; border: 1px solid #ddd; overflow: hidden;">
+                        <div id="live-joiners-list" style="max-height: 400px; overflow-y: auto;">
+                            <!-- Hidden players -->
                         </div>
+                        
+                        <!-- Searching Spinner at Bottom -->
+                        <div style="padding: 15px; text-align: center; color: #777; font-size: 13px; border-top: 1px solid #eee; background: #fafafa;">
+                            <i class="fa-solid fa-spinner fa-spin" style="color: #1976d2;"></i> Searching more players...
+                        </div>
+                    </div>
                 </div>
 
+                <!-- POST-MATCH: RESULT & CARDS OPEN -->
                 <div id="post-match-leaderboard" style="display:none; padding: 15px; color: #666; background: #f0f2f5;">
                     <div style="text-align: center;">
                         <h3 style="color:#d32f2f; margin-bottom:5px;">🔒 Contest Closed!</h3>
@@ -200,6 +221,7 @@
                     
                     <div id="server-live-result" style="display: none;">
                         
+                        <!-- MAIN SERVER RESULT WITH FLIP ANIMATION -->
                         <div style="text-align: center; background: white; padding: 25px 15px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
                             <div style="font-size:16px; color:#d32f2f; margin-bottom:15px; font-weight:900;">🏆 OFFICIAL RESULT (7:30 PM) 🏆</div>
                             <div class="cards-row" id="result-cards-box"></div>
@@ -207,6 +229,7 @@
 
                         <div id="leaderboard-reveal-section" style="display:none;">
                             
+                            <!-- 🔥 PRIZE DISTRIBUTION COUNT (HISSEDAR) 🔥 -->
                             <div class="hissedar-box">
                                 <div class="h-header">🏆 Aaj Ke Total Hissedar (Winners)</div>
                                 <div class="h-row">
@@ -229,13 +252,31 @@
 
                             <h4 style="color: #333; margin-bottom: 10px; font-size: 14px; border-left: 3px solid #d32f2f; padding-left: 8px;">Top Players & Their Cards</h4>
                             <div id="bot-winners-list">
-                                </div>
+                                <!-- Winners listed here -->
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div id="content-winnings" class="tab-content">
+            <!-- PRIZE CHART / RULES TAB -->
+            <div id="content-winnings" class="tab-content" style="padding: 10px;">
+                
+                <!-- 🔥 NEW: YESTERDAY'S RESULT BLOCK 🔥 -->
+                <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <h4 style="color:#1976d2; margin-bottom:12px; font-size: 15px;">🔙 Yesterday's Winning Cards</h4>
+                    <div class="cards-row" style="margin-bottom:10px;">
+                        <div class="display-card text-red" style="width:45px; height:65px; font-size:20px;"><span class="card-suit">♥️</span> A</div>
+                        <div class="display-card text-black" style="width:45px; height:65px; font-size:20px;"><span class="card-suit">♠️</span> K</div>
+                        <div class="display-card text-black" style="width:45px; height:65px; font-size:20px;"><span class="card-suit">♣️</span> 7</div>
+                        <div class="display-card text-red" style="width:45px; height:65px; font-size:20px;"><span class="card-suit">♦️</span> 10</div>
+                    </div>
+                    <div style="font-size:13px; color:#555; background: #fff9e6; padding: 5px; border-radius: 4px; border: 1px solid #ffe082;">
+                        🥇 Rank 1 Winner: <b>ID 8492</b> (Won ₹20 Lakh)
+                    </div>
+                </div>
+
+                <h4 style="color: #333; margin-bottom: 10px; font-size: 14px; border-left: 3px solid #4CAF50; padding-left: 8px;">Prize Structure & Rules</h4>
                 <div class="winnings-list">
                     <div class="winning-row" style="background:#fff9e6; border-bottom:2px solid #ffe082;">
                         <div class="rank-col">
@@ -277,6 +318,7 @@
 
         </div>
 
+        <!-- ================= SCREEN 2: CARD SELECTION ================= -->
         <div id="screen-selection" class="screen">
             <div class="header">
                 <div style="display:flex; align-items:center;">
@@ -324,6 +366,20 @@
 
     </div>
 
+    <!-- 🔥 NEW: MY TEAM PREVIEW MODAL 🔥 -->
+    <div id="my-team-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="modal-team-title">My Team 1</h3>
+            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Aapne yeh 4 patte select kiye hain:</p>
+            
+            <div class="cards-row" id="modal-cards-container" style="margin-bottom: 20px;">
+                <!-- JS will inject selected cards here -->
+            </div>
+            
+            <button class="modal-close-btn" onclick="closeMyTeamModal()">Close</button>
+        </div>
+    </div>
+
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
@@ -337,6 +393,9 @@
         let dB = 0; let wB = 0; let bB = 0; let tB = 0; 
         const entryFee = 99; 
         let totalJoinedTeams = 0;
+
+        // 🔥 DATA ARRAY TO STORE PLAYER'S CARDS 🔥
+        let myTeamsDataArray = [];
 
         if(phone !== "Guest") {
             db.ref('users/' + phone).on('value', (snap) => {
@@ -353,7 +412,6 @@
         // ==========================================
         // 📡 SERVER LISTENER & SUSPENSE REVEAL
         // ==========================================
-        
         function getRandomCard() {
             let suits = ["♠️", "♥️", "♣️", "♦️"];
             let numbers = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
@@ -381,13 +439,11 @@
 
         db.ref('Game/MegaFantasy/LiveResult').on('value', (snap) => {
             let resultData = snap.val();
-            
             if(resultData && resultData.status === "declared") {
                 document.getElementById('server-status-text').innerText = "✅ Result Out! Sabhi players ke patte open ho gaye hain.";
                 let resultBox = document.getElementById('server-live-result');
                 let cardsBox = document.getElementById('result-cards-box');
                 
-                // Memory check: Kya ye animation player pehle dekh chuka hai ya refresh kiya hai?
                 let animKey = "animPlayed_" + resultData.timestamp;
                 let skipAnimation = localStorage.getItem(animKey) === "true";
 
@@ -409,54 +465,44 @@
                 resultBox.style.display = 'block';
 
                 if (!skipAnimation) {
-                    // Animation Chalegi
                     setTimeout(() => document.getElementById('flip-card-0').classList.add('open'), 1000);
                     setTimeout(() => document.getElementById('flip-card-1').classList.add('open'), 2200);
                     setTimeout(() => document.getElementById('flip-card-2').classList.add('open'), 3400);
                     setTimeout(() => {
                         document.getElementById('flip-card-3').classList.add('open');
-                        localStorage.setItem(animKey, "true"); // Save kar lo ki animation dekh li
+                        localStorage.setItem(animKey, "true"); 
                         generateAndShowLeaderboard(resultData);
                     }, 4600);
                 } else {
-                    // Seedha Khul Jayega (Agar Refresh kiya hai)
                     generateAndShowLeaderboard(resultData);
                 }
             }
         });
 
-        // Function jo Leaderboard aur Hissedar UI generate karega
         function generateAndShowLeaderboard(resultData) {
-            let stats = resultData.stats || {}; // Server se bheja gaya data
+            let stats = resultData.stats || {}; 
             
-            // 1. UPDATE HISSEDAR (Total Winners Count)
-            document.getElementById('stat-r1').innerText = `${stats.rank1_count || 1} Player <span class="h-id">(ID: ${stats.rank1_id})</span>`;
-            document.getElementById('stat-r2').innerText = `${stats.rank2_count || 2} Players <span class="h-id">(ID: ${stats.rank2_id_1}, ${stats.rank2_id_2})</span>`;
-            document.getElementById('stat-r3').innerText = `${stats.rank3_count || 14} Players`;
-            document.getElementById('stat-r4').innerText = `${stats.rank4_count || 185} Players`;
+            document.getElementById('stat-r1').innerHTML = `${stats.rank1_count || 1} Player <span class="h-id">(ID: ${stats.rank1_id})</span>`;
+            document.getElementById('stat-r2').innerHTML = `${stats.rank2_count || 2} Players <span class="h-id">(ID: ${stats.rank2_id_1}, ${stats.rank2_id_2})</span>`;
+            document.getElementById('stat-r3').innerHTML = `${stats.rank3_count || 14} Players`;
+            document.getElementById('stat-r4').innerHTML = `${stats.rank4_count || 185} Players`;
 
-            // 2. UPDATE LEADERBOARD LIST (Cards ke sath)
             let lbHTML = '';
-
-            // Rank 1 (ID Server Se aayegi)
             let r1Cards = [...resultData.cards]; 
             lbHTML += createLeaderboardRow('🥇 Rank 1', stats.rank1_id || 4021, 'Won: ₹20,00,000', 'prize-red', 'rank-1', r1Cards);
 
-            // Rank 2 (IDs Server se aayengi)
             let r2Cards1 = [...resultData.cards]; r2Cards1[3] = getRandomCard();
             lbHTML += createLeaderboardRow('🥈 Rank 2', stats.rank2_id_1 || 8219, 'Won: ₹50,000', 'prize-green', 'rank-2', r2Cards1);
             
             let r2Cards2 = [...resultData.cards]; r2Cards2[2] = getRandomCard();
             lbHTML += createLeaderboardRow('🥈 Rank 2', stats.rank2_id_2 || 5392, 'Won: ₹50,000', 'prize-green', 'rank-2', r2Cards2);
 
-            // Rank 3 (Random bots for display)
             for(let i=0; i<3; i++) {
                 let r3Cards = [...resultData.cards]; r3Cards[2] = getRandomCard(); r3Cards[3] = getRandomCard();
                 lbHTML += createLeaderboardRow('🥉 Rank 3', Math.floor(1000 + Math.random()*9000), 'Won: ₹1,000', 'prize-green', '', r3Cards);
             }
 
             document.getElementById('bot-winners-list').innerHTML = lbHTML;
-            
             let revealSection = document.getElementById('leaderboard-reveal-section');
             revealSection.style.display = 'block';
             revealSection.style.animation = "fadeInRow 1s ease";
@@ -502,7 +548,7 @@
                     }
                 }, 3000);
 
-                // 🔥 HIDDEN CARDS LEADERBOARD (Before 7 PM) 🔥
+                // 🔥 LONG LEADERBOARD LOGIC (Max 200 Players Displayed) 🔥
                 function addFakeJoiner() {
                     let randomId = Math.floor(1000 + Math.random() * 9000); 
                     let list = document.getElementById('live-joiners-list');
@@ -511,6 +557,7 @@
                     let row = document.createElement('div');
                     row.className = "lb-row";
                     row.style.animation = "fadeInRow 0.5s ease";
+                    row.style.margin = "0 10px 6px 10px";
                     
                     let hiddenCardsHTML = `
                         <div class="mini-card secret-card">?</div>
@@ -526,13 +573,22 @@
                         </div>
                         <div class="lb-cards">${hiddenCardsHTML}</div>
                     `;
-                    list.prepend(row);
+                    
+                    // Naye players list me add honge
+                    list.appendChild(row);
 
-                    if(list.children.length > 15) list.removeChild(list.lastChild);
+                    // List ko lamba dikhane ke liye scroll bar wahi rakho
+                    list.scrollTop = list.scrollHeight;
+
+                    // Limit elements to prevent lag (Keep last 200)
+                    if(list.children.length > 200) list.removeChild(list.firstChild);
                 }
                 
-                for(let i=0; i<8; i++) addFakeJoiner();
-                setInterval(addFakeJoiner, 3500); 
+                // Start with 15 Fake Players pre-loaded
+                for(let i=0; i<15; i++) addFakeJoiner();
+                
+                // Add new player every 2.5 seconds
+                setInterval(addFakeJoiner, 2500); 
             }
 
             function updateBar(count) {
@@ -542,7 +598,7 @@
         }
         window.onload = initLiveSystem;
 
-        // --- SUBMIT TEAM TO SERVER ---
+        // --- SUBMIT TEAM & STORE PREVIEW DATA ---
         function saveTeamAndDeduct() {
             let lockTime = new Date(); lockTime.setHours(19, 0, 0, 0);
             if(new Date() >= lockTime) { 
@@ -574,17 +630,49 @@
                     cards: selectedCardsData,
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
+                
+                // Store cards data locally to show in preview modal
+                myTeamsDataArray.push(selectedCardsData);
+                let currentTeamIndex = myTeamsDataArray.length - 1;
+                
                 alert("✅ Team Submitted successfully!");
                 
                 totalJoinedTeams++;
                 let teamList = document.getElementById('my-teams-list');
                 let createBtn = teamList.querySelector('.create-new');
-                let newTeamBtn = document.createElement('div');
-                newTeamBtn.className = 'team-btn ' + (totalJoinedTeams === 1 ? 'active' : '');
+                
+                let newTeamBtn = document.createElement('button');
+                newTeamBtn.className = 'team-btn active';
                 newTeamBtn.innerText = 'Team ' + totalJoinedTeams;
+                // Add onclick event to open preview modal
+                newTeamBtn.onclick = () => showMyTeamModal(totalJoinedTeams, currentTeamIndex);
+                
                 teamList.insertBefore(newTeamBtn, createBtn);
                 closeSelectionScreen();
             }).catch(() => { alert("⚠️ Connection Error!"); });
+        }
+
+        // 🔥 NEW: SHOW MY TEAM PREVIEW MODAL 🔥
+        function showMyTeamModal(teamNumber, arrayIndex) {
+            document.getElementById('modal-team-title').innerText = "My Team " + teamNumber;
+            
+            let cardsData = myTeamsDataArray[arrayIndex];
+            let cardsHTML = '';
+            
+            cardsData.forEach(c => {
+                cardsHTML += `
+                    <div class="display-card ${c.color === 'red' ? 'text-red' : 'text-black'}">
+                        <span class="card-suit">${c.suit}</span> ${c.number}
+                    </div>
+                `;
+            });
+            
+            document.getElementById('modal-cards-container').innerHTML = cardsHTML;
+            document.getElementById('my-team-modal').style.display = 'flex';
+        }
+
+        function closeMyTeamModal() {
+            document.getElementById('my-team-modal').style.display = 'none';
         }
 
         // --- UI TOGGLES ---
