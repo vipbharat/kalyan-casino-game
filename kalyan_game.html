@@ -18,7 +18,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        /* 🔥 BUGS FIXED: Screen overflow scroll allow kar diya gaya hai 🔥 */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
         body { background: radial-gradient(circle at 50% 50%, #004d26 0%, #001a0d 100%); color: white; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; padding-bottom: 80px;}
         
@@ -36,7 +35,7 @@
 
         /* GAME STATUS AREA */
         .game-status-area { height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; margin-top: 5px; }
-        #main-timer { font-size: 70px; font-weight: 900; color: #39ff14; text-shadow: 0 0 20px #39ff14; line-height: 1; transition: color 0.3s;}
+        #main-timer { font-size: 70px; font-weight: 900; color: #39ff14; text-shadow: 0 0 20px #39ff14; line-height: 1; transition: color 0.1s;}
         
         #result-container { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
         #wait-timer { font-size: 16px; color: #ffd700; font-weight: bold; text-shadow: 0 2px 4px #000; }
@@ -45,9 +44,10 @@
         .my-bet-container { width: 100%; max-width: 480px; margin: 0 auto 5px; text-align: center; z-index: 20; }
         #my-bet-btn { display: inline-block; background: linear-gradient(to right, #e67e22, #d35400); color: white; padding: 5px 20px; border-radius: 20px; font-weight: 900; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-size: 13px; }
 
-        /* 🔥 13 CARDS (TERA PATTE) ALIGNMENT FIX 🔥 */
         .matka-grid { width: 100%; max-width: 480px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 5px 10px; margin: 0 auto;}
-        .card-box { width: calc(20% - 6px); background: linear-gradient(145deg, #fff, #ccc); border-radius: 8px; height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: space-around; border: 2.2px solid #333; position: relative; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.6);}
+        .card-box { width: calc(20% - 6px); background: linear-gradient(145deg, #fff, #ccc); border-radius: 8px; height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: space-around; border: 2.2px solid #333; position: relative; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.6); transition: transform 0.1s;}
+        .card-box:active { transform: scale(0.95); } /* Clicking effect for fast feel */
+        
         .card-special { border-color: #ffd700; background: linear-gradient(135deg, #fff, #ffd700); }
         .c-val { font-size: 22px; font-weight: 900; color: #000; line-height: 1;}
         .c-red { color: #d32f2f; }
@@ -55,7 +55,8 @@
         .win-glow { transform:scale(1.05); box-shadow: 0 0 25px #ffd700; border-color: #ffd700; z-index: 50; }
 
         .color-betting-area { width: 100%; max-width: 480px; display: flex; gap: 10px; padding: 5px 10px; margin: 0 auto;}
-        .color-box { flex: 1; height: 60px; border-radius: 10px; border: 3px solid #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; box-shadow: 0 5px 10px rgba(0,0,0,0.5); }
+        .color-box { flex: 1; height: 60px; border-radius: 10px; border: 3px solid #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; box-shadow: 0 5px 10px rgba(0,0,0,0.5); transition: transform 0.1s;}
+        .color-box:active { transform: scale(0.95); }
         .box-red { background: linear-gradient(135deg, #ff3333, #800000); }
         .box-black { background: linear-gradient(135deg, #333, #000); }
         .color-name { font-weight: 900; font-size: 14px; }
@@ -117,7 +118,6 @@
 
     <div id="chips-layer"></div>
 
-    <!-- 🔥 13 Cards Area 🔥 -->
     <div class="matka-grid" id="grid-container"></div>
 
     <div class="color-betting-area">
@@ -146,7 +146,7 @@
         </div>
     </div>
 
-    <!-- 🔥 JAVASCRIPT & FIREBASE ENGINE INTEGRATION 🔥 -->
+    <!-- FIREBASE INTEGRATION -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
@@ -155,8 +155,6 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         
-        // 🚨 SOCKET.IO HATA DIYA GAYA HAI - AB DIRECT SERVER FIREBASE SE CHALEGA 🚨
-
         const userID = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST";
         
         let totalBal = 0, depBal = 0, winBal = 0, bonBal = 0;
@@ -166,6 +164,7 @@
         let currentState = '';
         let localHistory = [];
         let botSimulationInterval;
+        let serverTimerSync = 0; 
 
         const chipImgs = { 10: "assets/10_0.png", 50: "assets/50_0.png", 100: "assets/100_0.png", 500: "assets/500_0.png", 1000: "assets/1000_0.png", 5000: "assets/5000_1.png" };
         let currentChip = 10;
@@ -212,7 +211,7 @@
                 });
             });
 
-            // Recover bets if page refreshes
+            // Recover bets
             db.ref(`Game/KalyanMatka/Bets/${userID}`).once('value', snap => {
                 let saved = snap.val();
                 if(saved) {
@@ -232,46 +231,57 @@
             });
         }
 
-        // 🔥 ENGINE CONNECTION: FIREBASE LISTENER 🔥
+        // 🔥 1. ENGINE SYNC 🔥
         db.ref('Game/KalyanMatka/Status').on('value', (snap) => {
             let data = snap.val();
             if(!data) return;
 
-            const t = document.getElementById('main-timer');
+            // Sync timer to our local variable
+            serverTimerSync = data.timer;
 
-            // NEW ROUND (Betting Starts)
             if(data.state === 'betting') {
                 if(currentState !== 'betting') {
                     isBettingOpen = true; 
                     currentState = 'betting';
                     document.getElementById('result-container').style.display = 'none';
-                    t.style.display = 'block';
+                    document.getElementById('main-timer').style.display = 'block';
                     document.querySelectorAll('.card-box, .color-box').forEach(b => b.classList.remove('win-glow'));
                     
                     resetRound();
                     startBotSimulation();
                 }
-                
-                t.innerText = data.timer;
-                t.style.color = data.timer <= 5 ? '#ff3333' : '#39ff14';
-                if(data.timer <= 5 && audioUnlocked) {
-                    try { new Audio('assets/22d0dc27-b727-42be-ac04-d9182459f976.mp3').play().catch(()=>{}); } catch(e){}
-                }
             } 
-            // RESULT DECLARED
             else if (data.state === 'result') {
                 if(currentState !== 'result') {
                     currentState = 'result';
                     isBettingOpen = false;
                     clearInterval(botSimulationInterval);
-                    showResult(data.winner); // Show winner from server
+                    showResult(data.winner); 
                 }
+                const t = document.getElementById('main-timer');
                 t.innerText = "STOP";
                 t.style.color = '#fff';
             }
         });
 
-        // Show Result Logic
+        // 🔥 2. SMOOTH LOCAL TIMER (Zero Lag) 🔥
+        setInterval(() => {
+            if(currentState === 'betting' && isBettingOpen) {
+                if(serverTimerSync > 0) {
+                    const t = document.getElementById('main-timer');
+                    t.innerText = serverTimerSync;
+                    t.style.color = serverTimerSync <= 5 ? '#ff3333' : '#39ff14';
+                    
+                    if(serverTimerSync <= 5 && audioUnlocked) {
+                        try { new Audio('assets/22d0dc27-b727-42be-ac04-d9182459f976.mp3').play().catch(()=>{}); } catch(e){}
+                    }
+                    
+                    serverTimerSync--;
+                }
+            }
+        }, 1000);
+
+        // Show Result
         function showResult(winVal) {
             document.getElementById('main-timer').style.display = 'none';
             document.getElementById('result-container').style.display = 'flex';
@@ -304,7 +314,6 @@
             }, 1000);
         }
 
-        // Reset Everything for New Round
         function resetRound() {
             myBets = {}; 
             cardsData.forEach(c => myBets[c.v] = 0);
@@ -317,7 +326,7 @@
             document.getElementById('chips-layer').innerHTML = '';
         }
 
-        // 🔥 BETTING LOGIC 🔥
+        // 🔥 3. FAST INSTANT BETTING + 2 SEC SECURITY LOCK 🔥
         function chooseChip(val, elem) {
             if(elem.classList.contains('locked')) return;
             currentChip = val; currentChipSrc = chipImgs[val];
@@ -328,19 +337,21 @@
 
         window.userBet = function(target, e) {
             if (!isBettingOpen) { alert("Betting is closed!"); return; }
+            
+            // 🔥 MASTER LOCK: Agar 2 second bache hain, toh bet lagna band (No late cheating)
+            if (serverTimerSync <= 2) { 
+                alert("⏳ Time is up! Wait for the next round."); 
+                return; 
+            }
+            
             if (userID === "GUEST") { alert("Login required!"); return; }
             if (totalBal < currentChip) { alert("Low balance!"); return; }
 
-            // Deduct from wallet instantly
-            let nDep = depBal, nWin = winBal, rem = currentChip;
-            if (nDep >= rem) { nDep -= rem; rem = 0; } else { rem -= nDep; nDep = 0; }
-            if (rem > 0) { if (nWin >= rem) { nWin -= rem; rem = 0; } else { rem -= nWin; nWin = 0; } }
-            db.ref(`users/${userID}`).update({ balance: nDep, winning_balance: nWin });
-
-            // Send Bet to Server Database
-            db.ref(`Game/KalyanMatka/Bets/${userID}/${target.toLowerCase()}`).set(firebase.database.ServerValue.increment(currentChip));
-
-            // Update Screen UI
+            // 1️⃣ DEDUCT WALLET IMMEDIATELY ON SCREEN
+            totalBal -= currentChip;
+            document.getElementById('wallet-bal').innerText = totalBal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            
+            // 2️⃣ UPDATE BET AMOUNT IMMEDIATELY ON SCREEN
             myBets[target] += currentChip;
             myTotalBet += currentChip;
             document.getElementById('my-bet-btn').innerText = "Total Bet: ₹" + myTotalBet;
@@ -349,7 +360,16 @@
             myTag.style.display = 'block';
             myTag.querySelector('span').innerText = myBets[target];
 
+            // 3️⃣ THROW CHIP VISUALLY INSTANTLY
             throwChipVisual(target, true);
+
+            // 4️⃣ FIREBASE UPDATE IN BACKGROUND (Quietly)
+            let nDep = depBal, nWin = winBal, rem = currentChip;
+            if (nDep >= rem) { nDep -= rem; rem = 0; } else { rem -= nDep; nDep = 0; }
+            if (rem > 0) { if (nWin >= rem) { nWin -= rem; rem = 0; } else { rem -= nWin; nWin = 0; } }
+            
+            db.ref(`users/${userID}`).update({ balance: nDep, winning_balance: nWin });
+            db.ref(`Game/KalyanMatka/Bets/${userID}/${target.toLowerCase()}`).set(firebase.database.ServerValue.increment(currentChip));
         }
 
         function throwChipVisual(target, isMe) {
@@ -380,7 +400,7 @@
                 chip.style.left = (bR.left + 5 + Math.random()*(bR.width-30)) + 'px';
                 chip.style.top = (bR.top + 5 + Math.random()*(bR.height-30)) + 'px';
                 chip.style.transform = `scale(0.8) rotate(${Math.random()*360}deg)`;
-            }, 50);
+            }, 10);
 
             if(document.getElementById('chips-layer').childElementCount > 150) {
                 document.getElementById('chips-layer').firstChild.remove();
