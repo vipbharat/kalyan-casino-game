@@ -46,7 +46,7 @@
 
         .matka-grid { width: 100%; max-width: 480px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 5px 10px; margin: 0 auto;}
         .card-box { width: calc(20% - 6px); background: linear-gradient(145deg, #fff, #ccc); border-radius: 8px; height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: space-around; border: 2.2px solid #333; position: relative; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.6); transition: transform 0.1s;}
-        .card-box:active { transform: scale(0.95); } /* Clicking effect for fast feel */
+        .card-box:active { transform: scale(0.95); } 
         
         .card-special { border-color: #ffd700; background: linear-gradient(135deg, #fff, #ffd700); }
         .c-val { font-size: 22px; font-weight: 900; color: #000; line-height: 1;}
@@ -231,12 +231,11 @@
             });
         }
 
-        // 🔥 1. ENGINE SYNC 🔥
+        // 🔥 ENGINE SYNC 🔥
         db.ref('Game/KalyanMatka/Status').on('value', (snap) => {
             let data = snap.val();
             if(!data) return;
 
-            // Sync timer to our local variable
             serverTimerSync = data.timer;
 
             if(data.state === 'betting') {
@@ -264,7 +263,7 @@
             }
         });
 
-        // 🔥 2. SMOOTH LOCAL TIMER (Zero Lag) 🔥
+        // 🔥 LOCAL TIMER 🔥
         setInterval(() => {
             if(currentState === 'betting' && isBettingOpen) {
                 if(serverTimerSync > 0) {
@@ -326,7 +325,7 @@
             document.getElementById('chips-layer').innerHTML = '';
         }
 
-        // 🔥 3. FAST INSTANT BETTING + 2 SEC SECURITY LOCK 🔥
+        // 🔥 BETTING LOGIC 🔥
         function chooseChip(val, elem) {
             if(elem.classList.contains('locked')) return;
             currentChip = val; currentChipSrc = chipImgs[val];
@@ -337,21 +336,13 @@
 
         window.userBet = function(target, e) {
             if (!isBettingOpen) { alert("Betting is closed!"); return; }
-            
-            // 🔥 MASTER LOCK: Agar 2 second bache hain, toh bet lagna band (No late cheating)
-            if (serverTimerSync <= 2) { 
-                alert("⏳ Time is up! Wait for the next round."); 
-                return; 
-            }
-            
+            if (serverTimerSync <= 2) { alert("⏳ Time is up! Wait for the next round."); return; }
             if (userID === "GUEST") { alert("Login required!"); return; }
             if (totalBal < currentChip) { alert("Low balance!"); return; }
 
-            // 1️⃣ DEDUCT WALLET IMMEDIATELY ON SCREEN
             totalBal -= currentChip;
             document.getElementById('wallet-bal').innerText = totalBal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             
-            // 2️⃣ UPDATE BET AMOUNT IMMEDIATELY ON SCREEN
             myBets[target] += currentChip;
             myTotalBet += currentChip;
             document.getElementById('my-bet-btn').innerText = "Total Bet: ₹" + myTotalBet;
@@ -360,16 +351,29 @@
             myTag.style.display = 'block';
             myTag.querySelector('span').innerText = myBets[target];
 
-            // 3️⃣ THROW CHIP VISUALLY INSTANTLY
             throwChipVisual(target, true);
 
-            // 4️⃣ FIREBASE UPDATE IN BACKGROUND (Quietly)
             let nDep = depBal, nWin = winBal, rem = currentChip;
             if (nDep >= rem) { nDep -= rem; rem = 0; } else { rem -= nDep; nDep = 0; }
             if (rem > 0) { if (nWin >= rem) { nWin -= rem; rem = 0; } else { rem -= nWin; nWin = 0; } }
             
             db.ref(`users/${userID}`).update({ balance: nDep, winning_balance: nWin });
             db.ref(`Game/KalyanMatka/Bets/${userID}/${target.toLowerCase()}`).set(firebase.database.ServerValue.increment(currentChip));
+        }
+
+        // 🔥 BOT SOUND THROTTLE (Shor na mache isliye control) 🔥
+        let lastBotSound = 0;
+        function playBotChipSound() {
+            if(!audioUnlocked) return;
+            let now = Date.now();
+            if(now - lastBotSound > 150) { 
+                try { 
+                    let sfx = new Audio('assets/c9c7036e-1502-4e98-9b70-b8fec24836e4.mp3');
+                    sfx.volume = 0.3; // 30% volume for bots
+                    sfx.play().catch(()=>{}); 
+                    lastBotSound = now;
+                } catch(e){}
+            }
         }
 
         function throwChipVisual(target, isMe) {
@@ -391,6 +395,7 @@
                 startX = Math.random() * window.innerWidth;
                 startY = -50;
                 chip.src = chipImgs[[10,50,100,500][Math.floor(Math.random()*4)]];
+                playBotChipSound(); // 👈 BOT SOUND TRIGGER
             }
 
             chip.style.left = startX + 'px'; chip.style.top = startY + 'px';
@@ -402,12 +407,11 @@
                 chip.style.transform = `scale(0.8) rotate(${Math.random()*360}deg)`;
             }, 10);
 
-            if(document.getElementById('chips-layer').childElementCount > 150) {
+            if(document.getElementById('chips-layer').childElementCount > 250) {
                 document.getElementById('chips-layer').firstChild.remove();
             }
         }
 
-        // Live Total Pool Tracker (Firebase Sync)
         db.ref('Game/KalyanMatka/Bets').on('value', snap => {
             let allB = snap.val() || {};
             let pools = {};
@@ -433,15 +437,21 @@
             });
         });
 
-        // Bots Animation System
+        // 🔥 HIGH-SPEED BOTS ANIMATION (Har 150ms me barish) 🔥
         function startBotSimulation() {
             botSimulationInterval = setInterval(() => {
                 if(!isBettingOpen) return;
-                let targets = [...cardsData.map(c=>c.v), 'RED', 'BLACK'];
-                let t = targets[Math.floor(Math.random()*targets.length)];
-                throwChipVisual(t, false);
+                
+                // Ek saath 1 se 3 chips fekega
+                let chipsToThrow = Math.floor(Math.random() * 3) + 1;
+                for(let i = 0; i < chipsToThrow; i++) {
+                    let targets = [...cardsData.map(c=>c.v), 'RED', 'BLACK'];
+                    let t = targets[Math.floor(Math.random()*targets.length)];
+                    throwChipVisual(t, false);
+                }
+                
                 document.getElementById('live-users').innerText = 500 + Math.floor(Math.random()*50);
-            }, 600);
+            }, 150); // SUPER FAST TIMING (150ms)
         }
 
         // Update History
