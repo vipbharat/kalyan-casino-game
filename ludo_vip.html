@@ -3,130 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LUDO VIP HD MLA - DASHBOARD</title>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <title>LUDO VIP - PLAY TABLE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --gold: #ffd700; --red: #ff4444; --green: #2ecc71; --blue: #3498db; --yellow: #f1c40f; }
-        body { margin: 0; background: #050505; font-family: 'Arial Black', sans-serif; color: white; user-select: none; overflow-x: hidden; }
+        :root { --gold: #ffd700; --bg: #0a0a0c; --board: #1a1a24; }
+        body { margin: 0; background: var(--bg); font-family: 'Arial Black', sans-serif; color: white; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 10px; background: #111; border-bottom: 2px solid var(--gold); }
-        .bal-box { background: #222; border: 1.5px solid var(--gold); padding: 5px 12px; border-radius: 20px; color: #0f0; font-weight: bold; font-size: 14px;}
-        
-        .tab-container { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
-        .tab-btn { padding: 10px 20px; border-radius: 10px; border: 1px solid var(--gold); background: #222; color: white; cursor: pointer; font-size: 14px; }
-        .active-tab { background: var(--gold); color: black; font-weight: bold; }
+        /* 🏆 Header Info */
+        .header { display: flex; justify-content: space-between; padding: 10px 15px; background: #111; border-bottom: 1px solid var(--gold); }
+        .match-info { font-size: 12px; color: var(--gold); text-align: center; }
+        .win-amt { color: #00ff88; font-size: 16px; text-shadow: 0 0 5px #00ff88; }
 
-        .entry-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 20px; }
-        .entry-btn { background: linear-gradient(145deg, #222, #000); border: 2px solid #333; border-radius: 15px; padding: 20px 10px; text-align: center; cursor: pointer; border-bottom: 5px solid #000; }
-        .fee { font-size: 26px; color: var(--gold); margin: 0; }
-        .win { font-size: 11px; color: #0f0; margin-top: 5px; }
+        /* 👤 Player Profiles */
+        .player-area { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(255,255,255,0.02); }
+        .top-player { border-bottom: 2px dashed #333; }
+        .bottom-player { border-top: 2px dashed #333; margin-top: auto; }
+        
+        .profile { display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--gold); background: #333; display: flex; justify-content: center; align-items: center; font-size: 24px; }
+        .name { font-size: 14px; color: #ccc; }
+
+        /* 🎲 3D Dice Design */
+        .dice-container { position: relative; width: 60px; height: 60px; perspective: 1000px; cursor: pointer; }
+        .dice { width: 100%; height: 100%; background: linear-gradient(145deg, #fff, #e6e6e6); border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; font-size: 40px; color: #000; border: 2px solid #ccc; transition: 0.1s; }
+        
+        /* Animation Classes */
+        .rolling { animation: shake 0.4s infinite; background: #f1c40f !important; }
+        @keyframes shake {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(-15deg) scale(1.1); }
+            50% { transform: rotate(15deg) scale(1.1); }
+            75% { transform: rotate(-15deg) scale(1.1); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+
+        /* 🟦 Center Board Placeholder (For Next Step) */
+        .ludo-board-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; position: relative; }
+        .board-placeholder { width: 280px; height: 280px; background: var(--board); border: 4px solid var(--gold); border-radius: 15px; box-shadow: 0 0 30px rgba(255,215,0,0.1); display: flex; justify-content: center; align-items: center; color: #555; text-align: center; }
+
+        .turn-indicator { position: absolute; padding: 5px 15px; background: var(--gold); color: #000; border-radius: 20px; font-size: 12px; font-weight: bold; box-shadow: 0 0 10px var(--gold); display: none; }
     </style>
 </head>
 <body>
 
-<div id="dash-page">
-    <div class="top-bar">
-        <button onclick="window.location.href='index.html'" style="background:transparent; border:none; color:white; font-size:20px; font-weight:bold; cursor:pointer;">◀</button>
-        <div style="text-align: center;">
-            <div style="color:var(--gold); font-size:16px; white-space:nowrap;">LUDO VIP HD MLA</div>
-            <div style="font-size:10px; color:#0f0;">🟢 ONLINE</div>
+    <!-- Header: Fee & Win Info -->
+    <div class="header">
+        <button onclick="window.location.href='dashboard.html'" style="background:none; border:none; color:white; font-size:18px;">◀</button>
+        <div class="match-info">
+            <div><span id="mode-text">2</span> PLAYERS • ENTRY: ₹<span id="fee-text">0</span></div>
+            <div class="win-amt">WIN: ₹<span id="win-text">0</span></div>
         </div>
-        <div class="bal-box">₹ <span id="balance">0.00</span></div>
+        <div style="width:20px;"></div>
     </div>
 
-    <div class="tab-container">
-        <button id="btn2p" class="tab-btn active-tab" onclick="switchMode(2)">2 PLAYERS</button>
-        <button id="btn4p" class="tab-btn" onclick="switchMode(4)">4 PLAYERS</button>
+    <!-- 🔴 OPPONENT AREA (TOP) -->
+    <div class="player-area top-player" id="opp-area">
+        <div class="profile">
+            <div class="avatar">🤖</div>
+            <div>
+                <div class="name">Opponent_99</div>
+                <div style="font-size:10px; color:#ff4444;">WAITING...</div>
+            </div>
+        </div>
+        <!-- Opponent's Dice -->
+        <div class="dice-container">
+            <div class="dice" id="opp-dice">🎲</div>
+        </div>
     </div>
 
-    <div class="entry-grid" id="entry-container"></div>
-</div>
+    <!-- 🟦 LUDO BOARD CENTER -->
+    <div class="ludo-board-area">
+        <div class="turn-indicator" id="turn-text">YOUR TURN</div>
+        <div class="board-placeholder">
+            <div>
+                <i class="fa-solid fa-chess-board" style="font-size: 50px; margin-bottom: 10px; color: var(--gold);"></i>
+                <br>LUDO BOARD<br><span style="font-size:10px;">(Tokens will move here)</span>
+            </div>
+        </div>
+    </div>
 
-<script>
-    // ES5 JavaScript taaki Acode mein koi crash na ho
-    var firebaseConfig = { 
-        apiKey: "AIzaSyCy2zsDDJeVTQEblCenkLILqJ_Pz0a0", 
-        databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", 
-        projectId: "kalyan-casino" 
-    };
-    
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    var db = firebase.database();
-    
-    var phone = localStorage.getItem('userPhone') || "user_1";
-    var fees = [10, 50, 100, 500, 1000, 2000, 5000, 10000];
-    var userBal = 0;
-    var currentMode = 2;
+    <!-- 🟢 YOUR AREA (BOTTOM) -->
+    <div class="player-area bottom-player" id="my-area" style="background: rgba(0, 255, 136, 0.05);">
+        <div class="profile">
+            <div class="avatar" style="border-color: #00ff88;">😎</div>
+            <div>
+                <div class="name" style="color: #00ff88;">YOU (Player 1)</div>
+                <div style="font-size:10px; color:#00ff88;">YOUR TURN!</div>
+            </div>
+        </div>
+        <!-- Your Dice -->
+        <div class="dice-container" onclick="rollMyDice()">
+            <div class="dice" id="my-dice" style="border-color: #00ff88; box-shadow: 0 0 15px rgba(0,255,136,0.3);">🎲</div>
+        </div>
+    </div>
 
-    // 2 Player aur 4 Player Switch karna
-    function switchMode(m) {
-        currentMode = m;
-        var btn2 = document.getElementById('btn2p');
-        var btn4 = document.getElementById('btn4p');
-        
-        if(m === 2) {
-            btn2.className = "tab-btn active-tab";
-            btn4.className = "tab-btn";
-        } else {
-            btn2.className = "tab-btn";
-            btn4.className = "tab-btn active-tab";
-        }
-        renderDash();
-    }
+    <script>
+        // Setup data from Dashboard
+        document.getElementById('mode-text').innerText = localStorage.getItem('ludo_mode') || '2';
+        document.getElementById('fee-text').innerText = localStorage.getItem('ludo_fee') || '0';
+        document.getElementById('win-text').innerText = localStorage.getItem('ludo_win') || '0';
 
-    // Entry Button Draw karna
-    function renderDash() {
-        var cont = document.getElementById('entry-container');
-        cont.innerHTML = "";
-        
-        for(var i = 0; i < fees.length; i++) {
-            var f = fees[i];
-            // Win calculation: 2 Player = 1.9x, 4 Player = 3.7x
-            var w = (currentMode === 2) ? (f * 1.9) : (f * 3.7); 
+        var myTurn = true;
+        var diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅']; // Unicode Dice Faces
+
+        // 🎲 YOUR DICE ROLL LOGIC
+        function rollMyDice() {
+            if (!myTurn) return; // Agar aapki baari nahi hai toh click kaam nahi karega
+            myTurn = false;
             
-            var btnHtml = '<div class="entry-btn" onclick="enterTable(' + f + ', ' + w + ')">' +
-                '<p class="fee">₹' + f + '</p>' +
-                '<div class="win">WIN: ₹' + w.toFixed(0) + '</div>' +
-            '</div>';
-            
-            cont.innerHTML += btnHtml;
+            var myDice = document.getElementById('my-dice');
+            myDice.classList.add('rolling'); // CSS shaking animation lagao
+            document.getElementById('turn-text').style.display = 'none';
+
+            var rolls = 0;
+            // 100 milliseconds mein dice ka face change hoga (Tez ghoomne ka effect)
+            var shuffleInterval = setInterval(function() {
+                var randomFace = Math.floor(Math.random() * 6);
+                myDice.innerText = diceFaces[randomFace];
+                rolls++;
+
+                // 1.2 second baad dice ruk jayega
+                if (rolls >= 12) {
+                    clearInterval(shuffleInterval);
+                    myDice.classList.remove('rolling');
+                    
+                    // Final Result Generate Karo
+                    var finalResult = Math.floor(Math.random() * 6) + 1;
+                    myDice.innerText = diceFaces[finalResult - 1]; // Array 0 se shuru hota hai
+                    
+                    console.log("You rolled a: " + finalResult);
+                    
+                    // Ab opponent ki baari trigger karo
+                    setTimeout(rollOpponentDice, 2000); // 2 second ka wait
+                }
+            }, 100);
         }
-    }
 
-    // Game Table mein entry lena
-    function enterTable(fee, win) {
-        if(userBal < fee) { 
-            alert("Balance kam hai! Kripya recharge karein."); 
-            return; 
+        // 🎲 OPPONENT DICE ROLL LOGIC
+        function rollOpponentDice() {
+            document.getElementById('turn-text').innerText = "OPPONENT'S TURN";
+            document.getElementById('turn-text').style.background = "#ff4444";
+            document.getElementById('turn-text').style.color = "white";
+            document.getElementById('turn-text').style.display = 'block';
+
+            var oppDice = document.getElementById('opp-dice');
+            oppDice.classList.add('rolling');
+
+            var rolls = 0;
+            var shuffleInterval = setInterval(function() {
+                var randomFace = Math.floor(Math.random() * 6);
+                oppDice.innerText = diceFaces[randomFace];
+                rolls++;
+
+                if (rolls >= 12) {
+                    clearInterval(shuffleInterval);
+                    oppDice.classList.remove('rolling');
+                    
+                    var finalResult = Math.floor(Math.random() * 6) + 1;
+                    oppDice.innerText = diceFaces[finalResult - 1];
+                    
+                    console.log("Opponent rolled a: " + finalResult);
+                    
+                    // Wapas aapki baari
+                    setTimeout(function() {
+                        myTurn = true;
+                        document.getElementById('turn-text').innerText = "YOUR TURN";
+                        document.getElementById('turn-text').style.background = "#00ff88";
+                        document.getElementById('turn-text').style.color = "black";
+                    }, 1000);
+                }
+            }, 100);
         }
-        
-        // Single wallet se entry fee cut karna dashboard par hi
-        db.ref('users/' + phone + '/balance').transaction(function(currentBalance) {
-            return (currentBalance || 0) - fee;
-        }, function(error, committed) {
-            if(committed) {
-                // Game mode ki detail save karna taaki dusri file ko pata chal sake
-                localStorage.setItem('ludo_mode', currentMode);
-                localStorage.setItem('ludo_fee', fee);
-                localStorage.setItem('ludo_win', win);
-                
-                // Dusri file (Asli game table) par redirect karna
-                window.location.href = 'ludo-table.html';
-            }
-        });
-    }
 
-    // Single Wallet Fetch - by default 0.00 dikhayega
-    db.ref('users/' + phone + '/balance').on('value', function(snapshot) { 
-        userBal = snapshot.val() || 0; 
-        document.getElementById('balance').innerText = userBal.toFixed(2); 
-    });
-
-    // Pehli baar UI draw karna
-    renderDash();
-</script>
+        // Shuru mein YOUR TURN dikhao
+        setTimeout(function() {
+            document.getElementById('turn-text').style.display = 'block';
+        }, 1000);
+    </script>
 </body>
 </html>
