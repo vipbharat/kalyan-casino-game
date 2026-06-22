@@ -9,13 +9,23 @@
         :root { --gold: #ffd700; --bg: #0a0a0c; --board: #1a1a24; }
         body { margin: 0; background: var(--bg); font-family: 'Arial Black', sans-serif; color: white; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
-        /* 🏆 Header Info */
-        .header { display: flex; justify-content: space-between; padding: 10px 15px; background: #111; border-bottom: 1px solid var(--gold); }
+        /* 🔍 MATCHMAKING SCREEN (NEW) */
+        #matchmaking-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a1a24 0%, #000 100%); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .radar { width: 120px; height: 120px; border: 3px solid #00ff88; border-radius: 50%; position: relative; overflow: hidden; box-shadow: 0 0 30px rgba(0,255,136,0.3); margin-bottom: 20px; }
+        .radar::before { content: ''; position: absolute; top: 50%; left: 50%; width: 50%; height: 50%; background: linear-gradient(45deg, rgba(0,255,136,0.8), transparent); transform-origin: top left; animation: radarSpin 1.5s linear infinite; }
+        @keyframes radarSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .mm-title { font-size: 22px; color: #fff; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 10px #fff; }
+        .mm-details { margin-top: 15px; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 10px; border: 1px solid var(--gold); }
+        .mm-details span { color: var(--gold); font-size: 18px; }
+
+        /* 🏆 Header Info (Updated with Table ID) */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-bottom: 1px solid var(--gold); }
+        .table-id-box { background: #222; border: 1px solid #555; padding: 3px 8px; border-radius: 5px; font-size: 10px; color: #aaa; font-family: monospace; }
         .match-info { font-size: 12px; color: var(--gold); text-align: center; }
         .win-amt { color: #00ff88; font-size: 16px; text-shadow: 0 0 5px #00ff88; }
 
         /* 👤 Player Profiles */
-        .player-area { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(255,255,255,0.02); }
+        .player-area { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(255,255,255,0.02); transition: 0.3s; }
         .top-player { border-bottom: 2px dashed #333; }
         .bottom-player { border-top: 2px dashed #333; margin-top: auto; }
         
@@ -25,53 +35,51 @@
 
         /* 🎲 3D Dice Design */
         .dice-container { position: relative; width: 60px; height: 60px; perspective: 1000px; cursor: pointer; }
-        .dice { width: 100%; height: 100%; background: linear-gradient(145deg, #fff, #e6e6e6); border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; font-size: 40px; color: #000; border: 2px solid #ccc; transition: 0.1s; }
+        .dice { width: 100%; height: 100%; background: linear-gradient(145deg, #fff, #e6e6e6); border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.5), inset 0 0 10px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; font-size: 45px; color: #000; border: 2px solid #ccc; transition: 0.1s; line-height: 1; }
         
-        /* Animation Classes */
         .rolling { animation: shake 0.4s infinite; background: #f1c40f !important; }
-        @keyframes shake {
-            0% { transform: rotate(0deg) scale(1); }
-            25% { transform: rotate(-15deg) scale(1.1); }
-            50% { transform: rotate(15deg) scale(1.1); }
-            75% { transform: rotate(-15deg) scale(1.1); }
-            100% { transform: rotate(0deg) scale(1); }
-        }
+        @keyframes shake { 0% { transform: rotate(0deg) scale(1); } 25% { transform: rotate(-15deg) scale(1.1); } 50% { transform: rotate(15deg) scale(1.1); } 75% { transform: rotate(-15deg) scale(1.1); } 100% { transform: rotate(0deg) scale(1); } }
 
-        /* 🟦 Center Board Placeholder (For Next Step) */
-        .ludo-board-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; position: relative; }
+        /* 🟦 Center Board Area */
+        .ludo-board-area { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; gap: 20px; }
+        .turn-indicator { padding: 8px 25px; background: #00ff88; color: #000; border-radius: 20px; font-size: 14px; font-weight: bold; box-shadow: 0 0 15px rgba(0,255,136,0.4); display: none; text-transform: uppercase; letter-spacing: 1px; }
         .board-placeholder { width: 280px; height: 280px; background: var(--board); border: 4px solid var(--gold); border-radius: 15px; box-shadow: 0 0 30px rgba(255,215,0,0.1); display: flex; justify-content: center; align-items: center; color: #555; text-align: center; }
-
-        .turn-indicator { position: absolute; padding: 5px 15px; background: var(--gold); color: #000; border-radius: 20px; font-size: 12px; font-weight: bold; box-shadow: 0 0 10px var(--gold); display: none; }
     </style>
 </head>
 <body>
 
-    <!-- Header: Fee & Win Info -->
+    <div id="matchmaking-screen">
+        <div class="radar"></div>
+        <div class="mm-title">Finding Opponent...</div>
+        <div style="color: #00ff88; font-size: 12px; margin-top: 5px;">ESTIMATED WAIT: 00:03s</div>
+        <div class="mm-details">
+            <div>TABLE ENTRY: <span>₹<span id="mm-fee">0</span></span></div>
+            <div style="font-size: 12px; margin-top: 5px; color: #ccc;">Joining Table #<span id="mm-table-id">0000</span></div>
+        </div>
+    </div>
+
     <div class="header">
         <button onclick="window.location.href='dashboard.html'" style="background:none; border:none; color:white; font-size:18px;">◀</button>
         <div class="match-info">
             <div><span id="mode-text">2</span> PLAYERS • ENTRY: ₹<span id="fee-text">0</span></div>
             <div class="win-amt">WIN: ₹<span id="win-text">0</span></div>
         </div>
-        <div style="width:20px;"></div>
+        <div class="table-id-box">T-ID: <span id="header-table-id">0000</span></div>
     </div>
 
-    <!-- 🔴 OPPONENT AREA (TOP) -->
     <div class="player-area top-player" id="opp-area">
         <div class="profile">
             <div class="avatar">🤖</div>
             <div>
                 <div class="name">Opponent_99</div>
-                <div style="font-size:10px; color:#ff4444;">WAITING...</div>
+                <div style="font-size:10px; color:#ff4444;" id="opp-status">MATCHING...</div>
             </div>
         </div>
-        <!-- Opponent's Dice -->
         <div class="dice-container">
             <div class="dice" id="opp-dice">🎲</div>
         </div>
     </div>
 
-    <!-- 🟦 LUDO BOARD CENTER -->
     <div class="ludo-board-area">
         <div class="turn-indicator" id="turn-text">YOUR TURN</div>
         <div class="board-placeholder">
@@ -82,69 +90,85 @@
         </div>
     </div>
 
-    <!-- 🟢 YOUR AREA (BOTTOM) -->
     <div class="player-area bottom-player" id="my-area" style="background: rgba(0, 255, 136, 0.05);">
         <div class="profile">
             <div class="avatar" style="border-color: #00ff88;">😎</div>
             <div>
                 <div class="name" style="color: #00ff88;">YOU (Player 1)</div>
-                <div style="font-size:10px; color:#00ff88;">YOUR TURN!</div>
+                <div style="font-size:10px; color:#00ff88;">GET READY!</div>
             </div>
         </div>
-        <!-- Your Dice -->
         <div class="dice-container" onclick="rollMyDice()">
             <div class="dice" id="my-dice" style="border-color: #00ff88; box-shadow: 0 0 15px rgba(0,255,136,0.3);">🎲</div>
         </div>
     </div>
 
     <script>
-        // Setup data from Dashboard
-        document.getElementById('mode-text').innerText = localStorage.getItem('ludo_mode') || '2';
-        document.getElementById('fee-text').innerText = localStorage.getItem('ludo_fee') || '0';
-        document.getElementById('win-text').innerText = localStorage.getItem('ludo_win') || '0';
+        // Data from Dashboard
+        var savedFee = localStorage.getItem('ludo_fee') || '0';
+        var savedWin = localStorage.getItem('ludo_win') || '0';
+        var savedMode = localStorage.getItem('ludo_mode') || '2';
+        
+        // Generate random Table ID
+        var tableId = Math.floor(1000 + Math.random() * 9000); 
 
-        var myTurn = true;
-        var diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅']; // Unicode Dice Faces
+        // Set Values in UI
+        document.getElementById('fee-text').innerText = savedFee;
+        document.getElementById('win-text').innerText = savedWin;
+        document.getElementById('mode-text').innerText = savedMode;
+        document.getElementById('mm-fee').innerText = savedFee;
+        document.getElementById('mm-table-id').innerText = tableId;
+        document.getElementById('header-table-id').innerText = tableId;
 
-        // 🎲 YOUR DICE ROLL LOGIC
+        var myTurn = false; // Game start hone par true hoga
+        var diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅']; 
+
+        // 🟢 MATCHMAKING LOGIC (Hides after 3.5 seconds)
+        setTimeout(function() {
+            document.getElementById('matchmaking-screen').style.display = 'none'; // Overlay hatao
+            document.getElementById('opp-status').innerText = 'CONNECTED';
+            document.getElementById('opp-status').style.color = '#00ff88';
+            
+            // Game start kardo
+            setTimeout(function() {
+                myTurn = true;
+                document.getElementById('turn-text').style.display = 'block';
+            }, 500);
+        }, 3500);
+
+        // 🎲 DICE LOGIC (Same as before)
         function rollMyDice() {
-            if (!myTurn) return; // Agar aapki baari nahi hai toh click kaam nahi karega
+            if (!myTurn) return; 
             myTurn = false;
             
             var myDice = document.getElementById('my-dice');
-            myDice.classList.add('rolling'); // CSS shaking animation lagao
-            document.getElementById('turn-text').style.display = 'none';
+            myDice.classList.add('rolling'); 
+            document.getElementById('turn-text').style.visibility = 'hidden';
 
             var rolls = 0;
-            // 100 milliseconds mein dice ka face change hoga (Tez ghoomne ka effect)
             var shuffleInterval = setInterval(function() {
                 var randomFace = Math.floor(Math.random() * 6);
                 myDice.innerText = diceFaces[randomFace];
                 rolls++;
 
-                // 1.2 second baad dice ruk jayega
                 if (rolls >= 12) {
                     clearInterval(shuffleInterval);
                     myDice.classList.remove('rolling');
                     
-                    // Final Result Generate Karo
                     var finalResult = Math.floor(Math.random() * 6) + 1;
-                    myDice.innerText = diceFaces[finalResult - 1]; // Array 0 se shuru hota hai
+                    myDice.innerText = diceFaces[finalResult - 1]; 
                     
-                    console.log("You rolled a: " + finalResult);
-                    
-                    // Ab opponent ki baari trigger karo
-                    setTimeout(rollOpponentDice, 2000); // 2 second ka wait
+                    setTimeout(rollOpponentDice, 2000); 
                 }
             }, 100);
         }
 
-        // 🎲 OPPONENT DICE ROLL LOGIC
         function rollOpponentDice() {
             document.getElementById('turn-text').innerText = "OPPONENT'S TURN";
             document.getElementById('turn-text').style.background = "#ff4444";
             document.getElementById('turn-text').style.color = "white";
-            document.getElementById('turn-text').style.display = 'block';
+            document.getElementById('turn-text').style.boxShadow = "0 0 15px rgba(255,68,68,0.4)";
+            document.getElementById('turn-text').style.visibility = 'visible';
 
             var oppDice = document.getElementById('opp-dice');
             oppDice.classList.add('rolling');
@@ -162,23 +186,16 @@
                     var finalResult = Math.floor(Math.random() * 6) + 1;
                     oppDice.innerText = diceFaces[finalResult - 1];
                     
-                    console.log("Opponent rolled a: " + finalResult);
-                    
-                    // Wapas aapki baari
                     setTimeout(function() {
                         myTurn = true;
                         document.getElementById('turn-text').innerText = "YOUR TURN";
                         document.getElementById('turn-text').style.background = "#00ff88";
                         document.getElementById('turn-text').style.color = "black";
+                        document.getElementById('turn-text').style.boxShadow = "0 0 15px rgba(0,255,136,0.4)";
                     }, 1000);
                 }
             }, 100);
         }
-
-        // Shuru mein YOUR TURN dikhao
-        setTimeout(function() {
-            document.getElementById('turn-text').style.display = 'block';
-        }, 1000);
     </script>
 </body>
 </html>
