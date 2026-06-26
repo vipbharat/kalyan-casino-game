@@ -7,6 +7,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
     <style>
         :root { --gold: #d4af37; --blue: #00e5ff; --pink: #ff007f; --green: #00ff88; }
@@ -347,10 +348,24 @@
     }
 
     // ==========================================
-    // 🔥 DIRECT SERVER-DRIVEN TIMER & UI LOGIC 🔥
+    // 🔥 NAYA SOCKET.IO TIMER AUR LOGIC YAHAN HAI 🔥
     // ==========================================
-    db.ref('Game/7UpDown/Status').on('value', (snap) => {
-        let data = snap.val(); if(!data) return;
+    
+    // 1. Apna Server Connect Karein (Abhi ke liye local hai, online host karne par yahan Vercel/Render ka URL daalna)
+    const socket = io("http://localhost:3000"); 
+
+    // 2. Online Player Tracker (Jab user connect ho)
+    socket.on("connect", () => {
+        if (userID && userID !== "GUEST") {
+            socket.emit("setPlayerInfo", userID); // Server ko number bhej diya
+        }
+    });
+
+    // 3. Naya Offline Timer aur Game Logic
+    socket.on('liveGamesUpdate', (gamesData) => {
+        let data = gamesData['7UpDown']; 
+        if(!data) return;
+        
         let tmr = document.getElementById('timer');
 
         if(data.state === 'betting') {
@@ -360,7 +375,6 @@
                     let aStart = document.getElementById('alert-start'); aStart.style.display = 'block'; setTimeout(() => aStart.style.display = 'none', 1000);
                 }
                 
-                // Show Server Timer Directly
                 tmr.innerText = data.timer + "s";
                 tmr.style.color = data.timer <= 5 ? "#ff007f" : "#fff";
                 if(data.timer <= 5 && lastBeep !== data.timer) { playSound('snd-beep', 0.8); lastBeep = data.timer; }
@@ -386,7 +400,6 @@
                 startRoll(v1, v2, winId);
             }
             
-            // 7UD Animation takes ~4.5s total. Show exact waiting timer when server says <= 5
             if (data.timer <= 5 && data.timer > 0 && isResultProcessing) {
                 tmr.innerText = "NEXT: " + data.timer + "s";
                 tmr.style.color = "#00ff88";
