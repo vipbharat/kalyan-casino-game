@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>7 Up Down - Smart Limit VIP</title>
+    <title>7 Up Down - Firebase VIP</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     
     <!-- 🔥 MASTER BRAHMASTRA ENGINE LINKED HERE 🔥 -->
     <script src="db-engine.js"></script>
@@ -75,7 +74,6 @@
         #tie { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.2); } 
         #high { border-color: var(--pink); color: var(--pink); background: rgba(255, 0, 127, 0.2); }
         
-        /* 🔥 TEXT VISIBILITY Z-INDEX FIXES 🔥 */
         .box-top { flex: 1; padding-top: 10px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; position: relative; pointer-events: none; z-index: 500; }
         .box-num { font-size: 1.8rem; font-weight: 900; line-height: 1; text-shadow: 0 0 10px currentColor, 0 0 5px #000; color: inherit; }
         .box-title { font-size: 0.85rem; font-weight: bold; color: inherit; margin-top: 2px; text-shadow: 0 0 5px #000;}
@@ -89,7 +87,6 @@
         .win-glow { transform:scale(1.05); background: rgba(255,255,255,0.3) !important; box-shadow: 0 0 40px currentColor !important; z-index: 30;}
         
         #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 50; overflow: hidden;}
-        /* 🔥 CHIP LAYER FIXED BELOW TEXT 🔥 */
         .chip-visual { pointer-events: none; position: absolute; width: 28px; height: 28px; z-index: 100; transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1); filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.8));}
         
         .footer-wrapper { position: absolute; bottom: 0; left: 0; width: 100%; flex-shrink: 0; display: flex; flex-direction: column; z-index: 150; background: rgba(0,0,0,0.95); }
@@ -221,11 +218,8 @@
     </div>
 
 <script>
-    // Server Ping
-    function wakeUpServer() { fetch("https://kalyan-engine.onrender.com/").catch(e => {}); }
-    wakeUpServer(); setInterval(wakeUpServer, 180000); 
-
-    // 🔥 FIREBASE CONFIG REMOVED - DB-ENGINE.JS WILL HANDLE THIS AUTOMATICALLY 🔥
+    // 🔥 Pure Firebase Connection via db-engine.js 🔥
+    // window.db automatically connects to the correct database (Old or New)
     
     let userID = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST";
     
@@ -241,7 +235,6 @@
     let lastBeep = -1;
     let localHistory = [];
 
-    // 🔥 AUDIO FIX: Throttling for clean chip sounds
     let lastChipSoundTime = 0; 
     let audioUnlocked = false;
 
@@ -273,7 +266,7 @@
         renderBotsUI();
 
         if (userID && userID !== "GUEST") {
-            db.ref(`users/${userID}`).on('value', (snap) => {
+            window.db.ref(`users/${userID}`).on('value', (snap) => {
                 const data = snap.val() || {};
                 depBal = parseFloat(data.balance || 0); winBal = parseFloat(data.winning_balance || 0); bonBal = parseFloat(data.bonus_balance || 0);
                 totalBal = depBal + winBal + bonBal; 
@@ -312,10 +305,9 @@
     let baseCount = 310;
     setInterval(() => { baseCount += Math.floor(Math.random() * 8) - 4; if(baseCount < 280) baseCount = 310; document.getElementById('live-users').innerText = `● ${baseCount} LIVE`; }, 3500);
 
-    // 🔥 FIREBASE CONNECTION CHECKER 🔥
     window.addEventListener('offline', () => { document.getElementById('network-overlay').style.display = 'flex'; });
     
-    let connectedRef = db.ref(".info/connected");
+    let connectedRef = window.db.ref(".info/connected");
     connectedRef.on("value", (snap) => {
         if (snap.val() === true) { document.getElementById('network-overlay').style.display = 'none'; isBettingOpen = false; resetTable(); fetchInitialHistory(); } 
         else { document.getElementById('network-overlay').style.display = 'flex'; }
@@ -330,7 +322,7 @@
     }
 
     function fetchInitialHistory() {
-        db.ref('Game/7UpDown/History').orderByKey().limitToLast(15).once('value', snap => {
+        window.db.ref('Game/7UpDown/History').orderByKey().limitToLast(15).once('value', snap => {
             localHistory = []; if(snap.exists()) { snap.forEach(child => { localHistory.push(child.val()); }); } renderHistory();
         });
     }
@@ -349,22 +341,11 @@
     }
 
     // ==========================================
-    // 🔥 NAYA SOCKET.IO TIMER AUR LOGIC YAHAN HAI 🔥
+    // 🔥 FIREBASE REALTIME GAME LOGIC 🔥
     // ==========================================
     
-    // 1. Apna Server Connect Karein (Abhi ke liye local hai, online host karne par yahan Vercel/Render ka URL daalna)
-    const socket = io("http://localhost:3000"); 
-
-    // 2. Online Player Tracker (Jab user connect ho)
-    socket.on("connect", () => {
-        if (userID && userID !== "GUEST") {
-            socket.emit("setPlayerInfo", userID); // Server ko number bhej diya
-        }
-    });
-
-    // 3. Naya Offline Timer aur Game Logic
-    socket.on('liveGamesUpdate', (gamesData) => {
-        let data = gamesData['7UpDown']; 
+    window.db.ref('Game/7UpDown/Status').on('value', (snap) => {
+        let data = snap.val(); 
         if(!data) return;
         
         let tmr = document.getElementById('timer');
@@ -408,7 +389,7 @@
         }
     });
 
-    db.ref('Game/7UpDown/Bets').on('value', snap => {
+    window.db.ref('Game/7UpDown/Bets').on('value', snap => {
         let allB = snap.val() || {};
         realPool = {low:0, tie:0, high:0};
         for(let u in allB) { if(!u.includes('bot')) { realPool.low += (allB[u].low||0); realPool.tie += (allB[u].tie||0); realPool.high += (allB[u].high||0); } }
@@ -501,9 +482,9 @@
         
         let nDep = depBal, nWin = winBal, rem = currentChip;
         if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
-        db.ref(`users/${userID}`).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
+        window.db.ref(`users/${userID}`).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
         
-        db.ref(`Game/7UpDown/Bets/${userID}/${side}`).set(firebase.database.ServerValue.increment(currentChip));
+        window.db.ref(`Game/7UpDown/Bets/${userID}/${side}`).set(firebase.database.ServerValue.increment(currentChip));
         
         myBets[side] += currentChip;
         document.getElementById('my-'+side).innerText = "My: ₹" + myBets[side].toLocaleString();
@@ -521,7 +502,6 @@
         }
     }
 
-    // 🔥 FIX: CHIP SPAWN SPREADING & Z-INDEX 🔥
     function spawnChip(side, imgSrc, srcId, isSystemAnim=false) {
         let now = Date.now();
         if (now - lastChipSoundTime > 80) { playSound('snd-drop', 0.35); lastChipSoundTime = now; }
@@ -539,10 +519,8 @@
         layer.appendChild(chip);
 
         setTimeout(() => {
-            // Text Overlap fix: Keeping chips strictly inside the box padding
             let randX = 20 + Math.random() * (bR.width - 40);
-            let randY = 40 + Math.random() * (bR.height - 80); // Protects top text and bottom total
-            
+            let randY = 40 + Math.random() * (bR.height - 80); 
             chip.style.left = (bR.left + randX - 13) + "px"; chip.style.top = (bR.top + randY - 13) + "px"; chip.style.transform = "scale(1)";
         }, 50);
         
@@ -564,7 +542,6 @@
         document.getElementById('cup').style.transform = 'translateY(-160px)';
     }
 
-    // 🔥 FIX: BOTS FAST ACTION CHIPS KI BAARISH (Crowded Feel) 🔥
     setInterval(() => {
         if(!isBettingOpen) return;
         let loops = Math.floor(Math.random() * 3) + 1;
@@ -588,7 +565,7 @@
                 if(balEl) balEl.innerText = "₹" + bot.bal.toLocaleString();
             }
         }
-    }, 150); // Fast 150ms Speed for VIP crowded table effect
+    }, 150);
 
     function build3DDice(id) {
         const cube = document.getElementById(id); cube.innerHTML = '';
