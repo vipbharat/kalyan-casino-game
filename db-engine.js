@@ -24,21 +24,21 @@ if (!firebase.apps.length) {
 const dbWallet = firebase.database(); // Paiso ka connection
 
 // 👉 STEP 2: Auto-Switch Logic for Games based on Date
-const today = new Date().getDate();
+// 🔥 TEST KE LIYE TEMPORARILY 5 TAREEKH SET KI HAI 🔥
+const today = 5; // Asli code: new Date().getDate();
 let activeGameConfig;
 
 if (today >= 2 && today <= 15) {
     // 2 se 15 tareekh tak: Games ka saara load PURANE Database par chalega
     activeGameConfig = walletConfig;
-    console.log("🚦 BRAHMASTRA ENGINE: Old Server Active (Date: " + today + ")");
+    console.log("🚦 TEST MODE: Old Server Active (Forced Date: " + today + ")");
 } else {
     // 16 se 1 tareekh tak: Games ka saara load NAYE Database par shift ho jayega
     activeGameConfig = liveEngineConfig;
-    console.log("🚀 BRAHMASTRA ENGINE: New Live Server Active (Date: " + today + ")");
+    console.log("🚀 TEST MODE: New Live Server Active (Forced Date: " + today + ")");
 }
 
 // 👉 STEP 3: Initialize the Game App connection
-// Agar same config hai toh naya connection nahi banayenge (purane se hi dbGames le lenge)
 let dbGames;
 if (activeGameConfig === walletConfig) {
     dbGames = firebase.database();
@@ -50,8 +50,6 @@ if (activeGameConfig === walletConfig) {
 // ========================================================
 // ⚠️ GLOBAL OVERRIDE (Ekdum Magic Trick!) ⚠️
 // ========================================================
-// Ab game ki HTML files me code change ki mehnat bachane ke liye:
-// Hum ek custom 'db' object banayenge jo decide karega ki reference kahan bhejna hai.
 
 window.db = {
     ref: function(path) {
@@ -70,5 +68,4 @@ window.db = {
     }
 };
 
-// Console msg confirm karne ke liye ki engine load ho gaya
 console.log("✅ Universal Database Switcher Installed Successfully!");
