@@ -6,6 +6,9 @@
     
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
+    <!-- 🔥 MASTER BRAHMASTRA ENGINE LINKED HERE 🔥 -->
+    <script src="db-engine.js"></script>
 
     <style>
         body { font-family: 'Arial Black', Arial, sans-serif; color: #fff; text-align: center; margin: 0; user-select: none; overflow: hidden; background: #050510; }
@@ -129,9 +132,8 @@
         function wakeUpServer() { fetch("https://kalyan-engine.onrender.com/").catch(e => {}); }
         wakeUpServer(); setInterval(wakeUpServer, 180000); 
 
-        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); 
-        const db = firebase.database();
+        // 🔥 FIREBASE DB INITIALIZED BY db-engine.js 🔥
+        const db = window.db;
 
         let userID = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST"; 
         let depBal = 0, winBal = 0, bonBal = 0, totalBal = 0;
@@ -147,7 +149,6 @@
         const s_coins = new Audio('https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3');
         const s_beep = new Audio('assets/22d0dc27-b727-42be-ac04-d9182459f976.mp3');
 
-        // 🔥 AUDIO FIX: Throttling for clean chip sounds
         let lastChipSoundTime = 0; 
         function playChipSound() {
             let now = Date.now();
@@ -234,7 +235,6 @@
             }
         } draw();
 
-        // 🔥 FIX: CHIP SPAWN SPREADING & Z-INDEX 🔥
         function throwChip(c_id, amt, imgSrc, isPlayer, e) {
             playChipSound();
             let box = document.getElementById('box-'+c_id);
@@ -254,7 +254,6 @@
             document.getElementById('chip-layer').appendChild(chip);
             
             setTimeout(() => {
-                // Keep chips inside the box but spread out safely (not overlapping main text much)
                 let randX = 10 + Math.random() * (rect.width - 40);
                 let randY = 10 + Math.random() * (rect.height - 40);
                 chip.style.left = (rect.left + randX) + 'px';
@@ -267,15 +266,14 @@
             }
         }
 
-        // 🔥 FIX: BOTS FAST ACTION CHIPS KI BAARISH (Crowded Feel) 🔥
         function startBots() {
             setInterval(() => {
                 if(!canBet) return;
-                let loops = Math.floor(Math.random() * 3) + 1; // 1 to 3 chips per tick
+                let loops = Math.floor(Math.random() * 3) + 1; 
                 for(let i=0; i<loops; i++) {
                     let clrs = ['r','b','g','p','o']; 
                     let bAmt = [10, 50, 100, 500, 1000]; 
-                    if(Math.random() > 0.8) bAmt.push(5000); // Rare big chips
+                    if(Math.random() > 0.8) bAmt.push(5000); 
                     
                     let ranColor = clrs[Math.floor(Math.random() * clrs.length)]; 
                     let ranAmt = bAmt[Math.floor(Math.random() * bAmt.length)];
@@ -283,7 +281,7 @@
                     document.getElementById('t-'+ranColor).innerText = tBets[ranColor].toLocaleString();
                     throwChip(ranColor, ranAmt, chipImgs[ranAmt], false, null); 
                 }
-            }, 150); // Fast 150ms Speed
+            }, 150);
         }
 
         function bet(c, e){
@@ -412,7 +410,6 @@
                         msg.style.display = "none";
                     }
                     
-                    // Show exact server timer
                     tmr.innerText = data.timer;
                     tmr.style.color = data.timer <= 5 ? "#F33" : "#0f0";
                     if(data.timer <= 5 && lastBeep !== data.timer) { s_beep.play().catch(e=>{}); lastBeep = data.timer; }
@@ -456,10 +453,9 @@
                         msg.innerHTML = `Result:<br><span style='color:#0f0;font-size:36px;'>${pr[prizeIndex]}</span>`;
                         checkPayout(prizeIndex, snapshotBets); 
                         rot = d; 
-                    }, 7500); // 7.5 Seconds spin animation
+                    }, 7500);
                 }
                 
-                // Show waiting timer explicitly after animation finishes
                 if (isResultProcessing && data.timer <= 4 && data.timer > 0) {
                     msg.innerHTML = `NEXT ROUND IN: <br><span style='color:#00ff88;font-size:40px;'>${data.timer}s</span>`;
                 }
