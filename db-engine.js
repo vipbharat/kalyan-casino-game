@@ -1,63 +1,50 @@
 // ========================================================
-// 🚀 KALYAN VIP - DAILY DATABASE AUTO-SWITCH ENGINE 🚀
+// 🧠 SMART ROUTER ENGINE (SPLIT DATABASE MODE) 🧠
 // ========================================================
 
-// 1. WALLET CONFIG (Hamesha PURANA Database)
-const walletConfig = {
+const oldConfig = {
     apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo",
     databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com",
     projectId: "kalyan-casino"
 };
 
-// 2. LIVE GAME CONFIG (Naya Engine)
-const liveEngineConfig = {
+const newConfig = {
     apiKey: "AIzaSyA3BdEPFah2Vj5ksxVgHrTV0NKu147YwjA", 
     databaseURL: "https://kalyan-live-engine-default-rtdb.firebaseio.com",
     projectId: "kalyan-live-engine"
 };
 
-// 👉 STEP 1: Always Initialize Wallet
+// 👉 1. Initialize Old App (For Wallet & Old Games)
 if (!firebase.apps.length) {
-    firebase.initializeApp(walletConfig);
+    firebase.initializeApp(oldConfig);
 }
-const dbWallet = firebase.database();
+const dbOld = firebase.database();
 
-// 👉 STEP 2: ROJANA WALA FORMULA (Even/Odd)
-const today = new Date().getDate();
-let activeGameConfig;
+// 👉 2. Initialize New App (For Roulettes & New Games)
+firebase.initializeApp(newConfig, "NewEngine");
+const dbNew = firebase.app("NewEngine").database();
 
-if (today % 2 === 0) {
-    // Even Dates (2, 4, 6...): Purana Server
-    activeGameConfig = walletConfig;
-    console.log("🚦 ROJANA ENGINE: Old Server Active (Date: " + today + ")");
-} else {
-    // Odd Dates (1, 3, 5...): Naya Server
-    activeGameConfig = liveEngineConfig;
-    console.log("🚀 ROJANA ENGINE: New Live Server Active (Date: " + today + ")");
-}
+// 👉 3. List of Games strictly on OLD Server
+const oldServerGames = ['AndarBahar', 'AndarBahar2', 'DragonTiger', 'DragonTiger2', 'MegaSpin'];
 
-// 👉 STEP 3: Initialize Game Database
-let dbGames;
-if (activeGameConfig === walletConfig) {
-    dbGames = firebase.database();
-} else {
-    firebase.initializeApp(activeGameConfig, "GameApp");
-    dbGames = firebase.app("GameApp").database();
-}
-
-// ⚠️ GLOBAL OVERRIDE
+// ⚠️ GLOBAL ROUTER OVERRIDE
 window.db = {
     ref: function(path) {
-        if (path.includes("users")) {
-            return dbWallet.ref(path);
+        // Paison ka len-den, recharge, withdraw hamesha OLD par
+        if (path.includes("users") || path.includes("recharge") || path.includes("withdrawal") || path.includes(".info/connected")) {
+            return dbOld.ref(path);
         }
-        else if (path.includes(".info/connected")) {
-            return dbWallet.ref(path);
-        }
+        
+        // Check karega ki kya yeh game purane server wala hai
+        let isOldGame = oldServerGames.some(g => path.includes(g));
+        if (isOldGame) {
+            return dbOld.ref(path);
+        } 
+        // Baaki saare games (Zoo, Car, 7UpDown, Matka) NEW par
         else {
-            return dbGames.ref(path);
+            return dbNew.ref(path);
         }
     }
 };
 
-console.log("✅ Universal Database Switcher (Daily Mode) Installed!");
+console.log("🔥 SMART SPLIT ENGINE ACTIVE: Wallet & DT/AB on OLD, Roulettes on NEW!");
