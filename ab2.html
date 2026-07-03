@@ -8,6 +8,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     
+    <script src="db-engine.js"></script>
+    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; user-select: none; }
 
@@ -96,7 +98,6 @@
         .bet-title { font-size: 22px; font-weight: 900; letter-spacing: 1px; margin-bottom: 2px; text-shadow: 0 0 5px #000;}
         .bet-payout { font-size: 11px; color: #ccc; margin-bottom: 6px;}
         
-        /* 🔥 LIVE COUNTING BOX UI 🔥 */
         .pool-text { font-size: 14px; color: white; background: rgba(0,0,0,0.85); padding: 4px 12px; border-radius: 6px; display: inline-block; border: 1.5px solid rgba(255,255,255,0.4); font-weight: 900; transition: all 0.1s;}
         .pool-flash { color: #00ff88 !important; border-color: #00ff88 !important; transform: scale(1.15); box-shadow: 0 0 10px #00ff88;}
 
@@ -148,7 +149,7 @@
     </div>
 
     <div id="start-screen" onclick="enterCasino()" style="position: fixed; inset: 0; background: #0a0515; z-index: 9999999; display: flex; justify-content: center; align-items: center; color: #ffd700; cursor: pointer;"><h1>TAP TO PLAY</h1></div>
-    <div id="loading-screen" style="position: fixed; inset: 0; background: #000; z-index: 9999998; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700;"><p>DOWNLOADING ASSETS...</p></div>
+    <div id="loading-screen" style="position: fixed; inset: 0; background: #000; z-index: 9999998; display: none; flex-direction: column; justify-content: center; align-items: center; color: #ffd700;"><p>LOADING SYSTEM...</p></div>
 
     <audio id="coinSnd" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
     <audio id="cardSnd" preload="auto" src="https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3"></audio>
@@ -256,7 +257,6 @@
     </div>
 
     <script>
-        // Automatic DB Path (Works for both AB and AB2 based on folder)
         const pathRef = window.location.pathname.includes('AndarBahar2') ? 'AndarBahar2' : 'AndarBahar';
         if(pathRef === 'AndarBahar2') $('dyn-room').innerText = 'AB 2 VIP';
 
@@ -271,9 +271,7 @@
             setTimeout(() => { $('loading-screen').style.display='none'; }, 2000); 
         }
 
-        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        const db = window.db; 
         const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST";
 
         const cardSuits = ["S", "H", "D", "C"];
@@ -360,7 +358,6 @@
             if(pb) { pb.classList.add('pool-flash'); setTimeout(() => pb.classList.remove('pool-flash'), 100); }
         }
 
-        // 🔥 INSTANT COUNTING OVERRIDE 🔥
         window.placeBet = function(side) {
             if(!isBettingOpen) return;
             if(totalBal < currentChip) return;
@@ -370,7 +367,7 @@
             db.ref('users/'+phone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
             
             myBets[side] += currentChip;
-            realPool[side] += currentChip; // Live Override
+            realPool[side] += currentChip; 
             updatePoolUI(); flashPool(side);
             
             db.ref(`Game/${pathRef}/Bets/${phone}/${side}`).set(firebase.database.ServerValue.increment(currentChip));
@@ -406,7 +403,7 @@
                         let amt = parseInt(cKeys[Math.floor(Math.random() * 5)]);
                         if(bot.bal >= amt) {
                             bot.bal -= amt; 
-                            botPool[s] += amt; // Live Override
+                            botPool[s] += amt; 
                             updatePoolUI(); flashPool(s);
                             spC(s, chipImgs[amt], 'bot-'+idx); playChipSound();
                         }
@@ -420,22 +417,16 @@
             $('p-bahar').innerText = (realPool.bahar + botPool.bahar).toLocaleString();
         }
 
+        // 🔥 PURE CODING CARDS GENERATION (INSTANT LOAD) 🔥
         function createCard(val, suit) {
             let div = document.createElement('div');
             div.className = 'playing-card';
-            if (val === 'J' || val === 'Q' || val === 'K') {
-                let sym = suit == 'S' ? '♠' : suit == 'H' ? '♥' : suit == 'D' ? '♦' : '♣';
-                let col = (suit == 'H' || suit == 'D') ? 'red-suit' : 'black-suit';
-                div.classList.add(col); div.style.background = '#ffffff'; div.style.border = '1px solid #ccc';
-                div.innerHTML = `${val}<span style="font-size:14px; margin-left:1px;">${sym}</span>`;
-            } else {
-                let suitMap = {'S': 'spades', 'H': 'hearts', 'D': 'diamonds', 'C': 'clubs'};
-                let valMap = {'A': 'ace', '10': '10', '0': '10'};
-                let suitName = suitMap[suit]; let valName = valMap[val] || val; 
-                let fileName = `assets/${valName}_of_${suitName}.png`.toLowerCase();
-                div.style.background = 'transparent'; div.style.border = 'none'; 
-                div.innerHTML = `<img src="${fileName}" style="width: 100%; height: 100%; border-radius: 4px; box-shadow: inherit;">`;
-            }
+            
+            let sym = suit == 'S' ? '♠' : suit == 'H' ? '♥' : suit == 'D' ? '♦' : '♣';
+            let col = (suit == 'H' || suit == 'D') ? 'red-suit' : 'black-suit';
+            
+            div.classList.add(col);
+            div.innerHTML = `${val}<span style="font-size:14px; margin-left:1px;">${sym}</span>`;
             return div;
         }
 
@@ -477,7 +468,6 @@
 
             if(data.state === 'betting') {
                 if (data.timer > 0) {
-                    // IF ANIMATION IS STILL RUNNING, DO NOT CLEAR THE BOARD YET!
                     if(animationActive) return;
 
                     if(!isBettingOpen) {
@@ -513,7 +503,6 @@
                 if(!isResultProcessing && data.winner && data.winner.side) {
                     isResultProcessing = true; lastBeep = -1;
                     msg.innerText = "DEALING CARDS..."; msg.style.color = '#d4af37';
-                    // Start dealing cards
                     setTimeout(() => showAnimation(data.winner.side, currentJoker.val, data.winner.cards, data.timer), 800);
                 }
                 
@@ -538,7 +527,6 @@
             updatePoolUI();
         });
 
-        // 🔥 SLOW CARDS + JOKER MATCH HIGHLIGHT + 6 SECOND WAIT 🔥
         async function showAnimation(winSide, jVal, exactSteps, serverTimerLeft) {
             animationActive = true; 
             
@@ -552,21 +540,18 @@
             };
 
             let safeCards = cardValues.filter(v => v != jVal);
-            
-            // Patte slow aayenge. Har patte ke beech 800ms ka time.
             let cardDelay = 800; 
             
-            // Agar player background se wapas aaya ho aur time kam bacha ho
             let requiredTime = exactSteps * 800;
             let availableTimeMs = (serverTimerLeft - 5) * 1000;
             if (availableTimeMs > 0 && availableTimeMs < requiredTime) {
                 cardDelay = availableTimeMs / exactSteps;
-                if(cardDelay < 150) cardDelay = 150; // Super fast catchup
+                if(cardDelay < 150) cardDelay = 150;
             }
 
             let step = 0;
             for (let i = 0; i < exactSteps; i++) {
-                if(!isResultProcessing) return; // safeguard
+                if(!isResultProcessing) return; 
                 
                 step++;
                 let side = (step % 2 !== 0) ? 'andar' : 'bahar'; 
@@ -582,7 +567,6 @@
                 playSound('cardSnd', 1.0); 
 
                 if(isLast) {
-                    // 🔥 JOKER MATCH HIGHLIGHT 🔥
                     newCard.style.boxShadow = "0 0 20px #00ff88, inset 0 0 10px #00ff88";
                     newCard.style.border = "2px solid #00ff88";
                     newCard.style.transform = "scale(1.15)";
@@ -607,7 +591,6 @@
                     
                     calculatePayouts(winSide, exactSteps);
                     
-                    // 🔥 STRICT WAIT TIME BEFORE RESTART 🔥
                     setTimeout(() => { 
                         animationActive = false; 
                     }, 6000); 
