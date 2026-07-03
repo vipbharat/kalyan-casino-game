@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     
+    <!-- 🔥 MASTER BRAHMASTRA ENGINE LINKED HERE 🔥 -->
     <script src="db-engine.js"></script>
     
     <style>
@@ -258,7 +259,7 @@
 
     <script>
         const pathRef = window.location.pathname.includes('AndarBahar2') ? 'AndarBahar2' : 'AndarBahar';
-        if(pathRef === 'AndarBahar2') $('dyn-room').innerText = 'AB 2 VIP';
+        if(pathRef === 'AndarBahar2') document.getElementById('dyn-room').innerText = 'AB 2 VIP';
 
         function wakeUpServer() { fetch("https://kalyan-engine.onrender.com/").catch(e => {}); }
         wakeUpServer(); setInterval(wakeUpServer, 180000); 
@@ -301,12 +302,12 @@
         for(let i=0; i<5; i++) botsList.push({ id: Math.floor(1000+Math.random()*9000), bal: Math.floor(20000+Math.random()*50000), avatar: avs[Math.floor(Math.random()*avs.length)] });
         
         function renderBotsUI() {
-            let h = ""; botsList.forEach((b, i) => { h += `<div class="player" id="bot-${i}"><img class="p-avatar" src="assets/${b.avatar}"><div class="p-id">ID_${b.id}</div><div class="p-bal">₹${b.bal}</div></div>`; });
+            let h = ""; botsList.forEach((b, i) => { h += '<div class="player" id="bot-'+i+'"><img class="p-avatar" src="assets/'+b.avatar+'"><div class="p-id">ID_'+b.id+'</div><div class="p-bal">₹'+b.bal+'</div></div>'; });
             $('player-row').innerHTML = h;
         }
         renderBotsUI();
         setInterval(() => { botsList.forEach(b => { b.bal += Math.floor(Math.random() * 8000) - 3000; if(b.bal > 150000) b.bal = 90000; if(b.bal < 10000) b.bal = 30000; }); renderBotsUI(); }, 3000); 
-        let baseCount = 345; setInterval(() => { baseCount += Math.floor(Math.random() * 8) - 4; if(baseCount < 300) baseCount = 330; $('live-users').innerText = `● ${baseCount} LIVE`; }, 3500);
+        let baseCount = 345; setInterval(() => { baseCount += Math.floor(Math.random() * 8) - 4; if(baseCount < 300) baseCount = 330; $('live-users').innerText = '● ' + baseCount + ' LIVE'; }, 3500);
 
         if(phone) {
             db.ref('users/'+phone).on('value', s => { 
@@ -316,13 +317,13 @@
                 $('balance').innerText = totalBal.toFixed(2); 
                 document.querySelectorAll('.chip-img').forEach(c => { if(parseInt(c.dataset.val) > totalBal) c.classList.add('locked'); else c.classList.remove('locked'); });
             });
-            db.ref(`Game/${pathRef}/Bets/${phone}`).once('value', snap => {
+            db.ref('Game/'+pathRef+'/Bets/'+phone).once('value', snap => {
                 let saved = snap.val();
-                if(saved) { setTimeout(() => { ['andar','bahar'].forEach(side => { let val = saved[side]; if(val > 0) { myBets[side] = val; let d = $(`bet-amt-${side}`); d.style.display='flex'; d.innerText=val; } }); }, 500); }
+                if(saved) { setTimeout(() => { ['andar','bahar'].forEach(side => { let val = saved[side]; if(val > 0) { myBets[side] = val; let d = $('bet-amt-'+side); d.style.display='flex'; d.innerText=val; } }); }, 500); }
             });
-            db.ref(`Game/${pathRef}/SideBets/${phone}`).once('value', snap => {
+            db.ref('Game/'+pathRef+'/SideBets/'+phone).once('value', snap => {
                 let saved = snap.val();
-                if(saved) { setTimeout(() => { Object.keys(saved).forEach(k => { let val = saved[k]; if(val > 0) { mySideBets[k] = val; let d = $(`sb-${k}`); if(d) { d.style.display='flex'; d.innerText=val; } } }); }, 500); }
+                if(saved) { setTimeout(() => { Object.keys(saved).forEach(k => { let val = saved[k]; if(val > 0) { mySideBets[k] = val; let d = $('sb-'+k); if(d) { d.style.display='flex'; d.innerText=val; } } }); }, 500); }
             });
         }
 
@@ -370,9 +371,9 @@
             realPool[side] += currentChip; 
             updatePoolUI(); flashPool(side);
             
-            db.ref(`Game/${pathRef}/Bets/${phone}/${side}`).set(firebase.database.ServerValue.increment(currentChip));
+            db.ref('Game/'+pathRef+'/Bets/'+phone+'/'+side).set(firebase.database.ServerValue.increment(currentChip));
             
-            let display = $(`bet-amt-${side}`); display.style.display = 'flex'; display.innerText = myBets[side]; 
+            let display = $('bet-amt-'+side); display.style.display = 'flex'; display.innerText = myBets[side]; 
             spC(side, currentChipSrc, 'my-wallet'); playChipSound();
         };
 
@@ -387,8 +388,8 @@
             if(!mySideBets[rangeKey]) mySideBets[rangeKey] = 0;
             mySideBets[rangeKey] += currentChip;
 
-            let display = $(`sb-${rangeKey}`); display.style.display = 'flex'; display.innerText = mySideBets[rangeKey];
-            db.ref(`Game/${pathRef}/SideBets/${phone}/${rangeKey}`).set(firebase.database.ServerValue.increment(currentChip));
+            let display = $('sb-'+rangeKey); display.style.display = 'flex'; display.innerText = mySideBets[rangeKey];
+            db.ref('Game/'+pathRef+'/SideBets/'+phone+'/'+rangeKey).set(firebase.database.ServerValue.increment(currentChip));
             spC(rangeKey, currentChipSrc, 'my-wallet'); playChipSound();
         };
 
@@ -417,21 +418,25 @@
             $('p-bahar').innerText = (realPool.bahar + botPool.bahar).toLocaleString();
         }
 
-        // 🔥 PURE CODING CARDS GENERATION (INSTANT LOAD) 🔥
+        // 🔥 PURE CODING CARDS GENERATION (SAFE FOR ALL EDITORS) 🔥
         function createCard(val, suit) {
-            let div = document.createElement('div');
+            var div = document.createElement('div');
             div.className = 'playing-card';
             
-            let sym = suit == 'S' ? '♠' : suit == 'H' ? '♥' : suit == 'D' ? '♦' : '♣';
-            let col = (suit == 'H' || suit == 'D') ? 'red-suit' : 'black-suit';
+            var sym = '&clubs;';
+            if(suit === 'S') sym = '&spades;';
+            else if(suit === 'H') sym = '&hearts;';
+            else if(suit === 'D') sym = '&diams;';
+            
+            var col = (suit === 'H' || suit === 'D') ? 'red-suit' : 'black-suit';
             
             div.classList.add(col);
-            div.innerHTML = `${val}<span style="font-size:14px; margin-left:1px;">${sym}</span>`;
+            div.innerHTML = val + '<span style="font-size:14px; margin-left:1px;">' + sym + '</span>';
             return div;
         }
 
         function fetchInitialHistory() {
-            db.ref(`Game/${pathRef}/History`).orderByKey().limitToLast(10).once('value', snap => {
+            db.ref('Game/'+pathRef+'/History').orderByKey().limitToLast(10).once('value', snap => {
                 let hist = snap.val();
                 if(hist) { localHistory = Array.isArray(hist) ? hist : Object.values(hist); renderHistory(); }
             });
@@ -445,7 +450,7 @@
                 let char = w === 'andar' ? 'A' : 'B';
                 let isNewest = (idx === showArr.length - 1);
                 let extraClass = isNewest ? 'newest-record' : '';
-                hHtml += `<div class="h-dot ${extraClass}" style="background:${col}; border-color:${col}">${char}</div>`;
+                hHtml += '<div class="h-dot ' + extraClass + '" style="background:' + col + '; border-color:' + col + '">' + char + '</div>';
             });
             $('record-board').innerHTML = hHtml;
         }
@@ -456,7 +461,7 @@
             else { $('network-overlay').style.display = 'flex'; }
         });
 
-        db.ref(`Game/${pathRef}/Status`).on('value', (snap) => {
+        db.ref('Game/'+pathRef+'/Status').on('value', (snap) => {
             let data = snap.val(); if(!data) return;
             let msg = $('status-msg');
 
@@ -485,7 +490,7 @@
                         myBets = {andar:0, bahar:0}; mySideBets = {}; botPool = {andar:0, bahar:0}; realPool = {andar:0, bahar:0}; updatePoolUI();
                     }
                     
-                    msg.innerText = `PLACE BETS: ${data.timer}s`;
+                    msg.innerText = 'PLACE BETS: ' + data.timer + 's';
                     if(data.timer <= 5) {
                         msg.style.color = '#ff3333';
                         if(lastBeep !== data.timer) { playSound('snd-beep', 0.8); lastBeep = data.timer; }
@@ -513,7 +518,7 @@
             }
         });
 
-        db.ref(`Game/${pathRef}/Bets`).on('value', snap => {
+        db.ref('Game/'+pathRef+'/Bets').on('value', snap => {
             let allB = snap.val() || {}; 
             let totalRealAndar = 0, totalRealBahar = 0;
             for(let u in allB) { 
@@ -572,7 +577,7 @@
                     newCard.style.transform = "scale(1.15)";
                     newCard.style.zIndex = "100";
 
-                    $('status-msg').innerText = `${winSide.toUpperCase()} WINS!`;
+                    $('status-msg').innerText = winSide.toUpperCase() + ' WINS!';
                     $(winSide === 'andar' ? 'bx-andar' : 'bx-bahar').classList.add('win-glow');
                     
                     localHistory.push(winSide); if(localHistory.length > 10) localHistory.shift(); renderHistory();
