@@ -13,6 +13,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
+    <script src="db-engine.js"></script>
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
         html, body { width: 100%; height: 100%; overflow: hidden; background: #000; position: fixed; }
@@ -90,7 +92,6 @@
         .bet-btn img { max-width: 75%; max-height: 70%; object-fit: contain; filter: drop-shadow(0 4px 5px #000); transform: translateY(-5%) scale(1.12); }
         .btn-icon-emoji { font-size: 38px; filter: drop-shadow(0 3px 4px #000); transform: translateY(-5%); }
 
-        /* 🔥 TEXT Z-INDEX FIXES 🔥 */
         .btn-multi { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); color: #ffd700; font-size: 14px; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; z-index: 500; pointer-events: none; }
         .pool-text { position: absolute; top: 4px; right: 8px; font-size: 14px; color: #fff; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; z-index: 500; pointer-events: none; }
         .my-bet-text { position: absolute; top: 4px; left: 8px; font-size: 14px; color: #39ff14; font-weight: 900; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 0 0 8px #000; display: none; z-index: 500; pointer-events: none; }
@@ -99,7 +100,6 @@
         .huge-timer { z-index: 10; font-size: clamp(35px, 6vw, 60px); font-weight: 900; color: #fff; text-shadow: 0 0 15px #ff007f, 0 0 5px #ff007f, 2px 2px 5px #000; transition: opacity 0.2s; pointer-events: none; font-variant-numeric: tabular-nums; text-align: center; width: 100%; }
 
         #chips-layer { position: absolute; inset: 0; pointer-events: none; z-index: 200; overflow: hidden;}
-        /* 🔥 CHIP Z-INDEX CONTROL 🔥 */
         .placed-chip-img { position: absolute; width: 24px; height: 24px; transition: all 0.35s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.2s; z-index: 100; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.8)); pointer-events: none;}
 
         .toast-msg { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0, 229, 255, 0.95); color: #000; padding: 10px 25px; border-radius: 8px; font-weight: 900; z-index: 9999; display: none; }
@@ -168,7 +168,6 @@
     <audio id="snd-fly" src="assets/7ba0aedc-0356-404d-9c4a-c34acec66469.mp3" preload="auto"></audio>
 
 <script>
-    // Server Ping
     function wakeUpServer() { fetch("https://kalyan-engine.onrender.com/").catch(e => {}); }
     wakeUpServer(); setInterval(wakeUpServer, 180000); 
 
@@ -211,7 +210,6 @@
         });
     }
 
-    // 🔥 AUDIO THROTTLING (Smooth Chips Sound) 🔥
     let lastChipSoundTime = 0;
     function playChipSound() {
         let now = Date.now();
@@ -266,26 +264,25 @@
 
     layout.forEach(b => {
         let div = document.createElement('div');
-        div.style.gridArea = `${b.r}/${b.c}/span ${b.rs||1}/span ${b.cs||1}`;
+        div.style.gridArea = b.r + '/' + b.c + '/span ' + (b.rs||1) + '/span ' + (b.cs||1);
+        
         if(b.type === 'vs') {
             div.className = 'center-png-box';
-            div.innerHTML = `<div class="huge-timer" id="main-timer">15</div>`;
+            div.innerHTML = '<div class="huge-timer" id="main-timer">15</div>';
         } else {
-            div.className = `bet-btn btn-${b.id.toLowerCase()} ${b.id==='ANIMALS'?'btn-animals':''} ${b.id==='BIRDS'?'btn-birds':''}`; 
-            div.id = `btn-${b.id}`;
+            div.className = 'bet-btn btn-' + b.id.toLowerCase() + (b.id==='ANIMALS' ? ' btn-animals' : '') + (b.id==='BIRDS' ? ' btn-birds' : ''); 
+            div.id = 'btn-' + b.id;
             div.onclick = (e) => placeBet(div, b.id, e);
             
-            let iconStr = b.id === 'shark' ? `<div class="btn-icon-emoji">🦈</div>` : 
-                         (b.id === 'ANIMALS' ? `<div class="btn-icon-emoji" style="transform:none;font-size:30px;">🦁</div><div style="font-size:18px;font-weight:900;color:#fff;text-shadow: 0 2px 4px #000;">BEAST (1.9x)</div>` : 
-                         (b.id === 'BIRDS' ? `<div class="btn-icon-emoji" style="transform:none;font-size:30px;">🦅</div><div style="font-size:18px;font-weight:900;color:#fff;text-shadow: 0 2px 4px #000;">BIRD (1.9x)</div>` : 
-                         `<img src="assets/${b.id.toLowerCase()}.png.png" onerror="this.innerHTML='🐾';">`));
+            let iconStr = b.id === 'shark' ? '<div class="btn-icon-emoji">🦈</div>' : 
+                         (b.id === 'ANIMALS' ? '<div class="btn-icon-emoji" style="transform:none;font-size:30px;">🦁</div><div style="font-size:18px;font-weight:900;color:#fff;text-shadow: 0 2px 4px #000;">BEAST (1.9x)</div>' : 
+                         (b.id === 'BIRDS' ? '<div class="btn-icon-emoji" style="transform:none;font-size:30px;">🦅</div><div style="font-size:18px;font-weight:900;color:#fff;text-shadow: 0 2px 4px #000;">BIRD (1.9x)</div>' : 
+                         '<img src="assets/' + b.id.toLowerCase() + '.png.png" onerror="this.innerHTML=\'🐾\';">'));
             
-            div.innerHTML = `
-                <div class="my-bet-text" id="mybet-${b.id}">0</div>
-                <div class="pool-text"><span id="total-${b.id}">0</span></div>
-                <div class="img-wrapper" ${b.id==='ANIMALS'||b.id==='BIRDS'?'style="flex-direction:row;gap:10px;"':''}>${iconStr}</div>
-                ${b.id!=='ANIMALS' && b.id!=='BIRDS' ? `<div class="btn-multi">x${b.m}</div>` : ''}
-            `;
+            div.innerHTML = '<div class="my-bet-text" id="mybet-' + b.id + '">0</div>' +
+                            '<div class="pool-text"><span id="total-' + b.id + '">0</span></div>' +
+                            '<div class="img-wrapper"' + (b.id==='ANIMALS'||b.id==='BIRDS' ? ' style="flex-direction:row;gap:10px;"' : '') + '>' + iconStr + '</div>' +
+                            (b.id!=='ANIMALS' && b.id!=='BIRDS' ? '<div class="btn-multi">x' + b.m + '</div>' : '');
         }
         bc.appendChild(div);
     });
@@ -299,9 +296,9 @@
     let trackElements = [];
     const board = $('board');
     function addTrackItem(obj, r, c) {
-        let d = document.createElement('div'); d.className = `track-item bg-${obj.id}`; d.style.gridArea = `${r}/${c}`;
-        d.innerHTML = obj.id==='frog' ? '🐸' : (obj.id==='shark'?'🦈':`<img src="assets/${obj.id}.png.png">`);
-        d.innerHTML += `<span class="mult-tag">${obj.m}</span>`;
+        let d = document.createElement('div'); d.className = 'track-item bg-' + obj.id; d.style.gridArea = r + '/' + c;
+        d.innerHTML = obj.id==='frog' ? '🐸' : (obj.id==='shark' ? '🦈' : '<img src="assets/' + obj.id + '.png.png">');
+        d.innerHTML += '<span class="mult-tag">' + obj.m + '</span>';
         board.appendChild(d); trackElements.push({elem:d, id:obj.id});
     }
     for(let i=1;i<=8;i++) addTrackItem(trackSequence[trackElements.length],1,i);
@@ -316,8 +313,8 @@
         tray.appendChild(m);
     });
 
-    firebase.initializeApp({ apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" });
-    const db = firebase.database();
+    // 🔥 FIREBASE INITIALIZED BY db-engine.js 🔥
+    const db = window.db;
     
     const currentUserId = localStorage.getItem('userPhone') || "GUEST";
     let userBalance = 0, depB=0, winB=0, bonB=0, isBettingOpen=false;
@@ -351,9 +348,9 @@
         const n = document.createElement('div'); n.className = 'h-item'; 
         let normId = wId.toLowerCase().trim(); if (normId === 'd24') normId = 'shark';
         let iconHtml = '';
-        if(normId === 'frog') iconHtml = `<span style="font-size:16px">🐸</span>`;
-        else if(normId === 'shark') iconHtml = `<span style="font-size:16px">🦈</span>`;
-        else iconHtml = `<img src="assets/${normId}.png.png" onerror="this.innerHTML='🐾';">`;
+        if(normId === 'frog') iconHtml = '<span style="font-size:16px">🐸</span>';
+        else if(normId === 'shark') iconHtml = '<span style="font-size:16px">🦈</span>';
+        else iconHtml = '<img src="assets/' + normId + '.png.png" onerror="this.innerHTML=\'🐾\';">';
         n.innerHTML = iconHtml;
         list.insertBefore(n, list.firstChild); 
         if(list.children.length > 8) list.removeChild(list.lastChild); 
@@ -384,8 +381,8 @@
                     
                     betKeys.forEach(k => { 
                         myBets[k]=0; fakePools[k]=0; realPools[k]=0;
-                        let e=$(`total-${k}`); if(e) e.innerText="0"; 
-                        let mb=$(`mybet-${k}`); if(mb) { mb.style.display='none'; mb.innerText="0"; }
+                        let e=$('total-' + k); if(e) e.innerText="0"; 
+                        let mb=$('mybet-' + k); if(mb) { mb.style.display='none'; mb.innerText="0"; }
                     });
                     document.querySelectorAll('.winning, .active').forEach(e=>e.classList.remove('winning','active'));
                     $('chips-layer').innerHTML = ''; 
@@ -440,7 +437,7 @@
             if(Math.random() > 0.4) val = chipVals[Math.floor(Math.random()*3)+2]; 
             
             fakePools[k] += val;
-            let el = $(`total-${k}`); if(el) el.innerText = fakePools[k] + realPools[k]; 
+            let el = $('total-' + k); if(el) el.innerText = fakePools[k] + realPools[k]; 
 
             let f = document.createElement('img'); f.className='placed-chip-img'; f.src=chipImgs[val];
             f.style.opacity = '0'; 
@@ -451,8 +448,8 @@
             
             playChipSound();
             
-            let tP = getPos($('btn-'+k));
             let btnBox = $('btn-'+k);
+            let tP = getPos(btnBox);
             if(tP && btnBox) {
                 setTimeout(() => {
                     f.style.opacity = '1'; 
@@ -521,12 +518,12 @@
             }
 
             if (totalWin > 0) {
-                showToast(`🎉 WOOOHOO! Aap jeete ₹${Math.floor(totalWin)}`);
+                showToast('🎉 WOOOHOO! Aap jeete ₹' + Math.floor(totalWin));
                 // Backend is actually paying via server.js, just toast here
             }
         }
         
-        let b = document.getElementById(`btn-${winId}`);
+        let b = document.getElementById('btn-' + winId);
         if(b) {
             let winBoxPos = getPos(b);
             let walletPos = getPos(document.getElementById('my-wallet'));
@@ -583,14 +580,14 @@
         db.ref('users/'+currentUserId).update({balance:nD, winning_balance:nW});
         
         if (currentUserId !== "GUEST") {
-            db.ref(`Game/ZooRoulette/Bets/${currentUserId}/${id}`).set(firebase.database.ServerValue.increment(selectedChipVal));
+            db.ref('Game/ZooRoulette/Bets/' + currentUserId + '/' + id).set(firebase.database.ServerValue.increment(selectedChipVal));
         }
         
         realPools[id] += selectedChipVal;
-        let tEl = $(`total-${id}`); tEl.innerText = fakePools[id] + realPools[id];
+        let tEl = $('total-' + id); tEl.innerText = fakePools[id] + realPools[id];
         
         myBets[id] += selectedChipVal;
-        let mb = $(`mybet-${id}`);
+        let mb = $('mybet-' + id);
         if(mb) { mb.innerText = myBets[id]; mb.style.display = 'block'; }
 
         let wP = getPos($('my-wallet')), f = document.createElement('img');
