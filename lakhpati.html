@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VIP Matka Casino - Pure Firebase Edition</title>
+    <title>VIP Matka Casino - Smart Engine Edition</title>
     
-    <!-- 🔥 100% PURE FIREBASE (NO SOCKET.IO) 🔥 -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- 🔥 MASTER BRAHMASTRA ENGINE LINKED HERE 🔥 -->
+    <script src="db-engine.js"></script>
 
     <style>
         :root {
@@ -243,10 +245,13 @@
     </div>
 
 <script>
-    // 🔥 FIREBASE INIT 🔥
-    var firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
-    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-    var database = firebase.database();
+    // 🔥 PING ENGINE SO IT STAYS ALIVE 🔥
+    function wakeUpServer() { fetch("https://kalyan-engine.onrender.com/").catch(e => {}); }
+    wakeUpServer(); setInterval(wakeUpServer, 180000); 
+
+    // 🔥 SMART SPLIT ENGINE INIT 🔥
+    // window.db automatically connects to the correct database 
+    const database = window.db; 
 
     // 🔥 HACK-PROOF SERVER TIME SYNC 🔥
     let serverTimeOffset = 0;
@@ -266,10 +271,10 @@
         }
     });
 
-    const phone = localStorage.getItem('userPhone');
+    const phone = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST";
     let userBalance = 0, depBal = 0, winBal = 0, bonBal = 0;
 
-    if (phone) {
+    if (phone !== "GUEST") {
         database.ref('users/' + phone).on('value', (snap) => {
             const data = snap.val() || {}; 
             document.getElementById('player-id-display').innerText = "ID: " + (data.playerId || "KP" + phone.slice(-4));
@@ -293,17 +298,16 @@
         document.getElementById('pool-amount-display').innerText = liveFakePool.toLocaleString('en-IN');
     }, Math.floor(Math.random() * 2000) + 2000);
 
-
     function fetchVIPHistory() {
         const slots = [14, 16, 18, 20];
         slots.forEach(hour => {
-            database.ref(`Game/VIPMatka/History/${hour}`).on('value', (snap) => {
+            database.ref('Game/VIPMatka/History/' + hour).on('value', (snap) => {
                 const data = snap.val();
-                const slotElem = document.getElementById(`res-${hour}`);
+                const slotElem = document.getElementById('res-' + hour);
                 if (data && data.winner) {
                     slotElem.innerText = data.winner;
                     slotElem.style.color = (data.winner.includes('♥') || data.winner.includes('♦')) ? '#ff4d4d' : '#fff';
-                    document.getElementById(`slot-${hour}`).style.border = "2px solid #39ff14"; 
+                    document.getElementById('slot-' + hour).style.border = "2px solid #39ff14"; 
                 } else { slotElem.innerText = "?"; slotElem.style.color = "#888"; }
             });
         });
@@ -311,7 +315,6 @@
 
     let maxAllowed = 4;
     function updateRulesByTime() {
-        // Fetch true server time instead of mobile time
         const trueEpoch = getTrueTime();
         const istDate = new Date(trueEpoch + (330 * 60000));
         const hours = istDate.getUTCHours();
@@ -332,7 +335,7 @@
         else if (timeVal < 20.00) { maxAllowed = 1; document.getElementById('slot-20').style.background = "rgba(57, 255, 20, 0.25)"; currentDraw = "8:00 PM Draw"; } 
         else { maxAllowed = 4; }
 
-        document.getElementById('selection-limit-msg').innerHTML = `Currently Betting For: <span style="color:#fff;">${currentDraw}</span> | Max <span style="color:#fff;">${maxAllowed}</span> Cards Allowed`;
+        document.getElementById('selection-limit-msg').innerHTML = 'Currently Betting For: <span style="color:#fff;">' + currentDraw + '</span> | Max <span style="color:#fff;">' + maxAllowed + '</span> Cards Allowed';
     }
 
     const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -344,9 +347,9 @@
         const colorClass = isRed ? 'red' : 'black';
         ranks.forEach(rank => {
             const cardDiv = document.createElement('div');
-            cardDiv.className = `real-card ${colorClass}`;
+            cardDiv.className = 'real-card ' + colorClass;
             cardDiv.onclick = () => toggleCard(cardDiv, suitIcon + rank);
-            cardDiv.innerHTML = `<div class="card-corner">${rank}<br>${suitIcon}</div><div class="card-center">${suitIcon}</div>`;
+            cardDiv.innerHTML = '<div class="card-corner">' + rank + '<br>' + suitIcon + '</div><div class="card-center">' + suitIcon + '</div>';
             colElement.appendChild(cardDiv);
         });
     }
@@ -364,7 +367,7 @@
             if (selectedCards.length < maxAllowed) {
                 selectedCards.push(cardCode);
                 cardElement.classList.add('selected');
-            } else { alert(`Bhai, abhi wale draw mein max ${maxAllowed} patte hi select kar sakte hain!`); }
+            } else { alert("Bhai, abhi wale draw mein max " + maxAllowed + " patte hi select kar sakte hain!"); }
         }
         updateUI();
     }
@@ -383,20 +386,20 @@
         let amount = parseInt(document.getElementById('betAmount').value) || 0;
         const count = selectedCards.length;
         const potential = count > 0 ? (payouts[count] * (amount / 100)) : 0;
-        document.getElementById('payoutDisplay').innerText = `₹ ${potential.toLocaleString('en-IN')}`;
-        document.getElementById('betBtn').innerText = `PLACE BET (${count} Cards)`;
+        document.getElementById('payoutDisplay').innerText = '₹ ' + potential.toLocaleString('en-IN');
+        document.getElementById('betBtn').innerText = 'PLACE BET (' + count + ' Cards)';
         document.getElementById('betBtn').disabled = (count === 0 || amount < 100);
     }
 
     function placeBet() {
         let amount = parseInt(document.getElementById('betAmount').value) || 0;
-        if(!phone) return alert("⚠️ Kripya pehle Login karein!");
+        if(phone === "GUEST") return alert("⚠️ Kripya pehle Login karein!");
         if(userBalance < amount) return alert("⚠️ Wallet mein balance kam hai!");
         if(selectedCards.length === 0) return alert("⚠️ Kripya patte select karein!");
 
         let comboKey = selectedCards.join(','); 
         
-        database.ref(`Game/VIPMatka/Bets/${phone}/${comboKey}`).set(firebase.database.ServerValue.increment(amount));
+        database.ref('Game/VIPMatka/Bets/' + phone + '/' + comboKey).set(firebase.database.ServerValue.increment(amount));
 
         let nDep = depBal, nWin = winBal, rem = amount;
         if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
@@ -405,7 +408,7 @@
         liveFakePool += amount;
         document.getElementById('pool-amount-display').innerText = liveFakePool.toLocaleString('en-IN');
 
-        alert(`✅ Bet Placed Successfully!\nCards: ${comboKey}\nAmount Deducted: ₹${amount}`);
+        alert("✅ Bet Placed Successfully!\nCards: " + comboKey + "\nAmount Deducted: ₹" + amount);
         
         selectedCards = [];
         document.querySelectorAll('.real-card').forEach(b => b.classList.remove('selected'));
