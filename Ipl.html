@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IPL Mega League - VIP 24/7</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    
+    <!-- 🔥 MASTER BRAHMASTRA ENGINE LINKED HERE 🔥 -->
+    <script src="db-engine.js"></script>
+
     <style>
         :root { --gold: #ffd700; --green: #00ff88; --locked: rgba(30, 30, 30, 0.85); }
         body { background: #05050a; color: #fff; font-family: 'Arial Black', sans-serif; margin: 0; text-align: center; overflow-x: hidden; padding-bottom: 50px;}
@@ -232,9 +237,8 @@
 </div>
 
 <script>
-    const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com" };
-    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    // 🔥 SMART SPLIT ENGINE INIT 🔥
+    const db = window.db;
 
     const userPhone = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "Guest";
 
@@ -243,8 +247,8 @@
     
     let gridHTML = "", selectHTML = "";
     teams.forEach(t => {
-        gridHTML += `<div class="champ-box" onclick="openBetModal('champ-${t}', 'Champion', '${t}')"><div style="font-size:8px; color:#aaa; margin-bottom:2px;">POOL: ₹<span id="pool-c-${t}">0</span></div><img src="${teamLogos[t]}"><div style="font-weight:bold;">${t}</div><div style="color:var(--gold);">₹<span id="bet-c-${t}">0</span></div></div>`;
-        selectHTML += `<option value="${t}">${t}</option>`;
+        gridHTML += '<div class="champ-box" onclick="openBetModal(\'champ-' + t + '\', \'Champion\', \'' + t + '\')"><div style="font-size:8px; color:#aaa; margin-bottom:2px;">POOL: ₹<span id="pool-c-' + t + '">0</span></div><img src="' + teamLogos[t] + '"><div style="font-weight:bold;">' + t + '</div><div style="color:var(--gold);">₹<span id="bet-c-' + t + '">0</span></div></div>';
+        selectHTML += '<option value="' + t + '">' + t + '</option>';
     });
     document.getElementById('teams-grid').innerHTML = gridHTML;
     document.getElementById('teamA').innerHTML = selectHTML;
@@ -273,7 +277,7 @@
             document.getElementById('wallet-bal').innerText = totalBal.toFixed(2);
         });
     }
-    if(userPhone) { loadBalanceData(userPhone); }
+    if(userPhone !== "Guest") { loadBalanceData(userPhone); }
 
     let rules = { champLock: 20, semiLock: 70 }; 
     db.ref('Game/IPL_Match/Rules').on('value', snap => { if(snap.exists()) rules = snap.val(); });
@@ -390,8 +394,8 @@
             let mTime = new Date(startTime.getTime() + (i-1) * 9.5 * 60000);
             let timeStr = mTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             let t1 = teams[(i-1) % 10]; let t2 = teams[(i + 4) % 10];
-            let isLive = (i === currentMatchNoGlobal && now >= startTime.getTime() && now <= new Date(startTime.getTime() + 703*60000).getTime()) ? "<span class='live-tag-mini'>LIVE 🔴</span>" : "";
-            listHTML += `<div class="schedule-item"><span class="sch-match-no">Match #${i}</span><span class="sch-teams">${t1} vs ${t2} ${isLive}</span><span class="sch-time">${timeStr}</span></div>`;
+            let isLive = (i === currentMatchNoGlobal && now >= startTime.getTime() && now <= new Date(startTime.getTime() + 703*60000).getTime()) ? '<span class="live-tag-mini">LIVE 🔴</span>' : "";
+            listHTML += '<div class="schedule-item"><span class="sch-match-no">Match #' + i + '</span><span class="sch-teams">' + t1 + ' vs ' + t2 + ' ' + isLive + '</span><span class="sch-time">' + timeStr + '</span></div>';
         }
         document.getElementById('schedule-list').innerHTML = listHTML;
     }
@@ -418,17 +422,17 @@
             let loseIdx = Math.floor(Math.random()*7); 
             let s1 = suits[Math.floor(Math.random()*4)], s2 = suits[Math.floor(Math.random()*4)];
 
-            setTimeout(() => { c1Box.classList.add('opened'); c1Box.innerHTML = `<span style="color:${s1.c}">${s1.s}<br>${vals[t1Wins ? winIdx : loseIdx]}</span>`; }, 1000);
-            setTimeout(() => { c2Box.classList.add('opened'); c2Box.innerHTML = `<span style="color:${s2.c}">${s2.s}<br>${vals[!t1Wins ? winIdx : loseIdx]}</span>`; }, 2500);
+            setTimeout(() => { c1Box.classList.add('opened'); c1Box.innerHTML = '<span style="color:' + s1.c + '">' + s1.s + '<br>' + vals[t1Wins ? winIdx : loseIdx] + '</span>'; }, 1000);
+            setTimeout(() => { c2Box.classList.add('opened'); c2Box.innerHTML = '<span style="color:' + s2.c + '">' + s2.s + '<br>' + vals[!t1Wins ? winIdx : loseIdx] + '</span>'; }, 2500);
             
             setTimeout(() => {
                 let myBetT1 = parseInt(localStorage.getItem('bet_live-t1')) || 0;
                 let myBetT2 = parseInt(localStorage.getItem('bet_live-t2')) || 0;
                 let grossWin = t1Wins && myBetT1 > 0 ? myBetT1 * 1.95 : (!t1Wins && myBetT2 > 0 ? myBetT2 * 1.95 : 0);
                 
-                if(grossWin > 0 && userPhone) {
-                    let netWin = grossWin - (grossWin * 0.05); // Display net win
-                    document.getElementById('win-loss-msg').innerHTML = `🎉 WON ₹${netWin.toFixed(2)}`;
+                if(grossWin > 0 && userPhone !== "Guest") {
+                    let netWin = grossWin - (grossWin * 0.05);
+                    document.getElementById('win-loss-msg').innerHTML = '🎉 WON ₹' + netWin.toFixed(2);
                     document.getElementById('win-loss-msg').style.color = "var(--green)";
                 } else if(myBetT1+myBetT2 > 0) { 
                     document.getElementById('win-loss-msg').innerHTML = "😢 LOST!"; 
@@ -459,12 +463,12 @@
         let html = ""; 
         ptsData.forEach((d, i) => { 
             let ptsColor = i < 4 ? 'var(--green)' : '#fff'; 
-            html += `<div class="pt-row"><div class="pt-col-1"><span style="color:#666; font-size:10px; width:12px;">${i+1}</span><img src="${teamLogos[d.t]}" style="width: 20px; height: 20px; object-fit: contain;"><span>${d.t}</span></div><div class="pt-col-2">${d.m}</div><div class="pt-col-3" style="color:${ptsColor};">${d.pts}</div></div>`; 
+            html += '<div class="pt-row"><div class="pt-col-1"><span style="color:#666; font-size:10px; width:12px;">' + (i+1) + '</span><img src="' + teamLogos[d.t] + '" style="width: 20px; height: 20px; object-fit: contain;"><span>' + d.t + '</span></div><div class="pt-col-2">' + d.m + '</div><div class="pt-col-3" style="color:' + ptsColor + ';">' + d.pts + '</div></div>'; 
         });
         document.getElementById('points-list-content').innerHTML = html;
     } 
 
-    function generateWinners(forceReset = false) {
+    function generateWinners(forceReset) {
         let todayStr = new Date().toDateString(); 
         if(forceReset) { localStorage.removeItem("vipWinnersDate"); localStorage.removeItem("vipWinnersList"); }
         let savedDate = localStorage.getItem("vipWinnersDate");
@@ -476,7 +480,7 @@
         for(let i=0; i<125; i++) { 
             let playerId = prefixes[Math.floor(Math.random()*prefixes.length)] + Math.floor(1000 + Math.random() * 9000); 
             let amt = Math.floor(Math.random() * 650000) + 80000; 
-            list += `<div class="winner-item"><div class="winner-row-1"><span style="font-weight:bold; color:#fff;">🥇 ID: ${playerId}</span><span style="color:var(--green); font-weight:900;">₹${(amt/100000).toFixed(2)}L WON</span></div><div class="winner-row-2">Match: FINAL | Date: ${displayDate}</div></div>`;
+            list += '<div class="winner-item"><div class="winner-row-1"><span style="font-weight:bold; color:#fff;">🥇 ID: ' + playerId + '</span><span style="color:var(--green); font-weight:900;">₹' + (amt/100000).toFixed(2) + 'L WON</span></div><div class="winner-row-2">Match: FINAL | Date: ' + displayDate + '</div></div>';
         }
         localStorage.setItem("vipWinnersDate", todayStr);
         localStorage.setItem("vipWinnersList", list);
@@ -516,7 +520,7 @@
         if(nDep >= rem) { nDep -= rem; } else { rem -= nDep; nDep = 0; nWin -= rem; }
         
         db.ref('users/'+userPhone).update({ balance: Math.max(0, nDep), winning_balance: Math.max(0, nWin) });
-        db.ref(`Game/IPL_Match/Bets/${userPhone}/${pendingBet.id}`).set(firebase.database.ServerValue.increment(pendingBet.amount));
+        db.ref('Game/IPL_Match/Bets/' + userPhone + '/' + pendingBet.id).set(firebase.database.ServerValue.increment(pendingBet.amount));
 
         let id = pendingBet.id;
         if(id.startsWith('live-')) {
@@ -546,7 +550,7 @@
 
     function addRecord(type, team, amount) {
         myBetsRecord.unshift({ type: type, team: team, amt: amount });
-        let listHTML = ""; myBetsRecord.forEach(bet => { listHTML += `<div class="record-item"><span style="color:#aaa">${bet.type}</span><span style="font-weight:bold">${bet.team}</span><span style="color:var(--green)">₹${bet.amt}</span></div>`; });
+        let listHTML = ""; myBetsRecord.forEach(bet => { listHTML += '<div class="record-item"><span style="color:#aaa">' + bet.type + '</span><span style="font-weight:bold">' + bet.team + '</span><span style="color:var(--green)">₹' + bet.amt + '</span></div>'; });
         document.getElementById('my-bets-list').innerHTML = listHTML;
     }
 
