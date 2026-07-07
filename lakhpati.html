@@ -9,8 +9,27 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-    <!-- 🔥 MASTER BRAHMASTRA ENGINE LINKED HERE 🔥 -->
-    <script src="db-engine.js"></script>
+    <!-- 🔥 MASTER BRAHMASTRA ENGINE (DIRECT EMBED FOR PRIVATE GITHUB FIX) 🔥 -->
+    <script>
+        const oldConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        const newConfig = { apiKey: "AIzaSyA3BdEPFah2Vj5ksxVgHrTV0NKu147YwjA", databaseURL: "https://kalyan-live-engine-default-rtdb.firebaseio.com", projectId: "kalyan-live-engine" };
+
+        if (!firebase.apps.length) { firebase.initializeApp(oldConfig); }
+        const dbOld = firebase.database();
+
+        firebase.initializeApp(newConfig, "NewEngine");
+        const dbNew = firebase.app("NewEngine").database();
+
+        const oldServerGames = ['AndarBahar', 'AndarBahar2', 'DragonTiger', 'DragonTiger2', 'MegaSpin'];
+
+        window.db = {
+            ref: function(path) {
+                if (path.includes("users") || path.includes("recharge") || path.includes("withdrawal") || path.includes(".info/connected")) { return dbOld.ref(path); }
+                let isOldGame = oldServerGames.some(function(g) { return path.includes(g); });
+                if (isOldGame) { return dbOld.ref(path); } else { return dbNew.ref(path); }
+            }
+        };
+    </script>
 
     <style>
         :root {
@@ -250,7 +269,6 @@
     wakeUpServer(); setInterval(wakeUpServer, 180000); 
 
     // 🔥 SMART SPLIT ENGINE INIT 🔥
-    // window.db automatically connects to the correct database 
     const database = window.db; 
 
     // 🔥 HACK-PROOF SERVER TIME SYNC 🔥
