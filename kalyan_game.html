@@ -17,6 +17,31 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
+    <!-- 🔥 MASTER BRAHMASTRA ENGINE (DIRECT EMBED FOR PRIVATE GITHUB FIX) 🔥 -->
+    <script>
+        const oldConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
+        const newConfig = { apiKey: "AIzaSyA3BdEPFah2Vj5ksxVgHrTV0NKu147YwjA", databaseURL: "https://kalyan-live-engine-default-rtdb.firebaseio.com", projectId: "kalyan-live-engine" };
+
+        if (!firebase.apps.length) { firebase.initializeApp(oldConfig); }
+        const dbOld = firebase.database();
+
+        firebase.initializeApp(newConfig, "NewEngine");
+        const dbNew = firebase.app("NewEngine").database();
+
+        const oldServerGames = ['AndarBahar', 'AndarBahar2', 'DragonTiger', 'DragonTiger2', 'MegaSpin'];
+
+        window.db = {
+            ref: function(path) {
+                if (path.includes("users") || path.includes("recharge") || path.includes("withdrawal") || path.includes(".info/connected")) { return dbOld.ref(path); }
+                let isOldGame = oldServerGames.some(function(g) { return path.includes(g); });
+                if (isOldGame) { return dbOld.ref(path); } else { return dbNew.ref(path); }
+            }
+        };
+    </script>
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
         body { background: radial-gradient(circle at 50% 50%, #004d26 0%, #001a0d 100%); color: white; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; padding-bottom: 80px;}
@@ -146,14 +171,8 @@
         </div>
     </div>
 
-    <!-- FIREBASE INTEGRATION -->
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyCy2zsDDJeVTQEbHCenkLIlz3lWWyo-Pqo", databaseURL: "https://kalyan-casino-default-rtdb.firebaseio.com", projectId: "kalyan-casino" };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        const db = window.db;
         
         const userID = localStorage.getItem('userPhone') || localStorage.getItem('phone') || "GUEST";
         
@@ -184,22 +203,20 @@
             }
         }
 
-        // Initialize 13 Cards Grid
         const grid = document.getElementById('grid-container');
         cardsData.forEach(c => {
             const div = document.createElement('div');
-            div.className = `card-box ${c.sp ? 'card-special' : ''}`;
-            div.id = `box-${c.v}`;
+            div.className = 'card-box ' + (c.sp ? 'card-special' : '');
+            div.id = 'box-' + c.v;
             div.onclick = (e) => userBet(c.v, e);
-            div.innerHTML = `<div class="total-pool" id="a-${c.v}">₹0</div><div class="c-val ${c.r?'c-red':''}">${c.v}</div><div style="font-size:14px">${c.s}</div><div style="font-size:9px; background:#000; color:#ffd700; padding:1px 4px; border-radius:4px; font-weight:bold;">${c.m}x</div><div class="my-bet-tag" id="my-${c.v}">My: ₹<span>0</span></div>`;
+            div.innerHTML = '<div class="total-pool" id="a-' + c.v + '">₹0</div><div class="c-val ' + (c.r?'c-red':'') + '">' + c.v + '</div><div style="font-size:14px">' + c.s + '</div><div style="font-size:9px; background:#000; color:#ffd700; padding:1px 4px; border-radius:4px; font-weight:bold;">' + c.m + 'x</div><div class="my-bet-tag" id="my-' + c.v + '">My: ₹<span>0</span></div>';
             grid.appendChild(div);
             myBets[c.v] = 0;
         });
         myBets['RED'] = 0; myBets['BLACK'] = 0;
 
-        // User Balance Sync
         if (userID && userID !== "GUEST") {
-            db.ref(`users/${userID}`).on('value', (snap) => {
+            db.ref('users/' + userID).on('value', (snap) => {
                 const data = snap.val() || {};
                 depBal = parseFloat(data.balance || 0); winBal = parseFloat(data.winning_balance || 0); bonBal = parseFloat(data.bonus_balance || 0);
                 totalBal = depBal + winBal + bonBal; 
@@ -211,8 +228,7 @@
                 });
             });
 
-            // Recover bets
-            db.ref(`Game/KalyanMatka/Bets/${userID}`).once('value', snap => {
+            db.ref('Game/KalyanMatka/Bets/' + userID).once('value', snap => {
                 let saved = snap.val();
                 if(saved) {
                     setTimeout(() => {
@@ -222,7 +238,7 @@
                                 myBets[opt.toUpperCase()] = val;
                                 myTotalBet += val;
                                 document.getElementById('my-bet-btn').innerText = "Total Bet: ₹" + myTotalBet;
-                                let tag = document.getElementById('my-'+opt.toUpperCase());
+                                let tag = document.getElementById('my-' + opt.toUpperCase());
                                 if(tag) { tag.style.display = 'block'; tag.querySelector('span').innerText = val; }
                             }
                         });
@@ -231,7 +247,6 @@
             });
         }
 
-        // 🔥 ENGINE SYNC 🔥
         db.ref('Game/KalyanMatka/Status').on('value', (snap) => {
             let data = snap.val();
             if(!data) return;
@@ -250,12 +265,14 @@
                     startBotSimulation();
                 }
             } 
-            else if (data.state === 'result') {
+            else if (data.state === 'result' || data.state === 'processing') {
                 if(currentState !== 'result') {
                     currentState = 'result';
                     isBettingOpen = false;
                     clearInterval(botSimulationInterval);
-                    showResult(data.winner); 
+                    if(data.winner) {
+                        showResult(data.winner); 
+                    }
                 }
                 const t = document.getElementById('main-timer');
                 t.innerText = "STOP";
@@ -263,7 +280,6 @@
             }
         });
 
-        // 🔥 LOCAL TIMER 🔥
         setInterval(() => {
             if(currentState === 'betting' && isBettingOpen) {
                 if(serverTimerSync > 0) {
@@ -280,7 +296,6 @@
             }
         }, 1000);
 
-        // Show Result
         function showResult(winVal) {
             document.getElementById('main-timer').style.display = 'none';
             document.getElementById('result-container').style.display = 'flex';
@@ -292,8 +307,10 @@
             document.getElementById('res-suit').innerText = winCard.s;
             document.getElementById('res-val').style.color = winCard.r ? '#d32f2f' : '#000';
 
-            document.getElementById('box-'+winCard.v).classList.add('win-glow');
-            document.getElementById('box-'+winColor).classList.add('win-glow');
+            let boxVal = document.getElementById('box-' + winCard.v);
+            let boxCol = document.getElementById('box-' + winColor);
+            if(boxVal) boxVal.classList.add('win-glow');
+            if(boxCol) boxCol.classList.add('win-glow');
 
             updateHistory(winCard);
 
@@ -325,7 +342,6 @@
             document.getElementById('chips-layer').innerHTML = '';
         }
 
-        // 🔥 BETTING LOGIC 🔥
         function chooseChip(val, elem) {
             if(elem.classList.contains('locked')) return;
             currentChip = val; currentChipSrc = chipImgs[val];
@@ -347,9 +363,11 @@
             myTotalBet += currentChip;
             document.getElementById('my-bet-btn').innerText = "Total Bet: ₹" + myTotalBet;
             
-            let myTag = document.getElementById('my-'+target);
-            myTag.style.display = 'block';
-            myTag.querySelector('span').innerText = myBets[target];
+            let myTag = document.getElementById('my-' + target);
+            if(myTag) {
+                myTag.style.display = 'block';
+                myTag.querySelector('span').innerText = myBets[target];
+            }
 
             throwChipVisual(target, true);
 
@@ -357,11 +375,10 @@
             if (nDep >= rem) { nDep -= rem; rem = 0; } else { rem -= nDep; nDep = 0; }
             if (rem > 0) { if (nWin >= rem) { nWin -= rem; rem = 0; } else { rem -= nWin; nWin = 0; } }
             
-            db.ref(`users/${userID}`).update({ balance: nDep, winning_balance: nWin });
-            db.ref(`Game/KalyanMatka/Bets/${userID}/${target.toLowerCase()}`).set(firebase.database.ServerValue.increment(currentChip));
+            db.ref('users/' + userID).update({ balance: nDep, winning_balance: nWin });
+            db.ref('Game/KalyanMatka/Bets/' + userID + '/' + target.toLowerCase()).set(firebase.database.ServerValue.increment(currentChip));
         }
 
-        // 🔥 BOT SOUND THROTTLE (Shor na mache isliye control) 🔥
         let lastBotSound = 0;
         function playBotChipSound() {
             if(!audioUnlocked) return;
@@ -369,7 +386,7 @@
             if(now - lastBotSound > 150) { 
                 try { 
                     let sfx = new Audio('assets/c9c7036e-1502-4e98-9b70-b8fec24836e4.mp3');
-                    sfx.volume = 0.3; // 30% volume for bots
+                    sfx.volume = 0.3; 
                     sfx.play().catch(()=>{}); 
                     lastBotSound = now;
                 } catch(e){}
@@ -377,7 +394,7 @@
         }
 
         function throwChipVisual(target, isMe) {
-            let box = document.getElementById('box-'+target);
+            let box = document.getElementById('box-' + target);
             if(!box) return;
             let bR = box.getBoundingClientRect();
             
@@ -394,8 +411,9 @@
             } else {
                 startX = Math.random() * window.innerWidth;
                 startY = -50;
-                chip.src = chipImgs[[10,50,100,500][Math.floor(Math.random()*4)]];
-                playBotChipSound(); // 👈 BOT SOUND TRIGGER
+                let botChips = [10,50,100,500];
+                chip.src = chipImgs[botChips[Math.floor(Math.random()*4)]];
+                playBotChipSound();
             }
 
             chip.style.left = startX + 'px'; chip.style.top = startY + 'px';
@@ -404,7 +422,7 @@
             setTimeout(() => {
                 chip.style.left = (bR.left + 5 + Math.random()*(bR.width-30)) + 'px';
                 chip.style.top = (bR.top + 5 + Math.random()*(bR.height-30)) + 'px';
-                chip.style.transform = `scale(0.8) rotate(${Math.random()*360}deg)`;
+                chip.style.transform = 'scale(0.8) rotate(' + (Math.random()*360) + 'deg)';
             }, 10);
 
             if(document.getElementById('chips-layer').childElementCount > 250) {
@@ -419,7 +437,7 @@
             pools['RED'] = 0; pools['BLACK'] = 0;
 
             for(let u in allB) {
-                if(!u.includes('bot')) {
+                if(!u.includes('bot') && u !== 'GUEST') {
                     for(let opt in allB[u]) {
                         if(pools[opt.toUpperCase()] !== undefined) {
                             pools[opt.toUpperCase()] += allB[u][opt];
@@ -429,7 +447,7 @@
             }
             
             Object.keys(pools).forEach(opt => {
-                let el = document.getElementById('a-'+opt);
+                let el = document.getElementById('a-' + opt);
                 if(el) {
                     let v = pools[opt] + (Math.floor(Math.random()*5)*100); 
                     el.innerText = v >= 1000 ? (v/1000).toFixed(1)+'K' : (v===0?'₹0':v);
@@ -437,12 +455,10 @@
             });
         });
 
-        // 🔥 HIGH-SPEED BOTS ANIMATION (Har 150ms me barish) 🔥
         function startBotSimulation() {
             botSimulationInterval = setInterval(() => {
                 if(!isBettingOpen) return;
                 
-                // Ek saath 1 se 3 chips fekega
                 let chipsToThrow = Math.floor(Math.random() * 3) + 1;
                 for(let i = 0; i < chipsToThrow; i++) {
                     let targets = [...cardsData.map(c=>c.v), 'RED', 'BLACK'];
@@ -451,10 +467,9 @@
                 }
                 
                 document.getElementById('live-users').innerText = 500 + Math.floor(Math.random()*50);
-            }, 150); // SUPER FAST TIMING (150ms)
+            }, 150); 
         }
 
-        // Update History
         function updateHistory(winCard) {
             localHistory.push(winCard);
             if(localHistory.length > 10) localHistory.shift();
@@ -464,12 +479,11 @@
         function renderHistory() {
             let html = "";
             localHistory.forEach(c => {
-                html += `<div class="h-item" style="color:${c.r?'#d32f2f':'#000'}">${c.v}</div>`;
+                html += '<div class="h-item" style="color:' + (c.r ? '#d32f2f' : '#000') + '">' + c.v + '</div>';
             });
             document.getElementById('history-row').innerHTML = html;
         }
 
-        // Load Init History from Firebase Server
         db.ref('Game/KalyanMatka/History').limitToLast(10).once('value', snap => {
             if(snap.exists()) {
                 snap.forEach(child => {
