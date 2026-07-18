@@ -94,7 +94,7 @@
         <div id="page-home" class="page active">
             <div class="stats-grid">
                 <div class="stat-box"><h3 id="stat-users">0</h3><p>Total Players</p></div>
-                <div class="stat-box"><h3 id="stat-withdraws" style="color:var(--gold)">0</h3><p>Pending Payouts</p></div>
+                <div class="stat-box"><h3 id="stat-withdraws" style="color:var(--gold)">0</h3><p>Pending Requests</p></div>
             </div>
 
             <div class="card">
@@ -131,7 +131,7 @@
 
         <div id="page-payout" class="page">
             <div class="card">
-                <h2 class="card-title"><i class="fa-solid fa-money-bill-transfer"></i> PENDING PAYOUTS</h2>
+                <h2 class="card-title" style="color: var(--gold);"><i class="fa-solid fa-money-bill-transfer"></i> LIVE REQUEST CENTER</h2>
                 <div id="new-req-list"><p style="text-align: center; color: #888;"><i class="fa-solid fa-spinner fa-spin"></i> Loading requests...</p></div>
             </div>
         </div>
@@ -160,7 +160,7 @@
 
         <div class="bottom-nav">
             <div class="nav-item active" onclick="switchTab('page-home', this)"><i class="fa-solid fa-house"></i>Home</div>
-            <div class="nav-item" onclick="switchTab('page-payout', this)"><i class="fa-solid fa-hand-holding-dollar"></i>Payout</div>
+            <div class="nav-item" onclick="switchTab('page-payout', this)"><i class="fa-solid fa-hand-holding-dollar"></i>Requests</div>
             <div class="nav-item" onclick="switchTab('page-users', this)"><i class="fa-solid fa-users"></i>Users</div>
             <div class="nav-item" onclick="switchTab('page-setup', this)"><i class="fa-solid fa-gear"></i>Setup</div>
         </div>
@@ -202,7 +202,7 @@
         }
     }
 
-    // 🔥 3. LOAD DATA (REAL-TIME TOTAL BALANCE) 🔥
+    // 🔥 3. LOAD DATA (REAL-TIME TOTAL BALANCE & LIVE REQUESTS) 🔥
     function loadAdminData() {
         db.ref('users').on('value', snap => {
             document.getElementById('stat-users').innerText = snap.numChildren();
@@ -224,31 +224,57 @@
             });
         });
 
-        db.ref('withdraw_requests').orderByChild('status').equalTo('Pending').on('value', snap => {
+        // 🔥 LOAD ALL LIVE REQUESTS (DEPOSIT & WITHDRAW) SEAMLESSLY 🔥
+        db.ref('requests').on('value', snap => {
             const list = document.getElementById('new-req-list');
             list.innerHTML = "";
-            document.getElementById('stat-withdraws').innerText = snap.numChildren();
-            if(!snap.exists()) { list.innerHTML = "<p style='text-align:center; color:#555;'>No Pending Requests</p>"; return; }
+            let count = 0;
+            
+            if(!snap.exists()) { 
+                list.innerHTML = "<p style='text-align:center; color:#555;'>No Pending Requests</p>"; 
+                document.getElementById('stat-withdraws').innerText = count;
+                return; 
+            }
             
             snap.forEach(child => {
+                count++;
                 const d = child.val();
+                const isWithdraw = (d.type === 'WITHDRAWAL' || d.type === 'Withdraw');
+                
+                let typeColor = isWithdraw ? "var(--red)" : "var(--green)";
+                let typeText = isWithdraw ? "WITHDRAW" : "DEPOSIT";
+                let amountSign = isWithdraw ? "-" : "+";
+                
+                let detailsHtml = "";
+                if(isWithdraw) {
+                    detailsHtml = `<p>UPI ID: <span style="color:var(--gold); font-weight:bold;">${d.upi || 'N/A'}</span></p>`;
+                } else {
+                    if(d.image && d.image !== "none" && d.image !== "undefined") {
+                        detailsHtml = `<button class="view-btn" onclick="window.open('${d.image}', '_blank')"><i class="fa-solid fa-image"></i> VIEW SCREENSHOT</button>`;
+                    } else {
+                        detailsHtml = `<p style="color:#aaa;">No Screenshot Attached</p>`;
+                    }
+                }
+
                 list.innerHTML += `
-                <div class="req-card">
+                <div class="req-card" style="border-left-color: ${typeColor};">
                     <div class="req-header">
-                        <div><div style="color:#aaa; font-size:11px;">Player ID</div><div style="font-weight:bold; font-size:14px; color:#fff;">${d.id}</div></div>
-                        <div class="req-amt">₹${d.amount}</div>
+                        <div>
+                            <div style="background:${typeColor}; color:#000; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:900; display:inline-block; margin-bottom:5px;">${typeText}</div>
+                            <div style="font-weight:bold; font-size:15px; color:#fff;">📱 ${d.phone}</div>
+                        </div>
+                        <div class="req-amt" style="color: ${typeColor};">${amountSign}₹${d.amount}</div>
                     </div>
-                    <div class="req-details">
-                        <p>Account No: <span>${d.accNo || 'N/A'}</span></p>
-                        <p>IFSC Code: <span style="text-transform:uppercase;">${d.ifsc || 'N/A'}</span></p>
-                        <p>UPI ID: <span>${d.upi || 'N/A'}</span></p>
+                    <div class="req-details" style="margin: 10px 0;">
+                        ${detailsHtml}
                     </div>
                     <div class="btn-grid" style="margin-top: 15px;">
-                        <button class="btn btn-add" onclick="handleWithdraw('${child.key}', '${d.id}', 'Approve', ${d.amount})">APPROVE</button>
-                        <button class="btn btn-cut" onclick="handleWithdraw('${child.key}', '${d.id}', 'Reject', ${d.amount})">REJECT</button>
+                        <button class="btn btn-add" onclick="processLiveRequest('${child.key}', '${d.phone}', '${d.type}', 'Approve', ${d.amount})">✅ SUCCESS</button>
+                        <button class="btn btn-cut" onclick="processLiveRequest('${child.key}', '${d.phone}', '${d.type}', 'Reject', ${d.amount})">❌ FAIL</button>
                     </div>
                 </div>`;
             });
+            document.getElementById('stat-withdraws').innerText = count;
         });
 
         db.ref('admin_settings').once('value', snap => {
@@ -327,40 +353,51 @@
         }
     }
 
-    // 🔥 5. 3-IN-1 COMBO FOR WITHDRAWAL APPROVE 🔥
-    window.handleWithdraw = function(reqKey, phone, action, amount) {
-        if(confirm(`Kya aap is request ko ${action} karna chahte hain?`)) {
+    // 🔥 5. ALL-IN-ONE LIVE REQUEST PROCESSOR (DEPOSIT & WITHDRAW) 🔥
+    window.processLiveRequest = function(reqKey, phone, type, action, amount) {
+        const isWithdraw = (type === 'WITHDRAWAL' || type === 'Withdraw');
+        const typeName = isWithdraw ? "Withdraw" : "Deposit";
+        
+        if(confirm(`Kya aap is ${typeName} ko ${action} karna chahte hain?`)) {
             let newStatus = action === 'Approve' ? 'Success' : 'Rejected';
             
             if(action === 'Approve') {
                 db.ref(`users/${phone}`).once('value', snap => {
-                    let d = snap.val();
+                    let d = snap.val() || {};
                     let depBal = parseFloat(d.balance || 0);
                     let winBal = parseFloat(d.winning_balance || 0);
                     let bonBal = parseFloat(d.bonus_balance || 0);
                     let totalBal = depBal + winBal + bonBal;
-                    
-                    if (totalBal < amount) {
-                        alert(`⚠️ Error: Player ke total account me sirf ₹${totalBal.toFixed(2)} hain! Approval nahi ho sakta.`);
-                        return;
+
+                    if(isWithdraw) {
+                        if (totalBal < amount) return alert(`⚠️ Error: Player ke account me sirf ₹${totalBal.toFixed(2)} hain!`);
+                        
+                        // 3-IN-1 CUT LOGIC
+                        let nWin = winBal, nDep = depBal, nBon = bonBal, rem = amount;
+                        if(nWin >= rem) { nWin -= rem; rem = 0; } else { rem -= nWin; nWin = 0; }
+                        if(rem > 0) { if(nDep >= rem) { nDep -= rem; rem = 0; } else { rem -= nDep; nDep = 0; } }
+                        if(rem > 0) { nBon -= rem; }
+                        
+                        db.ref(`users/${phone}`).update({ balance: nDep, winning_balance: nWin, bonus_balance: nBon }).then(() => {
+                            db.ref(`requests/${reqKey}`).remove();
+                            db.ref(`user_history/${phone}/${reqKey}`).set({ amount: amount, date: new Date().toLocaleString(), status: newStatus, type: typeName });
+                            alert("✅ Withdraw Approved! Paise 3-in-1 Wallet se kat gaye hain.");
+                        });
+                    } else {
+                        // DEPOSIT LOGIC
+                        let newBal = depBal + parseFloat(amount);
+                        db.ref(`users/${phone}`).update({ balance: newBal }).then(() => {
+                            db.ref(`requests/${reqKey}`).remove();
+                            db.ref(`user_history/${phone}/${reqKey}`).set({ amount: amount, date: new Date().toLocaleString(), status: newStatus, type: typeName });
+                            alert(`✅ Deposit Approved! ₹${amount} add ho gaye hain.`);
+                        });
                     }
-
-                    // 3-IN-1 CUT LOGIC
-                    let nWin = winBal, nDep = depBal, nBon = bonBal, rem = amount;
-                    if(nWin >= rem) { nWin -= rem; rem = 0; } else { rem -= nWin; nWin = 0; }
-                    if(rem > 0) { if(nDep >= rem) { nDep -= rem; rem = 0; } else { rem -= nDep; nDep = 0; } }
-                    if(rem > 0) { nBon -= rem; }
-
-                    db.ref(`users/${phone}`).update({ balance: nDep, winning_balance: nWin, bonus_balance: nBon }).then(() => {
-                        db.ref(`withdraw_requests/${reqKey}`).update({ status: newStatus });
-                        db.ref(`user_history/${phone}/${reqKey}`).update({ status: newStatus });
-                        alert("✅ Withdraw Approved! Paisa 3-in-1 Total Balance se CUT gaya hai.");
-                    });
                 });
             } else {
-                db.ref(`withdraw_requests/${reqKey}`).update({ status: newStatus });
-                db.ref(`user_history/${phone}/${reqKey}`).update({ status: newStatus });
-                alert("❌ Withdraw Rejected! Player ka paisa safe hai.");
+                // REJECT LOGIC
+                db.ref(`requests/${reqKey}`).remove();
+                db.ref(`user_history/${phone}/${reqKey}`).set({ amount: amount, date: new Date().toLocaleString(), status: newStatus, type: typeName });
+                alert(`❌ ${typeName} Rejected!`);
             }
         }
     }
@@ -390,7 +427,6 @@
                     return alert(`⚠️ Error: Player ke total wallet mein sirf ₹${totalBal.toFixed(2)} hain! Aap isse zyada cut nahi kar sakte.`);
                 }
                 
-                // 3-IN-1 CUT LOGIC
                 let nWin = winBal, nDep = depBal, nBon = bonBal, rem = amt;
                 if(nWin >= rem) { nWin -= rem; rem = 0; } else { rem -= nWin; nWin = 0; }
                 if(rem > 0) { if(nDep >= rem) { nDep -= rem; rem = 0; } else { rem -= nDep; nDep = 0; } }
