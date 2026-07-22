@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Crown VIP Casino</title>
+    <style>
+        body { 
+            background-color: #0d0d0d; color: #FFD700; font-family: sans-serif; 
+            text-align: center; margin: 0; padding: 10px; padding-bottom: 80px; 
+        }
+        
+        /* ♛ CROWN Brand Title ♛ */
+        .brand-title {
+            font-size: 26px; font-weight: 900; color: #FFD700; 
+            text-shadow: 0 0 15px #FFD700; margin: 5px 0 15px 0; 
+            letter-spacing: 2px; text-transform: uppercase;
+        }
+
+        /* History Bar */
+        #history-bar { 
+            display: flex; gap: 5px; overflow-x: auto; padding: 5px; 
+            background: #1a1a1a; border-bottom: 2px solid #FFD700; margin-bottom: 15px;
+            white-space: nowrap; height: 40px; align-items: center; border-radius: 5px;
+        }
+        .hist-item { 
+            min-width: 30px; height: 30px; border-radius: 50%; display: flex; 
+            align-items: center; justify-content: center; font-size: 14px; font-weight: bold; border: 1px solid #FFD700; color: white;
+        }
+
+        .timer-box { font-size: 20px; font-weight: bold; padding: 8px; margin-bottom: 15px; color: #fff;}
+        
+        /* 3 Cards */
+        .cards-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .card-box { 
+            height: 110px; width: 75px; 
+            background-color: #b71540; 
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.2) 5px, rgba(255,255,255,0.2) 10px);
+            border: 2px solid #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; 
+            font-size: 24px; font-weight: bold; color: #000; transition: transform 0.3s;
+        }
+        
+        /* Red & Black */
+        .color-bets { display: flex; gap: 10px; margin-bottom: 15px; }
+        .btn-color { 
+            flex: 1; padding: 25px 0; font-weight: bold; font-size: 20px; color: white; 
+            border: 2px solid #FFD700; border-radius: 8px; position: relative; cursor: pointer;
+        }
+        .btn-red { background: #d32f2f; }
+        .btn-black { background: #1a1a1a; }
+        
+        /* Number Betting Boxes */
+        .number-bets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px;}
+        .btn-number { 
+            background: #1a1a1a; border: 2px solid #FFD700; height: 85px; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            font-size: 28px; font-weight: bold; color: #FFD700; border-radius: 8px; position: relative; 
+        }
+        
+        /* Bet Badge */
+        .bet-badge { 
+            position: absolute; top: -10px; right: -5px; 
+            background: #28a745; color: white; font-size: 12px; padding: 3px 6px; 
+            border-radius: 10px; display: none; border: 1px solid #fff; z-index: 10;
+        }
+
+        /* BOTTOM CHIPS TRAY AND WALLET */
+        .bottom-bar { 
+            background-color: #1a0b1c; padding: 10px 15px; display: flex; justify-content: space-between; 
+            align-items: center; border-top: 2px solid #FFD700; width: 100%; box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+            position: fixed; bottom: 0; left: 0; box-sizing: border-box; z-index: 100;
+        }
+        .wallet-panel { font-size: 15px; font-weight: 900; color: #00ff88; margin-right: 10px; flex-shrink: 0; display: flex; align-items: center; gap: 5px;}
+        .chips-area { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; width: 80%; justify-content: space-around; align-items: center;}
+        .chips-area::-webkit-scrollbar { display: none; }
+        .chip-img { width: 42px; height: 42px; cursor: pointer; transition: 0.2s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); flex-shrink: 0; }
+        .chip-img.active { transform: scale(1.15) translateY(-5px); filter: drop-shadow(0 0 10px #FFD700); }
+        .chip-img.locked { opacity: 0.3; filter: grayscale(1); pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <!-- ♛ Brand Title -->
+    <div class="brand-title">♛ CROWN ♛</div>
+
+    <div id="history-bar">
+        <span style="margin-right:10px; color:#FFD700; font-weight:bold;">History:</span>
+    </div>
+
+    <div class="timer-box" id="timer-display">Betting Open: 30s</div>
+    
+    <div class="cards-container">
+        <div class="card-box" id="card-1"></div>
+        <div class="card-box" id="card-2"></div>
+        <div class="card-box" id="card-3"></div>
+    </div>
+
+    <!-- Betting Areas -->
+    <div class="color-bets">
+        <div class="btn-color btn-red" onclick="placeBet('color', 'red')">RED <span class="bet-badge" id="badge-red">0</span></div>
+        <div class="btn-color btn-black" onclick="placeBet('color', 'black')">BLACK <span class="bet-badge" id="badge-black">0</span></div>
+    </div>
+
+    <div class="number-bets" id="number-grid"></div>
+
+    <!-- BOTTOM CHIPS TRAY AND WALLET -->
+    <div class="bottom-bar">
+        <div class="wallet-panel" id="my-wallet">💰₹<span id="user-balance">1000.00</span></div>
+        <div class="chips-area" id="chips-tray">
+            <img src="assets/10_0.png" class="chip-img active" data-val="10" onclick="chooseChip(10, this)">
+            <img src="assets/50_0.png" class="chip-img" data-val="50" onclick="chooseChip(50, this)">
+            <img src="assets/100_0.png" class="chip-img" data-val="100" onclick="chooseChip(100, this)">
+            <img src="assets/500_0.png" class="chip-img" data-val="500" onclick="chooseChip(500, this)">
+            <img src="assets/1000_0.png" class="chip-img" data-val="1000" onclick="chooseChip(1000, this)">
+            <img src="assets/5000_1.png" class="chip-img" data-val="5000" onclick="chooseChip(5000, this)">
+        </div>
+    </div>
+
+    <script>
+        let totalBal = 1000; 
+        let currentChip = 10; 
+        let isBetting = true;
+        let playerBets = { numbers: {}, color: { red: 0, black: 0 } };
+
+        // Chip Select Function
+        function chooseChip(val, el) {
+            if(el.classList.contains('locked')) return;
+            document.querySelectorAll('.chip-img').forEach(c => c.classList.remove('active'));
+            el.classList.add('active'); 
+            currentChip = val; 
+        }
+
+        function updateWalletAndChips() {
+            document.getElementById("user-balance").innerText = totalBal.toFixed(2);
+            document.querySelectorAll('.chip-img').forEach(c => { 
+                if(parseInt(c.dataset.val) > totalBal) c.classList.add('locked'); 
+                else c.classList.remove('locked'); 
+            });
+        }
+        
+        // Generate Number Buttons (0-9)
+        const grid = document.getElementById("number-grid");
+        for (let i = 0; i <= 9; i++) {
+            playerBets.numbers[i] = 0;
+            grid.innerHTML += `<div class="btn-number" onclick="placeBet('number', ${i})">${i}<span class="bet-badge" id="badge-${i}">0</span></div>`;
+        }
+
+        // Place Bet Logic
+        function placeBet(type, value) {
+            if (!isBetting) return;
+            if (totalBal < currentChip) return; 
+
+            totalBal -= currentChip;
+            updateWalletAndChips();
+
+            if (type === 'number') {
+                playerBets.numbers[value] += currentChip;
+                let badge = document.getElementById(`badge-${value}`);
+                badge.innerText = "₹" + playerBets.numbers[value];
+                badge.style.display = "block";
+            } else if (type === 'color') {
+                playerBets.color[value] += currentChip;
+                let badge = document.getElementById(`badge-${value}`);
+                badge.innerText = "₹" + playerBets.color[value];
+                badge.style.display = "block";
+            }
+        }
+
+        // --- GAME LOGIC ---
+        function updateHistory(num, color) {
+            const bar = document.getElementById("history-bar");
+            const item = document.createElement("div");
+            item.className = "hist-item";
+            item.style.backgroundColor = color === 'red' ? '#d32f2f' : '#1a1a1a';
+            item.innerText = num;
+            bar.insertBefore(item, bar.children[1]);
+            if (bar.children.length > 12) bar.removeChild(bar.lastChild); 
+        }
+
+        function openCards() {
+            const suits = [
+                { sign: '♥', color: '#d32f2f' }, { sign: '♦', color: '#d32f2f' },
+                { sign: '♠', color: '#000' }, { sign: '♣', color: '#000' }
+            ];
+            let totalSum = 0; let redCount = 0; let blackCount = 0;
+
+            for (let i = 1; i <= 3; i++) {
+                let num = Math.floor(Math.random() * 10) + 1;
+                let suit = suits[Math.floor(Math.random() * suits.length)];
+                
+                totalSum += num;
+                if (suit.color === '#d32f2f') redCount++;
+                else blackCount++;
+
+                setTimeout(() => {
+                    let card = document.getElementById(`card-${i}`);
+                    card.style.transform = "rotateY(90deg)"; 
+                    
+                    setTimeout(() => {
+                        card.style.backgroundImage = "none";
+                        card.style.backgroundColor = "white";
+                        card.style.color = suit.color;
+                        card.innerHTML = `${num}<br>${suit.sign}`;
+                        card.style.transform = "rotateY(0deg)"; 
+                    }, 150);
+                }, i * 500); 
+            }
+
+            setTimeout(() => {
+                let winNum = totalSum % 10; 
+                let winColor = redCount > blackCount ? 'red' : 'black';
+                updateHistory(winNum, winColor);
+                document.getElementById("timer-display").innerText = `Result: ${winNum} Wins!`;
+
+                calculateWinnings(winNum, winColor);
+            }, 2500);
+        }
+
+        function calculateWinnings(winNum, winColor) {
+            let winAmount = 0;
+            if (playerBets.numbers[winNum] > 0) winAmount += playerBets.numbers[winNum] * 10;
+            if (playerBets.color[winColor] > 0) winAmount += playerBets.color[winColor] * 2;
+
+            if (winAmount > 0) {
+                totalBal += winAmount;
+                updateWalletAndChips();
+            }
+        }
+
+        function resetTable() {
+            for (let i = 1; i <= 3; i++) {
+                let card = document.getElementById(`card-${i}`);
+                card.innerHTML = "";
+                card.style.backgroundColor = "#b71540";
+                card.style.backgroundImage = "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.2) 5px, rgba(255,255,255,0.2) 10px)";
+            }
+            document.querySelectorAll('.bet-badge').forEach(b => {
+                b.style.display = 'none';
+                b.innerText = '0';
+            });
+            playerBets = { numbers: {}, color: { red: 0, black: 0 } };
+            for (let i = 0; i <= 9; i++) playerBets.numbers[i] = 0;
+        }
+
+        let timeLeft = 30;
+        updateWalletAndChips();
+
+        setInterval(() => {
+            if (isBetting) {
+                timeLeft--;
+                document.getElementById("timer-display").innerText = "Betting Open: " + timeLeft + "s";
+                document.getElementById("timer-display").style.color = timeLeft > 10 ? "#00ff88" : "#ff0000";
+                
+                if(timeLeft <= 0) {
+                    isBetting = false;
+                    document.getElementById("timer-display").innerText = "Opening Cards...";
+                    document.getElementById("timer-display").style.color = "#FFD700";
+                    openCards();
+                    
+                    setTimeout(() => {
+                        resetTable();
+                        timeLeft = 30;
+                        isBetting = true;
+                    }, 7000); 
+                }
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
